@@ -1,0 +1,10 @@
+:root {
+  --yellow: #f6d365;
+  --black: #333333;
+  --white: #ffffff;
+}
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
