@@ -1,4 +1,5 @@
 //rafce
+import DailyPrice from "../pages/admin/DailyPrice";
 import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "../pages/Home";
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
       { path: "product", element: <Product /> },
       { path: "product/:id", element: <EditProduct /> },
       { path: "manage", element: <Manage /> },
+      { path: "daily-price", element: <DailyPrice /> },
     ],
   },
   {

@@ -112,3 +112,15 @@ model Image {
 
   @@index([productId], map: "Image_productId_fkey")
 }
+
+model PalmPriceDaily {
+  id         Int      @id @default(autoincrement())
+  date       DateTime @unique
+  priceMin   Float
+  priceAvg   Float
+  priceMax   Float
+  sourceName String
+  sourceUrl  String
+  fetchedAt  DateTime @default(now())
+  note       String?
+}
