@@ -29,6 +29,10 @@ model Product {
   price          Float
   sold           Int              @default(0)
   quantity       Int
+  weightIn       Float            @default(0) // น้ำหนักเข้า
+  weightOut      Float            @default(0) // น้ำหนักออก
+  netWeight      Float            @default(0) // น้ำหนักสุทธิ (คำนวณจาก weightIn - weightOut)
+  amount         Float            @default(0) // จำนวนเงิน (price * netWeight)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   categoryId     Int?

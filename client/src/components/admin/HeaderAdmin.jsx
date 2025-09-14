@@ -4,7 +4,7 @@ import useAppLogout from "../../hooks/useAppLogout";
 
 const HeaderAdmin = () => {
   const user = useEcomStore((s) => s.user);
-  const handleLogout = useAppLogout(); // ✅ ใช้ hook กลาง
+  const handleLogout = useAppLogout();
 
   return (
     <header className="bg-white h-16 flex items-center justify-between px-6 shadow">

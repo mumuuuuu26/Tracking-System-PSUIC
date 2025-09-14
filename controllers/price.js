@@ -8,14 +8,13 @@ const dayBounds = (d) => {
   return { start: start.toDate(), end: end.toDate() };
 };
 
-// GET /api/palm-prices/today  (public)
 exports.getToday = async (req, res) => {
   try {
     const { start, end } = dayBounds(new Date());
     const rec = await prisma.palmPriceDaily.findFirst({
       where: { date: { gte: start, lt: end } },
     });
-    if (!rec) return res.status(204).send(); // ไม่มีข้อมูลวันนี้
+    if (!rec) return res.status(204).send();
     res.json(rec);
   } catch (err) {
     console.log(err);
@@ -23,7 +22,6 @@ exports.getToday = async (req, res) => {
   }
 };
 
-// GET /api/palm-prices?from=YYYY-MM-DD&to=YYYY-MM-DD  (public)
 exports.getRange = async (req, res) => {
   try {
     const from = req.query.from
@@ -44,7 +42,6 @@ exports.getRange = async (req, res) => {
   }
 };
 
-// POST /api/palm-prices/refresh (admin)  → ดึงจากแหล่งภายนอกแล้ว upsert
 exports.refreshFromSource = async (req, res) => {
   try {
     const d = await fetchPalmPrice();
@@ -77,8 +74,6 @@ exports.refreshFromSource = async (req, res) => {
   }
 };
 
-// POST /api/palm-prices  (admin) → ป้อน/แก้ไขด้วยมือ กรณีฉุกเฉิน
-// body: { date: 'YYYY-MM-DD', priceMin, priceAvg, priceMax, note? }
 exports.upsertManual = async (req, res) => {
   try {
     const { date, priceMin, priceAvg, priceMax, note } = req.body;

@@ -13,7 +13,13 @@ const initialState = {
   quantity: "",
   categoryId: "",
   images: [],
+  weightIn: "",
+  weightOut: "",
 };
+
+const toNum = (v) => Number(v || 0);
+const fmt = (n) =>
+  Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const FormEditProduct = () => {
   const { id } = useParams();
@@ -33,7 +39,6 @@ const FormEditProduct = () => {
   const fetchProduct = async (token, id) => {
     try {
       const res = await readProduct(token, id);
-      // map Images (from backend) -> images (for UI)
       setForm({
         ...initialState,
         ...res.data,
@@ -41,26 +46,29 @@ const FormEditProduct = () => {
         quantity: String(res.data?.quantity ?? ""),
         categoryId: res.data?.categoryId ?? "",
         images: Array.isArray(res.data?.Images) ? res.data.Images : [],
+        weightIn: String(res.data?.weightIn ?? ""),
+        weightOut: String(res.data?.weightOut ?? ""),
       });
     } catch (err) {
       console.log("Err fetch data", err);
     }
   };
 
-  const handleOnChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleOnChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const netWeight = Math.max(toNum(form.weightIn) - toNum(form.weightOut), 0);
+  const amount = toNum(form.price) * netWeight;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const payload = {
         ...form,
-        price: Number(form.price || 0),
-        quantity: Number(form.quantity || 0),
+        price: toNum(form.price),
+        quantity: Math.round(netWeight),
+        weightIn: toNum(form.weightIn),
+        weightOut: toNum(form.weightOut),
       };
       const res = await updateProduct(token, id, payload);
       toast.success(`แก้ไขสินค้า ${res.data.title} สำเร็จ!`);
@@ -76,7 +84,7 @@ const FormEditProduct = () => {
       <form onSubmit={handleSubmit} className="space-y-5">
         <h1 className="text-xl font-semibold">แก้ไขข้อมูลสินค้า</h1>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="block text-sm text-gray-600 mb-1">
               ชื่อสินค้า
@@ -121,20 +129,35 @@ const FormEditProduct = () => {
 
           <div>
             <label className="block text-sm text-gray-600 mb-1">
-              จำนวน (กก.)
+              น้ำหนักเข้า (กก.)
             </label>
             <input
               type="number"
               min="0"
               className="w-full rounded-lg border px-3 py-2 outline-none focus:border-emerald-500"
-              value={form.quantity}
+              value={form.weightIn}
               onChange={handleOnChange}
-              placeholder="เช่น 500"
-              name="quantity"
+              placeholder="เช่น 3970"
+              name="weightIn"
             />
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">
+              น้ำหนักออก (กก.)
+            </label>
+            <input
+              type="number"
+              min="0"
+              className="w-full rounded-lg border px-3 py-2 outline-none focus:border-emerald-500"
+              value={form.weightOut}
+              onChange={handleOnChange}
+              placeholder="เช่น 1770"
+              name="weightOut"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm text-gray-600 mb-1">หมวดหมู่</label>
             <select
               className="w-full rounded-lg border px-3 py-2 outline-none focus:border-emerald-500"
@@ -152,6 +175,16 @@ const FormEditProduct = () => {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* แสดงผลคำนวณทันที */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="p-3 rounded-lg bg-gray-50">
+            น้ำหนักสุทธิ: <b>{fmt(netWeight)}</b> กก.
+          </div>
+          <div className="p-3 rounded-lg bg-gray-50">
+            จำนวนเงิน: <b>{fmt(amount)}</b> บาท
           </div>
         </div>
 

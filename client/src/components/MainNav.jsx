@@ -1,4 +1,3 @@
-// src/components/MainNav.jsx
 import React, { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logoImg from "../assets/logo1.png";
@@ -13,7 +12,6 @@ const MainNav = () => {
     <nav className="bg-green-300">
       <div className="mx-auto max-w-screen-2xl px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Left */}
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center">
               <img src={logoImg} alt="Logo" className="h-16 w-auto" />
@@ -25,13 +23,9 @@ const MainNav = () => {
               <NavLink to="/price" className={linkCls}>
                 Price
               </NavLink>
-              <NavLink to="/cart" className={linkCls}>
-                Cart
-              </NavLink>
             </div>
           </div>
 
-          {/* Right */}
           <div className="hidden md:flex items-center gap-4">
             <Link to="/register" className="px-3 py-2">
               Register
@@ -41,7 +35,6 @@ const MainNav = () => {
             </Link>
           </div>
 
-          {/* Hamburger */}
           <button
             className="md:hidden text-black/80"
             onClick={() => setOpen((v) => !v)}
@@ -51,7 +44,6 @@ const MainNav = () => {
           </button>
         </div>
 
-        {/* Mobile menu */}
         {open && (
           <div className="md:hidden pb-3">
             <div className="flex flex-col gap-2">
@@ -68,13 +60,6 @@ const MainNav = () => {
                 onClick={() => setOpen(false)}
               >
                 Price
-              </NavLink>
-              <NavLink
-                to="/cart"
-                className={linkCls}
-                onClick={() => setOpen(false)}
-              >
-                Cart
               </NavLink>
 
               <div className="pt-2 border-t">

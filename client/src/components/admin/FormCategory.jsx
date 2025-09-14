@@ -81,7 +81,6 @@ const FormCategory = () => {
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* หัวข้อ */}
       <div className="mb-4">
         <h1 className="text-xl font-semibold">Category Management</h1>
         <p className="text-gray-500 text-sm">
@@ -89,7 +88,6 @@ const FormCategory = () => {
         </p>
       </div>
 
-      {/* ฟอร์มเพิ่มหมวดหมู่ */}
       <form
         onSubmit={handleCreate}
         className="bg-white rounded-xl shadow p-4 flex flex-col sm:flex-row gap-3"
@@ -109,12 +107,10 @@ const FormCategory = () => {
         </button>
       </form>
 
-      {/* รายการหมวดหมู่ */}
       <div className="mt-6 bg-white rounded-xl shadow">
         <ul className="divide-y">
           {categories.map((item) => (
             <li key={item.id} className="p-3 flex items-center gap-3">
-              {/* ชื่อ (โหมดดู / แก้) */}
               <div className="flex-1">
                 {editId === item.id ? (
                   <input
@@ -129,7 +125,6 @@ const FormCategory = () => {
                 )}
               </div>
 
-              {/* ปุ่มแอคชัน */}
               {editId === item.id ? (
                 <div className="flex items-center gap-2">
                   <button

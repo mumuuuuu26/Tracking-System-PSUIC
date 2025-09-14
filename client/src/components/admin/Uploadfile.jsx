@@ -13,7 +13,6 @@ const Uploadfile = ({ form, setForm }) => {
     if (!files?.length) return;
 
     setIsLoading(true);
-    // ทำสำเนา array ปัจจุบัน ป้องกันการ mutate ตรงๆ
     const next = [...(form.images || [])];
 
     const work = Array.from(files).map((file) => {
@@ -72,7 +71,6 @@ const Uploadfile = ({ form, setForm }) => {
 
   return (
     <div className="my-4 space-y-3">
-      {/* Preview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
         {(form.images || []).map((item, index) => (
           <div key={index} className="relative group">
@@ -98,7 +96,6 @@ const Uploadfile = ({ form, setForm }) => {
         )}
       </div>
 
-      {/* Uploader */}
       <div className="flex justify-center">
         <label className="inline-flex cursor-pointer items-center rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">
           <input
