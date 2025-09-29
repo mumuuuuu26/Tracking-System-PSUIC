@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import bannerBg from "../assets/banner-bg.jpg";
+import bannerBg from "../assets/bg.png";
 
 const HeaderHero = () => {
   return (
@@ -12,11 +12,8 @@ const HeaderHero = () => {
         <div className="text-white text-center flex justify-center">
           <div className="max-w-3xl mx-auto">
             <h1 className="uppercase text-[clamp(2rem,10vw,6rem)] font-bold leading-tight">
-              ขายปาล์มนํ้ามัน
+              Banklang Palm ©
             </h1>
-            <p className="text-[clamp(1rem,5vw,1.5rem)] mt-2">
-              กับบ้านกลางปาล์ม ©
-            </p>
 
             <Link
               to="/login"

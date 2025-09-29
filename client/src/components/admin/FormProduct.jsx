@@ -102,7 +102,7 @@ const FormProduct = () => {
               className="w-full rounded-lg border px-3 py-2 outline-none focus:border-emerald-500"
               value={form.title}
               onChange={handleOnChange}
-              placeholder="เช่น ทะลายปาล์มคละเกรด"
+              placeholder="เช่น ปาล์มทะลายเกรด A"
               name="title"
             />
           </div>

@@ -31,7 +31,7 @@ const DailyPrice = () => {
   // ย้อนหลัง 30 วัน
   const [rows, setRows] = useState([]);
 
-  // ฟอร์มบันทึกด้วยมือ/ปรับแก้
+  // ฟอร์มบันทึก
   const [form, setForm] = useState({
     date: dayjs().format("YYYY-MM-DD"),
     priceMin: "",
@@ -40,10 +40,10 @@ const DailyPrice = () => {
     note: "",
   });
 
-  // โหลดข้อมูลวันนี้ + 30 วันล่าสุดจาก DB ของเราเอง
+  // โหลดข้อมูลวันนี้ + 30 วันล่าสุดจาก DB
   const loadData = async () => {
     try {
-      const t = await getPriceToday(); // อาจ 204 ไม่มีข้อมูล
+      const t = await getPriceToday();
       setToday(t?.data || null);
 
       const from = dayjs().subtract(29, "day").format("YYYY-MM-DD");
@@ -125,10 +125,8 @@ const DailyPrice = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <h1 className="text-2xl font-bold">จัดการราคาปาล์มรายวัน</h1>
 
-      {/* การ์ดสรุปวันนี้ */}
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="p-4 bg-white rounded-xl shadow">
           <div className="text-gray-500">ราคาเฉลี่ย (วันนี้)</div>
@@ -167,10 +165,8 @@ const DailyPrice = () => {
         </div>
       </div>
 
-      {/* ปุ่มดึง/ฟอร์มบันทึกด้วยมือ (เวอร์ชันปรับดีไซน์) */}
       <div className="bg-white p-5 rounded-xl shadow">
         <form onSubmit={saveManual} className="grid gap-4">
-          {/* ช่องกรอกเรียงเป็นกริด */}
           <div className="grid gap-4 sm:grid-cols-5">
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -245,7 +241,6 @@ const DailyPrice = () => {
             </div>
           </div>
 
-          {/* แถบปุ่มด้านล่าง */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 pt-3 border-t">
             <button
               type="button"
@@ -282,8 +277,8 @@ const DailyPrice = () => {
             {/* เส้นหลัก: ราคาเฉลี่ย */}
             <Line type="monotone" dataKey="avg" dot={true} />
             {/* ถ้าต้องการแสดงเส้นต่ำสุด/สูงสุด ให้เอาคอมเมนต์ออก */}
-            {/* <Line type="monotone" dataKey="min" strokeDasharray="4 2" /> */}
-            {/* <Line type="monotone" dataKey="max" strokeDasharray="4 2" /> */}
+            <Line type="monotone" dataKey="min" strokeDasharray="4 2" />
+            <Line type="monotone" dataKey="max" strokeDasharray="4 2" />
           </LineChart>
         </ResponsiveContainer>
       </div>
