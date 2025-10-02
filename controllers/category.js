@@ -3,13 +3,17 @@ const prisma = require("../config/prisma");
 
 exports.create = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, customerType } = req.body;
     if (!name) return res.status(400).json({ message: "ชื่อหมวดหมู่ห้ามว่าง" });
 
-    const category = await prisma.category.create({
-      data: { name },
+    const cat = await prisma.category.create({
+      data: {
+        name,
+        customerType: customerType || "retail",
+      },
     });
-    res.send(category);
+
+    res.json(cat);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });
@@ -18,25 +22,10 @@ exports.create = async (req, res) => {
 
 exports.list = async (req, res) => {
   try {
-    //code
-    const category = await prisma.category.findMany();
-    res.send(category);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-exports.remove = async (req, res) => {
-  try {
-    //code
-    const { id } = req.params;
-    const category = await prisma.category.delete({
-      where: {
-        id: Number(id),
-      },
+    const rows = await prisma.category.findMany({
+      orderBy: { createdAt: "desc" },
     });
-    res.send(category);
+    res.json(rows);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });
@@ -46,12 +35,23 @@ exports.remove = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
-    const category = await prisma.category.update({
+    const { name, customerType } = req.body;
+    const cat = await prisma.category.update({
       where: { id: Number(id) },
-      data: { name },
+      data: { name, customerType: customerType || "retail" },
     });
-    res.send(category);
+    res.json(cat);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cat = await prisma.category.delete({ where: { id: Number(id) } });
+    res.json(cat);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });

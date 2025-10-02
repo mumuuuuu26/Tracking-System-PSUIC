@@ -71,11 +71,13 @@ model ProductOnOrder {
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  name      String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
+  id           Int       @id @default(autoincrement())
+  name         String
+  customerType String    @default("retail") // 'large' หรือ 'retail'
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  products     Product[]
+  Bill         Bill[]
 }
 
 model Cart {
@@ -127,4 +129,22 @@ model PalmPriceDaily {
   sourceUrl  String
   fetchedAt  DateTime @default(now())
   note       String?
+}
+
+model Bill {
+  id           Int      @id @default(autoincrement())
+  plate        String
+  categoryId   Int?
+  customerType String
+  weightIn     Float
+  weightOut    Float
+  netWeight    Float
+  pricePerKg   Float
+  amount       Float
+  note         String? // ถ้าต้องการเก็บหมายเหตุ
+  createdAt    DateTime @default(now())
+
+  Category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId], map: "Bill_categoryId_fkey")
 }

@@ -20,7 +20,7 @@ import HomeUser from "../pages/user/HomeUser";
 import ProtectRoteUser from "./ProtectRoteUser";
 import ProtectRoteAdmin from "./ProtectRouteAdmin";
 import EditProduct from "../pages/admin/EditProduct";
-
+import Bills from "../pages/admin/Bills";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -45,6 +45,7 @@ const router = createBrowserRouter([
       { path: "product/:id", element: <EditProduct /> },
       { path: "manage", element: <Manage /> },
       { path: "daily-price", element: <DailyPrice /> },
+      { path: "bills", element: <Bills /> },
     ],
   },
   {

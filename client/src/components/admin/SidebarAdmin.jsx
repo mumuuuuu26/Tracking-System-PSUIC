@@ -38,7 +38,7 @@ const SidebarAdmin = () => {
         </NavLink>
 
         <NavLink
-          to="manage"
+          to="bills"
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <Users className="mr-2" />
