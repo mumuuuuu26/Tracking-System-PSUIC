@@ -7,7 +7,6 @@ import {
 } from "../../api/Category";
 import useEcomStore from "../../store/ecom-store";
 import { toast } from "react-toastify";
-import BillModal from "./BillModal";
 
 const FormCategory = () => {
   const token = useEcomStore((s) => s.token);
@@ -17,15 +16,6 @@ const FormCategory = () => {
   const [name, setName] = useState("");
   const [customerType, setCustomerType] = useState("retail"); // default
   const [loading, setLoading] = useState(false);
-
-  // สำหรับ BillModal
-  const [openBill, setOpenBill] = useState(false);
-  const [billInitial, setBillInitial] = useState(null);
-
-  const openCreateBill = (item) => {
-    setBillInitial(item);
-    setOpenBill(true);
-  };
 
   // edit state
   const [editId, setEditId] = useState(null);
@@ -201,13 +191,6 @@ const FormCategory = () => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => openCreateBill(item)}
-                    className="px-3 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white"
-                  >
-                    Create Bill
-                  </button>
-                  <button
-                    type="button"
                     onClick={() =>
                       startEdit(item.id, item.name, item.customerType)
                     }
@@ -232,20 +215,6 @@ const FormCategory = () => {
           )}
         </ul>
       </div>
-
-      {/* BillModal */}
-      <BillModal
-        isOpen={openBill}
-        onClose={(refresh) => {
-          setOpenBill(false);
-          setBillInitial(null);
-          if (refresh) {
-            getCategory(token); // หรือ refresh bills list ก็ได้
-          }
-        }}
-        initialPlate={billInitial?.name}
-        initialCategory={billInitial}
-      />
     </div>
   );
 };

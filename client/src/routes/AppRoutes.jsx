@@ -21,6 +21,7 @@ import ProtectRoteUser from "./ProtectRoteUser";
 import ProtectRoteAdmin from "./ProtectRouteAdmin";
 import EditProduct from "../pages/admin/EditProduct";
 import Bills from "../pages/admin/Bills";
+
 const router = createBrowserRouter([
   {
     path: "/",

@@ -1,21 +1,30 @@
 import axios from "axios";
-const BASE = "http://localhost:5001/api";
 
-export const createBill = (token, payload) =>
-  axios.post(`${BASE}/bill`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5001/api",
+});
 
 export const listBills = (token) =>
-  axios.get(`${BASE}/bills`, { headers: { Authorization: `Bearer ${token}` } });
-
-export const getBill = (token, id) =>
-  axios.get(`${BASE}/bill/${id}`, {
+  api.get("/bills", {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-export const searchBills = (token, plate) =>
-  axios.get(`${BASE}/bills/search`, {
-    params: { plate },
+export const searchBills = (token, query) =>
+  api.get(`/bills/search?q=${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const getBill = (token, id) =>
+  api.get(`/bills/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const updateBill = (token, id, data) =>
+  api.put(`/bills/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+export const deleteBill = (token, id) =>
+  api.delete(`/bills/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

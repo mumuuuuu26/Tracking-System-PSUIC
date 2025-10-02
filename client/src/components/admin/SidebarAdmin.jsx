@@ -1,4 +1,5 @@
 import React from "react";
+import { Receipt } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -41,8 +42,8 @@ const SidebarAdmin = () => {
           to="bills"
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
-          <Users className="mr-2" />
-          Manage
+          <Receipt className="mr-2" />
+          History
         </NavLink>
 
         <NavLink
