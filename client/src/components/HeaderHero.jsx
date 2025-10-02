@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import bannerBg from "../assets/bg.png";
+import bannerBg from "../assets/palm2.jpg";
 
 const HeaderHero = () => {
   return (
