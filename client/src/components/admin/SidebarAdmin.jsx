@@ -39,7 +39,7 @@ const SidebarAdmin = () => {
         </NavLink>
 
         <NavLink
-          to="bills"
+          to="/admin/history"
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <Receipt className="mr-2" />
@@ -51,7 +51,7 @@ const SidebarAdmin = () => {
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <FolderKanban className="mr-2" />
-          Category
+          Manage
         </NavLink>
 
         <NavLink

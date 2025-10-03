@@ -15,16 +15,16 @@ export const searchBills = (token, query) =>
   });
 
 export const getBill = (token, id) =>
-  api.get(`/bills/${id}`, {
+  api.get(`/bill/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
 export const updateBill = (token, id, data) =>
-  api.put(`/bills/${id}`, data, {
+  api.put(`/bill/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
 export const deleteBill = (token, id) =>
-  api.delete(`/bills/${id}`, {
+  api.delete(`/bill/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

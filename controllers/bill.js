@@ -96,9 +96,17 @@ exports.getBill = async (req, res) => {
 
 exports.searchByPlate = async (req, res) => {
   try {
-    const { plate } = req.query;
+    const { q } = req.query;
+    if (!q) {
+      return res.json([]);
+    }
+
     const rows = await prisma.bill.findMany({
-      where: { plate: { contains: plate } },
+      where: {
+        plate: {
+          contains: q, // ค้นหาแบบมีคำที่ค้นหาอยู่ในทะเบียน
+        },
+      },
       orderBy: { createdAt: "desc" },
       include: { Category: true },
     });
@@ -106,5 +114,58 @@ exports.searchByPlate = async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+//updateBill
+exports.updateBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { weightIn, weightOut } = req.body;
+
+    // หาบิลเดิม
+    const oldBill = await prisma.bill.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!oldBill) {
+      return res.status(404).json({ message: "ไม่พบบิล" });
+    }
+
+    // คำนวณใหม่
+    const wIn = Number(weightIn || 0);
+    const wOut = Number(weightOut || 0);
+    const netWeight = Math.max(wIn - wOut, 0);
+    const amount = Number((oldBill.pricePerKg * netWeight).toFixed(2));
+
+    const updated = await prisma.bill.update({
+      where: { id: Number(id) },
+      data: {
+        weightIn: wIn,
+        weightOut: wOut,
+        netWeight,
+        amount,
+      },
+    });
+
+    res.json({ ok: true, bill: updated });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "แก้ไขไม่สำเร็จ" });
+  }
+};
+
+//deleteBill
+exports.deleteBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.bill.delete({
+      where: { id: Number(id) },
+    });
+
+    res.json({ ok: true, message: "ลบบิลสำเร็จ" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "ลบไม่สำเร็จ" });
   }
 };
