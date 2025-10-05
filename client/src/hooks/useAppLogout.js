@@ -9,7 +9,7 @@ export default function useAppLogout() {
   const handleLogout = () => {
     logout();
     toast.success("ออกจากระบบสำเร็จ");
-    navigate("/login");
+    navigate("/");
   };
 
   return handleLogout;

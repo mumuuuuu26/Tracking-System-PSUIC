@@ -4,7 +4,6 @@ import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "../pages/Home";
 import Price from "../pages/Price";
-import Cart from "../pages/Cart";
 import History from "../pages/History";
 import Checkout from "../pages/Checkout";
 import Login from "../pages/auth/Login";
@@ -29,7 +28,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "price", element: <Price /> },
-      { path: "cart", element: <Cart /> },
       { path: "history", element: <History /> },
       { path: "checkout", element: <Checkout /> },
       { path: "login", element: <Login /> },
