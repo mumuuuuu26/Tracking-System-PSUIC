@@ -30,6 +30,14 @@ const SidebarAdmin = () => {
 
       <nav className="flex-1 px-2 py-4 space-y-2">
         <NavLink
+          end
+          to="/admin"
+          className={({ isActive }) => `${base} ${isActive ? active : idle}`}
+        >
+          <LayoutDashboard className="mr-2" />
+          Dashboard
+        </NavLink>
+        <NavLink
           to="daily-price"
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
@@ -59,14 +67,6 @@ const SidebarAdmin = () => {
         >
           <ShoppingBag className="mr-2" />
           History
-        </NavLink>
-        <NavLink
-          end
-          to="/admin"
-          className={({ isActive }) => `${base} ${isActive ? active : idle}`}
-        >
-          <LayoutDashboard className="mr-2" />
-          Dashboard
         </NavLink>
       </nav>
 

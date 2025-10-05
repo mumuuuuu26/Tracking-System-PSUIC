@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import useEcomStore from "../../store/ecom-store";
-import { removeProduct } from "../../api/product";
+import { removeProduct, updateProduct } from "../../api/product";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 
@@ -16,6 +16,17 @@ const HistoryAdmin = () => {
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
+
+  // Edit Modal States
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    weightIn: 0,
+    weightOut: 0,
+    price: 0,
+  });
 
   useEffect(() => {
     getProduct(token, 100);
@@ -76,6 +87,37 @@ const HistoryAdmin = () => {
     setDateTo("");
     setCustomerTypeFilter("all");
     setShowFilters(false);
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setEditForm({
+      title: item.title || "",
+      description: item.description || "",
+      weightIn: item.weightIn || 0,
+      weightOut: item.weightOut || 0,
+      price: item.price || 0,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+
+    try {
+      setLoadingId(editingItem.id);
+      // ใช้ updateProduct API ที่มีอยู่แล้ว
+      await updateProduct(token, editingItem.id, editForm);
+      toast.success("แก้ไขข้อมูลสำเร็จ");
+      await getProduct(token, 100);
+      setShowEditModal(false);
+      setEditingItem(null);
+    } catch (err) {
+      console.log(err);
+      toast.error("แก้ไขข้อมูลไม่สำเร็จ");
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   const handleDelete = async (id, title) => {
@@ -399,7 +441,25 @@ const HistoryAdmin = () => {
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 shadow-md"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
                           <button
                             onClick={() => handleDelete(item.id, item.title)}
                             disabled={loadingId === item.id}
@@ -480,6 +540,190 @@ const HistoryAdmin = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">
+                แก้ไขข้อมูลบิล
+              </h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg
+                  className="w-6 h-6 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ทะเบียนรถ
+                </label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, title: e.target.value })
+                  }
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ประเภทลูกค้า
+                </label>
+                <select
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 bg-white cursor-pointer transition-all duration-200"
+                >
+                  <option value="ลูกค้ารายใหญ่">ลูกค้ารายใหญ่</option>
+                  <option value="ลูกค้ารายย่อย">ลูกค้ารายย่อย</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    น้ำหนักเข้า (กก.)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editForm.weightIn}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        weightIn: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    น้ำหนักออก (กก.)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editForm.weightOut}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        weightOut: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ราคาต่อกิโลกรัม (บาท)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editForm.price}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      price: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                />
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">น้ำหนักสุทธิ:</span>
+                  <span className="font-semibold text-gray-800">
+                    {fmt(
+                      Math.max(
+                        (editForm.weightIn || 0) - (editForm.weightOut || 0),
+                        0
+                      )
+                    )}{" "}
+                    กก.
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">จำนวนเงินรวม:</span>
+                  <span className="font-bold text-lg text-emerald-600">
+                    {fmt(
+                      Math.max(
+                        (editForm.weightIn || 0) - (editForm.weightOut || 0),
+                        0
+                      ) * (editForm.price || 0)
+                    )}{" "}
+                    บาท
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-6 py-2.5 border-2 border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={loadingId === editingItem?.id}
+                className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {loadingId === editingItem?.id ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>กำลังบันทึก...</span>
+                  </>
+                ) : (
+                  <span>บันทึกการแก้ไข</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
