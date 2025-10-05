@@ -201,7 +201,7 @@ const Dashboard = () => {
                 <span className="text-yellow-600 text-xl">🏢</span>
               </div>
               <h2 className="text-xl font-bold text-yellow-800">
-                ลูกค้ารายใหญ่ (Top 5)
+                Top 5 ลูกค้ารายใหญ่
               </h2>
             </div>
 
@@ -245,7 +245,7 @@ const Dashboard = () => {
                 <span className="text-emerald-600 text-xl">🛒</span>
               </div>
               <h2 className="text-xl font-bold text-emerald-800">
-                ลูกค้ารายย่อย (Top 5)
+                Top 5 ลูกค้ารายย่อย
               </h2>
             </div>
 
