@@ -20,7 +20,6 @@ import HomeUser from "../pages/user/HomeUser";
 import ProtectRoteUser from "./ProtectRoteUser";
 import ProtectRoteAdmin from "./ProtectRouteAdmin";
 import EditProduct from "../pages/admin/EditProduct";
-import Bills from "../pages/admin/Bills";
 import HistoryAdmin from "../pages/admin/HistoryAdmin";
 
 const router = createBrowserRouter([
@@ -47,7 +46,6 @@ const router = createBrowserRouter([
       { path: "product/:id", element: <EditProduct /> },
       { path: "manage", element: <Manage /> },
       { path: "daily-price", element: <DailyPrice /> },
-      { path: "bills", element: <Bills /> },
       { path: "history", element: <HistoryAdmin /> },
     ],
   },
