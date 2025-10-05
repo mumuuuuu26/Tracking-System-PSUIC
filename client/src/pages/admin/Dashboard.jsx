@@ -1,11 +1,11 @@
-import React from 'react'
-
+import React from "react";
+import FormDashboard from "../../components/admin/FormDashboard";
 const Dashboard = () => {
   return (
     <div>
-      Dashboard
+      <FormDashboard />
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;

@@ -141,7 +141,7 @@ const Register = () => {
                       name="password"
                       value={form.password}
                       onChange={handleOnChange}
-                      placeholder="สร้างรหัสผ่านที่แข็งแรง"
+                      placeholder="กรอกรหัสผ่าน"
                       className="w-full rounded-xl border-2 border-gray-200 py-3 pl-12 pr-12 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                     />
                     <button
