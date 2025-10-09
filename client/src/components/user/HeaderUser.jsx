@@ -2,13 +2,15 @@ import React from "react";
 import useEcomStore from "../../store/ecom-store";
 import useAppLogout from "../../hooks/useAppLogout";
 
-const HomeUser = () => {
+const HeaderAdmin = () => {
   const user = useEcomStore((s) => s.user);
   const handleLogout = useAppLogout();
 
   return (
     <header className="bg-white h-16 flex items-center justify-between px-6 shadow">
-      <h1 className="text-lg font-semibold text-emerald-600">Banklang Palm Welcome, members!</h1>
+      <h1 className="text-lg font-semibold text-emerald-600">
+        Banklang Palm User
+      </h1>
 
       <div className="flex items-center gap-4">
         {user && (
@@ -27,4 +29,4 @@ const HomeUser = () => {
   );
 };
 
-export default HomeUser;
+export default HeaderAdmin;
