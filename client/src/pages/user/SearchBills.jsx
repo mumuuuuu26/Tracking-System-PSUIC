@@ -66,12 +66,13 @@ const SearchBills = () => {
   };
 
   // ฟังก์ชันสร้าง PDF
+
   const generatePDF = (product) => {
-    const category = categories.find((c) => c.id === product.categoryId);
-    if (!category) {
-      toast.error("ไม่พบข้อมูลทะเบียนรถ");
-      return;
-    }
+    const category = {
+      name: product.title?.split(" - ")[0] || product.title || "ไม่ระบุ",
+      customerType:
+        product.description === "ลูกค้ารายใหญ่" ? "large" : "retail",
+    };
 
     const net = Math.max((product.weightIn || 0) - (product.weightOut || 0), 0);
     const totalAmount = product.price * net;

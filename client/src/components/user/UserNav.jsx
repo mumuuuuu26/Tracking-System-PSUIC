@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Receipt, DollarSign, Calculator } from "lucide-react";
+import { Receipt, DollarSign, Calculator } from "lucide-react";
 
 const UserNav = () => {
   const linkClass = ({ isActive }) =>
@@ -15,7 +15,7 @@ const UserNav = () => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-2 py-4">
           <NavLink to="/user" end className={linkClass}>
-            <Home size={20} />
+            <Receipt size={20} />
             <span>Sales Records </span>
           </NavLink>
 
