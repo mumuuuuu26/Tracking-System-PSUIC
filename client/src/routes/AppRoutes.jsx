@@ -49,7 +49,8 @@ const router = createBrowserRouter([
     //element: <LayoutUser />,
     element: <ProtectRoteUser element={<LayoutUser />} />,
     children: [
-      { index: true, element: <SearchBills /> }
+      { index: true, element: <SearchBills /> },
+      { path: "price", element: <Price /> },
     ],
   },
 ]);
