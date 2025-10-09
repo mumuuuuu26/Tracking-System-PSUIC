@@ -3,11 +3,14 @@ import useEcomStore from "../../store/ecom-store";
 import { removeProduct, updateProduct } from "../../api/product";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
+import { Printer } from "lucide-react";
 
 const HistoryAdmin = () => {
   const token = useEcomStore((s) => s.token);
   const getProduct = useEcomStore((s) => s.getProduct);
   const products = useEcomStore((s) => s.products);
+  const categories = useEcomStore((s) => s.categories);
+  const getCategory = useEcomStore((s) => s.getCategory);
 
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [q, setQ] = useState("");
@@ -29,7 +32,8 @@ const HistoryAdmin = () => {
   });
 
   useEffect(() => {
-    getProduct(token, 100);
+    getProduct(token, 1000);
+    getCategory(token);
   }, []);
 
   useEffect(() => {
@@ -89,6 +93,325 @@ const HistoryAdmin = () => {
     setShowFilters(false);
   };
 
+  // ฟังก์ชันสร้าง PDF
+  const generatePDF = (product) => {
+    const category = categories.find((c) => c.id === product.categoryId);
+    if (!category) {
+      toast.error("ไม่พบข้อมูลทะเบียนรถ");
+      return;
+    }
+
+    const net = Math.max((product.weightIn || 0) - (product.weightOut || 0), 0);
+    const totalAmount = product.price * net;
+
+    // สร้าง HTML สำหรับบิล
+    const billHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>ใบสั่งซื้อปาล์มน้ำมัน - ${product.title}</title>
+        <style>
+          @page { 
+            size: A4 landscape;
+            margin: 0; 
+          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Sarabun', 'TH Sarabun New', sans-serif;
+            padding: 15mm;
+            background: white;
+            width: 297mm;
+            height: 210mm;
+          }
+          .bill-container {
+            width: 100%;
+            height: 100%;
+            background: white;
+            padding: 12mm;
+            border: 3px solid #059669;
+            display: flex;
+            flex-direction: column;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #059669;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+          }
+          .company-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 4px;
+          }
+          .bill-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: #047857;
+            margin-top: 8px;
+          }
+          .address {
+            font-size: 13px;
+            color: #374151;
+            margin-top: 6px;
+            line-height: 1.5;
+          }
+          .content-wrapper {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+          }
+          .left-section {
+            flex: 1;
+          }
+          .right-section {
+            flex: 1;
+          }
+          .info-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 15px 0;
+          }
+          .info-box {
+            padding: 10px;
+            background: #f3f4f6;
+            border-radius: 8px;
+          }
+          .info-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 3px;
+          }
+          .info-value {
+            font-size: 15px;
+            font-weight: bold;
+            color: #1f2937;
+          }
+          .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+          }
+          .details-table th {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #6ee7b7;
+            font-size: 13px;
+          }
+          .details-table td {
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            font-size: 13px;
+          }
+          .details-table tr:nth-child(even) {
+            background: #f9fafb;
+          }
+          .total-section {
+            margin-top: 15px;
+            border-top: 2px solid #059669;
+            padding-top: 12px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 15px;
+          }
+          .total-row.grand {
+            font-size: 20px;
+            font-weight: bold;
+            color: #059669;
+            border-top: 2px solid #d1d5db;
+            margin-top: 8px;
+            padding-top: 12px;
+          }
+          .signature-section {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+          }
+          .signature-box {
+            text-align: center;
+            width: 180px;
+          }
+          .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 6px;
+            font-size: 13px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #d1d5db;
+            color: #6b7280;
+            font-size: 11px;
+          }
+          .customer-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+          }
+          .badge-large {
+            background: #fef3c7;
+            color: #92400e;
+          }
+          .badge-retail {
+            background: #d1fae5;
+            color: #065f46;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="bill-container">
+          <div class="header">
+            <div class="company-name">บ้านกลางปาล์ม</div>
+            <div class="address">
+              เลขที่ 93/1 ม.3 ต.บ้านกลาง อ.อ่าวลึก จ.กระบี่ 81110<br>
+              โทร: 087-897-1223 | อีเมล: banklangpalm@gmail.com
+            </div>
+            <div class="bill-title">ใบรายการซื้อขายปาล์มน้ำมัน</div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-box">
+              <div class="info-label">เลขที่</div>
+              <div class="info-value">${String(product.id).padStart(
+                8,
+                "0"
+              )}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">วันที่</div>
+              <div class="info-value">${dayjs(product.createdAt).format(
+                "DD/MM/YYYY"
+              )}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">เวลา</div>
+              <div class="info-value">${dayjs(product.createdAt).format(
+                "HH:mm"
+              )} น.</div>
+            </div>
+          </div>
+
+          <div class="content-wrapper">
+            <div class="left-section">
+              <table class="details-table">
+                <tr>
+                  <th colspan="2">รายละเอียดการชั่งน้ำหนัก</th>
+                </tr>
+                <tr>
+                  <td style="width: 45%">ทะเบียนรถ</td>
+                  <td style="width: 55%; font-weight: bold">
+                    ${category.name}
+                    <span class="customer-badge ${
+                      category.customerType === "large"
+                        ? "badge-large"
+                        : "badge-retail"
+                    }">
+                      ${
+                        category.customerType === "large"
+                          ? "ลูกค้ารายใหญ่"
+                          : "ลูกค้ารายย่อย"
+                      }
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>น้ำหนักเข้า</td>
+                  <td style="font-weight: bold">${Number(
+                    product.weightIn || 0
+                  ).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} กก.</td>
+                </tr>
+                <tr>
+                  <td>น้ำหนักออก</td>
+                  <td style="font-weight: bold">${Number(
+                    product.weightOut || 0
+                  ).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} กก.</td>
+                </tr>
+                <tr style="background: #fef3c7">
+                  <td style="font-weight: bold; color: #92400e">น้ำหนักสุทธิ</td>
+                  <td style="font-weight: bold; font-size: 16px; color: #92400e">${Number(
+                    net
+                  ).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} กก.</td>
+                </tr>
+              </table>
+
+              <div class="signature-section">
+                <div class="signature-box">
+                  <div class="signature-line">ผู้ขาย</div>
+                  <div style="margin-top: 4px; font-size: 11px">(ลงชื่อ)</div>
+                </div>
+                <div class="signature-box">
+                  <div class="signature-line">ผู้รับซื้อ</div>
+                  <div style="margin-top: 4px; font-size: 11px">(ลงชื่อ)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="right-section">
+              <div class="total-section">
+                <div class="total-row">
+                  <span>ราคาต่อหน่วย (กก.):</span>
+                  <span>${Number(product.price).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} บาท</span>
+                </div>
+                <div class="total-row">
+                  <span>น้ำหนักสุทธิ:</span>
+                  <span>${Number(net).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} กก.</span>
+                </div>
+                <div class="total-row grand">
+                  <span>จำนวนเงินรวม:</span>
+                  <span>${Number(totalAmount).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })} บาท</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>ขอบคุณที่ใช้บริการ - บ้านกลางปาล์ม</p>
+            <p style="margin-top: 5px">หมายเหตุ: กรุณาเก็บใบบิลนี้ไว้เป็นหลักฐาน</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // สร้าง window ใหม่สำหรับพิมพ์
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(billHTML);
+      printWindow.document.close();
+
+      // รอให้โหลดเสร็จแล้วพิมพ์
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    } else {
+      toast.error("ไม่สามารถเปิดหน้าต่างใหม่ได้ กรุณาอนุญาตให้เปิด popup");
+    }
+  };
+
   const handleEdit = (item) => {
     setEditingItem(item);
     setEditForm({
@@ -106,10 +429,9 @@ const HistoryAdmin = () => {
 
     try {
       setLoadingId(editingItem.id);
-      // ใช้ updateProduct API ที่มีอยู่แล้ว
       await updateProduct(token, editingItem.id, editForm);
       toast.success("แก้ไขข้อมูลสำเร็จ");
-      await getProduct(token, 100);
+      await getProduct(token, 1000);
       setShowEditModal(false);
       setEditingItem(null);
     } catch (err) {
@@ -126,7 +448,7 @@ const HistoryAdmin = () => {
       setLoadingId(id);
       await removeProduct(token, id);
       toast.success("ลบบิลสำเร็จ");
-      await getProduct(token, 100);
+      await getProduct(token, 1000);
     } catch (err) {
       console.log(err);
       toast.error("ลบไม่สำเร็จ");
@@ -359,30 +681,6 @@ const HistoryAdmin = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">
-                    วันที่
-                  </th>
-                  <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">
-                    ทะเบียน
-                  </th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
-                    ประเภท
-                  </th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
-                    น้ำหนักเข้า
-                  </th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
-                    น้ำหนักออก
-                  </th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
-                    น้ำหนักสุทธิ
-                  </th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
-                    ราคา/กก.
-                  </th>
-                  <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
-                    จำนวนเงิน
-                  </th>
                   <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
                     จัดการ
                   </th>
@@ -443,8 +741,16 @@ const HistoryAdmin = () => {
                       <td className="px-4 py-4">
                         <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => handleEdit(item)}
+                            onClick={() => generatePDF(item)}
                             className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 shadow-md"
+                            title="พิมพ์บิล"
+                          >
+                            <Printer className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors duration-200 shadow-md"
+                            title="แก้ไข"
                           >
                             <svg
                               className="w-5 h-5"
@@ -464,6 +770,7 @@ const HistoryAdmin = () => {
                             onClick={() => handleDelete(item.id, item.title)}
                             disabled={loadingId === item.id}
                             className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200 shadow-md disabled:opacity-50"
+                            title="ลบ"
                           >
                             {loadingId === item.id ? (
                               <svg

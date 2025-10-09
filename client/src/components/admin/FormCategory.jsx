@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   createCategory,
   listCategory,
@@ -24,6 +24,17 @@ const FormCategory = () => {
   useEffect(() => {
     getCategory(token);
   }, []);
+
+  // เรียงทะเบียนรถตามตัวเลข (ทะเบียนเป็นตัวเลขล้วน)
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      // แปลงทะเบียนเป็นตัวเลข
+      const numA = parseInt(a.name, 10) || 0;
+      const numB = parseInt(b.name, 10) || 0;
+
+      return numA - numB;
+    });
+  }, [categories]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -155,7 +166,7 @@ const FormCategory = () => {
                 onKeyPress={(e) => e.key === "Enter" && handleCreate(e)}
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
                 type="text"
-                placeholder="เช่น กท 1234"
+                placeholder="เช่น 1234"
               />
             </div>
 
@@ -230,13 +241,13 @@ const FormCategory = () => {
                 รายการทะเบียนรถทั้งหมด
               </h2>
               <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
-                {categories.length} รายการ
+                {sortedCategories.length} รายการ
               </span>
             </div>
           </div>
 
           <ul className="divide-y divide-gray-100">
-            {categories.map((item, index) => (
+            {sortedCategories.map((item, index) => (
               <li
                 key={item.id}
                 className="p-5 hover:bg-gray-50 transition-colors duration-150"
@@ -378,7 +389,7 @@ const FormCategory = () => {
               </li>
             ))}
 
-            {categories.length === 0 && (
+            {sortedCategories.length === 0 && (
               <li className="p-12 text-center">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">

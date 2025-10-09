@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import dayjs from "dayjs";
 import useEcomStore from "../../store/ecom-store";
 import { createProduct, removeProduct } from "../../api/product";
@@ -28,6 +28,17 @@ const FormProduct = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loadingId, setLoadingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // เรียงทะเบียนรถตามตัวเลข (ทะเบียนเป็นตัวเลขล้วน)
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      // แปลงทะเบียนเป็นตัวเลข
+      const numA = parseInt(a.name, 10) || 0;
+      const numB = parseInt(b.name, 10) || 0;
+
+      return numA - numB;
+    });
+  }, [categories]);
 
   useEffect(() => {
     getCategory(token);
@@ -275,7 +286,7 @@ const FormProduct = () => {
                 value={form.categoryId}
               >
                 <option value="">— เลือกทะเบียนรถ —</option>
-                {categories.map((item) => (
+                {sortedCategories.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name} (
                     {item.customerType === "large" ? "รายใหญ่" : "รายย่อย"})
