@@ -1,292 +1,333 @@
 // controllers/user.js
-const { json } = require('express')
-const prisma = require('../config/prisma')
-const { create } = require('./category')
-const { connect } = require('../routes/category')
+const { json } = require("express");
+const prisma = require("../config/prisma");
+const { create } = require("./category");
+const { connect } = require("../routes/category");
 
 exports.listUsers = async (req, res) => {
-    try {
-        //code
-        const users = await prisma.user.findMany({
-            select:{
-                id: true,
-                email: true,
-                role: true,
-                enabled: true,
-                address: true
-            }
-        })
-        res.json(users)
-        
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ message: 'Server Error' })
-    }
-}
-             
-exports.changeStatus = async(req,res)=>{
-    try{
-        //code
-        const { id , enabled} = req.body
-        console.log(id, enabled)
-        const user = await prisma.user.update({
-            where: { id:Number(id)},
-            data:{ enabled: enabled}
+  try {
+    //code
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        enabled: true,
+        address: true,
+      },
+    });
+    res.json(users);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 
-        })
-        res.send('Update Status Success ')
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
-    }
-}
+exports.changeStatus = async (req, res) => {
+  try {
+    //code
+    const { id, enabled } = req.body;
+    console.log(id, enabled);
+    const user = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { enabled: enabled },
+    });
+    res.send("Update Status Success ");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
 
-exports.changeRole = async(req,res)=>{
-    try{
-        //code
-        const { id , role } = req.body
-        const user = await prisma.user.update({
-            where: { id:Number(id)},
-            data:{ role: role}
+exports.changeRole = async (req, res) => {
+  try {
+    //code
+    const { id, role } = req.body;
+    const user = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { role: role },
+    });
+    res.send("Update Role Success ");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
 
-        })
-        res.send('Update Role Success ')
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
-    }
-}
+exports.userCart = async (req, res) => {
+  try {
+    //code
+    const { cart } = req.body;
+    console.log(cart);
+    console.log(req.user.id);
 
-exports.userCart = async(req,res)=>{
-    try{
-        //code
-        const { cart } = req.body
-        console.log(cart)
-        console.log(req.user.id)
+    const user = await prisma.user.findFirst({
+      where: { id: Number(req.user.id) },
+    });
+    //console.log(user)
+    //Dekete old Cart item
+    await prisma.productOnCart.deleteMany({
+      where: { Cart: { orderedById: user.id } },
+    });
+    //Deletr old Cart
+    await prisma.cart.deleteMany({
+      where: { orderedById: user.id },
+    });
 
-        const user = await prisma.user.findFirst({
-            where: { id: Number(req.user.id) }
-        })
-        //console.log(user)
-        //Dekete old Cart item 
-        await prisma.productOnCart.deleteMany({
-            where:{ Cart: {orderedById: user.id}
-            }
-        })
-        //Deletr old Cart
-        await prisma.cart.deleteMany({
-            where:{ orderedById: user.id}
-        })
+    //เตรียมสินค้า
+    let products = cart.map((item) => ({
+      productId: item.id,
+      count: item.count,
+      price: item.price,
+    }));
 
-        //เตรียมสินค้า
-        let products = cart.map((item)=> ({
-            productId: item.id,
-            count: item.count,
-            price: item.price
-        }))
+    //หาผลรวม
+    let cartTotal = products.reduce(
+      (sum, item) => sum + item.price * item.count,
+      0
+    );
 
-        //หาผลรวม
-        let cartTotal = products.reduce((sum, item)=> sum + item.price * item.count,0)
+    //สร้าง cart ใหม่
+    const newCart = await prisma.cart.create({
+      data: {
+        ProductOnCart: {
+          create: products,
+        },
+        cartTotal: cartTotal,
+        orderedById: user.id,
+      },
+    });
+    console.log(newCart);
+    res.send("Add Cart Ok ");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
 
-
-        //สร้าง cart ใหม่
-        const newCart = await prisma.cart.create({
-        data: {
-            ProductOnCart: {
-                create: products
-            },
-            cartTotal: cartTotal,
-            orderedById: user.id
-        }
-    })
-        console.log(newCart)
-        res.send('Add Cart Ok ')
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
-    }
-}
-
-exports.getUserCart = async(req,res)=>{
-    try{
-        //code
-        //req.user.id
-        const cart = await prisma.cart.findFirst({
-            where:{
-                orderedById: Number(req.user.id)
-            },
-            include:{
-                ProductOnCart:{
-                    include:{
-                        Product: true
-                    }
-                }
-            }
-        })
-        //products = ProductOnCart
-        //console.log(cart)
-        res.json({
-            productOnCart: cart.ProductOnCart,
-            cartTotal: cart.cartTotal
-        })
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
-    }
-}
+exports.getUserCart = async (req, res) => {
+  try {
+    //code
+    //req.user.id
+    const cart = await prisma.cart.findFirst({
+      where: {
+        orderedById: Number(req.user.id),
+      },
+      include: {
+        ProductOnCart: {
+          include: {
+            Product: true,
+          },
+        },
+      },
+    });
+    //products = ProductOnCart
+    //console.log(cart)
+    res.json({
+      productOnCart: cart.ProductOnCart,
+      cartTotal: cart.cartTotal,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
 
 //เครียร์ข้อมูลในตะกร้าสินค้า
-exports.emptyCart = async(req,res)=>{
-    try{
-        //code
-        const cart = await prisma.cart.findFirst({
-            where: { orderedById: Number(req.user.id)}
-        })
-        if(!cart){
-            return res.status(400).json({ message: 'No cart'})
-        }
-        await prisma.productOnCart.deleteMany({
-        where: { cartId: cart.id}
-        })
-        const result = await prisma.cart.deleteMany({
-        where: { orderedById:Number(req.user.id)}
-        })
-
-        
-        console.log(result)
-        res.json({
-            message: 'Cart Empty Success',
-            deletedCount: result.count
-        })
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
+exports.emptyCart = async (req, res) => {
+  try {
+    //code
+    const cart = await prisma.cart.findFirst({
+      where: { orderedById: Number(req.user.id) },
+    });
+    if (!cart) {
+      return res.status(400).json({ message: "No cart" });
     }
-    
-}
+    await prisma.productOnCart.deleteMany({
+      where: { cartId: cart.id },
+    });
+    const result = await prisma.cart.deleteMany({
+      where: { orderedById: Number(req.user.id) },
+    });
 
-exports.saveAddress = async(req,res)=>{
-    try{
-        //code
-        const { address} = req.body
-        console.log(address)
-        const addressUser = await prisma.user.update({
-            where: {
-                id: Number(req.user.id)
-            },
-            data:{
-                address: address
-            }
-        })
+    console.log(result);
+    res.json({
+      message: "Cart Empty Success",
+      deletedCount: result.count,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
 
-        res.json({ok: true, message: 'Address update success'})
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
-    }
-}
+exports.saveAddress = async (req, res) => {
+  try {
+    //code
+    const { address } = req.body;
+    console.log(address);
+    const addressUser = await prisma.user.update({
+      where: {
+        id: Number(req.user.id),
+      },
+      data: {
+        address: address,
+      },
+    });
 
-exports.saveOrder = async(req,res)=>{
-    try{
-        //code
-        //Step 1 Get User Cart
-        const userCart = await prisma.cart.findFirst({
-        where: { orderedById: Number(req.user.id) },    
-        include: {
+    res.json({ ok: true, message: "Address update success" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
+
+exports.saveOrder = async (req, res) => {
+  try {
+    //code
+    //Step 1 Get User Cart
+    const userCart = await prisma.cart.findFirst({
+      where: { orderedById: Number(req.user.id) },
+      include: {
         ProductOnCart: {
-          include: { Product: true }                  
-        }
-      }
-    })
+          include: { Product: true },
+        },
+      },
+    });
 
     //Check Cart empty
     if (!userCart || userCart.ProductOnCart.length === 0) {
-      return res.status(404).json({ ok: false,message: 'Cart is Empty' })
+      return res.status(404).json({ ok: false, message: "Cart is Empty" });
     }
 
     //Check quantity
-    for(const item of userCart.ProductOnCart){
-        //console.log(item)
-        const product = await prisma.product.findUnique({
-            where: { id: item.productId},
-            select: { quantity: true, title: true}
-        })
-        //console.log(item)
-        //console.log(product)
-        if(!product || item.count > product.quantity){
-            return res.status(400).json({
-                ok: false,
-                message: `ขออภัย. สินค้า ${product?.title || 'product'} หมด`
-            })
-        }
+    for (const item of userCart.ProductOnCart) {
+      //console.log(item)
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { quantity: true, title: true },
+      });
+      //console.log(item)
+      //console.log(product)
+      if (!product || item.count > product.quantity) {
+        return res.status(400).json({
+          ok: false,
+          message: `ขออภัย. สินค้า ${product?.title || "product"} หมด`,
+        });
+      }
     }
 
     //Create a new Order
     const order = await prisma.order.create({
-        data:{
-            ProductOnOrder: {
-                create: userCart.ProductOnCart.map((item)=>({
-                    productId: item.productId,
-                    count: item.count,
-                    price: item.price
-                })),
-            },
-            User:{
-                connect: { id: req.user.id }
-            },
-            cartTotal: userCart.cartTotal
-        }
-    })
-
+      data: {
+        ProductOnOrder: {
+          create: userCart.ProductOnCart.map((item) => ({
+            productId: item.productId,
+            count: item.count,
+            price: item.price,
+          })),
+        },
+        User: {
+          connect: { id: req.user.id },
+        },
+        cartTotal: userCart.cartTotal,
+      },
+    });
 
     //Update Product
-    const update = userCart.ProductOnCart.map((item)=>({
-        where: { id: item.productId},
-        data: {
-            quantity: { decrement: item.count },
-            sold: { increment: item.count }
-        }
-    }))
-    console.log(update)
+    const update = userCart.ProductOnCart.map((item) => ({
+      where: { id: item.productId },
+      data: {
+        quantity: { decrement: item.count },
+        sold: { increment: item.count },
+      },
+    }));
+    console.log(update);
 
-    await Promise.all(
-        update.map((updated)=> prisma.product.update(updated))
-    )
+    await Promise.all(update.map((updated) => prisma.product.update(updated)));
 
     await prisma.cart.deleteMany({
-        where: { orderedById: Number(req.user.id) }
-    })
+      where: { orderedById: Number(req.user.id) },
+    });
 
-        res.json({ ok: true, order})
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
+    res.json({ ok: true, order });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
+
+exports.getOrder = async (req, res) => {
+  try {
+    //code
+    const orders = await prisma.order.findMany({
+      where: { orderedById: Number(req.user.id) },
+      include: {
+        ProductOnOrder: {
+          include: {
+            Product: true,
+          },
+        },
+      },
+    });
+    if (orders.length === 0) {
+      return res.status(400).json({ ok: false, message: "No orders" });
     }
-}
 
-exports.getOrder = async(req,res)=>{
-    try{
-        //code
-        const orders = await prisma.order.findMany({
-            where: { orderedById: Number(req.user.id)},
-            include: {
-                ProductOnOrder:{
-                    include:{
-                        Product: true
-                    }
-                }
-            }
-        })
-        if(orders.length === 0){
-            return res.status(400).json({ ok: false, message: 'No orders'})
-        }
+    res.json({ ok: true, orders });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sever Error" });
+  }
+};
 
-        res.json({ ok: true, orders })
+//ค้นหาบิลตามทะเบียนรถ
+exports.searchMyBills = async (req, res) => {
+  try {
+    const { plateNumber, dateFrom, dateTo } = req.query;
 
-    } catch(err){
-        console.log(err)
-        res.status(500).json({message: 'Sever Error'})
+    // สร้าง where condition
+    let where = {};
+
+    // ค้นหาจากทะเบียนรถ
+    if (plateNumber) {
+      where.title = {
+        contains: plateNumber,
+        mode: "insensitive",
+      };
     }
-}
 
+    // กรองตามวันที่
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) {
+        where.createdAt.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endDate;
+      }
+    }
 
+    const bills = await prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        Images: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json({
+      ok: true,
+      total: bills.length,
+      bills,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};

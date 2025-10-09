@@ -18,6 +18,7 @@ import HomeUser from "../pages/user/HomeUser";
 import ProtectRoteUser from "./ProtectRoteUser";
 import ProtectRoteAdmin from "./ProtectRouteAdmin";
 import HistoryAdmin from "../pages/admin/HistoryAdmin";
+import SearchBills from "../pages/user/SearchBills";
 
 const router = createBrowserRouter([
   {
@@ -47,7 +48,9 @@ const router = createBrowserRouter([
     path: "/user",
     //element: <LayoutUser />,
     element: <ProtectRoteUser element={<LayoutUser />} />,
-    children: [{ index: true, element: <HomeUser /> }],
+    children: [
+      { index: true, element: <SearchBills /> }
+    ],
   },
 ]);
 
