@@ -4,30 +4,12 @@ const router = express.Router();
 //import controller
 const { authCheck, adminCheck } = require("../middlewares/authCheck");
 const {
-  listUsers,
-  changeStatus,
-  changeRole,
-  userCart,
-  getUserCart,
-  emptyCart,
-  saveAddress,
-  saveOrder,
-  getOrder,
+
   searchMyBills,
 } = require("../controllers/user");
 
-router.get("/users", authCheck, adminCheck, listUsers);
-router.post("/change-status", authCheck, adminCheck, changeStatus);
-router.post("/change-role", authCheck, adminCheck, changeRole);
+router.get("/users", authCheck, adminCheck,);
 
-router.post("/user/cart", authCheck, userCart);
-router.get("/user/cart", authCheck, getUserCart);
-router.delete("/user/cart", authCheck, emptyCart);
-
-router.post("/user/address", authCheck, saveAddress);
-
-router.post("/user/order", authCheck, saveOrder);
-router.get("/user/order", authCheck, getOrder);
 router.get("/user/my-bills", authCheck, searchMyBills);
 
 module.exports = router;

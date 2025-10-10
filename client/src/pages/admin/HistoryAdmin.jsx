@@ -110,7 +110,7 @@ const HistoryAdmin = () => {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>ใบสั่งซื้อปาล์มน้ำมัน - ${product.title}</title>
+        <title>ใบแสดงรายการซื้อขายปาล์มน้ำมัน - ${product.title}</title>
         <style>
           @page { 
             size: A4 landscape;
