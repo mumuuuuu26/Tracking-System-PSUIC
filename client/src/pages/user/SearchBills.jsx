@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Search, Filter, X, Download, Printer } from "lucide-react";
+import {
+  Search,
+  Filter,
+  X,
+  Download,
+  Printer,
+  TrendingUp,
+  FileText,
+  Weight,
+  DollarSign,
+} from "lucide-react";
 import useEcomStore from "../../store/ecom-store";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
@@ -65,8 +75,6 @@ const SearchBills = () => {
     setSearched(false);
   };
 
-  // ฟังก์ชันสร้าง PDF
-
   const generatePDF = (product) => {
     const category = {
       name: product.title?.split(" - ")[0] || product.title || "ไม่ระบุ",
@@ -77,7 +85,6 @@ const SearchBills = () => {
     const net = Math.max((product.weightIn || 0) - (product.weightOut || 0), 0);
     const totalAmount = product.price * net;
 
-    // สร้าง HTML สำหรับบิล
     const billHTML = `
       <!DOCTYPE html>
       <html>
@@ -370,13 +377,10 @@ const SearchBills = () => {
       </html>
     `;
 
-    // สร้าง window ใหม่สำหรับพิมพ์
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(billHTML);
       printWindow.document.close();
-
-      // รอให้โหลดเสร็จแล้วพิมพ์
       printWindow.onload = () => {
         printWindow.print();
       };
@@ -385,7 +389,6 @@ const SearchBills = () => {
     }
   };
 
-  // คำนวณสรุปผล
   const summary = searched
     ? {
         total: filteredBills.length,
@@ -402,45 +405,68 @@ const SearchBills = () => {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-emerald-100/30 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-blue-100/30 to-transparent rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 py-8">
+        {/* Enhanced Header with Icon */}
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg mb-4 transform hover:scale-110 transition-transform duration-300">
+            <Search className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 via-emerald-700 to-teal-700 bg-clip-text text-transparent mb-3">
             ค้นหาข้อมูลการซื้อขาย
           </h1>
-          <p className="text-gray-600">
-            ค้นหาและดูรายละเอียดบิลการซื้อขายปาล์มน้ำมันของคุณ
+          <p className="text-gray-600 text-lg">
+            ค้นหาและจัดการบิลการซื้อขายปาล์มน้ำมันของคุณได้อย่างง่ายดาย
           </p>
         </div>
 
-        {/* Search Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <input
-              type="text"
-              value={plateNumber}
-              onChange={(e) => setPlateNumber(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="ค้นหาทะเบียนรถ เช่น 1234"
-              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
-            />
+        {/* Enhanced Search Section with Glass Effect */}
+        <div className="relative backdrop-blur-xl bg-white/80 rounded-3xl shadow-2xl border border-white/50 p-8 mb-8 hover:shadow-emerald-200/50 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-3xl"></div>
 
-            <div className="flex items-center gap-2">
+          <div className="relative flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1 relative group w-full">
+              <Search
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors"
+                size={20}
+              />
+              <input
+                type="text"
+                value={plateNumber}
+                onChange={(e) => setPlateNumber(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="ค้นหาทะเบียนรถ เช่น 1988"
+                className="w-full pl-12 pr-4 py-4 border-2 border-gray-200/50 rounded-2xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-300 bg-white/70 placeholder-gray-400 text-gray-800 font-medium"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleSearch}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                className="group relative px-8 py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white rounded-2xl font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 overflow-hidden"
               >
-                <Search size={20} />
-                ค้นหา
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="relative flex items-center gap-2">
+                  <Search size={20} />
+                  <span>ค้นหา</span>
+                </div>
               </button>
 
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-3 border-2 rounded-xl transition-all ${
+                className={`p-4 rounded-2xl transition-all duration-300 transform hover:scale-110 ${
                   showFilters
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                    : "border-gray-200 hover:bg-gray-100"
+                    ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30"
+                    : "bg-white/70 border-2 border-gray-200/50 hover:border-emerald-300 hover:bg-emerald-50/50"
                 }`}
                 title="ตัวกรองเพิ่มเติม"
               >
@@ -450,7 +476,7 @@ const SearchBills = () => {
               {(plateNumber || dateFrom || dateTo) && (
                 <button
                   onClick={clearFilters}
-                  className="p-3 border-2 border-red-300 text-red-600 rounded-xl hover:bg-red-50 transition-all"
+                  className="p-4 border-2 border-red-200 bg-red-50/70 text-red-600 rounded-2xl hover:bg-red-100 hover:border-red-300 transition-all duration-300 transform hover:scale-110 hover:rotate-90"
                   title="ล้างตัวกรอง"
                 >
                   <X size={20} />
@@ -458,31 +484,32 @@ const SearchBills = () => {
               )}
             </div>
           </div>
-
-          {/* Date Filters */}
+          {/* Enhanced Date Filters with Animation */}
           {showFilters && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mt-8 pt-8 border-t border-gray-200/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                     จากวันที่
                   </label>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-200/50 rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-300 bg-white/70 relative z-10"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-teal-500"></div>
                     ถึงวันที่
                   </label>
                   <input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-200/50 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 outline-none transition-all duration-300 bg-white/70 relative z-10"
                   />
                 </div>
               </div>
@@ -490,105 +517,107 @@ const SearchBills = () => {
           )}
         </div>
 
-        {/* Summary Cards - แสดงเฉพาะเมื่อค้นหาแล้ว */}
+        {/* Enhanced Summary Cards with Staggered Animation */}
         {searched && summary && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
+            {/* Card 1 - Total Bills */}
+            <div
+              className="group relative backdrop-blur-xl bg-white/80 rounded-3xl shadow-xl border border-white/50 p-6 hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 transform hover:-translate-y-2 overflow-hidden"
+              style={{ animation: "fadeInUp 0.6s ease-out" }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-transparent rounded-full blur-2xl transform translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-700"></div>
+
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
+                    <FileText className="w-7 h-7 text-white" />
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-blue-500 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  จำนวนบิล
-                </span>
+                <div className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  จำนวนบิลทั้งหมด
+                </div>
+                <div className="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  {summary.total}
+                </div>
+                <p className="text-sm text-gray-600 mt-2 font-medium">รายการ</p>
               </div>
-              <div className="text-3xl font-bold text-gray-800">
-                {summary.total}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">รายการ</p>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-                    />
-                  </svg>
+            {/* Card 2 - Total Weight */}
+            <div
+              className="group relative backdrop-blur-xl bg-white/80 rounded-3xl shadow-xl border border-white/50 p-6 hover:shadow-2xl hover:shadow-purple-200/50 transition-all duration-500 transform hover:-translate-y-2 overflow-hidden"
+              style={{
+                animation: "fadeInUp 0.6s ease-out 0.15s",
+                animationFillMode: "backwards",
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-2xl transform translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-700"></div>
+
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30 transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
+                    <Weight className="w-7 h-7 text-white" />
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-purple-500 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  น้ำหนักรวม
-                </span>
+                <div className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  น้ำหนักรวมทั้งหมด
+                </div>
+                <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  {fmt(summary.totalWeight)}
+                </div>
+                <p className="text-sm text-gray-600 mt-2 font-medium">
+                  กิโลกรัม
+                </p>
               </div>
-              <div className="text-3xl font-bold text-gray-800">
-                {fmt(summary.totalWeight)}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">กิโลกรัม</p>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-emerald-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
+            {/* Card 3 - Total Amount */}
+            <div
+              className="group relative backdrop-blur-xl bg-white/80 rounded-3xl shadow-xl border border-white/50 p-6 hover:shadow-2xl hover:shadow-emerald-200/50 transition-all duration-500 transform hover:-translate-y-2 overflow-hidden"
+              style={{
+                animation: "fadeInUp 0.6s ease-out 0.3s",
+                animationFillMode: "backwards",
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-2xl transform translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-700"></div>
+
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
+                    <DollarSign className="w-7 h-7 text-white" />
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-emerald-500 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  ยอดเงินรวม
-                </span>
+                <div className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  ยอดเงินรวมทั้งหมด
+                </div>
+                <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  {fmt(summary.totalAmount)}
+                </div>
+                <p className="text-sm text-gray-600 mt-2 font-medium">บาท</p>
               </div>
-              <div className="text-3xl font-bold text-emerald-600">
-                {fmt(summary.totalAmount)}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">บาท</p>
             </div>
           </div>
         )}
 
-        {/* Results Table */}
+        {/* Enhanced Results Table */}
         {searched && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="backdrop-blur-xl bg-white/80 rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
             {filteredBills.length === 0 ? (
               <div className="p-20 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Search className="w-8 h-8 text-gray-400" />
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner">
+                    <Search className="w-12 h-12 text-gray-400" />
                   </div>
-                  <p className="text-gray-500 font-medium">
+                  <p className="text-gray-600 font-semibold text-lg">
                     ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
                   </p>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-gray-400">
                     ลองปรับเปลี่ยนคำค้นหาหรือตัวกรองใหม่
                   </p>
                 </div>
@@ -597,38 +626,38 @@ const SearchBills = () => {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                      <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">
+                    <tr className="bg-gradient-to-r from-gray-50 to-slate-100 border-b-2 border-gray-200/50">
+                      <th className="px-6 py-5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                         วันที่/เวลา
                       </th>
-                      <th className="px-4 py-4 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                         ทะเบียนรถ
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         ประเภท
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         น้ำหนักเข้า
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         น้ำหนักออก
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         น้ำหนักสุทธิ
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         ราคา/กก.
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         ยอดรวม
                       </th>
-                      <th className="px-4 py-4 text-center text-sm font-semibold text-gray-700">
+                      <th className="px-6 py-5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                         จัดการ
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredBills.map((bill) => {
+                    {filteredBills.map((bill, index) => {
                       const net = Math.max(
                         (bill.weightIn || 0) - (bill.weightOut || 0),
                         0
@@ -640,69 +669,71 @@ const SearchBills = () => {
                       return (
                         <tr
                           key={bill.id}
-                          className="hover:bg-gray-50 transition-colors duration-150"
+                          className="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-teal-50/50 transition-all duration-300 group"
                         >
-                          <td className="px-4 py-4 text-sm text-gray-600">
+                          <td className="px-6 py-5 text-sm text-gray-600 font-medium">
                             {dayjs(bill.createdAt).format("DD/MM/YY HH:mm")}
                           </td>
-                          <td className="px-4 py-4">
-                            <span className="font-semibold text-gray-800">
+                          <td className="px-6 py-5">
+                            <span className="font-bold text-gray-800 text-base group-hover:text-emerald-700 transition-colors">
                               {plateNumber}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-center">
+                          <td className="px-6 py-5 text-center">
                             <span
-                              className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${
+                              className={`inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full shadow-sm ${
                                 bill.description === "ลูกค้ารายใหญ่"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-emerald-100 text-emerald-800"
+                                  ? "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200"
+                                  : "bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200"
                               }`}
                             >
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  bill.description === "ลูกค้ารายใหญ่"
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                                } animate-pulse`}
+                              ></div>
                               {bill.description}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-center text-gray-700">
+                          <td className="px-6 py-5 text-center text-gray-700 font-semibold">
                             {fmt(bill.weightIn)}
                           </td>
-                          <td className="px-4 py-4 text-center text-gray-700">
+                          <td className="px-6 py-5 text-center text-gray-700 font-semibold">
                             {fmt(bill.weightOut)}
                           </td>
-                          <td className="px-4 py-4 text-center">
-                            <span className="font-semibold text-gray-800">
+                          <td className="px-6 py-5 text-center">
+                            <span className="font-bold text-gray-800 text-base">
                               {fmt(net)}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-center text-gray-700">
+                          <td className="px-6 py-5 text-center text-gray-700 font-semibold">
                             {fmt(bill.price)}
                           </td>
-                          <td className="px-4 py-4 text-center">
-                            <span className="font-bold text-lg text-emerald-600">
+                          <td className="px-6 py-5 text-center">
+                            <span className="font-black text-xl bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                               {fmt(total)}
                             </span>
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="px-6 py-5">
                             <div className="flex justify-center gap-2">
                               <button
                                 onClick={() => generatePDF(bill)}
-                                className="group relative p-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                                title="พิมพ์/ดาวน์โหลดบิล"
+                                className="group/btn relative p-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-1 hover:scale-110"
                               >
                                 <Printer className="w-5 h-5" />
-                                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                <span className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap font-medium">
                                   พิมพ์บิล
                                 </span>
                               </button>
                               <button
-                                onClick={() => {
-                                  // สามารถเพิ่มฟังก์ชันดาวน์โหลด PDF ได้ในอนาคต
-                                  generatePDF(bill);
-                                }}
-                                className="group relative p-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                                title="ดาวน์โหลด PDF"
+                                onClick={() => generatePDF(bill)}
+                                className="group/btn relative p-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 transform hover:-translate-y-1 hover:scale-110"
                               >
                                 <Download className="w-5 h-5" />
-                                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                  ดาวน์โหลด PDF
+                                <span className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap font-medium">
+                                  ดาวน์โหลด
                                 </span>
                               </button>
                             </div>
@@ -717,46 +748,73 @@ const SearchBills = () => {
           </div>
         )}
 
-        {/*แสดงเมื่อยังไม่ได้ค้นหา*/}
+        {/* Enhanced Empty State */}
         {!searched && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16">
+          <div className="backdrop-blur-xl bg-white/80 rounded-3xl shadow-2xl border border-white/50 p-20">
             <div className="text-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mx-auto mb-6">
-                <Search className="w-12 h-12 text-emerald-600" />
+              <div className="relative inline-block mb-8">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-emerald-500/30 transform hover:scale-110 transition-transform duration-300">
+                  <Search className="w-16 h-16 text-white" />
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-3">
-                เริ่มค้นหาข้อมูลของคุณ
+
+              <h3 className="text-3xl font-black bg-gradient-to-r from-gray-800 to-emerald-700 bg-clip-text text-transparent mb-4">
+                เริ่มต้นค้นหาข้อมูลของคุณ
               </h3>
-              <p className="text-gray-600 max-w-md mx-auto">
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed mb-10">
                 ใส่ทะเบียนรถหรือเลือกช่วงวันที่ที่ต้องการค้นหา
-                แล้วกดปุ่มค้นหาเพื่อดูรายละเอียดบิล
+                แล้วกดปุ่มค้นหาเพื่อดูรายละเอียดบิลอย่างครบถ้วน
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold">1</span>
+
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-3xl mx-auto">
+                <div className="group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-black text-lg">1</span>
                   </div>
-                  <span>ระบุทะเบียนรถ</span>
+                  <span className="font-semibold text-gray-700">
+                    ระบุทะเบียนรถ
+                  </span>
                 </div>
-                <div className="hidden sm:block text-gray-400">→</div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                    <span className="text-purple-600 font-semibold">2</span>
+
+                <div className="hidden sm:block text-gray-300 text-2xl">→</div>
+
+                <div className="group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-black text-lg">2</span>
                   </div>
-                  <span>เลือกช่วงเวลา (ถ้าต้องการ)</span>
+                  <span className="font-semibold text-gray-700">
+                    เลือกช่วงเวลา
+                  </span>
                 </div>
-                <div className="hidden sm:block text-gray-400">→</div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <span className="text-emerald-600 font-semibold">3</span>
+
+                <div className="hidden sm:block text-gray-300 text-2xl">→</div>
+
+                <div className="group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-black text-lg">3</span>
                   </div>
-                  <span>กดค้นหา</span>
+                  <span className="font-semibold text-gray-700">กดค้นหา</span>
                 </div>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* CSS Animation Keyframes */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -149,7 +149,7 @@ const PalmCalculator = () => {
             </div>
             <div>
               <h1 className="text-4xl font-bold text-gray-800">
-                เครื่องคำนวณราคาปาล์ม
+                คำนวณราคาปาล์ม
               </h1>
               <p className="text-gray-600 mt-1">
                 คำนวณว่าควรขายวันไหนจะได้ราคาดีที่สุด
