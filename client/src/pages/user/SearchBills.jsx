@@ -717,7 +717,7 @@ const SearchBills = () => {
           </div>
         )}
 
-        {/* Initial State - แสดงเมื่อยังไม่ได้ค้นหา */}
+        {/*แสดงเมื่อยังไม่ได้ค้นหา*/}
         {!searched && (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16">
             <div className="text-center">

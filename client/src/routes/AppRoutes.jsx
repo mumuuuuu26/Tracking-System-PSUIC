@@ -19,6 +19,7 @@ import ProtectRoteUser from "./ProtectRoteUser";
 import ProtectRoteAdmin from "./ProtectRouteAdmin";
 import HistoryAdmin from "../pages/admin/HistoryAdmin";
 import SearchBills from "../pages/user/SearchBills";
+import Calculator from "../pages/user/Calculator";
 
 const router = createBrowserRouter([
   {
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <SearchBills /> },
       { path: "price", element: <Price /> },
+      { path: "calculator", element: <Calculator /> },
     ],
   },
 ]);
