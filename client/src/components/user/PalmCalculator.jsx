@@ -56,6 +56,27 @@ const PalmCalculator = () => {
     }
   };
 
+  // ✅ เพิ่มฟังก์ชันแปลงวันที่ให้เป็นรูปแบบเดียวกัน
+  const normalizeDate = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  // ✅ แก้ไขฟังก์ชันเปรียบเทียบวันที่
+  const isToday = (date) => {
+    const today = new Date();
+    const checkDate = new Date(date);
+
+    return (
+      today.getFullYear() === checkDate.getFullYear() &&
+      today.getMonth() === checkDate.getMonth() &&
+      today.getDate() === checkDate.getDate()
+    );
+  };
+
   const calculateBestPrice = () => {
     if (!weight || Number(weight) <= 0) {
       alert("กรุณากรอกน้ำหนักที่ถูกต้อง");
@@ -74,8 +95,18 @@ const PalmCalculator = () => {
       return;
     }
 
+    // ✅ กรองข้อมูลซ้ำโดยใช้ Map
+    const uniquePrices = Array.from(
+      new Map(
+        allPrices.map((price) => [
+          normalizeDate(price.date), // key = วันที่ในรูปแบบ YYYY-MM-DD
+          price, // value = ข้อมูลทั้งหมด
+        ])
+      ).values()
+    );
+
     // คำนวณราคาเฉลี่ยสำหรับแต่ละวัน
-    const calculations = allPrices.map((day) => ({
+    const calculations = uniquePrices.map((day) => ({
       date: new Date(day.date),
       priceAvg: day.priceAvg,
       priceMin: day.priceMin,
@@ -130,12 +161,6 @@ const PalmCalculator = () => {
       month: "long",
       day: "numeric",
     });
-  };
-
-  const isToday = (date) => {
-    const today = new Date();
-    const checkDate = new Date(date);
-    return today.toDateString() === checkDate.toDateString();
   };
 
   return (

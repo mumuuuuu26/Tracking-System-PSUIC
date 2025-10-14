@@ -348,7 +348,7 @@ const DailyPrice = () => {
               <RefreshCw
                 className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
               />
-              ดึงราคาอัตโนมัติ
+              ดึงราคา
             </button>
 
             <button
