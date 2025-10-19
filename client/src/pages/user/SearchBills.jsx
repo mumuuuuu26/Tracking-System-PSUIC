@@ -444,7 +444,7 @@ const SearchBills = () => {
                 value={plateNumber}
                 onChange={(e) => setPlateNumber(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="ค้นหาทะเบียนรถ เช่น 1988"
+                placeholder="ค้นหาทะเบียนรถ เช่น กก 1988"
                 className="w-full pl-12 pr-4 py-4 border-2 border-gray-200/50 rounded-2xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-300 bg-white/70 placeholder-gray-400 text-gray-800 font-medium"
               />
             </div>

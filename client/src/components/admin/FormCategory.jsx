@@ -25,13 +25,28 @@ const FormCategory = () => {
     getCategory(token);
   }, []);
 
-  // เรียงทะเบียนรถตามตัวเลข (ทะเบียนเป็นตัวเลขล้วน)
+  // เรียงทะเบียนรถตามตัวอักษรก่อน แล้วตามด้วยตัวเลข
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => {
-      // แปลงทะเบียนเป็นตัวเลข
-      const numA = parseInt(a.name, 10) || 0;
-      const numB = parseInt(b.name, 10) || 0;
+      const nameA = a.name || "";
+      const nameB = b.name || "";
 
+      // แยกส่วนตัวอักษรและตัวเลข
+      const matchA = nameA.match(/^([^\d]*)(\d*)$/);
+      const matchB = nameB.match(/^([^\d]*)(\d*)$/);
+
+      const letterA = matchA ? matchA[1] : "";
+      const letterB = matchB ? matchB[1] : "";
+      const numA = matchA && matchA[2] ? parseInt(matchA[2], 10) : 0;
+      const numB = matchB && matchB[2] ? parseInt(matchB[2], 10) : 0;
+
+      // เปรียบเทียบตัวอักษรก่อน
+      const letterCompare = letterA.localeCompare(letterB, "th");
+      if (letterCompare !== 0) {
+        return letterCompare;
+      }
+
+      // ถ้าตัวอักษรเหมือนกัน ให้เปรียบเทียบตัวเลข
       return numA - numB;
     });
   }, [categories]);
@@ -166,7 +181,7 @@ const FormCategory = () => {
                 onKeyPress={(e) => e.key === "Enter" && handleCreate(e)}
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
                 type="text"
-                placeholder="เช่น 1234"
+                placeholder="เช่น กก 1234"
               />
             </div>
 
