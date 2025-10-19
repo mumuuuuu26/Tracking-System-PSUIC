@@ -206,7 +206,7 @@ const PalmCalculator = () => {
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && calculateBestPrice()}
-                placeholder="เช่น 2000"
+                placeholder="เช่น 2000 กก."
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-lg outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200"
               />
             </div>
