@@ -40,63 +40,63 @@ const SiteFooter = () => {
 
             <div>
               <h4 className="text-[clamp(1rem,4vw,2rem)] mb-4 font-light">
-                About
+                เกี่ยวกับเรา
               </h4>
               <ul className="space-y-3">
                 <li>
-                  <a href="#">History</a>
+                  <a href="#">ประวัติบ้านกลางปาล์ม</a>
                 </li>
                 <li>
-                  <a href="#">Our Team</a>
+                  <a href="#">ทีมงานของเรา</a>
                 </li>
                 <li>
-                  <a href="#">Brand Guidelines</a>
+                  <a href="#">แนวทางการใช้</a>
                 </li>
                 <li>
-                  <a href="#">Terms & Condition</a>
+                  <a href="#">ข้อกำหนดและเงื่อนไข</a>
                 </li>
                 <li>
-                  <a href="#">Privacy Policy</a>
+                  <a href="#">นโยบายความเป็นส่วนตัว</a>
                 </li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-[clamp(1rem,4vw,2rem)] mb-4 font-light">
-                Service
+                บริการของเรา
               </h4>
               <ul className="space-y-3">
                 <li>
-                  <a href="#">How to order</a>
+                  <a href="#">วิธีการใช้งาน</a>
                 </li>
                 <li>
-                  <a href="#">Our Product</a>
+                  <a href="#">สินค้าของเรา</a>
                 </li>
                 <li>
-                  <a href="#">Order status</a>
+                  <a href="#">ติดตามคำสั่งซื้อ</a>
                 </li>
                 <li>
-                  <a href="#">Promo</a>
+                  <a href="#">โปรโมชั่น</a>
                 </li>
                 <li>
-                  <a href="#">Payment Method</a>
+                  <a href="#">วิธีการชำระเงิน</a>
                 </li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-[clamp(1rem,4vw,2rem)] mb-4 font-light">
-                Other
+                อื่นๆ
               </h4>
               <ul className="space-y-3">
                 <li>
-                  <a href="#">Contact Us</a>
+                  <a href="#">ติดต่อเรา</a>
                 </li>
                 <li>
-                  <a href="#">Help</a>
+                  <a href="#">ศูนย์ช่วยเหลือ</a>
                 </li>
                 <li>
-                  <a href="#">Privacy</a>
+                  <a href="#">ความเป็นส่วนตัว</a>
                 </li>
               </ul>
             </div>

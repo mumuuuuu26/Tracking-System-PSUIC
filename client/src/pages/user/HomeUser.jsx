@@ -8,7 +8,7 @@ const HomeUser = () => {
 
   return (
     <header className="bg-white h-16 flex items-center justify-between px-6 shadow">
-      <h1 className="text-lg font-semibold text-emerald-600">Banklang Palm Welcome, members!</h1>
+      <h1 className="text-lg font-semibold text-emerald-600">ยินดีต้อนรับเข้าสู่ระบบ บ้านกลางปาล์ม</h1>
 
       <div className="flex items-center gap-4">
         {user && (
@@ -20,7 +20,7 @@ const HomeUser = () => {
           onClick={handleLogout}
           className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md"
         >
-          Logout
+          ออกจากระบบ
         </button>
       </div>
     </header>

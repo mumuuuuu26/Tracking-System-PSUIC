@@ -35,14 +35,14 @@ const SidebarAdmin = () => {
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <LayoutDashboard className="mr-2" />
-          Dashboard
+          ภาพรวมระบบ
         </NavLink>
         <NavLink
           to="daily-price"
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <LineChart className="mr-2" />
-          Daily Price
+          ราคาปาล์มประจำวัน
         </NavLink>
 
         <NavLink
@@ -50,7 +50,7 @@ const SidebarAdmin = () => {
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <FolderKanban className="mr-2" />
-          Manage
+          จัดการข้อมูล
         </NavLink>
 
         <NavLink
@@ -58,7 +58,7 @@ const SidebarAdmin = () => {
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <Receipt className="mr-2" />
-          Transaction
+          บันทึกรายการซื้อขาย
         </NavLink>
 
         <NavLink
@@ -66,7 +66,7 @@ const SidebarAdmin = () => {
           className={({ isActive }) => `${base} ${isActive ? active : idle}`}
         >
           <ShoppingBag className="mr-2" />
-          History
+          ประวัติการซื้อขาย
         </NavLink>
       </nav>
 
@@ -77,7 +77,7 @@ const SidebarAdmin = () => {
           className="w-full flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-gray-700 hover:text-red-300 rounded-md"
         >
           <LogOut className="mr-2" />
-          Logout
+          ออกจากระบบ
         </button>
       </div>
     </div>

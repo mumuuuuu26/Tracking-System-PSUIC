@@ -9,7 +9,7 @@ const HeaderAdmin = () => {
   return (
     <header className="bg-white h-16 flex items-center justify-between px-6 shadow">
       <h1 className="text-lg font-semibold text-emerald-600">
-        Banklang Palm Admin
+        ระบบผู้ดูแลบ้านกลางปาล์ม
       </h1>
 
       <div className="flex items-center gap-4">
@@ -22,7 +22,7 @@ const HeaderAdmin = () => {
           onClick={handleLogout}
           className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md"
         >
-          Logout
+          ออกจากระบบ
         </button>
       </div>
     </header>

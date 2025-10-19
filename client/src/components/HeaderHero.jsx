@@ -21,7 +21,7 @@ const HeaderHero = () => {
              px-8 py-3 text-center font-semibold text-white shadow-lg transform transition 
              duration-300 hover:scale-105 hover:shadow-emerald-500/50"
             >
-              Login
+              เข้าสู่ระบบ
             </Link>
           </div>
         </div>

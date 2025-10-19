@@ -16,17 +16,17 @@ const UserNav = () => {
         <div className="flex items-center gap-2 py-4">
           <NavLink to="/user" end className={linkClass}>
             <Receipt size={20} />
-            <span>Sales Records </span>
+            <span>บันทึกการซื้อขาย</span>
           </NavLink>
 
           <NavLink to="/user/price" className={linkClass}>
             <DollarSign size={20} />
-            <span>Daily Price </span>
+            <span>ราคาปาล์มวันนี้</span>
           </NavLink>
 
           <NavLink to="/user/calculator" className={linkClass}>
             <Calculator size={20} />
-            <span>Weight Calculator</span>
+            <span>คำนวณน้ำหนักสุทธิ</span>
           </NavLink>
         </div>
       </div>

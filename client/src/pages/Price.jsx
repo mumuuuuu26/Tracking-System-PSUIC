@@ -12,8 +12,9 @@ const Price = () => {
     from: dayjs().subtract(29, "day").format("YYYY-MM-DD"),
     to: dayjs().format("YYYY-MM-DD"),
   });
-  const [loading, setLoading] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+  const maxDate = dayjs().format("YYYY-MM-DD");
   const load = async () => {
     try {
       setLoading(true);
@@ -79,7 +80,7 @@ const Price = () => {
               </div>
               <div className="mb-3 text-3xl font-bold text-white">
                 <Num v={today?.priceAvg} />{" "}
-                <span className="text-xl">฿/กก.</span>
+                <span className="text-xl">บาท/กก.</span>
               </div>
               {priceChange && (
                 <div
@@ -109,7 +110,7 @@ const Price = () => {
             </div>
             <div className="text-3xl font-bold text-gray-900">
               <Num v={today?.priceMin} />{" "}
-              <span className="text-xl text-gray-600">฿/กก.</span>
+              <span className="text-xl text-gray-600">บาท/กก.</span>
             </div>
           </div>
 
@@ -120,7 +121,7 @@ const Price = () => {
             </div>
             <div className="text-3xl font-bold text-gray-900">
               <Num v={today?.priceMax} />{" "}
-              <span className="text-xl text-gray-600">฿/กก.</span>
+              <span className="text-xl text-gray-600">บาท/กก.</span>
             </div>
           </div>
 
@@ -165,9 +166,17 @@ const Price = () => {
               <input
                 type="date"
                 value={range.from}
-                onChange={(e) =>
-                  setRange((s) => ({ ...s, from: e.target.value }))
-                }
+                onChange={(e) => {
+                  const newDate = e.target.value;
+                  if (dayjs(newDate).isAfter(dayjs(maxDate))) {
+                    return;
+                  }
+                  if (dayjs(newDate).isAfter(dayjs(range.to))) {
+                    return;
+                  }
+                  setRange((s) => ({ ...s, from: newDate }));
+                }}
+                max={maxDate}
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
               />
             </div>
@@ -178,9 +187,17 @@ const Price = () => {
               <input
                 type="date"
                 value={range.to}
-                onChange={(e) =>
-                  setRange((s) => ({ ...s, to: e.target.value }))
-                }
+                onChange={(e) => {
+                  const newDate = e.target.value;
+                  if (dayjs(newDate).isAfter(dayjs(maxDate))) {
+                    return;
+                  }
+                  if (dayjs(newDate).isBefore(dayjs(range.from))) {
+                    return;
+                  }
+                  setRange((s) => ({ ...s, to: newDate }));
+                }}
+                max={maxDate}
                 className="w-full rounded-xl border-2 border-gray-200 px-4 py-2.5 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
               />
             </div>

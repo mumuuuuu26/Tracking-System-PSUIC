@@ -18,20 +18,20 @@ const MainNav = () => {
             </Link>
             <div className="hidden md:flex items-center gap-2">
               <NavLink to="/" className={linkCls}>
-                Home
+                หน้าหลัก
               </NavLink>
               <NavLink to="/price" className={linkCls}>
-                Price
+                ราคาปาล์มวันนี้
               </NavLink>
             </div>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
             <Link to="/register" className="px-3 py-2">
-              Register
+              สมัครสมาชิก
             </Link>
             <Link to="/login" className="px-3 py-2">
-              Login
+              เข้าสู่ระบบ
             </Link>
           </div>
 
@@ -52,22 +52,22 @@ const MainNav = () => {
                 className={linkCls}
                 onClick={() => setOpen(false)}
               >
-                Home
+                หน้าหลัก
               </NavLink>
               <NavLink
                 to="/price"
                 className={linkCls}
                 onClick={() => setOpen(false)}
               >
-                Price
+                ราคาปาล์มวันนี้
               </NavLink>
 
               <div className="pt-2 border-t">
                 <Link to="/register" className="px-3 py-2">
-                  Register
+                  สมัครสมาชิก
                 </Link>
                 <Link to="/login" className="px-3 py-2">
-                  Login
+                  เข้าสู่ระบบ
                 </Link>
               </div>
             </div>

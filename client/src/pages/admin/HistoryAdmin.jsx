@@ -19,6 +19,7 @@ const HistoryAdmin = () => {
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
+  const maxDate = dayjs().format("YYYY-MM-DD");
 
   // Edit Modal States
   const [showEditModal, setShowEditModal] = useState(false);
@@ -566,6 +567,7 @@ const HistoryAdmin = () => {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
+                  max={maxDate}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all duration-200"
                 />
               </div>
@@ -577,6 +579,7 @@ const HistoryAdmin = () => {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
+                  max={maxDate}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all duration-200"
                 />
               </div>

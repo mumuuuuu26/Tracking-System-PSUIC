@@ -30,6 +30,8 @@ const SearchBills = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filteredBills, setFilteredBills] = useState([]);
   const [searched, setSearched] = useState(false);
+  const today = dayjs().format("YYYY-MM-DD");
+
 
   useEffect(() => {
     getProduct(token, 1000);
@@ -497,6 +499,7 @@ const SearchBills = () => {
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
+                    max={today}
                     className="w-full px-4 py-3 border-2 border-gray-200/50 rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-300 bg-white/70 relative z-10"
                   />
                 </div>
@@ -509,6 +512,7 @@ const SearchBills = () => {
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
+                    max={today}
                     className="w-full px-4 py-3 border-2 border-gray-200/50 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 outline-none transition-all duration-300 bg-white/70 relative z-10"
                   />
                 </div>

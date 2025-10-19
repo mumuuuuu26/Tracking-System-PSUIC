@@ -18,7 +18,7 @@ const PalmCalculator = () => {
   const [todayPrice, setTodayPrice] = useState(null);
   const [calculation, setCalculation] = useState(null);
 
-  // โหลดข้อมูลราคา
+  //โหลดข้อมูลราคา
   useEffect(() => {
     loadPriceData();
   }, []);
@@ -35,7 +35,7 @@ const PalmCalculator = () => {
         setTodayPrice(today);
       }
 
-      // ดึงราคา 30 วันย้อนหลัง
+      //ดึงราคา 30 วันย้อนหลัง
       const now = new Date();
       const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const to = new Date();
@@ -56,7 +56,7 @@ const PalmCalculator = () => {
     }
   };
 
-  // ✅ เพิ่มฟังก์ชันแปลงวันที่ให้เป็นรูปแบบเดียวกัน
+  //เพิ่มฟังก์ชันแปลงวันที่ให้เป็นรูปแบบเดียวกัน
   const normalizeDate = (date) => {
     const d = new Date(date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
@@ -65,7 +65,7 @@ const PalmCalculator = () => {
     )}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-  // ✅ แก้ไขฟังก์ชันเปรียบเทียบวันที่
+  //แก้ไขฟังก์ชันเปรียบเทียบวันที่
   const isToday = (date) => {
     const today = new Date();
     const checkDate = new Date(date);
@@ -95,7 +95,7 @@ const PalmCalculator = () => {
       return;
     }
 
-    // ✅ กรองข้อมูลซ้ำโดยใช้ Map
+    //กรองข้อมูลซ้ำโดยใช้ Map
     const uniquePrices = Array.from(
       new Map(
         allPrices.map((price) => [
@@ -105,7 +105,7 @@ const PalmCalculator = () => {
       ).values()
     );
 
-    // คำนวณราคาเฉลี่ยสำหรับแต่ละวัน
+    //คำนวณราคาเฉลี่ยสำหรับแต่ละวัน
     const calculations = uniquePrices.map((day) => ({
       date: new Date(day.date),
       priceAvg: day.priceAvg,
