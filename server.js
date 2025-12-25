@@ -22,12 +22,8 @@ readdirSync("./routes").map((c) => app.use("/api", require("./routes/" + c)));
 //     //code
 //     const { username,password } = req.body
 //     console.log(username,password)
-//     res.send('Jukkru')
+//     res.send('test')
 // })
-
-// เริ่ม cron (หลังจากโหลด env แล้ว)
-const { startJobs } = require("./cron/jobs");
-startJobs();
 
 //Step 2 Start Server
 app.listen(5001, () => console.log("Server is running on port 5001"));

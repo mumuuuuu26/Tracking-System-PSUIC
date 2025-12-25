@@ -1,15 +1,16 @@
-//inport ...
 const express = require("express");
 const router = express.Router();
-//import controller
 const { authCheck, adminCheck } = require("../middlewares/authCheck");
-const {
 
-  searchMyBills,
-} = require("../controllers/user");
+const { listUsers, changeStatus, changeRole } = require("../controllers/user");
 
-router.get("/users", authCheck, adminCheck,);
+// @ENDPOINT http://localhost:5001/api/users
+router.get("/users", authCheck, adminCheck, listUsers);
 
-router.get("/user/my-bills", authCheck, searchMyBills);
+// @ENDPOINT http://localhost:5001/api/users/change-status
+router.post("/users/change-status", authCheck, adminCheck, changeStatus);
+
+// @ENDPOINT http://localhost:5001/api/users/change-role
+router.post("/users/change-role", authCheck, adminCheck, changeRole);
 
 module.exports = router;

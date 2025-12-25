@@ -1,54 +1,58 @@
-// controllers/user.js
-const { json } = require("express");
 const prisma = require("../config/prisma");
-const { create } = require("./category");
-const { connect } = require("../routes/category");
 
-//ค้นหาบิลตามทะเบียนรถ
-exports.searchMyBills = async (req, res) => {
+//ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin ดู)
+exports.listUsers = async (req, res) => {
   try {
-    const { plateNumber, dateFrom, dateTo } = req.query;
-
-    // where condition
-    let where = {};
-
-    // ค้นหาจากทะเบียนรถ
-    if (plateNumber) {
-      where.title = {
-        contains: plateNumber,
-        mode: "insensitive",
-      };
-    }
-
-    // กรองตามวันที่
-    if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) {
-        where.createdAt.gte = new Date(dateFrom);
-      }
-      if (dateTo) {
-        const endDate = new Date(dateTo);
-        endDate.setHours(23, 59, 59, 999);
-        where.createdAt.lte = endDate;
-      }
-    }
-
-    const bills = await prisma.product.findMany({
-      where,
-      include: {
-        category: true,
-        Images: true,
-      },
-      orderBy: {
-        createdAt: "desc",
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        username: true, // เพิ่ม username (รหัสนักศึกษา)
+        name: true,
+        role: true,
+        enabled: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
+    res.json(users);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 
-    res.json({
-      ok: true,
-      total: bills.length,
-      bills,
+//เปลี่ยนสถานะผู้ใช้ (Enabled/Disabled)
+exports.changeStatus = async (req, res) => {
+  try {
+    const { id, enabled } = req.body;
+    const user = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { enabled: enabled },
     });
+    res.json(user);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+//เปลี่ยนบทบาทผู้ใช้ (User / IT Support / Admin)
+exports.changeRole = async (req, res) => {
+  try {
+    const { id, role } = req.body;
+
+    // ตรวจสอบว่า Role ที่ส่งมาถูกต้องไหม
+    const validRoles = ["user", "it_support", "admin"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid Role" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: Number(id) },
+      data: { role: role },
+    });
+    res.json(user);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error" });

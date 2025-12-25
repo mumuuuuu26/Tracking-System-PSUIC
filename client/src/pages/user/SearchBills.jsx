@@ -32,7 +32,6 @@ const SearchBills = () => {
   const [searched, setSearched] = useState(false);
   const today = dayjs().format("YYYY-MM-DD");
 
-
   useEffect(() => {
     getProduct(token, 1000);
     getCategory(token);
