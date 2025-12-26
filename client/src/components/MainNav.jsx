@@ -1,43 +1,44 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { Wrench, User } from "lucide-react";
+import React from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import useAuthStore from '../store/auth-store'
 
 const MainNav = () => {
-  return (
-    <nav className="bg-white shadow-sm border-b border-slate-200">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between items-center">
-          {/* Logo Section */}
-          <div className="flex items-center">
-            <Link to="/" className="flex flex-shrink-0 items-center gap-2">
-              <div className="bg-blue-600 p-2 rounded-lg text-white">
-                <Wrench className="h-6 w-6" />
-              </div>
-              <span className="text-xl font-bold text-slate-800 tracking-tight">
-                PSUIC Service
-              </span>
-            </Link>
-          </div>
+    const { user, actionLogout } = useAuthStore()
+    const navigate = useNavigate()
 
-          {/* Right Menu Section */}
-          <div className="flex items-center gap-4">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
-            >
-              เข้าสู่ระบบ
-            </Link>
-            <Link
-              to="/register"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-all hover:shadow-md"
-            >
-              สมัครสมาชิก
-            </Link>
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-};
+    const handleLogout = () => {
+        actionLogout()
+        navigate('/')
+    }
 
-export default MainNav;
+    return (
+        <nav className="bg-slate-900 text-white shadow-md">
+            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+                <Link to="/" className="text-xl font-bold flex items-center gap-2">
+                    🛠️ PSUIC Service
+                </Link>
+
+                <div className="flex gap-4 items-center">
+                    {user ? (
+                        <>
+                            <span className="text-slate-300 text-sm">Welcome, {user.email}</span>
+                            <button
+                                onClick={handleLogout}
+                                className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition"
+                            >
+                                Logout
+                            </button>
+                        </>
+                    ) : (
+                        <div className="flex gap-2">
+                            <Link to="/login" className="hover:text-blue-300">Login</Link>
+                            <Link to="/register" className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition">Register</Link>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </nav>
+    )
+}
+
+export default MainNav

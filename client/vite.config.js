@@ -8,5 +8,12 @@ export default defineConfig({
     allowedHosts: [
       "horsiest-chong-inelegantly.ngrok-free.dev", //host ของ ngrok ตรงนี้
     ],
+    proxy: {
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });
