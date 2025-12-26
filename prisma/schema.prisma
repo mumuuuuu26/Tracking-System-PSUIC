@@ -49,6 +49,7 @@ model Equipment {
   name     String
   type     String
   serialNo String?  @unique
+  qrCode   String?  @unique
   status   String   @default("Normal")
   roomId   Int
   room     Room     @relation(fields: [roomId], references: [id])
