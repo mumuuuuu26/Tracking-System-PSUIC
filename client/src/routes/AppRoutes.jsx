@@ -1,67 +1,60 @@
-//rafce
-import DailyPrice from "../pages/admin/DailyPrice";
 import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Home from "../pages/Home";
-import Price from "../pages/Price";
-import History from "../pages/History";
-import Checkout from "../pages/Checkout";
+import { Route, Routes } from "react-router-dom";
+// Layouts
+import Layout from "../layouts/Layout";
+import LayoutUser from "../layouts/LayoutUser";
+import LayoutAdmin from "../layouts/LayoutAdmin";
+// Auth Pages
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
-import Layout from "../layouts/Layout";
-import LayoutAdmin from "../layouts/LayoutAdmin";
+// User Pages
+import HomeUser from "../pages/user/HomeUser";
+import MyTickets from "../pages/user/MyTickets";
+import CreateTicket from "../pages/user/CreateTicket";
+// Admin Pages
 import Dashboard from "../pages/admin/Dashboard";
 import Category from "../pages/admin/Category";
-import Product from "../pages/admin/Product";
-import LayoutUser from "../layouts/LayoutUser";
-import HomeUser from "../pages/user/HomeUser";
+// Protect Routes
 import ProtectRoteUser from "./ProtectRoteUser";
-import ProtectRoteAdmin from "./ProtectRouteAdmin";
-import HistoryAdmin from "../pages/admin/HistoryAdmin";
-import SearchBills from "../pages/user/SearchBills";
-import Calculator from "../pages/user/Calculator";
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Layout />,
-    children: [
-      { index: true, element: <Home /> },
-      { path: "price", element: <Price /> },
-      { path: "history", element: <History /> },
-      { path: "checkout", element: <Checkout /> },
-      { path: "login", element: <Login /> },
-      { path: "register", element: <Register /> },
-    ],
-  },
-  {
-    path: "/admin",
-    element: <ProtectRoteAdmin element={<LayoutAdmin />} />,
-    children: [
-      { index: true, element: <Dashboard /> },
-      { path: "category", element: <Category /> },
-      { path: "product", element: <Product /> },
-      { path: "daily-price", element: <DailyPrice /> },
-      { path: "history", element: <HistoryAdmin /> },
-    ],
-  },
-  {
-    path: "/user",
-    //element: <LayoutUser />,
-    element: <ProtectRoteUser element={<LayoutUser />} />,
-    children: [
-      { index: true, element: <SearchBills /> },
-      { path: "price", element: <Price /> },
-      { path: "calculator", element: <Calculator /> },
-    ],
-  },
-]);
+import ProtectRouteAdmin from "./ProtectRouteAdmin";
 
 const AppRoutes = () => {
   return (
-    <>
-      <RouterProvider router={router} />
-    </>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Login />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+      </Route>
+
+      {/* User Routes */}
+      <Route
+        path="user"
+        element={
+          <ProtectRoteUser>
+            <LayoutUser />
+          </ProtectRoteUser>
+        }
+      >
+        <Route index element={<HomeUser />} />
+        <Route path="my-tickets" element={<MyTickets />} />
+        <Route path="create-ticket" element={<CreateTicket />} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route
+        path="admin"
+        element={
+          <ProtectRouteAdmin>
+            <LayoutAdmin />
+          </ProtectRouteAdmin>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="category" element={<Category />} />
+      </Route>
+    </Routes>
   );
 };
 
