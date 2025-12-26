@@ -4,7 +4,7 @@ const app = express();
 const morgan = require("morgan");
 const { readdirSync } = require("fs"); //การอ่านจากไดเรกทอรี่
 const cors = require("cors"); //อนุญาตให้ server กับ clien ติดต่อกันได้่
-
+const categoryRoutes = require("./routes/category");
 // const authRouter = require('./routes/auth')
 // const categoryRouter = require('./routes/category')
 

@@ -1,7 +1,10 @@
+// client/src/pages/user/CreateTicket.jsx
 import React, { useState, useEffect } from "react";
 import { Camera, X, ChevronDown, Info } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createTicket } from "../../api/ticket";
+import { listRooms } from "../../api/room"; // [New] API ดึงห้อง
+import { listCategories } from "../../api/category"; // [New] API ดึงหมวดหมู่
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 
@@ -10,15 +13,19 @@ const CreateTicket = () => {
   const navigate = useNavigate();
   const { token } = useAuthStore();
 
-  // 1. รับข้อมูลที่ส่งมาจาก QR Scanner (ถ้ามี)
   const prefilledData = location.state;
 
   const [step, setStep] = useState(1);
+
+  const [dbRooms, setDbRooms] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]);
+  const [floors, setFloors] = useState([]);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
-    category: "", // สำหรับแสดงผลใน UI
-    categoryId: "", // สำหรับส่ง API
+    categoryName: "", // เก็บชื่อไว้แสดงผล
+    categoryId: "", // [Important] เก็บ ID จริงเพื่อส่งเข้า DB
     urgency: "Low",
     floor: prefilledData?.floorName || "",
     room: prefilledData?.roomNumber || "",
@@ -27,18 +34,30 @@ const CreateTicket = () => {
     images: [],
   });
 
-  // Mock Data (ในโปรเจกต์จริงควรดึงจาก API)
-  const categories = [
-    "Computer",
-    "Printer",
-    "Network",
-    "Software",
-    "Hardware",
-    "Other",
-  ];
-  const floors = ["Floor 1", "Floor 2", "Floor 3", "Floor 4"];
-  const rooms = ["Room 101", "Room 102", "Conference Room", "Lab"];
   const urgencyLevels = ["Low", "Medium", "High", "Critical"];
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      // โหลดหมวดหมู่
+      const catRes = await listCategories(token);
+      setDbCategories(catRes.data);
+
+      // โหลดห้องและจัดการเลขชั้น
+      const roomRes = await listRooms(token);
+      setDbRooms(roomRes.data);
+      const uniqueFloors = [...new Set(roomRes.data.map((r) => r.floor))].sort(
+        (a, b) => a - b
+      );
+      setFloors(uniqueFloors);
+    } catch (err) {
+      console.log("Error loading form data:", err);
+      toast.error("Failed to load options");
+    }
+  };
 
   useEffect(() => {
     if (prefilledData) {
@@ -48,7 +67,6 @@ const CreateTicket = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    // สร้าง Preview URL (ใน Production ควร upload ขึ้น Cloud และเก็บ URL จริง)
     const newImages = files.map((file) => URL.createObjectURL(file));
     setForm({ ...form, images: [...form.images, ...newImages] });
   };
@@ -59,23 +77,53 @@ const CreateTicket = () => {
   };
 
   const nextStep = () => {
-    if (step === 1 && (!form.category || !form.description)) {
-      toast.error("Please fill in required fields");
+    // Validate ว่าเลือกข้อมูลครบถ้วน
+    if (step === 1 && (!form.categoryId || !form.description || !form.roomId)) {
+      toast.error("Please select Category, Room and Description");
       return;
     }
     setStep(step + 1);
   };
 
+  // กรองห้องตามชั้นที่เลือก
+  const getAvailableRooms = () => {
+    if (!form.floor) return [];
+    const floorNum = parseInt(form.floor);
+    return dbRooms.filter((r) => r.floor === floorNum);
+  };
+
+  // จัดการเมื่อเลือกห้อง
+  const handleRoomSelect = (e) => {
+    const selectedRoomId = parseInt(e.target.value);
+    const selectedRoom = dbRooms.find((r) => r.id === selectedRoomId);
+    setForm({
+      ...form,
+      roomId: selectedRoomId,
+      room: selectedRoom ? selectedRoom.roomNumber : "",
+    });
+  };
+
+  // จัดการเมื่อเลือกหมวดหมู่
+  const handleCategorySelect = (e) => {
+    const selectedCatId = parseInt(e.target.value);
+    const selectedCat = dbCategories.find((c) => c.id === selectedCatId);
+    setForm({
+      ...form,
+      categoryId: selectedCatId,
+      categoryName: selectedCat ? selectedCat.name : "",
+    });
+  };
+
   const handleSubmit = async () => {
     try {
-      // ส่งข้อมูลไปยัง API
+      // [Change 3] ส่ง ID ที่เป็นตัวเลขจริงไปยัง Server
       const payload = {
-        title: form.title || `${form.category} Issue`,
+        title: form.title || `${form.categoryName} Issue`,
         description: form.description,
         urgency: form.urgency,
-        categoryId: 1, // ควร map จาก form.category เป็น ID จริง
-        roomId: form.roomId || 1,
-        equipmentId: form.equipmentId || null,
+        categoryId: parseInt(form.categoryId),
+        roomId: parseInt(form.roomId),
+        equipmentId: form.equipmentId ? parseInt(form.equipmentId) : null,
       };
 
       await createTicket(token, payload);
@@ -83,17 +131,15 @@ const CreateTicket = () => {
       navigate("/user/my-tickets");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to create ticket");
+      toast.error(err.response?.data?.message || "Failed to create ticket");
     }
   };
 
   return (
     <div className="p-4 max-w-md mx-auto min-h-screen">
-      {/* Header & Stepper */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Create Ticket</h1>
 
-        {/* Banner ข้อมูลจาก QR Scan */}
         {prefilledData && (
           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-xl flex items-start gap-3">
             <Info className="text-blue-500 shrink-0" size={20} />
@@ -112,6 +158,7 @@ const CreateTicket = () => {
           </div>
         )}
 
+        {/* Stepper */}
         <div className="flex items-center justify-between mb-6 px-4">
           <div className="flex items-center">
             <div
@@ -139,7 +186,7 @@ const CreateTicket = () => {
 
       {step === 1 ? (
         <div className="space-y-4 animate-in fade-in duration-300">
-          {/* Category */}
+          {/* Category Dropdown (Dynamic) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Equipment Category *
@@ -147,13 +194,13 @@ const CreateTicket = () => {
             <div className="relative">
               <select
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 outline-none"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                value={form.categoryId}
+                onChange={handleCategorySelect}
               >
                 <option value="">Select category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {dbCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
@@ -180,47 +227,54 @@ const CreateTicket = () => {
             />
           </div>
 
-          {/* Location Info (Disabled if from QR) */}
+          {/* Location Selectors (Dynamic) */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Floor
+                Floor *
               </label>
               <select
                 disabled={!!prefilledData}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none disabled:opacity-60"
                 value={form.floor}
-                onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    floor: e.target.value,
+                    roomId: "",
+                    room: "",
+                  })
+                }
               >
                 <option value="">Select Floor</option>
                 {floors.map((f) => (
                   <option key={f} value={f}>
-                    {f}
+                    Floor {f}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Room
+                Room *
               </label>
               <select
-                disabled={!!prefilledData}
+                disabled={!!prefilledData || !form.floor}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none disabled:opacity-60"
-                value={form.room}
-                onChange={(e) => setForm({ ...form, room: e.target.value })}
+                value={form.roomId}
+                onChange={handleRoomSelect}
               >
                 <option value="">Select Room</option>
-                {rooms.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
+                {getAvailableRooms().map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.roomNumber}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Priority */}
+          {/* Priority Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Priority
@@ -309,13 +363,13 @@ const CreateTicket = () => {
               <div className="flex justify-between">
                 <span className="text-gray-500">Equipment:</span>
                 <span className="font-semibold text-gray-800">
-                  {prefilledData?.equipmentName || form.category}
+                  {prefilledData?.equipmentName || form.categoryName}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Location:</span>
                 <span className="font-semibold text-gray-800">
-                  {form.floor}, {form.room}
+                  Floor {form.floor}, {form.room}
                 </span>
               </div>
               <div className="flex justify-between">
