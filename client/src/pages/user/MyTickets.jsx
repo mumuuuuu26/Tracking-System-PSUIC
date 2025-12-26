@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 const fmt = (n) =>
   Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
-const SearchBills = () => {
+const MyTickets = () => {
   const token = useEcomStore((s) => s.token);
   const products = useEcomStore((s) => s.products);
   const getProduct = useEcomStore((s) => s.getProduct);
@@ -822,4 +822,4 @@ const SearchBills = () => {
   );
 };
 
-export default SearchBills;
+export default MyTickets;

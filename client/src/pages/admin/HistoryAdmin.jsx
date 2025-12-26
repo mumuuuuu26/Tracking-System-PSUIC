@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import useEcomStore from "../../store/ecom-store";
-import { removeProduct, updateProduct } from "../../api/product";
+import { removeProduct, updateProduct } from "../../api/ticket";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import { Printer } from "lucide-react";

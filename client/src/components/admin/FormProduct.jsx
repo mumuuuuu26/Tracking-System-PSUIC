@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import dayjs from "dayjs";
 import useEcomStore from "../../store/ecom-store";
-import { createProduct, removeProduct } from "../../api/product";
+import { createProduct, removeProduct } from "../../api/ticket";
 import { getPriceToday } from "../../api/palmPrice";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";

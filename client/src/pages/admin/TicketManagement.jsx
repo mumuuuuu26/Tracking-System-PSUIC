@@ -1,7 +1,7 @@
 import React from "react";
 import FormProduct from "../../components/admin/FormProduct";
 
-const Product = () => {
+const TicketManagement= () => {
   return (
     <div>
       <FormProduct />
@@ -9,4 +9,4 @@ const Product = () => {
   );
 };
 
-export default Product;
+export default TicketManagement;
