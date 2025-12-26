@@ -21,14 +21,14 @@ import ProtectRouteAdmin from "./ProtectRouteAdmin";
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Public Routes - ใครก็เข้าได้ */}
       <Route path="/" element={<Layout />}>
         <Route index element={<Login />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
       </Route>
 
-      {/* User Routes */}
+      {/* User Routes - ต้อง Login เป็น User */}
       <Route
         path="user"
         element={
@@ -42,7 +42,7 @@ const AppRoutes = () => {
         <Route path="create-ticket" element={<CreateTicket />} />
       </Route>
 
-      {/* Admin Routes */}
+      {/* Admin Routes - ต้อง Login เป็น Admin */}
       <Route
         path="admin"
         element={
