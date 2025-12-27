@@ -1,23 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const { authCheck, itCheck } = require("../middlewares/authCheck"); // เดี๋ยวเราต้องไปเพิ่ม itCheck กันครับ
+const { authCheck, adminCheck, itCheck } = require("../middlewares/authCheck");
 
-// Import Controller
 const {
+  getStats,
   getMyTasks,
+  getTodayAppointments,
   acceptJob,
+  rejectTicket,
   closeJob,
+  rescheduleAppointment,
 } = require("../controllers/it-support");
 
-// @ENDPOINT http://localhost:5001/api/it
+// Dashboard data
+router.get("/it/stats", authCheck, itCheck, getStats);
+router.get("/it/tasks", authCheck, itCheck, getMyTasks);
+router.get("/it/appointments/today", authCheck, itCheck, getTodayAppointments);
 
-//ดูงานที่ได้รับมอบหมาย (My Tasks)
-router.get("/it/tasks", authCheck, getMyTasks);
-
-//กดรับงาน (เปลี่ยนสถานะเป็น In Progress)
-router.put("/it/accept/:id", authCheck, acceptJob);
-
-//ปิดงาน (เปลี่ยนสถานะเป็น Fixed + อัปรูปหลังซ่อม)
-router.put("/it/close/:id", authCheck, closeJob);
+// Actions
+router.put("/it/accept/:id", authCheck, itCheck, acceptJob);
+router.put("/it/reject/:id", authCheck, itCheck, rejectTicket);
+router.put("/it/close/:id", authCheck, itCheck, closeJob);
+router.post("/it/reschedule", authCheck, itCheck, rescheduleAppointment);
 
 module.exports = router;

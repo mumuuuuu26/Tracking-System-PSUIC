@@ -3,17 +3,27 @@ const prisma = require("../config/prisma");
 //ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin ดู)
 exports.listUsers = async (req, res) => {
   try {
+    const { role, status } = req.query;
+
+    let where = {};
+    if (role && role !== 'all') where.role = role;
+    if (status && status !== 'all') where.enabled = status === 'active';
+
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         email: true,
-        username: true, // เพิ่ม username (รหัสนักศึกษา)
+        username: true,
         name: true,
         role: true,
         enabled: true,
+        department: true, // เพิ่ม department
+        phoneNumber: true, // เพิ่ม phoneNumber
         createdAt: true,
         updatedAt: true,
       },
+      orderBy: { createdAt: 'desc' }
     });
     res.json(users);
   } catch (err) {

@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import MainNav from "../components/MainNav";
+import ITBottomNav from "../components/ITBottomNav";
 import useAuthStore from "../store/auth-store";
 
 const LayoutIT = () => {
@@ -37,9 +38,13 @@ const LayoutIT = () => {
           </ul>
         </aside>
 
-        <main className="flex-1">
+        <main className="flex-1 pb-16 md:pb-0">
           <Outlet />
         </main>
+      </div>
+
+      <div className="md:hidden">
+        <ITBottomNav />
       </div>
     </div>
   );

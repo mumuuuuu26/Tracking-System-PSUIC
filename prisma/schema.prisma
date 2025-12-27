@@ -1,3 +1,5 @@
+// prisma/schema.prisma - Version สมบูรณ์
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,70 +9,63 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//ระบบจัดการผู้ใช้ (USER)
+// === USER MODEL (อัปเดต) ===
 model User {
   id        Int      @id @default(autoincrement())
-  username  String?  @unique // Student ID (PSU Passport)
+  username  String?  @unique
   email     String   @unique
   password  String?
   name      String?
   picture   String?  @db.LongText
-  role      String   @default("user") // user, it_support, admin
+  role      String   @default("user")
   enabled   Boolean  @default(true)
+  
+  // [NEW] เพิ่ม field สำหรับ IT Support
+  department    String?  // แผนก เช่น "IT Support", "Network", "Software"
+  phoneNumber   String?  // เบอร์โทรสำหรับติดต่อด่วน
+  lineId        String?  // Line ID สำหรับแจ้งเตือน
+  
+  // [NEW] Performance metrics สำหรับ IT
+  totalResolved Int    @default(0)  // จำนวน ticket ที่แก้ไขสำเร็จ
+  avgRating     Float  @default(0)  // rating เฉลี่ยจาก user
+  totalRated    Int    @default(0)  // จำนวนครั้งที่ถูก rate
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
   ticketsCreated  Ticket[]         @relation("TicketCreator")
   ticketsAssigned Ticket[]         @relation("TicketAssignee")
   appointments    Appointment[]
-  availabilities  ITAvailability[] // [New] ตารางงานพี่เจย์
+  availabilities  ITAvailability[]
+  notifications   Notification[]   // [NEW]
+  activityLogs    ActivityLog[]    @relation("LogCreator")
 }
 
-//หมวดหมู่ปัญหา (CATEGORY) - [New Req]
-model Category {
-  id      Int      @id @default(autoincrement())
-  name    String   @unique // Hardware, Software, Network
-  tickets Ticket[]
-}
-
-//ระบบจัดการห้อง (ROOM)
-model Room {
-  id         Int         @id @default(autoincrement())
-  roomNumber String      @unique
-  building   String?
-  floor      Int?
-  equipments Equipment[]
-  tickets    Ticket[]
-}
-
-//ระบบจัดการอุปกรณ์ (EQUIPMENT)
-model Equipment {
-  id       Int      @id @default(autoincrement())
-  name     String
-  type     String
-  serialNo String?  @unique
-  qrCode   String?  @unique
-  status   String   @default("Normal")
-  roomId   Int
-  room     Room     @relation(fields: [roomId], references: [id])
-  tickets  Ticket[]
-}
-
-//ระบบแจ้งซ่อม (TICKET) - ศูนย์กลาง
+// === TICKET MODEL (อัปเดต) ===
 model Ticket {
   id          Int    @id @default(autoincrement())
   title       String
   description String @db.Text
   urgency     String @default("Normal")
-
-  //[New Req] เพิ่มสถานะ Draft และ Cancelled
-  status String @default("Draft")
-
-  //[New Req] การประเมินความพึงพอใจ
-  rating       Int? // 1-5 ดาว
-  userFeedback String? @db.Text
-
-  //ความสัมพันธ์
+  status      String @default("Draft")
+  
+  rating       Int?     // 1-5 ดาว
+  userFeedback String?  @db.Text
+  
+  // [NEW] Fields สำหรับ reject
+  rejectedReason String?   @db.Text  // เหตุผลที่ reject
+  rejectedAt     DateTime?          // เวลาที่ reject
+  
+  // [NEW] Notification tracking
+  notifiedAt     DateTime?  // เวลาที่ส่ง notification
+  readAt         DateTime?  // เวลาที่ user อ่าน
+  
+  // [NEW] SLA tracking
+  responseTime   Int?       // เวลาตอบสนอง (นาที)
+  resolutionTime Int?       // เวลาแก้ไข (นาที)
+  
+  // Relations
   createdById Int
   createdBy   User @relation("TicketCreator", fields: [createdById], references: [id])
 
@@ -83,33 +78,93 @@ model Ticket {
   equipmentId Int?
   equipment   Equipment? @relation(fields: [equipmentId], references: [id])
 
-  //[New Req] เชื่อมกับหมวดหมู่
   categoryId Int?
   category   Category? @relation(fields: [categoryId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  images      Image[]
-  logs        ActivityLog[]
-  appointment Appointment?
+  images       Image[]
+  logs         ActivityLog[]
+  appointment  Appointment?
+  notification Notification[]  // [NEW]
 }
 
-//ตารางงาน IT Support (IT AVAILABILITY) - [New Req]
+// === [NEW] NOTIFICATION MODEL ===
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  ticketId  Int?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+  
+  title     String
+  message   String   @db.Text
+  type      String   // "ticket_update", "ticket_accepted", "ticket_rejected", "appointment"
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  
+  createdAt DateTime @default(now())
+}
+
+// === อัปเดต ACTIVITY LOG ===
+model ActivityLog {
+  id       Int    @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  action    String
+  detail    String?  @db.Text
+  
+  // [UPDATED] เปลี่ยนจาก String เป็น relation
+  updatedById Int?
+  updatedBy   User?  @relation("LogCreator", fields: [updatedById], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+// === Models อื่นๆ ที่มีอยู่แล้ว (ไม่เปลี่ยน) ===
+model Category {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  tickets Ticket[]
+}
+
+model Room {
+  id         Int         @id @default(autoincrement())
+  roomNumber String      @unique
+  building   String?
+  floor      Int?
+  equipments Equipment[]
+  tickets    Ticket[]
+}
+
+model Equipment {
+  id       Int      @id @default(autoincrement())
+  name     String
+  type     String
+  serialNo String?  @unique
+  qrCode   String?  @unique
+  status   String   @default("Normal")
+  roomId   Int
+  room     Room     @relation(fields: [roomId], references: [id])
+  tickets  Ticket[]
+}
+
 model ITAvailability {
   id     Int  @id @default(autoincrement())
   userId Int
   user   User @relation(fields: [userId], references: [id])
 
   date      DateTime
-  status    String // "Busy", "Available", "Leave"
+  status    String
   title     String?
   startTime DateTime?
   endTime   DateTime?
   createdAt DateTime  @default(now())
 }
 
-//ระบบการนัดหมาย (APPOINTMENT)
 model Appointment {
   id       Int    @id @default(autoincrement())
   ticketId Int    @unique
@@ -120,24 +175,11 @@ model Appointment {
 
   scheduledAt   DateTime
   note          String?  @db.Text
-  googleEventId String? // เผื่อเชื่อม Calendar
+  googleEventId String?
 
   createdAt DateTime @default(now())
 }
 
-//บันทึกกิจกรรม (ACTIVITY LOG)
-model ActivityLog {
-  id       Int    @id @default(autoincrement())
-  ticketId Int
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  action    String
-  detail    String?  @db.Text
-  updatedBy String
-  createdAt DateTime @default(now())
-}
-
-//ระบบรูปภาพ (IMAGE)
 model Image {
   id         Int    @id @default(autoincrement())
   asset_id   String

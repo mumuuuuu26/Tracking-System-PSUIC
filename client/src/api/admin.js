@@ -17,3 +17,15 @@ export const removeTicket = async (token, id) => {
         headers: { Authorization: `Bearer ${token}` }
     })
 }
+
+export const getDashboardStats = async (token) => {
+    return await axios.get('/api/admin/stats', {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}
+
+export const getITStaff = async (token) => {
+    return await axios.get('/api/admin/it-staff', {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}

@@ -5,7 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server"
+    "start": "nodemon server",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm start\" \"npm run client\"",
+    "install-all": "npm install && cd client && npm install",
+    "seed": "node prisma/seed.js",
+    "seed:it": "node prisma/seed-it.js",
+    "seed:all": "node prisma/seed.js && node prisma/seed-it.js"
   },
   "keywords": [],
   "author": "",
@@ -13,7 +19,6 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.16.1",
-    "@yudiel/react-qr-scanner": "^2.5.0",
     "axios": "^1.12.1",
     "bcryptjs": "^3.0.2",
     "cheerio": "^1.1.2",
@@ -22,20 +27,20 @@
     "dayjs": "^1.11.18",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "node-cron": "^4.2.1",
     "nodemon": "^3.1.10",
-    "qrcode": "^1.5.4",
-    "react-qr-scanner": "^1.0.0-alpha.11",
-    "react-router-dom": "^7.8.0",
-    "recharts": "^3.2.0"
+    "qrcode": "^1.5.4"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "dev": "nodemon server.js",
+    "seed": "node prisma/seed.js",
+    "seed:it": "node prisma/seed-it.js",
+    "seed:all": "node prisma/seed.js && node prisma/seed-it.js"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "prisma": "^6.16.1"
   }
 }

@@ -1,19 +1,68 @@
-import axios from 'axios'
+import axios from "axios";
 
+// Get dashboard statistics
+export const getStats = async (token) => {
+    return await axios.get("http://localhost:5001/api/it/stats", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
+// Get IT tasks
 export const getMyTasks = async (token) => {
-    return await axios.get('/api/it/tasks', {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-}
+    return await axios.get("http://localhost:5001/api/it/tasks", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
 
+// Get today's appointments
+export const getTodayAppointments = async (token) => {
+    return await axios.get("http://localhost:5001/api/it/appointments/today", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
+// Accept job
 export const acceptJob = async (token, id) => {
-    return await axios.put('/api/it/accept/' + id, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-}
+    return await axios.put(
+        `http://localhost:5001/api/it/accept/${id}`,
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+};
 
-export const closeJob = async (token, id, form) => {
-    return await axios.put('/api/it/close/' + id, form, {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-}
+// Reject ticket
+export const rejectTicket = async (token, id, data) => {
+    return await axios.put(`http://localhost:5001/api/it/reject/${id}`, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
+// Close job
+export const closeJob = async (token, id, data) => {
+    return await axios.put(`http://localhost:5001/api/it/close/${id}`, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
+// Reschedule appointment
+export const rescheduleAppointment = async (token, data) => {
+    return await axios.post("http://localhost:5001/api/it/reschedule", data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};

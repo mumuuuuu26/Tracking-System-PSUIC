@@ -24,7 +24,7 @@ exports.create = async (req, res) => {
         // แปลงเป็น Int หรือเป็น null ถ้าไม่ส่งมา
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         categoryId: categoryId ? parseInt(categoryId) : null,
-        status: "Draft", // เริ่มต้นเป็น Draft ตาม Requirement
+        status: "pending", // แก้เป็น pending เพื่อให้ IT เห็นทันที
         images: {
           create:
             images &&
@@ -39,8 +39,8 @@ exports.create = async (req, res) => {
         logs: {
           create: {
             action: "Create",
-            detail: "เปิดใบแจ้งซ่อมใหม่ (Draft)",
-            updatedBy: req.user.username || req.user.email,
+            detail: "เปิดใบแจ้งซ่อมใหม่",
+            updatedById: req.user.id,
           },
         },
       },
@@ -139,10 +139,9 @@ exports.update = async (req, res) => {
         logs: {
           create: {
             action: "Update",
-            detail: `อัปเดตข้อมูล: ${status ? `สถานะ->${status} ` : ""}${
-              adminNote ? `Note: ${adminNote}` : ""
-            }`,
-            updatedBy: req.user.username || "System",
+            detail: `อัปเดตข้อมูล: ${status ? `สถานะ->${status} ` : ""}${adminNote ? `Note: ${adminNote}` : ""
+              }`,
+            updatedById: req.user?.id || null,
           },
         },
       },

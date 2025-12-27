@@ -1,13 +1,15 @@
 //import....
 const express = require('express')
-const { authCheck } = require('../middlewares/authCheck')
+const { authCheck, adminCheck } = require('../middlewares/authCheck')
 const router = express.Router()
+
 //import controller
-const { getOrderAdmin, changeOrderStatus } = require('../controllers/admin')
+const { getDashboardStats, getITStaff } = require('../controllers/admin')
 
-router.put('/admin/order-status',authCheck, changeOrderStatus)
-router.get('/admin/orders',authCheck, getOrderAdmin)
+// @ENDPOINT http://localhost:5001/api/admin/stats
+router.get('/admin/stats', authCheck, adminCheck, getDashboardStats)
 
-
+// @ENDPOINT http://localhost:5001/api/admin/it-staff
+router.get('/admin/it-staff', authCheck, adminCheck, getITStaff)
 
 module.exports = router

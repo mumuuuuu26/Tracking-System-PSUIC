@@ -22,9 +22,12 @@ import Profile from "../pages/user/Profile";
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
 import AllTickets from "../pages/admin/AllTickets";
+import UserManagement from "../pages/admin/UserManagement";
+import ITManagement from "../pages/admin/ITManagement";
+import RoomManagement from "../pages/admin/RoomManagement";
 
 // IT
-import MyTasks from "../pages/it/MyTasks";
+import ITDashboard from "../pages/it/Dashboard";
 
 const AppRoutes = () => {
   return (
@@ -55,11 +58,14 @@ const AppRoutes = () => {
       <Route path="admin" element={<LayoutAdmin />}>
         <Route index element={<Dashboard />} />
         <Route path="tickets" element={<AllTickets />} />
+        <Route path="manage-users" element={<UserManagement />} />
+        <Route path="manage-it" element={<ITManagement />} />
+        <Route path="manage-rooms" element={<RoomManagement />} />
       </Route>
 
       {/* IT Support Routes */}
       <Route path="it" element={<LayoutIT />}>
-        <Route index element={<MyTasks />} />
+        <Route index element={<ITDashboard />} />
       </Route>
 
       <Route path="*" element={<h1>404 Not Found</h1>} />
