@@ -20,6 +20,7 @@
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dayjs": "^1.11.18",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",

@@ -110,13 +110,13 @@ const HomeUser = () => {
           </h1>
           <p className="text-gray-600 mt-1">How can we help you today?</p>
         </div>
-        <button
+        {/* <button
           onClick={handleLogout}
           className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
           title="Logout"
         >
           <LogOut size={24} />
-        </button>
+        </button> */}
       </div>
 
       <div className="md:flex md:gap-6">
@@ -171,7 +171,9 @@ const HomeUser = () => {
                     {service.badge}
                   </span>
                 )}
-                <div className={`${service.iconColor} mb-2`}>{service.icon}</div>
+                <div className={`${service.iconColor} mb-2`}>
+                  {service.icon}
+                </div>
                 <span className="text-xs text-gray-700 font-medium text-center">
                   {service.title}
                 </span>

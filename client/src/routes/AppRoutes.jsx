@@ -17,6 +17,7 @@ import Register from "../pages/auth/Register";
 import HomeUser from "../pages/user/HomeUser";
 import MyTickets from "../pages/user/MyTickets";
 import CreateTicket from "../pages/user/CreateTicket";
+import Profile from "../pages/user/Profile";
 
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
@@ -29,12 +30,14 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Login />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
-        <Route path="auth/callback" element={<PSUCallback />} />
-      </Route>
+      {/* Public Routes (Standalone) */}
+      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/auth/callback" element={<PSUCallback />} />
+
+      {/* Main Layout Routes (Optional: if there are other public pages that need layout, put them here) */}
+      {/* <Route element={<Layout />}> ... </Route> */}
 
       {/* User Routes */}
       <Route path="user" element={<LayoutUser />}>
@@ -45,6 +48,7 @@ const AppRoutes = () => {
         <Route path="equipment/:id" element={<EquipmentDetail />} />
         <Route path="ticket/:id" element={<TicketDetail />} />
         <Route path="quick-fix" element={<QuickFix />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
       {/* Admin Routes */}

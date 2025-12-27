@@ -14,7 +14,7 @@ model User {
   email     String   @unique
   password  String?
   name      String?
-  picture   String?
+  picture   String?  @db.LongText
   role      String   @default("user") // user, it_support, admin
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())

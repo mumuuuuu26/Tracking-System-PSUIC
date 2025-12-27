@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { register } from '../../api/auth'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { UserPlus, ArrowLeft } from 'lucide-react'
 
 const Register = () => {
     const navigate = useNavigate()
@@ -34,41 +35,66 @@ const Register = () => {
     }
 
     return (
-        <div className='flex items-center justify-center min-h-[80vh]'>
-            <div className='w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md'>
-                <h2 className='text-2xl font-bold text-center'>Register</h2>
-                <form onSubmit={hdlSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700">Email</label>
-                        <input
-                            className='w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-                            type="email"
-                            name="email"
-                            onChange={hdlChange}
-                        />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-blue-200 p-4">
+            <div className="w-full max-w-md animate-fade-in">
+
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate('/login')}
+                    className="mb-6 flex items-center text-white/80 hover:text-white transition-colors"
+                >
+                    <ArrowLeft className="mr-2" size={20} /> Back to Login
+                </button>
+
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-3xl shadow-2xl">
+                    <div className="flex flex-col items-center mb-6">
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 text-white shadow-inner">
+                            <UserPlus size={32} />
+                        </div>
+                        <h2 className="text-3xl font-bold text-white">Create Account</h2>
+                        <p className="text-white/60 text-sm mt-1">Join PSUIC Help Desk System</p>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700">Password</label>
-                        <input
-                            className='w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-                            type="password"
-                            name="password"
-                            onChange={hdlChange}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700">Confirm Password</label>
-                        <input
-                            className='w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
-                            type="password"
-                            name="confirmPassword"
-                            onChange={hdlChange}
-                        />
-                    </div>
-                    <button className='w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition'>
-                        Register
-                    </button>
-                </form>
+
+                    <form onSubmit={hdlSubmit} className="space-y-5">
+                        <div className="space-y-1">
+                            <label className="text-sm font-semibold text-white/80 ml-1">Email</label>
+                            <input
+                                className="w-full border border-white/20 bg-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-white placeholder-white/40"
+                                type="email"
+                                name="email"
+                                placeholder="name@psu.ac.th"
+                                onChange={hdlChange}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-semibold text-white/80 ml-1">Password</label>
+                            <input
+                                className="w-full border border-white/20 bg-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-white placeholder-white/40"
+                                type="password"
+                                name="password"
+                                placeholder="••••••••"
+                                onChange={hdlChange}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-semibold text-white/80 ml-1">Confirm Password</label>
+                            <input
+                                className="w-full border border-white/20 bg-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-white placeholder-white/40"
+                                type="password"
+                                name="confirmPassword"
+                                placeholder="••••••••"
+                                onChange={hdlChange}
+                                required
+                            />
+                        </div>
+
+                        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 mt-4">
+                            Register
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     )

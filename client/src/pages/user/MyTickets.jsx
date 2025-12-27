@@ -87,7 +87,7 @@ const MyTickets = () => {
   const filters = ["All", "Completed", "In Progress", "Pending"];
 
   return (
-    <div className="p-4 max-w-md mx-auto">
+    <div className="p-4 max-w-md md:max-w-5xl mx-auto min-h-screen">
       {/* Header */}
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-800">My Tickets</h1>
@@ -111,11 +111,10 @@ const MyTickets = () => {
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition ${
-              activeFilter === filter
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition ${activeFilter === filter
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
           >
             {filter}
           </button>
@@ -123,7 +122,7 @@ const MyTickets = () => {
       </div>
 
       {/* Tickets List */}
-      <div className="space-y-3">
+      <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
         {filteredTickets.map((ticket) => (
           <div
             key={ticket.id}
@@ -173,13 +172,12 @@ const MyTickets = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2 h-2 rounded-full ${
-                    ticket.status === "pending"
-                      ? "bg-yellow-400"
-                      : ticket.status === "in_progress"
+                  className={`w-2 h-2 rounded-full ${ticket.status === "pending"
+                    ? "bg-yellow-400"
+                    : ticket.status === "in_progress"
                       ? "bg-blue-400"
                       : "bg-green-400"
-                  }`}
+                    }`}
                 />
                 <span className="text-xs font-medium capitalize">
                   {ticket.status.replace("_", " ")}

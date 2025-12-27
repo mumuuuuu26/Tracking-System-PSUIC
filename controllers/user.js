@@ -37,7 +37,6 @@ exports.changeStatus = async (req, res) => {
   }
 };
 
-//เปลี่ยนบทบาทผู้ใช้ (User / IT Support / Admin)
 exports.changeRole = async (req, res) => {
   try {
     const { id, role } = req.body;
@@ -58,3 +57,21 @@ exports.changeRole = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+exports.updateProfileImage = async (req, res) => {
+  try {
+    const { image } = req.body;
+
+    // Save image directly to database (Base64)
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { picture: image },
+    });
+
+    res.json(user);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Upload failed" });
+  }
+};
+

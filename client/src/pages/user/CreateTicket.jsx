@@ -136,7 +136,7 @@ const CreateTicket = () => {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto min-h-screen">
+    <div className="p-4 max-w-md md:max-w-2xl mx-auto min-h-screen">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Create Ticket</h1>
 
@@ -162,21 +162,18 @@ const CreateTicket = () => {
         <div className="flex items-center justify-between mb-6 px-4">
           <div className="flex items-center">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                step >= 1 ? "bg-blue-600 text-white" : "bg-gray-300"
-              }`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${step >= 1 ? "bg-blue-600 text-white" : "bg-gray-300"
+                }`}
             >
               1
             </div>
             <div
-              className={`h-1 w-24 ${
-                step >= 2 ? "bg-blue-600" : "bg-gray-300"
-              }`}
+              className={`h-1 w-24 ${step >= 2 ? "bg-blue-600" : "bg-gray-300"
+                }`}
             />
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                step >= 2 ? "bg-blue-600 text-white" : "bg-gray-300"
-              }`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${step >= 2 ? "bg-blue-600 text-white" : "bg-gray-300"
+                }`}
             >
               2
             </div>
@@ -285,11 +282,10 @@ const CreateTicket = () => {
                   key={level}
                   type="button"
                   onClick={() => setForm({ ...form, urgency: level })}
-                  className={`flex-1 py-2 text-sm rounded-lg border transition-all ${
-                    form.urgency === level
+                  className={`flex-1 py-2 text-sm rounded-lg border transition-all ${form.urgency === level
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-600 border-gray-200"
-                  }`}
+                    }`}
                 >
                   {level}
                 </button>
@@ -375,11 +371,10 @@ const CreateTicket = () => {
               <div className="flex justify-between">
                 <span className="text-gray-500">Priority:</span>
                 <span
-                  className={`font-bold ${
-                    form.urgency === "Critical"
+                  className={`font-bold ${form.urgency === "Critical"
                       ? "text-red-600"
                       : "text-blue-600"
-                  }`}
+                    }`}
                 >
                   {form.urgency}
                 </span>
