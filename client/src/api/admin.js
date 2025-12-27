@@ -29,3 +29,9 @@ export const getITStaff = async (token) => {
         headers: { Authorization: `Bearer ${token}` }
     })
 }
+
+export const getITStaffStats = async (token) => {
+    return await axios.get('/api/admin/it-staff/stats', {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}

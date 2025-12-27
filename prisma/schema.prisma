@@ -136,6 +136,9 @@ model Room {
   roomNumber String      @unique
   building   String?
   floor      Int?
+  imageUrl   String?
+  capacity   Int?
+  type       String?
   equipments Equipment[]
   tickets    Ticket[]
 }

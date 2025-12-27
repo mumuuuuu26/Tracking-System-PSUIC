@@ -183,3 +183,57 @@ exports.generateQR = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+exports.update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, type, serialNo, roomId, status } = req.body;
+
+    const equipment = await prisma.equipment.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        type,
+        serialNo,
+        roomId: parseInt(roomId),
+        status
+      },
+      include: { room: true }
+    });
+
+    res.json(equipment);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if has active tickets
+    const activeTickets = await prisma.ticket.count({
+      where: {
+        equipmentId: parseInt(id),
+        status: { not: "Fixed" }
+      }
+    });
+
+    if (activeTickets > 0) {
+      return res.status(400).json({
+        message: "Cannot delete equipment with active tickets"
+      });
+    }
+
+    await prisma.equipment.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({ message: "Equipment deleted successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+

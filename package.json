@@ -9,9 +9,9 @@
     "client": "cd client && npm run dev",
     "dev": "concurrently \"npm start\" \"npm run client\"",
     "install-all": "npm install && cd client && npm install",
-    "seed": "node prisma/seed.js",
-    "seed:it": "node prisma/seed-it.js",
-    "seed:all": "node prisma/seed.js && node prisma/seed-it.js"
+    "seed": "node prisma/seed-complete.js",
+    "migrate": "npx prisma migrate dev",
+    "studio": "npx prisma studio"
   },
   "keywords": [],
   "author": "",

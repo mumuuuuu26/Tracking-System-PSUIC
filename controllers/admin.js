@@ -80,3 +80,45 @@ exports.getITStaff = async (req, res) => {
     res.status(500).json({ message: "Server Error: Get IT Staff Failed" });
   }
 };
+
+exports.getITStaffStats = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check IT Staff on Leave
+    const onLeave = await prisma.user.count({
+      where: {
+        role: "it_support",
+        availabilities: {
+          some: {
+            date: { gte: today },
+            status: "leave"
+          }
+        }
+      }
+    });
+
+    // Count Active IT Staff (Not on leave)
+    const active = await prisma.user.count({
+      where: {
+        role: "it_support",
+        enabled: true,
+        NOT: {
+          availabilities: {
+            some: {
+              date: { gte: today },
+              status: "leave"
+            }
+          }
+        }
+      }
+    });
+
+    res.json({ active, onLeave });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+

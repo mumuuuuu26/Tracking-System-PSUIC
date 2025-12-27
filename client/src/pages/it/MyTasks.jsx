@@ -1,6 +1,6 @@
 // MyTasks.jsx - Enhanced Version
 import React, { useEffect, useState } from "react";
-import { getMyTasks, acceptJob, closeJob } from "../../api/it";
+import { getMyTasks, acceptJob, closeJob, getSchedule } from "../../api/it";
 import {
   Calendar,
   Clock,
@@ -52,9 +52,7 @@ const MyTasks = () => {
 
   const loadSchedule = async () => {
     try {
-      const res = await axios.get("/api/it/schedule", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await getSchedule(token);
       setStats((prev) => ({ ...prev, todaySchedule: res.data }));
     } catch (err) {
       console.log(err);
@@ -125,9 +123,8 @@ const MyTasks = () => {
                   stroke="white"
                   strokeWidth="8"
                   fill="none"
-                  strokeDasharray={`${2 * Math.PI * 30 * 0.85} ${
-                    2 * Math.PI * 30 * 0.15
-                  }`}
+                  strokeDasharray={`${2 * Math.PI * 30 * 0.85} ${2 * Math.PI * 30 * 0.15
+                    }`}
                 />
               </svg>
               <span className="absolute inset-0 flex items-center justify-center text-lg font-bold">

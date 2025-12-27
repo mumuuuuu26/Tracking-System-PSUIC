@@ -187,7 +187,7 @@ const MyTickets = () => {
               {ticket.assignedTo && (
                 <div className="flex items-center gap-1">
                   <img
-                    src={`https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
+                    src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
                     alt={ticket.assignedTo.name}
                     className="w-6 h-6 rounded-full"
                   />

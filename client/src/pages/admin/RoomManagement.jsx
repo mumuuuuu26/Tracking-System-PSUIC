@@ -60,7 +60,7 @@ const RoomManagement = () => {
                         {/* Room Image Placeholder */}
                         <div className="w-32 h-24 bg-gray-200 rounded-2xl overflow-hidden shrink-0 relative">
                             <img
-                                src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=300&h=200"
+                                src={room.imageUrl || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=300&h=200"}
                                 alt="Room"
                                 className="w-full h-full object-cover"
                             />
@@ -71,7 +71,7 @@ const RoomManagement = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="font-bold text-gray-800 text-lg">Room {room.roomNumber}</h3>
-                                    <p className="text-gray-500 text-sm">Computer Lab</p>
+                                    <p className="text-gray-500 text-sm">{room.type || "Computer Lab"} {room.capacity ? `• ${room.capacity} Seats` : ""}</p>
                                 </div>
                                 <button className="text-gray-400 hover:text-gray-600">
                                     <MoreVertical size={20} />

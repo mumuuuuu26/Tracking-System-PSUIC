@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Search, Calendar, Edit2, UserCheck, UserX, Clock } from "lucide-react";
-import { getITStaff } from "../../api/admin";
+import { getITStaff, getITStaffStats } from "../../api/admin";
 import useAuthStore from "../../store/auth-store";
 
 const ITManagement = () => {
     const { token } = useAuthStore();
     const [staff, setStaff] = useState([]);
+    const [stats, setStats] = useState({ active: 0, onLeave: 0 });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -14,8 +15,12 @@ const ITManagement = () => {
 
     const loadData = async () => {
         try {
-            const res = await getITStaff(token);
-            setStaff(res.data);
+            const [staffRes, statsRes] = await Promise.all([
+                getITStaff(token),
+                getITStaffStats(token)
+            ]);
+            setStaff(staffRes.data);
+            setStats(statsRes.data);
         } catch (err) {
             console.log(err);
         } finally {
@@ -23,8 +28,8 @@ const ITManagement = () => {
         }
     };
 
-    const activeCount = staff.filter(s => s.status !== 'On Leave').length; // Mock logic
-    const leaveCount = 0; // Placeholder
+    const activeCount = stats.active;
+    const leaveCount = stats.onLeave;
 
     return (
         <div className="space-y-6">
@@ -89,8 +94,8 @@ const ITManagement = () => {
                                     </div>
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${member.status === 'Available'
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-red-100 text-red-700'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
                                     }`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${member.status === 'Available' ? 'bg-green-500' : 'bg-red-500'}`} />
                                     {member.status}

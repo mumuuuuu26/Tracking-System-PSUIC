@@ -8,6 +8,8 @@ const {
   getByQRCode,
   getById,
   generateQR,
+  update,
+  remove,
 } = require("../controllers/equipment");
 
 // Admin only
@@ -18,5 +20,7 @@ router.get("/equipment/:id/qr", authCheck, generateQR);
 // Public (for QR scanning)
 router.get("/equipment/qr/:qrCode", getByQRCode);
 router.get("/equipment/:id", authCheck, getById);
+router.put("/equipment/:id", authCheck, adminCheck, update);
+router.delete("/equipment/:id", authCheck, adminCheck, remove);
 
 module.exports = router;

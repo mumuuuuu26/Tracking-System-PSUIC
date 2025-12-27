@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `Room` ADD COLUMN `capacity` INTEGER NULL,
+    ADD COLUMN `imageUrl` VARCHAR(191) NULL,
+    ADD COLUMN `type` VARCHAR(191) NULL;

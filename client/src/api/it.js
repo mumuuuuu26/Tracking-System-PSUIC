@@ -66,3 +66,13 @@ export const rescheduleAppointment = async (token, data) => {
         },
     });
 };
+
+// Get schedule
+export const getSchedule = async (token, date) => {
+    return await axios.get("http://localhost:5001/api/it/schedule", {
+        params: { date },
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};

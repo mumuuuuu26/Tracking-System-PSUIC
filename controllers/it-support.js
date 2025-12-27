@@ -315,3 +315,41 @@ exports.rescheduleAppointment = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+exports.getSchedule = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const schedule = await prisma.appointment.findMany({
+      where: {
+        itSupportId: req.user.id,
+        scheduledAt: {
+          gte: targetDate,
+          lt: nextDay
+        }
+      },
+      include: {
+        ticket: {
+          include: {
+            room: true,
+            equipment: true,
+            createdBy: {
+              select: { name: true, phoneNumber: true }
+            }
+          }
+        }
+      },
+      orderBy: { scheduledAt: 'asc' }
+    });
+
+    res.json(schedule);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
