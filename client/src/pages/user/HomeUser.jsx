@@ -101,85 +101,81 @@ const HomeUser = () => {
   ];
 
   return (
-    <div className="p-4 max-w-md md:max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
       {/* Welcome Section */}
-      <div className="mb-6 flex justify-between items-start">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
             Hello {user?.name || "User"} 👋
           </h1>
           <p className="text-gray-600 mt-1">How can we help you today?</p>
         </div>
-        {/* <button
-          onClick={handleLogout}
-          className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
-          title="Logout"
-        >
-          <LogOut size={24} />
-        </button> */}
       </div>
 
-      <div className="md:flex md:gap-6">
-        {/* Left Column (Hero + Stats) */}
-        <div className="md:w-2/3">
-          {/* Hero Card */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 mb-6 text-white shadow-lg">
-            <h2 className="text-lg font-semibold mb-2">Start Learning</h2>
-            <p className="text-blue-100 text-sm mb-4">
-              Learn how to use our service system effectively
-            </p>
-            <button className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-blue-50 transition">
-              Get Started
-            </button>
-          </div>
+      {/* Hero Card */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Start Learning</h2>
+          <p className="text-blue-100 mb-4 max-w-lg">
+            Learn how to use our service system effectively. We have prepared a guide to help you get started quickly.
+          </p>
+          <button className="bg-white text-blue-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-50 transition shadow-sm">
+            Get Started
+          </button>
+        </div>
+      </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-red-50 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {stats.pending}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">Uncompleted</div>
+      {/* Stats Cards */}
+      <div>
+        <h3 className="font-bold text-gray-800 mb-4 text-lg">Your Tickets</h3>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white border border-red-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-2 bg-red-50 text-red-600 rounded-xl mb-2">
+              <AlertCircle size={20} />
             </div>
-            <div className="bg-yellow-50 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {stats.inProgress}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">In Progress</div>
+            <h4 className="text-2xl font-bold text-gray-800">{stats.pending}</h4>
+            <p className="text-gray-500 text-xs font-medium">Uncompleted</p>
+          </div>
+          <div className="bg-white border border-yellow-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-2 bg-yellow-50 text-yellow-600 rounded-xl mb-2">
+              <Clock size={20} />
             </div>
-            <div className="bg-green-50 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {stats.completed}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">Completed</div>
+            <h4 className="text-2xl font-bold text-gray-800">{stats.inProgress}</h4>
+            <p className="text-gray-500 text-xs font-medium">In Progress</p>
+          </div>
+          <div className="bg-white border border-green-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-2 bg-green-50 text-green-600 rounded-xl mb-2">
+              <CheckCircle size={20} />
             </div>
+            <h4 className="text-2xl font-bold text-gray-800">{stats.completed}</h4>
+            <p className="text-gray-500 text-xs font-medium">Completed</p>
           </div>
         </div>
+      </div>
 
-        {/* Right Column (Services) */}
-        <div className="md:w-1/3">
-          <h3 className="font-semibold text-gray-800 mb-3">Other Services</h3>
-          <div className="grid grid-cols-3 md:grid-cols-2 gap-3">
-            {services.map((service, index) => (
-              <button
-                key={index}
-                onClick={service.action}
-                className={`${service.bg} rounded-xl p-4 flex flex-col items-center justify-center min-h-[100px] relative hover:scale-105 transition-transform`}
-              >
-                {service.badge && (
-                  <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                    {service.badge}
-                  </span>
-                )}
-                <div className={`${service.iconColor} mb-2`}>
-                  {service.icon}
-                </div>
-                <span className="text-xs text-gray-700 font-medium text-center">
-                  {service.title}
+      {/* Services Grid */}
+      <div>
+        <h3 className="font-bold text-gray-800 mb-4 text-lg">Other Services</h3>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {services.map((service, index) => (
+            <button
+              key={index}
+              onClick={service.action}
+              className={`${service.bg} rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md group relative h-40`}
+            >
+              {service.badge && (
+                <span className="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  {service.badge}
                 </span>
-              </button>
-            ))}
-          </div>
+              )}
+              <div className={`${service.iconColor} p-3 bg-white/60 rounded-full shadow-sm group-hover:bg-white group-hover:scale-110 transition-all`}>
+                {service.icon}
+              </div>
+              <span className="text-sm text-gray-700 font-bold text-center">
+                {service.title}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

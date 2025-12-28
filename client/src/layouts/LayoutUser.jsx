@@ -1,4 +1,3 @@
-// client/src/layouts/LayoutUser.jsx
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Home, Plus, Clock, User, Menu, X, LogOut } from "lucide-react";
