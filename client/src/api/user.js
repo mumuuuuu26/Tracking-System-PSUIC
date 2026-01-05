@@ -8,6 +8,15 @@ export const updateProfileImage = async (token, imageBase64) => {
     })
 }
 
+export const updateProfile = async (token, value) => {
+    return await axios.post('/api/users/update-profile', value, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    })
+}
+
+
 export const listUsers = async (token, params = {}) => {
     return await axios.get('/api/users', {
         params,

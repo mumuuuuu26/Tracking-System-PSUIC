@@ -85,3 +85,48 @@ exports.updateProfileImage = async (req, res) => {
   }
 };
 
+exports.updateProfile = async (req, res) => {
+  try {
+    const { email, phoneNumber, department, name } = req.body;
+
+    // Validate if email is already taken by another user
+    if (email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: email,
+          NOT: { id: req.user.id }
+        }
+      });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already taken" });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        email,
+        phoneNumber,
+        department,
+        name
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        department: true,
+        phoneNumber: true,
+        picture: true
+      }
+    });
+
+    res.json(updatedUser);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Update Profile Failed" });
+  }
+};
+
+

@@ -23,3 +23,11 @@ export const listTicketsByEquipment = async (token, id) => {
         headers: { Authorization: `Bearer ${token}` }
     })
 }
+
+export const submitFeedback = async (token, id, data) => {
+    return await axios.post(`http://localhost:5001/api/ticket/${id}/feedback`, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};

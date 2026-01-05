@@ -94,9 +94,9 @@ exports.login = async (req, res) => {
 
 exports.currentUser = async (req, res) => {
   try {
-    // ใช้ req.user.email ที่ได้จาก middleware (authCheck)
+    // ใช้ req.user.id ที่ได้จาก middleware (authCheck)
     const user = await prisma.user.findFirst({
-      where: { email: req.user.email },
+      where: { id: req.user.id },
       select: {
         id: true,
         email: true,
@@ -104,11 +104,14 @@ exports.currentUser = async (req, res) => {
         role: true,
         username: true, // [New] เอามาใช้เป็น Student ID
         picture: true, // [New] เอามาโชว์รูปโปรไฟล์
+        department: true, // [New]
+        phoneNumber: true, // [New]
         enabled: true, // [New] โชว์สถานะ
         createdAt: true, // [New] โชว์วันที่สมัคร "Member Since..."
         updatedAt: true,
       },
     });
+
 
     // ส่งกลับไปตรงๆ เลย Frontend จะได้เรียกใช้ user.name ได้เลย ไม่ต้อง user.user.name
     res.json(user);

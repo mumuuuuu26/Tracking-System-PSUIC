@@ -1,4 +1,6 @@
 const prisma = require("../config/prisma");
+const transporter = require("../config/nodemailer");
+
 
 //สร้าง Ticket (Create)
 exports.create = async (req, res) => {
@@ -46,7 +48,69 @@ exports.create = async (req, res) => {
       },
       include: { images: true, logs: true, category: true },
     });
+    // --- Notification Logic ---
+    // 1. Notify IT Support via Email
+    // 1. Notify IT Support via Email
+    const itUsers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { role: "admin" },
+          { role: "it_support" }, // [FIX] Add it_support role
+          { department: "IT Support" }
+        ],
+      },
+      select: { id: true, email: true }, // Select ID too
+
+    });
+
+    const emails = itUsers.map((u) => u.email).filter(Boolean);
+
+
+    if (emails.length > 0) {
+      const mailOptions = {
+        from: process.env.MAIL_USER,
+        to: emails,
+        subject: `[New Ticket] ${title}`,
+        html: `
+          <h3>New Ticket Created</h3>
+          <p><strong>Title:</strong> ${title}</p>
+          <p><strong>Description:</strong> ${description}</p>
+          <p><strong>Urgency:</strong> ${urgency}</p>
+          <p><strong>Room:</strong> ${newTicket.room ? newTicket.room.roomNumber : roomId}</p>
+          <br />
+          <p>Please check the IT Dashboard.</p>
+        `,
+      };
+
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) console.log("Email Send Error:", err);
+        else console.log("Email Sent:", info.response);
+      });
+
+      // [NEW] Save Notification to DB for each IT user
+      const notificationsData = itUsers.map(user => ({
+        userId: user.id, // We need to select id in the query above!
+        ticketId: newTicket.id,
+        title: "New Ticket Created",
+        message: `Ticket "${title}" has been created.`,
+        type: "ticket_create"
+      }));
+
+      if (notificationsData.length > 0) {
+        await prisma.notification.createMany({
+          data: notificationsData
+        });
+      }
+    }
+
+
+    // 2. Real-time Update via Socket.io
+    if (req.io) {
+      req.io.emit("server:new-ticket", newTicket);
+    }
+
     res.json(newTicket);
+
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error: Create Ticket Failed" });
@@ -146,7 +210,56 @@ exports.update = async (req, res) => {
         },
       },
     });
+
+    // --- Notification Logic ---
+    // Notify User via Email on status/update change
+    const ticketOwner = await prisma.user.findUnique({
+      where: { id: updatedTicket.createdById },
+      select: { id: true, email: true }
+
+    });
+
+    if (ticketOwner) {
+      // 1. Send Email
+      if (ticketOwner.email) {
+        const mailOptions = {
+          from: process.env.MAIL_USER,
+          to: ticketOwner.email,
+          subject: `[Ticket Updated] ${updatedTicket.title}`,
+          html: `
+              <h3>Ticket Updated</h3>
+              <p><strong>Status:</strong> ${updatedTicket.status}</p>
+              <p><strong>Note:</strong> ${adminNote || "-"}</p>
+              <br />
+              <p>Check "My Tickets" for details.</p>
+            `,
+        };
+
+        transporter.sendMail(mailOptions, (err, info) => {
+          if (err) console.log("Email Send Error:", err);
+          else console.log("Email Sent:", info.response);
+        });
+      }
+
+      // 2. Save Notification to DB
+      await prisma.notification.create({
+        data: {
+          userId: ticketOwner.id,
+          ticketId: updatedTicket.id,
+          title: "Ticket Updated",
+          message: `Ticket "${updatedTicket.title}" status is now ${updatedTicket.status}.`,
+          type: "ticket_update"
+        }
+      });
+    }
+
+
+    if (req.io) {
+      req.io.emit("server:update-ticket", updatedTicket);
+    }
     res.json(updatedTicket);
+
+
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error: Update Ticket Failed" });
@@ -208,5 +321,71 @@ exports.listByEquipment = async (req, res) => {
     res
       .status(500)
       .json({ message: "Server Error: Get Equipment History Failed" });
+  }
+};
+
+//ให้คะแนนความพึงพอใจ (Submit Feedback)
+exports.submitFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+
+    const ticketId = parseInt(id);
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ message: "Invalid Ticket ID" });
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { assignedTo: true }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    if (ticket.createdById !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // Update Ticket
+    await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        rating: parseInt(rating),
+        userFeedback: comment,
+        logs: {
+          create: {
+            action: "Feedback",
+            detail: `User gave ${rating} stars. Comment: ${comment}`,
+            updatedById: req.user.id
+          }
+        }
+      }
+    });
+
+    // Update IT Stats if assigned
+    if (ticket.assignedToId) {
+      const itUser = await prisma.user.findUnique({ where: { id: ticket.assignedToId } });
+      if (itUser) {
+        const newTotalRated = itUser.totalRated + 1;
+        const currentTotalScore = (itUser.avgRating * itUser.totalRated);
+        const newAvg = (currentTotalScore + parseInt(rating)) / newTotalRated;
+
+        await prisma.user.update({
+          where: { id: ticket.assignedToId },
+          data: {
+            totalRated: newTotalRated,
+            avgRating: newAvg
+          }
+        });
+      }
+    }
+
+    res.json({ message: "Feedback submitted successfully" });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error: Submit Feedback Failed" });
   }
 };

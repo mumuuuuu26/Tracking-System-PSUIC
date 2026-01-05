@@ -1,15 +1,17 @@
 // client/src/pages/user/MyTickets.jsx
 import React, { useEffect, useState } from "react";
-import { Search, Filter, MapPin, Monitor, Calendar } from "lucide-react";
+import { Search, Filter, MapPin, Monitor, Calendar, Star } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 
 const MyTickets = () => {
   const { token } = useAuthStore();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -197,6 +199,21 @@ const MyTickets = () => {
                 </div>
               )}
             </div>
+
+            {/* Action Buttons */}
+            {ticket.status === 'fixed' && !ticket.rating && (
+              <button
+                onClick={() => navigate(`/user/feedback/${ticket.id}`)}
+                className="mt-3 w-full flex items-center justify-center gap-2 bg-yellow-100 text-yellow-700 py-2 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
+              >
+                <Star size={16} /> Rate Service
+              </button>
+            )}
+            {ticket.rating && (
+              <div className="mt-3 w-full flex items-center justify-center gap-1 text-yellow-500 text-sm font-medium bg-yellow-50 py-2 rounded-lg">
+                <span>Rated: {ticket.rating}</span> <Star size={14} fill="#EAB308" />
+              </div>
+            )}
           </div>
         ))}
 

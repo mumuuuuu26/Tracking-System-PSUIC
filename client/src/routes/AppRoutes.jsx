@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "../layouts/Layout";
 import LayoutUser from "../layouts/LayoutUser";
 import LayoutAdmin from "../layouts/LayoutAdmin";
@@ -18,6 +18,9 @@ import HomeUser from "../pages/user/HomeUser";
 import MyTickets from "../pages/user/MyTickets";
 import CreateTicket from "../pages/user/CreateTicket";
 import Profile from "../pages/user/Profile";
+import UserAppointments from "../pages/user/Appointments";
+import Feedback from "../pages/user/Feedback";
+import WaitingForFeedback from "../pages/user/WaitingForFeedback";
 
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
@@ -25,33 +28,38 @@ import AllTickets from "../pages/admin/AllTickets";
 import UserManagement from "../pages/admin/UserManagement";
 import ITManagement from "../pages/admin/ITManagement";
 import RoomManagement from "../pages/admin/RoomManagement";
+import ReportDashboard from "../pages/admin/reports/ReportDashboard";
 
 // IT
 import ITDashboard from "../pages/it/Dashboard";
+import Schedule from "../pages/it/Schedule";
+import Notifications from "../pages/it/Notifications";
+import ITProfile from "../pages/it/Profile";
+
+
 
 const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      {/* Public Routes (Standalone) */}
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<PSUCallback />} />
-
-      {/* Main Layout Routes (Optional: if there are other public pages that need layout, put them here) */}
-      {/* <Route element={<Layout />}> ... </Route> */}
 
       {/* User Routes */}
       <Route path="user" element={<LayoutUser />}>
         <Route index element={<HomeUser />} />
         <Route path="my-tickets" element={<MyTickets />} />
         <Route path="create-ticket" element={<CreateTicket />} />
+        <Route path="appointments" element={<UserAppointments />} />
         <Route path="scan-qr" element={<ScanQR />} />
         <Route path="equipment/:id" element={<EquipmentDetail />} />
         <Route path="ticket/:id" element={<TicketDetail />} />
         <Route path="quick-fix" element={<QuickFix />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="feedback" element={<WaitingForFeedback />} />
+        <Route path="feedback/:ticketId" element={<Feedback />} />
       </Route>
 
       {/* Admin Routes */}
@@ -61,11 +69,16 @@ const AppRoutes = () => {
         <Route path="manage-users" element={<UserManagement />} />
         <Route path="manage-it" element={<ITManagement />} />
         <Route path="manage-rooms" element={<RoomManagement />} />
+        <Route path="reports" element={<ReportDashboard />} />
       </Route>
 
       {/* IT Support Routes */}
       <Route path="it" element={<LayoutIT />}>
         <Route index element={<ITDashboard />} />
+        <Route path="schedule" element={<Schedule />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="profile" element={<ITProfile />} />
+
       </Route>
 
       <Route path="*" element={<h1>404 Not Found</h1>} />

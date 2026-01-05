@@ -1,0 +1,120 @@
+const { google } = require('googleapis');
+
+// Load credentials from environment variables or a JSON file
+// For this implementation, we'll assume they are in env vars or we'll mock if missing
+const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+
+const getAuthClient = () => {
+    const credentials = {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        project_id: process.env.GOOGLE_PROJECT_ID,
+    };
+
+    if (!credentials.client_email || !credentials.private_key) {
+        console.warn('Google Credentials missing. Calendar sync will be mocked.');
+        return null;
+    }
+
+    const auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: SCOPES,
+    });
+
+    return auth;
+};
+
+exports.createGoogleEvent = async (eventDetails) => {
+    try {
+        const auth = getAuthClient();
+        if (!auth) {
+            return `mock-event-id-${Date.now()}`;
+        }
+
+        const calendar = google.calendar({ version: 'v3', auth });
+
+        // eventDetails: { summary, description, start: Date, end: Date, attendees: [] }
+        const event = {
+            summary: eventDetails.summary,
+            description: eventDetails.description,
+            start: {
+                dateTime: eventDetails.start.toISOString(),
+                timeZone: 'Asia/Bangkok',
+            },
+            end: {
+                dateTime: eventDetails.end.toISOString(),
+                timeZone: 'Asia/Bangkok',
+            },
+            attendees: eventDetails.attendees || [],
+            reminders: {
+                useDefault: false,
+                overrides: [
+                    { method: 'email', minutes: 24 * 60 },
+                    { method: 'popup', minutes: 10 },
+                ],
+            },
+        };
+
+        const res = await calendar.events.insert({
+            calendarId: 'primary',
+            resource: event,
+        });
+
+        return res.data.id;
+    } catch (error) {
+        console.error('Error creating Google Calendar event:', error);
+        // Return null or throw depending on how strict we want to be
+        // For now, return null so we don't break the app flow if google fails
+        return null;
+    }
+};
+
+exports.updateGoogleEvent = async (eventId, eventDetails) => {
+    try {
+        const auth = getAuthClient();
+        if (!auth) return true; // Mock success
+
+        const calendar = google.calendar({ version: 'v3', auth });
+
+        const event = {
+            summary: eventDetails.summary,
+            description: eventDetails.description,
+            start: {
+                dateTime: new Date(eventDetails.start).toISOString(),
+                timeZone: 'Asia/Bangkok',
+            },
+            end: {
+                dateTime: new Date(eventDetails.end).toISOString(),
+                timeZone: 'Asia/Bangkok',
+            },
+        };
+
+        await calendar.events.patch({
+            calendarId: 'primary',
+            eventId: eventId,
+            resource: event,
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error updating Google Calendar event:', error);
+        return false;
+    }
+};
+
+exports.deleteGoogleEvent = async (eventId) => {
+    try {
+        const auth = getAuthClient();
+        if (!auth) return true;
+
+        const calendar = google.calendar({ version: 'v3', auth });
+        await calendar.events.delete({
+            calendarId: 'primary',
+            eventId: eventId
+        });
+        return true;
+    } catch (error) {
+        console.error('Error deleting Google Calendar event:', error);
+        return false;
+    }
+}

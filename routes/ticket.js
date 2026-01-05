@@ -12,6 +12,7 @@ const {
   remove,
   listAll,
   listByEquipment,
+  submitFeedback,
 } = require("../controllers/ticket");
 
 // @ENDPOINT http://localhost:5001/api/ticket
@@ -36,5 +37,8 @@ router.delete("/ticket/:id", authCheck, adminCheck, remove);
 
 //ดูประวัติซ่อมของอุปกรณ์ (สำหรับ User/Scan QR)
 router.get("/ticket/equipment/:id", authCheck, listByEquipment);
+
+//ให้คะแนนความพึงพอใจ
+router.post("/ticket/:id/feedback", authCheck, submitFeedback);
 
 module.exports = router;

@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Ticket, Users, UserCog, Building2, Menu, X, LogOut, User } from "lucide-react";
+import { LayoutDashboard, Ticket, Users, UserCog, Building2, Menu, X, LogOut, User, BarChart } from "lucide-react";
+
+// ... (lines 4-132 remain same, we jump to insertion point)
+// Actually replace_file_content needs contiguous block. 
+// I will do 2 separate calls or just use multi_replace_file_content?
+// Agent rules say: "Use this tool ONLY when you are making a SINGLE CONTIGUOUS block... If you are making edits to multiple non-adjacent lines, use the multi_replace_file_content tool instead."
+// So I MUST use multi_replace_file_content.
+
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
@@ -135,6 +142,12 @@ const LayoutAdmin = () => {
                             >
                                 <Building2 size={20} /> Room Management
                             </a>
+                            <a
+                                href="/admin/reports"
+                                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                            >
+                                <BarChart size={20} /> Reports
+                            </a>
                             <hr className="my-4 border-gray-100" />
                             <button
                                 onClick={handleLogout}
@@ -155,12 +168,13 @@ const LayoutAdmin = () => {
             {/* Floating Bottom Navigation (Dock Style on Desktop) */}
             <div className="fixed bottom-0 left-0 right-0 md:bottom-8 md:flex md:justify-center z-30 pointer-events-none">
                 <nav className="pointer-events-auto bg-white/90 backdrop-blur-md border-t md:border border-gray-200/50 md:rounded-full md:shadow-2xl md:px-8 py-2 md:py-3 transition-all duration-300">
-                    <div className="grid grid-cols-5 md:flex md:gap-6 w-full md:w-auto">
+                    <div className="grid grid-cols-6 md:flex md:gap-6 w-full md:w-auto">
                         <NavLink href="/admin" icon={<LayoutDashboard size={24} />} label="Dash" active={isActive("/admin")} />
                         <NavLink href="/admin/tickets" icon={<Ticket size={24} />} label="Tickets" active={isActive("/admin/tickets")} />
                         <NavLink href="/admin/manage-users" icon={<Users size={24} />} label="Users" active={isActive("/admin/manage-users")} />
                         <NavLink href="/admin/manage-it" icon={<UserCog size={24} />} label="Staff" active={isActive("/admin/manage-it")} />
                         <NavLink href="/admin/manage-rooms" icon={<Building2 size={24} />} label="Rooms" active={isActive("/admin/manage-rooms")} />
+                        <NavLink href="/admin/reports" icon={<BarChart size={24} />} label="Reports" active={isActive("/admin/reports")} />
                     </div>
                 </nav>
             </div>

@@ -18,11 +18,11 @@ exports.authCheck = async (req, res, next) => {
 
     const user = await prisma.user.findFirst({
       where: {
-        email: req.user.email,
+        id: req.user.id,
       },
     });
 
-    if (!user.enabled) {
+    if (!user || !user.enabled) {
       return res.status(400).json({ message: "This account cannot access" });
     }
 
@@ -35,9 +35,9 @@ exports.authCheck = async (req, res, next) => {
 
 exports.adminCheck = async (req, res, next) => {
   try {
-    const { email } = req.user;
-    const adminUsers = await prisma.user.findFirst({
-      where: { email: email },
+    const { id } = req.user;
+    const adminUsers = await prisma.user.findUnique({
+      where: { id: id },
     });
     if (!adminUsers || adminUsers.role !== "admin") {
       return res.status(403).json({ message: "Access Denied: Admin Only" });
@@ -52,9 +52,9 @@ exports.adminCheck = async (req, res, next) => {
 
 exports.itCheck = async (req, res, next) => {
   try {
-    const { email } = req.user;
-    const itUser = await prisma.user.findFirst({
-      where: { email: email },
+    const { id } = req.user;
+    const itUser = await prisma.user.findUnique({
+      where: { id: id },
     });
 
     // อนุญาตให้ทั้ง it_support และ admin เข้าถึงส่วนนี้ได้
@@ -70,3 +70,4 @@ exports.itCheck = async (req, res, next) => {
     res.status(500).json({ message: "Error IT access denied" });
   }
 };
+
