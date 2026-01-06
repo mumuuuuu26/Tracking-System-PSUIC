@@ -10,16 +10,19 @@ import {
   Clock,
   LogOut,
   Camera,
+  Edit2,
+  Check,
+  X,
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { currentUser } from "../../api/auth";
 import { listMyTickets } from "../../api/ticket";
-import { updateProfileImage } from "../../api/user";
+import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 
 const Profile = () => {
-  const { token } = useAuthStore();
+  const { token, checkUser } = useAuthStore();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ticketStats, setTicketStats] = useState({
@@ -27,6 +30,12 @@ const Profile = () => {
     completed: 0,
     pending: 0,
   });
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
 
   useEffect(() => {
     fetchProfile();
@@ -75,12 +84,46 @@ const Profile = () => {
         const base64Image = reader.result;
         await updateProfileImage(token, base64Image);
         toast.success("Profile picture updated!");
+        await checkUser(); // Sync header
         fetchProfile(); // Refresh profile to show new image
       } catch (err) {
         console.error(err);
         toast.error("Failed to update profile picture");
       }
     };
+  };
+
+  const handleUpdateName = async () => {
+    if (!nameInput.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    try {
+      await updateProfile(token, { name: nameInput });
+      toast.success("Name updated successfully!");
+      setProfile({ ...profile, name: nameInput });
+      await checkUser(); // Sync header
+      setIsEditingName(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to update name");
+    }
+  };
+
+  const handleUpdateUsername = async () => {
+    // Note: Username can be empty if user wants to clear it (optional, depending on requirements)
+    // But usually prompt if empty.
+
+    try {
+      await updateProfile(token, { username: usernameInput });
+      toast.success("Username updated successfully!");
+      setProfile({ ...profile, username: usernameInput });
+      await checkUser(); // Sync header
+      setIsEditingUsername(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to update username");
+    }
   };
 
   const stats = [
@@ -169,9 +212,50 @@ const Profile = () => {
               />
             </div>
 
-            <h2 className="text-xl font-bold text-gray-800 mb-1">
-              {displayName}
-            </h2>
+            {/* Name Editing Section */}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              {isEditingName ? (
+                <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="border-b-2 border-blue-500 text-xl font-bold text-gray-800 text-center focus:outline-none bg-transparent w-full min-w-[150px]"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleUpdateName}
+                    className="p-1.5 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors"
+                    title="Save"
+                  >
+                    <Check size={16} strokeWidth={3} />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingName(false)}
+                    className="p-1.5 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors"
+                    title="Cancel"
+                  >
+                    <X size={16} strokeWidth={3} />
+                  </button>
+                </div>
+              ) : (
+                <div className="group flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {profile.name || displayName}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setNameInput(profile.name || displayName);
+                      setIsEditingName(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                    title="Edit Name"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mb-4 font-medium tracking-wide">
               {profile.role ? profile.role.toUpperCase() : "USER"}
             </p>
@@ -239,16 +323,46 @@ const Profile = () => {
             <div className="space-y-5">
               {/* Username / Student ID */}
               <div className="group">
-                <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">
-                  {isStudent ? "Student ID / PSU Passport" : "Username"}
-                </label>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-transparent group-hover:border-blue-200 group-hover:bg-blue-50/50 transition-all">
-                  <div className="bg-white p-2 rounded-lg shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase">
+                    {isStudent ? "Student ID / PSU Passport" : "Username"}
+                  </label>
+                  {!isStudent && !isEditingUsername && (
+                    <button
+                      onClick={() => {
+                        setUsernameInput(profile.username || "");
+                        setIsEditingUsername(true);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 transition-all"
+                    >
+                      <Edit2 size={12} /> Edit
+                    </button>
+                  )}
+                </div>
+
+                <div className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isEditingUsername ? 'bg-white border-blue-500 ring-2 ring-blue-100' : 'bg-gray-50 border-transparent group-hover:border-blue-200 group-hover:bg-blue-50/50'}`}>
+                  <div className="bg-white p-2 rounded-lg shadow-sm shrink-0">
                     <Hash size={18} className="text-blue-500" />
                   </div>
-                  <span className="font-semibold text-gray-700">
-                    {profile.username || "-"}
-                  </span>
+
+                  {isEditingUsername ? (
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        type="text"
+                        value={usernameInput}
+                        onChange={(e) => setUsernameInput(e.target.value)}
+                        className="flex-1 bg-transparent outline-none font-semibold text-gray-800 placeholder-gray-400 min-w-0"
+                        placeholder="Set username"
+                        autoFocus
+                      />
+                      <button onClick={handleUpdateUsername} className="text-green-600 hover:bg-green-50 p-1 rounded-full"><Check size={16} /></button>
+                      <button onClick={() => setIsEditingUsername(false)} className="text-red-500 hover:bg-red-50 p-1 rounded-full"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-gray-700 truncate">
+                      {profile.username || "-"}
+                    </span>
+                  )}
                 </div>
               </div>
 

@@ -42,7 +42,7 @@ exports.getMonthlyStats = async (req, res) => {
             const day = new Date(ticket.createdAt).getDate();
             if (statsByDay[day]) {
                 statsByDay[day].total++;
-                if (ticket.status === 'Fixed') statsByDay[day].fixed++;
+                if (ticket.status === 'fixed') statsByDay[day].fixed++;
                 else statsByDay[day].pending++;
             }
         });
@@ -50,8 +50,8 @@ exports.getMonthlyStats = async (req, res) => {
         res.json({
             period: `${targetMonth + 1}/${targetYear}`,
             total: tickets.length,
-            solved: tickets.filter(t => t.status === 'Fixed').length,
-            pending: tickets.filter(t => t.status !== 'Fixed').length,
+            solved: tickets.filter(t => t.status === 'fixed').length,
+            pending: tickets.filter(t => t.status !== 'fixed').length,
             data: Object.values(statsByDay)
         });
 
@@ -93,7 +93,7 @@ exports.getAnnualStats = async (req, res) => {
         tickets.forEach(ticket => {
             const m = new Date(ticket.createdAt).getMonth();
             statsByMonth[m].total++;
-            if (ticket.status === 'Fixed') statsByMonth[m].fixed++;
+            if (ticket.status === 'fixed') statsByMonth[m].fixed++;
             else statsByMonth[m].pending++;
         });
 
@@ -170,7 +170,7 @@ exports.getITPerformance = async (req, res) => {
             const pending = await prisma.ticket.count({
                 where: {
                     assignedToId: u.id,
-                    status: { not: 'Fixed' } // assuming 'Fixed' is completion status
+                    status: { not: 'fixed' } // assuming 'fixed' is completion status
                 }
             });
             return { ...u, pendingJobs: pending };

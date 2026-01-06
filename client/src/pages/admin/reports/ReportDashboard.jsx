@@ -10,39 +10,44 @@ const ReportDashboard = () => {
     const [activeTab, setActiveTab] = useState('monthly');
 
     const tabs = [
-        { id: 'monthly', label: 'Monthly Report', icon: <BarChart size={20} /> },
-        { id: 'annual', label: 'Annual Report', icon: <PieChart size={20} /> },
-        { id: 'equipment', label: 'Equipment Analysis', icon: <Server size={20} /> },
-        { id: 'performance', label: 'IT Performance', icon: <Activity size={20} /> },
-        { id: 'satisfaction', label: 'Satisfaction', icon: <Heart size={20} /> },
+        { id: 'monthly', label: 'Monthly Report', icon: <BarChart size={18} /> },
+        { id: 'annual', label: 'Annual Report', icon: <PieChart size={18} /> },
+        { id: 'equipment', label: 'Equipment Analysis', icon: <Server size={18} /> },
+        { id: 'performance', label: 'IT Performance', icon: <Activity size={18} /> },
+        { id: 'satisfaction', label: 'Satisfaction', icon: <Heart size={18} /> },
     ];
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-            <h1 className="text-2xl font-bold text-gray-800">System Reports</h1>
+        <div className="min-h-screen bg-slate-50/50 pb-20">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-100 pt-8 pb-4 px-4 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
+                <div className="max-w-7xl mx-auto">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-6">System Reports</h1>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-1">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`
-                            flex items-center gap-2 px-6 py-3 rounded-t-lg font-medium transition-colors
-                            ${activeTab === tab.id
-                                ? 'bg-white border-x border-t border-gray-200 text-blue-600 shadow-[0_-2px_10px_rgba(0,0,0,0.02)]'
-                                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                            }
-                        `}
-                    >
-                        {tab.icon}
-                        {tab.label}
-                    </button>
-                ))}
+                    {/* Scrollable Tabs */}
+                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`
+                                    flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all whitespace-nowrap
+                                    ${activeTab === tab.id
+                                        ? 'bg-gray-900 text-white shadow-lg shadow-gray-200 transform scale-105'
+                                        : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 hover:text-gray-800'
+                                    }
+                                `}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Content Area */}
-            <div className="bg-white rounded-b-xl min-h-[500px]">
+            <div className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {activeTab === 'monthly' && <MonthlyReport />}
                 {activeTab === 'annual' && <AnnualReport />}
                 {activeTab === 'equipment' && <EquipmentAnalysis />}

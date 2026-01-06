@@ -114,7 +114,7 @@ const ITDashboard = () => {
   const getFilteredTickets = () => {
     switch (selectedFilter) {
       case "Accept":
-        return tickets.filter((t) => t.status === "pending");
+        return tickets.filter((t) => ["in_progress", "scheduled"].includes(t.status));
       case "Reject":
         return tickets.filter((t) => t.status === "rejected"); // Or pending logic if used for actions
       default:
@@ -133,6 +133,38 @@ const ITDashboard = () => {
       default:
         return "bg-green-100 text-green-600";
     }
+  };
+
+  const urgencyWeight = {
+    Critical: 3,
+    High: 2,
+    Medium: 1,
+    Low: 0,
+  };
+
+  const getFilteredAndSortedTickets = () => {
+    let filtered = [];
+    switch (selectedFilter) {
+      case "Accept":
+        filtered = tickets.filter((t) => ["in_progress", "scheduled"].includes(t.status));
+        break;
+      case "Reject":
+        filtered = tickets.filter((t) => t.status === "rejected");
+        break;
+      default: // "All" -> Pending
+        filtered = tickets.filter((t) => t.status === "pending");
+    }
+
+    return filtered.sort((a, b) => {
+      // 1. Urgency (Highest first)
+      const weightA = urgencyWeight[a.urgency] || 0;
+      const weightB = urgencyWeight[b.urgency] || 0;
+      if (weightA !== weightB) {
+        return weightB - weightA;
+      }
+      // 2. CreatedAt (Oldest first / First come first served)
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
   };
 
   const completionPercentage =
@@ -288,7 +320,7 @@ const ITDashboard = () => {
 
         {/* Tickets List */}
         <div className="space-y-3">
-          {getFilteredTickets().map((ticket) => (
+          {getFilteredAndSortedTickets().map((ticket) => (
             <div key={ticket.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start gap-3">
@@ -321,7 +353,7 @@ const ITDashboard = () => {
 
               <div className="flex items-center justify-between text-sm">
                 <p className="text-gray-500">
-                  {ticket.createdBy?.name || "Unknown"}
+                  {ticket.createdBy?.name || ticket.createdBy?.username || "Unknown"}
                 </p>
                 <p className="text-gray-400">
                   {dayjs(ticket.createdAt).fromNow()}
@@ -361,7 +393,9 @@ const ITDashboard = () => {
             </div>
           ))}
 
-          {getFilteredTickets().length === 0 && (
+
+
+          {getFilteredAndSortedTickets().length === 0 && (
             <div className="text-center py-8 text-gray-500">
               <p>No tickets found</p>
             </div>
@@ -369,48 +403,7 @@ const ITDashboard = () => {
         </div>
       </div>
 
-      {/* Today's Schedule */}
-      <div className="px-4 mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-lg">My Schedule</h3>
-          <button
-            onClick={() => navigate("/it/schedule")}
-            className="text-blue-500 text-sm"
-          >
-            See all
-          </button>
-        </div>
 
-        <div className="space-y-2">
-          {appointments.map((apt) => (
-            <button
-              key={apt.id}
-              onClick={() => navigate(`/it/appointment/${apt.id}`)}
-              className="w-full bg-white rounded-xl p-3 flex items-center gap-3"
-            >
-              <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Calendar className="text-gray-500" size={24} />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-semibold text-sm">
-                  {apt.ticket?.equipment?.name || apt.ticket?.title}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {dayjs(apt.scheduledAt).format("HH:mm")} - Room{" "}
-                  {apt.ticket?.room?.roomNumber}
-                </p>
-              </div>
-              <ChevronRight className="text-gray-400" size={20} />
-            </button>
-          ))}
-
-          {appointments.length === 0 && (
-            <div className="text-center py-4 text-gray-500 text-sm">
-              No appointments today
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Accept Modal */}
       {
@@ -469,7 +462,7 @@ const ITDashboard = () => {
                   {selectedTicket.room?.roomNumber}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Req: {selectedTicket.createdBy?.name}
+                  Req: {selectedTicket.createdBy?.name || selectedTicket.createdBy?.username || "Unknown"}
                 </p>
               </div>
 

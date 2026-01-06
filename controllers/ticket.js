@@ -204,7 +204,7 @@ exports.update = async (req, res) => {
     });
 
     // ส่ง Email แจ้ง User เมื่อ ticket แก้ไขเสร็จ
-    if (status === "Fixed" && updatedTicket.createdBy?.email) {
+    if (status === "fixed" && updatedTicket.createdBy?.email) {
       try {
         if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
           console.warn("⚠️ Email config missing, skipping notification");
@@ -276,9 +276,9 @@ exports.update = async (req, res) => {
         data: {
           userId: updatedTicket.createdById,
           ticketId: updatedTicket.id,
-          title: status === "Fixed" ? "Ticket Resolved!" : "Ticket Updated",
+          title: status === "fixed" ? "Ticket Resolved!" : "Ticket Updated",
           message:
-            status === "Fixed"
+            status === "fixed"
               ? `Your ticket "${updatedTicket.title}" has been resolved. Please rate our service.`
               : `Your ticket "${updatedTicket.title}" status is now ${status}.`,
           type: "ticket_update",

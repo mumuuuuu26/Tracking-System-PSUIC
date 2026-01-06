@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import useAuthStore from '../../../store/auth-store';
 import { getITPerformance } from '../../../api/report';
-import { Star, CheckCircle, Clock } from 'lucide-react';
+import { Star, CheckCircle, Clock, Trophy, Medal, Award } from 'lucide-react';
 
 const ITPerformance = () => {
     const { token } = useAuthStore();
@@ -16,7 +16,9 @@ const ITPerformance = () => {
         try {
             setLoading(true);
             const res = await getITPerformance(token);
-            setData(res.data);
+            // Sort by total resolved desc, then rating desc
+            const sorted = res.data.sort((a, b) => b.totalResolved - a.totalResolved || b.avgRating - a.avgRating);
+            setData(sorted);
         } catch (err) {
             console.error(err);
         } finally {
@@ -24,45 +26,109 @@ const ITPerformance = () => {
         }
     };
 
+    const getRankIcon = (index) => {
+        if (index === 0) return <Trophy className="text-yellow-500 fill-yellow-500" size={24} />;
+        if (index === 1) return <Medal className="text-gray-400 fill-gray-400" size={24} />;
+        if (index === 2) return <Medal className="text-amber-700 fill-amber-700" size={24} />;
+        return <span className="text-lg font-bold text-gray-400 w-6 text-center">{index + 1}</span>;
+    };
+
+    const getRankStyle = (index) => {
+        if (index === 0) return "bg-gradient-to-r from-yellow-50 to-white border-yellow-200 shadow-md";
+        if (index === 1) return "bg-gradient-to-r from-gray-50 to-white border-gray-200";
+        if (index === 2) return "bg-gradient-to-r from-amber-50 to-white border-amber-200";
+        return "bg-white border-gray-100";
+    };
+
     return (
         <div className="space-y-6">
-            <h2 className="text-lg font-bold">IT Support Performance</h2>
+            <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-gray-800">IT Staff Performance Ranking</h2>
+                <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                    Real-time performance data
+                </span>
+            </div>
 
-            {loading ? <p>Loading...</p> : (
-                <div className="grid gap-4">
+            {loading ? (
+                <div className="space-y-4">
+                    {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse"></div>)}
+                </div>
+            ) : (
+                <div className="space-y-4">
                     {data.map((it, index) => (
-                        <div key={it.id} className="bg-white border p-4 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-all">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold text-gray-400">
-                                    {index + 1}
+                        <div
+                            key={it.id}
+                            className={`p-4 md:p-6 rounded-2xl border flex flex-col md:flex-row items-center justify-between transition-all hover:shadow-lg hover:-translate-y-0.5 ${getRankStyle(index)}`}
+                        >
+                            <div className="flex items-center gap-6 w-full md:w-auto mb-4 md:mb-0">
+                                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+                                    {getRankIcon(index)}
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800">{it.name || it.email}</h3>
-                                    <div className="flex gap-1 mt-1">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star
-                                                key={i}
-                                                size={14}
-                                                className={i < Math.round(it.avgRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
-                                            />
-                                        ))}
-                                        <span className="text-xs text-gray-400 ml-1">({it.totalRated} reviews)</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 rounded-full p-1 bg-white shadow-sm border border-gray-100">
+                                        <img
+                                            src={it.picture || `https://ui-avatars.com/api/?name=${it.name || 'IT'}&background=random`}
+                                            alt={it.name}
+                                            className="w-full h-full rounded-full object-cover"
+                                        />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-gray-800">{it.name || it.email}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <div className="flex gap-0.5">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star
+                                                        key={i}
+                                                        size={14}
+                                                        className={i < Math.round(it.avgRating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="text-xs font-semibold text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
+                                                {Number(it.avgRating || 0).toFixed(1)}
+                                            </span>
+                                            <span className="text-xs text-gray-400 ml-1">
+                                                ({it.totalRated || 0} reviews)
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-8 text-right">
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1 flex items-center justify-end gap-1"><CheckCircle size={12} /> Resolved</p>
-                                    <p className="font-bold text-lg text-green-600">{it.totalResolved}</p>
+                            <div className="flex gap-4 md:gap-12 w-full md:w-auto justify-between md:justify-end px-4 md:px-0">
+                                <div className="text-center md:text-right">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center justify-end gap-1">
+                                        <CheckCircle size={14} className="text-emerald-500" />
+                                        Resolved
+                                    </p>
+                                    <p className="font-extrabold text-2xl text-gray-800">{it.totalResolved || 0}</p>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 mb-1 flex items-center justify-end gap-1"><Clock size={12} /> Pending</p>
-                                    <p className="font-bold text-lg text-orange-500">{it.pendingJobs || 0}</p>
+                                <div className="text-center md:text-right">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center justify-end gap-1">
+                                        <Clock size={14} className="text-amber-500" />
+                                        Active
+                                    </p>
+                                    <p className="font-extrabold text-2xl text-gray-800">{it.pendingJobs || 0}</p>
+                                </div>
+                                <div className="text-center md:text-right pl-4 border-l border-gray-100">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        Efficiency
+                                    </p>
+                                    <p className="font-extrabold text-2xl text-blue-600">
+                                        {it.totalResolved + (it.pendingJobs || 0) > 0
+                                            ? Math.round((it.totalResolved / (it.totalResolved + (it.pendingJobs || 0))) * 100)
+                                            : 0}%
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     ))}
+
+                    {data.length === 0 && (
+                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                            <p className="text-gray-400 font-medium">No performance data available yet.</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

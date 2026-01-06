@@ -20,6 +20,7 @@ exports.listUsers = async (req, res) => {
         enabled: true,
         department: true, // เพิ่ม department
         phoneNumber: true, // เพิ่ม phoneNumber
+        picture: true,     // [New] Include profile picture
         createdAt: true,
         updatedAt: true,
       },
@@ -87,7 +88,7 @@ exports.updateProfileImage = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { email, phoneNumber, department, name } = req.body;
+    const { email, phoneNumber, department, name, username } = req.body;
 
     // Validate if email is already taken by another user
     if (email) {
@@ -102,13 +103,27 @@ exports.updateProfile = async (req, res) => {
       }
     }
 
+    // [New] Validate if username is already taken
+    if (username) {
+      const existingUsername = await prisma.user.findFirst({
+        where: {
+          username: username,
+          NOT: { id: req.user.id }
+        }
+      });
+      if (existingUsername) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         email,
         phoneNumber,
         department,
-        name
+        name,
+        username
       },
       select: {
         id: true,
@@ -157,31 +172,57 @@ exports.removeUser = async (req, res) => {
     const { id } = req.params;
     const userId = parseInt(id);
 
-    // 1. Unassign pending/active tickets first (regardless of delete method)
-    // This allows hard delete to succeed if the ONLY link was 'assignedToId'
+    // 1. Unassign tickets assigned TO this user (IT Support role)
+    // We set assignedToId = null and status = pending so other staff can pick it up
     await prisma.ticket.updateMany({
-      where: { assignedToId: userId, status: { in: ['in_progress', 'pending'] } },
+      where: { assignedToId: userId },
       data: { assignedToId: null, status: 'pending' }
     });
 
-    // 2. Try HARD DELETE first (to satisfy "Delete from DB")
-    try {
-      await prisma.user.delete({
-        where: { id: userId }
-      });
-      return res.json({ message: "User permanently deleted" });
-    } catch (hardErr) {
-      console.log("Hard delete failed, falling back to soft delete:", hardErr.code);
+    // 2. Delete all Appointments where this user is the IT Support
+    // (Tickets will lose their appointment linkage, but remain in system)
+    await prisma.appointment.deleteMany({
+      where: { itSupportId: userId }
+    });
 
-      // 3. Fallback to SOFT DELETE if Hard Delete fails (e.g. Foreign Key constraint on created tickets)
-      await prisma.user.update({
-        where: { id: userId },
-        data: { enabled: false }
-      });
-      return res.json({ message: "User disabled (History preserved)" });
-    }
+    // 3. Delete all Notifications belonging to this user
+    await prisma.notification.deleteMany({
+      where: { userId: userId }
+    });
+
+    // 4. Delete IT Availability records
+    await prisma.iTAvailability.deleteMany({
+      where: { userId: userId }
+    });
+
+    // 5. Nullify Activity Logs (Keep history but remove link to user)
+    await prisma.activityLog.updateMany({
+      where: { updatedById: userId },
+      data: { updatedById: null }
+    });
+
+    // 6. Nullify Knowledge Base edits
+    await prisma.knowledgeBase.updateMany({
+      where: { updatedById: userId },
+      data: { updatedById: null }
+    });
+
+    // 7. Delete Tickets CREATED by this user
+    // Prisma schema has onDelete: Cascade for Ticket->Image, Ticket->ActivityLog, Ticket->Appointment
+    // So this will clean up all associated ticket data automatically.
+    await prisma.ticket.deleteMany({
+      where: { createdById: userId }
+    });
+
+    // 8. Finally, Delete the User
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+
+    res.json({ message: "User and all associated data permanently deleted" });
+
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Delete Failed" });
+    console.log("Delete error:", err);
+    res.status(500).json({ message: "Delete Failed", error: err.message });
   }
 };

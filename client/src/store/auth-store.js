@@ -31,9 +31,9 @@ const useAuthStore = create(
                     const token = get().token
                     if (!token) return
                     const res = await currentUser(token)
-                    // confirm token is valid, optional: update user info
+                    set({ user: res.data }) // [New] Update user data (name, picture, etc.)
                 } catch (err) {
-                    // if token invalid, logout
+                    console.log('Token invalid or expired', err)
                     get().actionLogout()
                 }
             }

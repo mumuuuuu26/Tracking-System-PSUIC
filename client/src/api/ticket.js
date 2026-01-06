@@ -31,3 +31,10 @@ export const submitFeedback = async (token, id, data) => {
         },
     });
 };
+
+export const getAllTickets = async (token) => {
+    return await axios.get('/api/ticket/all', {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}
+

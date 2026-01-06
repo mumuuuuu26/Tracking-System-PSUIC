@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Bell, Check, Trash2, Clock, FilePlus, RefreshCw, AlertCircle } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
+import { useNavigate } from "react-router-dom";
 import {
     listNotifications,
     markRead,
@@ -14,6 +15,7 @@ dayjs.extend(relativeTime);
 
 const Notifications = () => {
     const { token } = useAuthStore();
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,8 @@ const Notifications = () => {
         }
     };
 
-    const handleMarkRead = async (id) => {
+    const handleMarkRead = async (e, id) => {
+        e.stopPropagation();
         try {
             await markRead(token, id);
             setNotifications((prev) =>
@@ -46,13 +49,31 @@ const Notifications = () => {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
         try {
             await removeNotification(token, id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             toast.success("Notification removed");
         } catch (err) {
             toast.error("Failed to remove notification");
+        }
+    };
+
+    const handleNotificationClick = async (notification) => {
+        // 1. Mark as read immediately in UI and Backend
+        if (!notification.isRead) {
+            // Optimistic update
+            setNotifications((prev) =>
+                prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
+            );
+            // API call in background (don't await to block nav)
+            markRead(token, notification.id).catch(console.error);
+        }
+
+        // 2. Navigate to ticket
+        if (notification.ticketId) {
+            navigate(`/it/ticket/${notification.ticketId}`);
         }
     };
 
@@ -123,7 +144,8 @@ const Notifications = () => {
                         return (
                             <div
                                 key={notification.id}
-                                className={`group relative overflow-hidden p-5 rounded-xl border transition-all duration-200 hover:shadow-md ${notification.isRead
+                                onClick={() => handleNotificationClick(notification)}
+                                className={`group relative overflow-hidden p-5 rounded-xl border transition-all duration-200 hover:shadow-md cursor-pointer ${notification.isRead
                                     ? "bg-white border-gray-200"
                                     : "bg-white border-blue-200 shadow-sm ring-1 ring-blue-50"
                                     }`}
@@ -155,7 +177,7 @@ const Notifications = () => {
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {!notification.isRead && (
                                                     <button
-                                                        onClick={() => handleMarkRead(notification.id)}
+                                                        onClick={(e) => handleMarkRead(e, notification.id)}
                                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="Mark as read"
                                                     >
@@ -163,7 +185,7 @@ const Notifications = () => {
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => handleDelete(notification.id)}
+                                                    onClick={(e) => handleDelete(e, notification.id)}
                                                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Delete"
                                                 >

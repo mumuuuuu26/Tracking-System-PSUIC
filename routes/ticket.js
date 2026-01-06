@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 // นำเข้า Middleware
-const { authCheck, adminCheck } = require("../middlewares/authCheck");
+const { authCheck, adminCheck, itCheck } = require("../middlewares/authCheck");
 
 const {
   create,
@@ -23,8 +23,8 @@ router.post("/ticket", authCheck, create);
 //ดูประวัติแจ้งซ่อมของตัวเอง
 router.get("/ticket", authCheck, list);
 
-//ดูใบแจ้งซ่อม "ทั้งหมด" (Admin)
-router.get("/ticket/all", authCheck, adminCheck, listAll);
+//ดูใบแจ้งซ่อม "ทั้งหมด" (Admin + IT Support)
+router.get("/ticket/all", authCheck, itCheck, listAll);
 
 //ดูรายละเอียด Ticket ตาม ID
 router.get("/ticket/:id", authCheck, read);

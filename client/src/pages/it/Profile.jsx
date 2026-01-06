@@ -20,12 +20,13 @@ import { toast } from "react-toastify";
 import dayjs from "dayjs";
 
 const ITProfile = () => {
-    const { token } = useAuthStore();
+    const { token, checkUser } = useAuthStore(); // [MODIFIED] Destructure checkUser
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         email: "",
+        username: "",
         phoneNumber: "",
         department: "",
         name: ""
@@ -41,6 +42,7 @@ const ITProfile = () => {
             setProfile(res.data);
             setFormData({
                 email: res.data.email || "",
+                username: res.data.username || "",
                 phoneNumber: res.data.phoneNumber || "",
                 department: res.data.department || "",
                 name: res.data.name || ""
@@ -69,6 +71,7 @@ const ITProfile = () => {
                 const base64Image = reader.result;
                 await updateProfileImage(token, base64Image);
                 toast.success("Profile picture updated!");
+                await checkUser(); // [NEW] Sync header immediately
                 fetchProfile();
             } catch (err) {
                 console.error(err);
@@ -82,6 +85,7 @@ const ITProfile = () => {
         try {
             await updateProfile(token, formData);
             toast.success("Profile updated successfully!");
+            await checkUser(); // [NEW] Sync header immediately
             setIsEditing(false);
             fetchProfile();
         } catch (err) {
@@ -173,6 +177,16 @@ const ITProfile = () => {
                         {isEditing ? (
                             <form onSubmit={handleUpdateProfile} className="space-y-4">
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={formData.username}
+                                        onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                        placeholder="Set username"
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
                                     <input
                                         type="text"
@@ -225,7 +239,7 @@ const ITProfile = () => {
                                     <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">Username</label>
                                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                         <Hash size={18} className="text-blue-500" />
-                                        <span className="font-semibold text-gray-700">{profile.username}</span>
+                                        <span className="font-semibold text-gray-700">{profile.username || "-"}</span>
                                     </div>
                                 </div>
                                 <div className="group">

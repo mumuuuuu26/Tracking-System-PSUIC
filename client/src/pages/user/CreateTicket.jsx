@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 const CreateTicket = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { token } = useAuthStore();
+  const { token, actionLogout } = useAuthStore();
 
   const prefilledData = location.state;
 
@@ -41,21 +41,60 @@ const CreateTicket = () => {
   }, []);
 
   const loadData = async () => {
+    if (!token) {
+      toast.error("Authentication token missing. Please login again.");
+      return;
+    }
+
     try {
       // โหลดหมวดหมู่
-      const catRes = await listCategories(token);
-      setDbCategories(catRes.data);
+      try {
+        const catRes = await listCategories(token);
+        setDbCategories(catRes.data);
+      } catch (err) {
+        console.error("Error loading categories:", err);
+        if (err.response?.status === 431) {
+          toast.error("Session expired. Logging out now...");
+          actionLogout();
+          setTimeout(() => window.location.href = "/login", 1000);
+          return;
+        }
+        toast.error("Failed to load categories: " + (err.response?.data?.message || err.message));
+      }
 
       // โหลดห้องและจัดการเลขชั้น
-      const roomRes = await listRooms(token);
-      setDbRooms(roomRes.data);
-      const uniqueFloors = [...new Set(roomRes.data.map((r) => r.floor))].sort(
-        (a, b) => a - b
-      );
-      setFloors(uniqueFloors);
+      try {
+        const roomRes = await listRooms(token);
+        setDbRooms(roomRes.data);
+
+        if (Array.isArray(roomRes.data)) {
+          const uniqueFloors = [...new Set(roomRes.data.map((r) => r.floor))].sort(
+            (a, b) => a - b
+          );
+          setFloors(uniqueFloors);
+        } else {
+          console.error("Invalid rooms data format:", roomRes.data);
+        }
+      } catch (err) {
+        console.error("Error loading rooms:", err);
+        if (err.response?.status === 431) {
+          toast.error("Session expired. Logging out now...");
+          actionLogout();
+          setTimeout(() => window.location.href = "/login", 1000);
+          return;
+        }
+        toast.error("Failed to load rooms: " + (err.response?.data?.message || err.message));
+      }
+
     } catch (err) {
-      console.log("Error loading form data:", err);
-      toast.error("Failed to load options");
+      console.log("Unexpected error:", err);
+      if (err.response?.status === 431 || err.message?.includes('431')) {
+        toast.error("Session data too large. Resetting session...");
+        const { actionLogout } = useAuthStore.getState(); // Securely get logout action
+        actionLogout();
+        setTimeout(() => window.location.href = "/login", 1500);
+        return;
+      }
     }
   };
 
@@ -136,276 +175,287 @@ const CreateTicket = () => {
   };
 
   return (
-    <div className="p-4 max-w-md md:max-w-2xl mx-auto min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Create Ticket</h1>
+    <div className="min-h-screen bg-slate-50 py-8 px-4 animate-in fade-in duration-500">
+      <div className="max-w-3xl mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-gray-500 hover:text-gray-800 transition-colors mb-6 font-medium"
+        >
+          <ChevronDown className="rotate-90 mr-1" size={20} />
+          Back to Dashboard
+        </button>
 
-        {prefilledData && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-xl flex items-start gap-3">
-            <Info className="text-blue-500 shrink-0" size={20} />
-            <div>
-              <p className="text-xs text-blue-600 font-semibold uppercase">
-                Linked Equipment
-              </p>
-              <p className="text-sm text-blue-800">
-                <strong>{prefilledData.equipmentName}</strong> (
-                {prefilledData.equipmentCode})
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Location: {prefilledData.roomNumber}
-              </p>
-            </div>
-          </div>
-        )}
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100">
+          {/* Header with Progress */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-        {/* Stepper */}
-        <div className="flex items-center justify-between mb-6 px-4">
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${step >= 1 ? "bg-blue-600 text-white" : "bg-gray-300"
-                }`}
-            >
-              1
-            </div>
-            <div
-              className={`h-1 w-24 ${step >= 2 ? "bg-blue-600" : "bg-gray-300"
-                }`}
-            />
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${step >= 2 ? "bg-blue-600 text-white" : "bg-gray-300"
-                }`}
-            >
-              2
-            </div>
-          </div>
-        </div>
-      </div>
+            <h1 className="text-3xl font-bold mb-2 relative z-10">Create Ticket</h1>
+            <p className="text-blue-100 relative z-10">Report an issue or request assistance</p>
 
-      {step === 1 ? (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          {/* Category Dropdown (Dynamic) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Equipment Category *
-            </label>
-            <div className="relative">
-              <select
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 outline-none"
-                value={form.categoryId}
-                onChange={handleCategorySelect}
-              >
-                <option value="">Select category</option>
-                {dbCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className="absolute right-3 top-3.5 text-gray-400"
-                size={20}
-              />
+            <div className="flex items-center mt-8 relative z-10">
+              <div className="flex flex-col items-center relative">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ring-4 ring-blue-500/50 ${step >= 1 ? "bg-white text-blue-600" : "bg-blue-800 text-blue-400"}`}>
+                  1
+                </div>
+                <span className="absolute -bottom-6 text-xs font-semibold whitespace-nowrap opacity-90">Details</span>
+              </div>
+              <div className={`flex-1 h-1 mx-4 rounded-full transition-all duration-500 ${step >= 2 ? "bg-white" : "bg-blue-800"}`}></div>
+              <div className="flex flex-col items-center relative">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ring-4 ring-blue-500/50 ${step >= 2 ? "bg-white text-blue-600" : "bg-blue-800 text-blue-400"}`}>
+                  2
+                </div>
+                <span className={`absolute -bottom-6 text-xs font-semibold whitespace-nowrap ${step >= 2 ? "opacity-90" : "opacity-50"}`}>Review</span>
+              </div>
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Issue Description *
-            </label>
-            <textarea
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              rows="4"
-              placeholder="What is wrong with the equipment?"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </div>
-
-          {/* Location Selectors (Dynamic) */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Floor *
-              </label>
-              <select
-                disabled={!!prefilledData}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none disabled:opacity-60"
-                value={form.floor}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    floor: e.target.value,
-                    roomId: "",
-                    room: "",
-                  })
-                }
-              >
-                <option value="">Select Floor</option>
-                {floors.map((f) => (
-                  <option key={f} value={f}>
-                    Floor {f}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Room *
-              </label>
-              <select
-                disabled={!!prefilledData || !form.floor}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none disabled:opacity-60"
-                value={form.roomId}
-                onChange={handleRoomSelect}
-              >
-                <option value="">Select Room</option>
-                {getAvailableRooms().map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.roomNumber}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Priority Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Priority
-            </label>
-            <div className="flex gap-2">
-              {urgencyLevels.map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => setForm({ ...form, urgency: level })}
-                  className={`flex-1 py-2 text-sm rounded-lg border transition-all ${form.urgency === level
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                >
-                  {level}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Photo Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Photos (Optional)
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
-              <input
-                type="file"
-                id="photo-upload"
-                className="hidden"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-              <label htmlFor="photo-upload" className="cursor-pointer block">
-                <Camera className="mx-auto text-gray-400 mb-2" size={32} />
-                <p className="text-gray-500 text-sm">Upload evidence</p>
-              </label>
-            </div>
-            {form.images.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-3">
-                {form.images.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={img}
-                      alt="preview"
-                      className="w-full h-16 object-cover rounded-lg border"
-                    />
-                    <button
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                    >
-                      <X size={12} />
-                    </button>
+          <div className="p-6 md:p-8">
+            {step === 1 ? (
+              <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                {prefilledData && (
+                  <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-4">
+                    <div className="p-2 bg-white rounded-xl text-blue-600 shadow-sm shrink-0">
+                      <Info size={24} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">
+                        Linked Equipment
+                      </p>
+                      <h3 className="font-bold text-blue-900 text-lg">
+                        {prefilledData.equipmentName} <span className="text-blue-400 font-normal">({prefilledData.equipmentCode})</span>
+                      </h3>
+                      <p className="text-sm text-blue-700 flex items-center gap-1 mt-1">
+                        <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
+                        Location: Room {prefilledData.roomNumber}
+                      </p>
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {/* Category Section */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Category</label>
+                  <div className="relative">
+                    <select
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-gray-700"
+                      value={form.categoryId}
+                      onChange={handleCategorySelect}
+                    >
+                      <option value="">Select a category...</option>
+                      {dbCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                  </div>
+                </div>
+
+                {/* Issue Description */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Issue Description</label>
+                  <textarea
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all min-h-[120px]"
+                    placeholder="Please verify current location..."
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+
+                {/* Location Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Floor</label>
+                    <div className="relative">
+                      <select
+                        disabled={!!prefilledData}
+                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
+                        value={form.floor}
+                        onChange={(e) => setForm({ ...form, floor: e.target.value, roomId: "", room: "" })}
+                      >
+                        <option value="">Select Floor</option>
+                        {floors.map((f) => (
+                          <option key={f} value={f}>Floor {f}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Room</label>
+                    <div className="relative">
+                      <select
+                        disabled={!!prefilledData || !form.floor}
+                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
+                        value={form.roomId}
+                        onChange={handleRoomSelect}
+                      >
+                        <option value="">Select Room</option>
+                        {getAvailableRooms().map((r) => (
+                          <option key={r.id} value={r.id}>{r.roomNumber}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Priority Level</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {urgencyLevels.map((level) => {
+                      const colors = {
+                        Low: "hover:bg-blue-50 hover:border-blue-200 text-blue-700",
+                        Medium: "hover:bg-yellow-50 hover:border-yellow-200 text-yellow-700",
+                        High: "hover:bg-orange-50 hover:border-orange-200 text-orange-700",
+                        Critical: "hover:bg-red-50 hover:border-red-200 text-red-700"
+                      };
+                      const activeColors = {
+                        Low: "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200",
+                        Medium: "bg-yellow-500 border-yellow-500 text-white shadow-md shadow-yellow-200",
+                        High: "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200",
+                        Critical: "bg-red-600 border-red-600 text-white shadow-md shadow-red-200"
+                      };
+
+                      return (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => setForm({ ...form, urgency: level })}
+                          className={`
+                            py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all duration-200
+                            ${form.urgency === level ? activeColors[level] : `bg-white border-gray-100 text-gray-500 ${colors[level]}`}
+                          `}
+                        >
+                          {level}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Photo Upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Evidence Photos</label>
+                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:bg-gray-50 hover:border-blue-300 transition-all text-center group cursor-pointer relative">
+                    <input
+                      type="file"
+                      id="photo-upload"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                    <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                      <Camera size={32} />
+                    </div>
+                    <p className="text-gray-900 font-bold">Click or Drag photos here</p>
+                    <p className="text-gray-400 text-sm mt-1">Supports JPG, PNG (Max 5MB)</p>
+                  </div>
+
+                  {form.images.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 animate-in fade-in">
+                      {form.images.map((img, index) => (
+                        <div key={index} className="relative group rounded-xl overflow-hidden shadow-sm aspect-square">
+                          <img src={img} alt="preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button
+                              onClick={(e) => { e.preventDefault(); removeImage(index); }}
+                              className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors transform hover:scale-110"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-6 flex gap-4">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="flex-1 py-4 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={nextStep}
+                    className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                  >
+                    Next Step
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Step 2: Review */
+              <div className="space-y-8 animate-in slide-in-from-right duration-300">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-800">Review Ticket Details</h2>
+                  <p className="text-gray-500 mt-1">Please confirm everything is correct before submitting</p>
+                </div>
+
+                <div className="bg-gray-50 rounded-3xl p-6 sm:p-8 space-y-6 border border-gray-100">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Equipment / Category</p>
+                      <p className="text-lg font-bold text-gray-800">{prefilledData?.equipmentName || form.categoryName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Location</p>
+                      <p className="text-lg font-bold text-gray-800">Floor {form.floor}, Room {form.room}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Priority</p>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${form.urgency === "Critical" ? "bg-red-100 text-red-700" :
+                        form.urgency === "High" ? "bg-orange-100 text-orange-700" :
+                          form.urgency === "Medium" ? "bg-yellow-100 text-yellow-700" :
+                            "bg-blue-100 text-blue-700"
+                        }`}>
+                        {form.urgency} Priority
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-200">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Issue Description</p>
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 text-gray-700 leading-relaxed shadow-sm">
+                      {form.description}
+                    </div>
+                  </div>
+
+                  {form.images.length > 0 && (
+                    <div className="pt-2">
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Attached Photos ({form.images.length})</p>
+                      <div className="flex gap-3 overflow-x-auto pb-2">
+                        {form.images.map((img, idx) => (
+                          <img key={idx} src={img} className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button
+                    onClick={() => setStep(1)}
+                    className="flex-1 py-4 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                  >
+                    Edit Details
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    className="flex-1 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-green-200 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                  >
+                    Confirm & Submit
+                  </button>
+                </div>
               </div>
             )}
           </div>
-
-          <div className="flex gap-3 pt-6">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={nextStep}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-200"
-            >
-              Next
-            </button>
-          </div>
         </div>
-      ) : (
-        /* Step 2: Review */
-        <div className="space-y-6 animate-in slide-in-from-right duration-300">
-          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">
-              Confirm Details
-            </h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Equipment:</span>
-                <span className="font-semibold text-gray-800">
-                  {prefilledData?.equipmentName || form.categoryName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Location:</span>
-                <span className="font-semibold text-gray-800">
-                  Floor {form.floor}, {form.room}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Priority:</span>
-                <span
-                  className={`font-bold ${form.urgency === "Critical"
-                      ? "text-red-600"
-                      : "text-blue-600"
-                    }`}
-                >
-                  {form.urgency}
-                </span>
-              </div>
-              <div className="pt-2">
-                <span className="text-gray-500 block mb-1">
-                  Issue Description:
-                </span>
-                <p className="bg-white p-3 rounded-lg border italic text-gray-700">
-                  {form.description}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => setStep(1)}
-              className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold shadow-lg shadow-green-200"
-            >
-              Submit Ticket
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

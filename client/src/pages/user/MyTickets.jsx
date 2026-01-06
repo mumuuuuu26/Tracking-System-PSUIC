@@ -1,6 +1,6 @@
 // client/src/pages/user/MyTickets.jsx
 import React, { useEffect, useState } from "react";
-import { Search, Filter, MapPin, Monitor, Calendar, Star } from "lucide-react";
+import { Search, MapPin, Monitor, Star, Clock, AlertCircle, CheckCircle, Activity, Filter } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import dayjs from "dayjs";
@@ -16,6 +16,7 @@ const MyTickets = () => {
   const [filteredTickets, setFilteredTickets] = useState([]);
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadTickets();
@@ -27,11 +28,14 @@ const MyTickets = () => {
 
   const loadTickets = async () => {
     try {
+      setLoading(true);
       const res = await listMyTickets(token);
       setTickets(res.data);
       setFilteredTickets(res.data);
     } catch (err) {
       console.log(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,6 +57,7 @@ const MyTickets = () => {
       filtered = filtered.filter(
         (t) =>
           t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(t.id).includes(searchTerm) ||
           t.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -86,140 +91,155 @@ const MyTickets = () => {
     }
   };
 
-  const filters = ["All", "Completed", "In Progress", "Pending"];
+  const filters = ["All", "Pending", "In Progress", "Completed"];
 
   return (
-    <div className="p-4 max-w-md md:max-w-5xl mx-auto min-h-screen">
-      {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">My Tickets</h1>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Search by ID or keyword..."
-          className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-        {filters.map((filter) => (
-          <button
-            key={filter}
-            onClick={() => setActiveFilter(filter)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition ${activeFilter === filter
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-          >
-            {filter}
-          </button>
-        ))}
-      </div>
-
-      {/* Tickets List */}
-      <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
-        {filteredTickets.map((ticket) => (
-          <div
-            key={ticket.id}
-            className={`rounded-xl p-4 ${getStatusColor(
-              ticket.status
-            )} shadow-sm`}
-          >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <span className="text-blue-600 font-semibold text-sm">
-                  #TK-{String(ticket.id).padStart(4, "0")}
-                </span>
-                <span
-                  className={`ml-2 px-2 py-1 rounded text-xs font-medium ${getUrgencyBadge(
-                    ticket.urgency
-                  )}`}
-                >
-                  {ticket.urgency}
-                </span>
-              </div>
-              <span className="text-xs text-gray-500">
-                {dayjs(ticket.createdAt).fromNow()}
-              </span>
+    <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-10 bg-opacity-80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Tickets</h1>
+              <p className="text-gray-500 mt-1">Track and manage your support requests</p>
             </div>
+            <button
+              onClick={() => navigate('/user/create-ticket')}
+              className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-medium shadow-md hover:bg-blue-700 transition-all hover:-translate-y-0.5"
+            >
+              + New Ticket
+            </button>
+          </div>
 
-            {/* Title */}
-            <h3 className="font-semibold text-gray-800 mb-2">{ticket.title}</h3>
-
-            {/* Meta Info */}
-            <div className="flex items-center gap-4 text-xs text-gray-600 mb-3">
-              {ticket.room && (
-                <div className="flex items-center gap-1">
-                  <MapPin size={12} />
-                  <span>{ticket.room.name}</span>
-                </div>
-              )}
-              {ticket.equipment && (
-                <div className="flex items-center gap-1">
-                  <Monitor size={12} />
-                  <span>{ticket.equipment.name}</span>
-                </div>
-              )}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search by ID, title, or keyword..."
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-
-            {/* Status */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${ticket.status === "pending"
-                    ? "bg-yellow-400"
-                    : ticket.status === "in_progress"
-                      ? "bg-blue-400"
-                      : "bg-green-400"
+            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+              {filters.map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={`px-5 py-3 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${activeFilter === filter
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                     }`}
-                />
-                <span className="text-xs font-medium capitalize">
-                  {ticket.status.replace("_", " ")}
-                </span>
-              </div>
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {ticket.assignedTo && (
-                <div className="flex items-center gap-1">
-                  <img
-                    src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
-                    alt={ticket.assignedTo.name}
-                    className="w-6 h-6 rounded-full"
-                  />
-                  <span className="text-xs text-gray-600">
-                    {ticket.assignedTo.name}
+      {/* Content */}
+      <div className="max-w-6xl mx-auto px-4">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white h-48 rounded-xl animate-pulse shadow-sm border border-gray-100"></div>
+            ))}
+          </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100 max-w-lg mx-auto">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Search className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No tickets found</h3>
+            <p className="text-gray-500 max-w-xs mx-auto">
+              {searchTerm || activeFilter !== "All" ? "No matches for your search filters." : "You haven't created any support tickets yet."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                onClick={() => navigate(`/user/ticket/${ticket.id}`)}
+                className={`rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full ${getStatusColor(ticket.status)}`}
+              >
+                {/* Header */}
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-600 font-bold text-sm">
+                      #TK-{String(ticket.id).padStart(4, "0")}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getUrgencyBadge(ticket.urgency)}`}>
+                      {ticket.urgency}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {dayjs(ticket.createdAt).fromNow()}
                   </span>
                 </div>
-              )}
-            </div>
 
-            {/* Action Buttons */}
-            {ticket.status === 'fixed' && !ticket.rating && (
-              <button
-                onClick={() => navigate(`/user/feedback/${ticket.id}`)}
-                className="mt-3 w-full flex items-center justify-center gap-2 bg-yellow-100 text-yellow-700 py-2 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
-              >
-                <Star size={16} /> Rate Service
-              </button>
-            )}
-            {ticket.rating && (
-              <div className="mt-3 w-full flex items-center justify-center gap-1 text-yellow-500 text-sm font-medium bg-yellow-50 py-2 rounded-lg">
-                <span>Rated: {ticket.rating}</span> <Star size={14} fill="#EAB308" />
+                {/* Title */}
+                <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-1">{ticket.title}</h3>
+
+                {/* Meta Info */}
+                <div className="flex flex-col gap-1 text-xs text-gray-600 mb-4 flex-1">
+                  {ticket.room && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin size={14} />
+                      <span className="truncate">{ticket.room.name}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status & User */}
+                <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === "pending" ? "bg-yellow-400" :
+                      ticket.status === "in_progress" ? "bg-blue-400" :
+                        "bg-green-400"
+                      }`} />
+                    <span className="text-sm font-semibold text-gray-700 capitalize">
+                      {ticket.status.replace("_", " ")}
+                    </span>
+                  </div>
+
+                  {ticket.assignedTo && (
+                    <div className="flex items-center gap-2 bg-white/50 px-2 py-1 rounded-full">
+                      <img
+                        src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
+                        alt={ticket.assignedTo.name}
+                        className="w-6 h-6 rounded-full"
+                      />
+                      <span className="text-xs text-gray-600 font-medium truncate max-w-[80px]">
+                        {(ticket.assignedTo.name || ticket.assignedTo.username || "IT Support").split(' ')[0]}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rate Button */}
+                {ticket.status === 'fixed' && !ticket.rating && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/user/feedback/${ticket.id}`);
+                    }}
+                    className="mt-4 w-full flex items-center justify-center gap-2 bg-yellow-100 text-yellow-700 py-2.5 rounded-lg text-sm font-bold hover:bg-yellow-200 transition-colors"
+                  >
+                    <Star size={16} /> Rate Service
+                  </button>
+                )}
+                {ticket.rating && (
+                  <div className="mt-4 w-full flex items-center justify-center gap-1 text-yellow-600 text-sm font-bold bg-yellow-50/80 py-2.5 rounded-lg border border-yellow-100">
+                    <Star size={16} fill="#EAB308" className="text-yellow-500" />
+                    <span>Rated {ticket.rating}</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
-
-        {filteredTickets.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No tickets found</p>
+            ))}
           </div>
         )}
       </div>

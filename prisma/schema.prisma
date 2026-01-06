@@ -129,7 +129,18 @@ model ActivityLog {
 model Category {
   id      Int      @id @default(autoincrement())
   name    String   @unique
-  tickets Ticket[]
+  tickets   Ticket[]
+  quickFixes QuickFix[]
+}
+
+model QuickFix {
+  id        Int      @id @default(autoincrement())
+  title     String
+  steps     String   @db.Text
+  categoryId Int
+  category  Category @relation(fields: [categoryId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Room {

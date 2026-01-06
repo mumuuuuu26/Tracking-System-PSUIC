@@ -31,7 +31,7 @@ exports.getStats = async (req, res) => {
         prisma.ticket.count({
           where: {
             assignedToId: req.user.id,
-            status: "Fixed",
+            status: "fixed",
             updatedAt: { gte: today, lt: tomorrow },
           },
         }),
@@ -47,7 +47,7 @@ exports.getStats = async (req, res) => {
           where: {
             OR: [{ assignedToId: req.user.id }, { assignedToId: null }],
             urgency: { in: ["High", "Critical"] },
-            status: { not: "Fixed" },
+            status: { not: "fixed" },
           },
         }),
       ]);
@@ -56,7 +56,7 @@ exports.getStats = async (req, res) => {
       pending,
       inProgress,
       completed: await prisma.ticket.count({
-        where: { assignedToId: req.user.id, status: "Fixed" },
+        where: { assignedToId: req.user.id, status: "fixed" },
       }),
       todayComplete,
       todayTotal,
@@ -79,8 +79,9 @@ exports.getMyTasks = async (req, res) => {
             assignedToId: null,
             status: "pending",
           },
+          { status: "rejected" },
         ],
-        NOT: { status: "Fixed" },
+        NOT: { status: "fixed" },
       },
       include: {
         room: true,
@@ -90,6 +91,7 @@ exports.getMyTasks = async (req, res) => {
           select: {
             id: true,
             name: true,
+            username: true,
             email: true,
             phoneNumber: true,
             picture: true,
@@ -136,7 +138,7 @@ exports.getTodayAppointments = async (req, res) => {
             equipment: true,
             category: true,
             createdBy: {
-              select: { name: true, phoneNumber: true },
+              select: { name: true, username: true, phoneNumber: true },
             },
           },
         },
@@ -244,7 +246,7 @@ exports.closeJob = async (req, res) => {
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
-        status: "Fixed",
+        status: "fixed",
         logs: {
           create: {
             action: "Complete",
@@ -338,7 +340,7 @@ exports.getSchedule = async (req, res) => {
             room: true,
             equipment: true,
             createdBy: {
-              select: { name: true, phoneNumber: true }
+              select: { name: true, username: true, phoneNumber: true }
             }
           }
         }
@@ -358,7 +360,7 @@ exports.getHistory = async (req, res) => {
   try {
     const history = await prisma.ticket.findMany({
       where: {
-        status: "Fixed"
+        status: "fixed"
       },
       include: {
         room: true,
@@ -368,6 +370,7 @@ exports.getHistory = async (req, res) => {
           select: {
             id: true,
             name: true,
+            username: true,
             email: true,
             phoneNumber: true,
             picture: true,

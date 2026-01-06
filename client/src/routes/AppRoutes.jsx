@@ -37,6 +37,9 @@ import Schedule from "../pages/it/Schedule";
 import Notifications from "../pages/it/Notifications";
 import ITProfile from "../pages/it/Profile";
 import History from "../pages/it/History";
+import QuickFixManagement from "../pages/it/QuickFixManagement";
+import Tickets from "../pages/it/Tickets";
+import ITTicketDetail from "../pages/it/TicketDetail";
 
 import KnowledgeBase from "../pages/kb/KnowledgeBase";
 import ArticleDetail from "../pages/kb/ArticleDetail";
@@ -85,6 +88,9 @@ const AppRoutes = () => {
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<ITProfile />} />
         <Route path="history" element={<History />} />
+        <Route path="manage-quick-fix" element={<QuickFixManagement />} />
+        <Route path="tickets" element={<Tickets />} />
+        <Route path="ticket/:id" element={<ITTicketDetail />} />
 
       </Route>
 

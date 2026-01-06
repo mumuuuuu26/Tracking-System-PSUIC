@@ -65,15 +65,23 @@ exports.login = async (req, res) => {
       });
     }
     //Step 3 Create Payload
-    const payload = {
+    const tokenPayload = {
       id: user.id,
       email: user.email,
       role: user.role,
     };
 
+    const responsePayload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      picture: user.picture,
+    };
+
     //Step 4 Generate Token
     jwt.sign(
-      payload,
+      tokenPayload,
       process.env.SECRET,
       { expiresIn: "30d" },
       (err, token) => {
@@ -82,7 +90,7 @@ exports.login = async (req, res) => {
             message: "Server Error",
           });
         }
-        res.json({ payload, token });
+        res.json({ payload: responsePayload, token });
       }
     );
   } catch (err) {
