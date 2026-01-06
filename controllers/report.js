@@ -24,7 +24,7 @@ exports.getMonthlyStats = async (req, res) => {
                 id: true,
                 status: true,
                 createdAt: true,
-                urngency: true, // Note: Typo in prisma schema? It's 'urgency'. Check schema. 
+                urgency: true,
                 // Logic check: Schema has 'urgency'.
             }
         });

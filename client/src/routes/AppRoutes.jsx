@@ -28,6 +28,7 @@ import AllTickets from "../pages/admin/AllTickets";
 import UserManagement from "../pages/admin/UserManagement";
 import ITManagement from "../pages/admin/ITManagement";
 import RoomManagement from "../pages/admin/RoomManagement";
+import CategoryManagement from "../pages/admin/CategoryManagement";
 import ReportDashboard from "../pages/admin/reports/ReportDashboard";
 
 // IT
@@ -35,6 +36,10 @@ import ITDashboard from "../pages/it/Dashboard";
 import Schedule from "../pages/it/Schedule";
 import Notifications from "../pages/it/Notifications";
 import ITProfile from "../pages/it/Profile";
+import History from "../pages/it/History";
+
+import KnowledgeBase from "../pages/kb/KnowledgeBase";
+import ArticleDetail from "../pages/kb/ArticleDetail";
 
 
 
@@ -69,6 +74,7 @@ const AppRoutes = () => {
         <Route path="manage-users" element={<UserManagement />} />
         <Route path="manage-it" element={<ITManagement />} />
         <Route path="manage-rooms" element={<RoomManagement />} />
+        <Route path="manage-categories" element={<CategoryManagement />} />
         <Route path="reports" element={<ReportDashboard />} />
       </Route>
 
@@ -78,10 +84,16 @@ const AppRoutes = () => {
         <Route path="schedule" element={<Schedule />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<ITProfile />} />
+        <Route path="history" element={<History />} />
 
       </Route>
 
       <Route path="*" element={<h1>404 Not Found</h1>} />
+
+      {/* Knowledge Base Public Access */}
+      <Route path="/kb" element={<LayoutUser><KnowledgeBase /></LayoutUser>} />
+      <Route path="/kb/:id" element={<LayoutUser><ArticleDetail /></LayoutUser>} />
+
     </Routes>
   );
 };

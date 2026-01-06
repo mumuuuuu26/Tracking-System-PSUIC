@@ -119,7 +119,10 @@ const HomeUser = () => {
           <p className="text-blue-100 mb-4 max-w-lg">
             Learn how to use our service system effectively. We have prepared a guide to help you get started quickly.
           </p>
-          <button className="bg-white text-blue-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-50 transition shadow-sm">
+          <button
+            onClick={() => navigate("/user/scan-qr")}
+            className="bg-white text-blue-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-50 transition shadow-sm"
+          >
             Get Started
           </button>
         </div>

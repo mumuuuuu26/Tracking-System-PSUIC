@@ -35,3 +35,15 @@ export const changeRole = async (token, value) => {
         headers: { Authorization: `Bearer ${token}` }
     })
 }
+
+export const updateUser = async (token, id, form) => {
+    return await axios.put('/api/users/' + id, form, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}
+
+export const removeUser = async (token, id) => {
+    return await axios.delete('/api/users/' + id, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}

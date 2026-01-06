@@ -27,3 +27,32 @@ exports.list = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+// อัพเดทหมวดหมู่
+exports.update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    const updated = await prisma.category.update({
+      where: { id: parseInt(id) },
+      data: { name },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// ลบหมวดหมู่
+exports.remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.category.delete({
+      where: { id: parseInt(id) },
+    });
+    res.json({ message: "Category deleted successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};

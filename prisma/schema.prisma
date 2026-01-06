@@ -40,6 +40,7 @@ model User {
   availabilities  ITAvailability[]
   notifications   Notification[]   // [NEW]
   activityLogs    ActivityLog[]    @relation("LogCreator")
+  kbEdits         KnowledgeBase[]  @relation("KBEditor")
 }
 
 // === TICKET MODEL (อัปเดต) ===
@@ -136,7 +137,7 @@ model Room {
   roomNumber String      @unique
   building   String?
   floor      Int?
-  imageUrl   String?
+  imageUrl   String?     @db.LongText
   capacity   Int?
   type       String?
   equipments Equipment[]
@@ -194,4 +195,24 @@ model Image {
   ticketId  Int
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+// === [NEW] KNOWLEDGE BASE MODEL ===
+model KnowledgeBase {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String   @db.Text
+  category    String   // "Article", "FAQ", "Video"
+  tags        String?  // Comma separated
+  viewCount   Int      @default(0)
+  helpful     Int      @default(0)
+  imageUrl    String?
+  videoUrl    String?
+  isPublished Boolean  @default(true)
+  
+  updatedById Int?
+  updatedBy   User?    @relation("KBEditor", fields: [updatedById], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

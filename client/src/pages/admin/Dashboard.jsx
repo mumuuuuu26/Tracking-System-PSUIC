@@ -74,6 +74,13 @@ const Dashboard = () => {
             bg: "bg-orange-100",
             link: "/admin/manage-rooms",
         },
+        {
+            title: "Category Management",
+            desc: "Add or edit equipment categories",
+            icon: <Ticket className="text-green-600" />,
+            bg: "bg-green-100",
+            link: "/admin/manage-categories",
+        },
     ];
 
     return (

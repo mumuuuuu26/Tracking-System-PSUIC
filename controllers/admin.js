@@ -6,7 +6,7 @@ exports.getDashboardStats = async (req, res) => {
     const [ticketCount, itStaffCount, roomCount, equipmentCount] =
       await Promise.all([
         prisma.ticket.count(),
-        prisma.user.count({ where: { role: "it_support" } }),
+        prisma.user.count({ where: { role: "it_support", enabled: true } }),
         prisma.room.count(),
         prisma.equipment.count(),
       ]);
@@ -28,7 +28,7 @@ exports.getITStaff = async (req, res) => {
   try {
     // Fetch all IT support staff
     const staff = await prisma.user.findMany({
-      where: { role: "it_support" },
+      where: { role: "it_support", enabled: true },
       select: {
         id: true,
         name: true,
@@ -37,6 +37,7 @@ exports.getITStaff = async (req, res) => {
         department: true,
         phoneNumber: true,
       },
+      orderBy: { name: 'asc' }
     });
 
     // Check their current workload to determine status

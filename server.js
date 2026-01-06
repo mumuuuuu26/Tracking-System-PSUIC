@@ -5,18 +5,39 @@ const app = express();
 const morgan = require("morgan");
 const { readdirSync } = require("fs"); //อ่านจากไดเรกทอรี่
 const cors = require("cors"); //อนุญาตให้ server กับ clien ติดต่อกันได้่
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/user");
 const categoryRoutes = require("./routes/category");
-// const authRouter = require('./routes/auth')
-// const categoryRouter = require('./routes/category')
+const equipmentRoutes = require("./routes/equipment");
+const roomRoutes = require("./routes/room");
+const ticketRoutes = require("./routes/ticket");
+const appointmentRoutes = require("./routes/appointment");
+// const googleCalendarRoutes = require("./routes/googleCalendar");
+const itRoutes = require("./routes/it-support");
+const notificationRoutes = require("./routes/notification");
+const reportRoutes = require("./routes/report");
+const kbRoutes = require("./routes/knowledgeBase");
+const adminRoutes = require("./routes/admin");
 
 //middleware
 app.use(morgan("dev"));
 app.use(express.json({ limit: "20mb" }));
 app.use(cors());
 
-// app.use('/api',authRouter)
-// app.use('/api',categoryRouter)
-readdirSync("./routes").map((c) => app.use("/api", require("./routes/" + c)));
+// Routes
+app.use("/api", authRoutes);
+app.use("/api", userRoutes);
+app.use("/api", categoryRoutes);
+app.use("/api", equipmentRoutes);
+app.use("/api", roomRoutes);
+app.use("/api", ticketRoutes);
+app.use("/api", appointmentRoutes);
+// app.use("/api", googleCalendarRoutes);
+app.use("/api", itRoutes);
+app.use("/api", notificationRoutes);
+app.use("/api", reportRoutes);
+app.use("/api", kbRoutes);
+app.use("/api", adminRoutes);
 
 //Step 3 Router
 // app.post('/api',(req,res)=>{

@@ -129,4 +129,59 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, department, phoneNumber, role } = req.body;
 
+    const updated = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        department,
+        phoneNumber,
+        role
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Update Failed" });
+  }
+
+};
+
+exports.removeUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = parseInt(id);
+
+    // 1. Unassign pending/active tickets first (regardless of delete method)
+    // This allows hard delete to succeed if the ONLY link was 'assignedToId'
+    await prisma.ticket.updateMany({
+      where: { assignedToId: userId, status: { in: ['in_progress', 'pending'] } },
+      data: { assignedToId: null, status: 'pending' }
+    });
+
+    // 2. Try HARD DELETE first (to satisfy "Delete from DB")
+    try {
+      await prisma.user.delete({
+        where: { id: userId }
+      });
+      return res.json({ message: "User permanently deleted" });
+    } catch (hardErr) {
+      console.log("Hard delete failed, falling back to soft delete:", hardErr.code);
+
+      // 3. Fallback to SOFT DELETE if Hard Delete fails (e.g. Foreign Key constraint on created tickets)
+      await prisma.user.update({
+        where: { id: userId },
+        data: { enabled: false }
+      });
+      return res.json({ message: "User disabled (History preserved)" });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Delete Failed" });
+  }
+};

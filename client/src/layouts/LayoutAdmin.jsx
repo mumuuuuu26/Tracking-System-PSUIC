@@ -2,12 +2,6 @@ import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Ticket, Users, UserCog, Building2, Menu, X, LogOut, User, BarChart } from "lucide-react";
 
-// ... (lines 4-132 remain same, we jump to insertion point)
-// Actually replace_file_content needs contiguous block. 
-// I will do 2 separate calls or just use multi_replace_file_content?
-// Agent rules say: "Use this tool ONLY when you are making a SINGLE CONTIGUOUS block... If you are making edits to multiple non-adjacent lines, use the multi_replace_file_content tool instead."
-// So I MUST use multi_replace_file_content.
-
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 

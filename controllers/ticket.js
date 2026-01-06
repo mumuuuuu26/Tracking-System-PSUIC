@@ -1,11 +1,9 @@
+// controllers/ticket.js (ส่วนที่ต้องแก้ไข)
 const prisma = require("../config/prisma");
 const transporter = require("../config/nodemailer");
 
-
-//สร้าง Ticket (Create)
 exports.create = async (req, res) => {
   try {
-    // รับค่า categoryId เข้ามาด้วย
     const {
       title,
       description,
@@ -16,6 +14,8 @@ exports.create = async (req, res) => {
       categoryId,
     } = req.body;
 
+    console.log("📝 Creating new ticket...");
+
     const newTicket = await prisma.ticket.create({
       data: {
         title,
@@ -23,161 +23,155 @@ exports.create = async (req, res) => {
         urgency,
         createdById: req.user.id,
         roomId: parseInt(roomId),
-        // แปลงเป็น Int หรือเป็น null ถ้าไม่ส่งมา
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         categoryId: categoryId ? parseInt(categoryId) : null,
-        status: "pending", // แก้เป็น pending เพื่อให้ IT เห็นทันที
-        images: {
-          create:
-            images &&
-            images.map((img) => ({
-              asset_id: img.asset_id,
-              public_id: img.public_id,
-              url: img.url,
-              secure_url: img.secure_url,
-              type: "before",
-            })),
-        },
-        logs: {
-          create: {
-            action: "Create",
-            detail: "เปิดใบแจ้งซ่อมใหม่",
-            updatedById: req.user.id,
+        status: "pending",
+      },
+      include: {
+        room: true,
+        equipment: true,
+        category: true,
+        createdBy: true,
+      },
+    });
+
+    console.log("✅ Ticket created:", newTicket.id);
+
+    // ส่ง Email แจ้งเตือน IT Support
+    try {
+      // ตรวจสอบ config ก่อนส่ง
+      if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+        console.warn(
+          "⚠️ WARNING: MAIL_USER or MAIL_PASS is not set in .env file"
+        );
+        console.log("Skipping email notification...");
+      } else {
+        console.log("📧 Attempting to send email notification...");
+
+        // ดึง IT Support emails
+        const itUsers = await prisma.user.findMany({
+          where: {
+            OR: [{ role: "it_support" }, { role: "admin" }],
+            enabled: true,
           },
-        },
-      },
-      include: { images: true, logs: true, category: true },
-    });
-    // --- Notification Logic ---
-    // 1. Notify IT Support via Email
-    // 1. Notify IT Support via Email
-    const itUsers = await prisma.user.findMany({
-      where: {
-        OR: [
-          { role: "admin" },
-          { role: "it_support" }, // [FIX] Add it_support role
-          { department: "IT Support" }
-        ],
-      },
-      select: { id: true, email: true }, // Select ID too
-
-    });
-
-    const emails = itUsers.map((u) => u.email).filter(Boolean);
-
-
-    if (emails.length > 0) {
-      const mailOptions = {
-        from: process.env.MAIL_USER,
-        to: emails,
-        subject: `[New Ticket] ${title}`,
-        html: `
-          <h3>New Ticket Created</h3>
-          <p><strong>Title:</strong> ${title}</p>
-          <p><strong>Description:</strong> ${description}</p>
-          <p><strong>Urgency:</strong> ${urgency}</p>
-          <p><strong>Room:</strong> ${newTicket.room ? newTicket.room.roomNumber : roomId}</p>
-          <br />
-          <p>Please check the IT Dashboard.</p>
-        `,
-      };
-
-      transporter.sendMail(mailOptions, (err, info) => {
-        if (err) console.log("Email Send Error:", err);
-        else console.log("Email Sent:", info.response);
-      });
-
-      // [NEW] Save Notification to DB for each IT user
-      const notificationsData = itUsers.map(user => ({
-        userId: user.id, // We need to select id in the query above!
-        ticketId: newTicket.id,
-        title: "New Ticket Created",
-        message: `Ticket "${title}" has been created.`,
-        type: "ticket_create"
-      }));
-
-      if (notificationsData.length > 0) {
-        await prisma.notification.createMany({
-          data: notificationsData
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
         });
+
+        console.log(`Found ${itUsers.length} IT staff to notify`);
+
+        if (itUsers.length > 0) {
+          const emails = itUsers
+            .map((u) => u.email)
+            .filter((email) => email && email.includes("@"));
+
+          if (emails.length > 0) {
+            console.log("Sending to:", emails.join(", "));
+
+            const mailOptions = {
+              from: `"PSUIC Help Desk" <${process.env.MAIL_USER}>`,
+              to: emails.join(", "),
+              subject: `🔔 [Urgent: ${urgency}] New Ticket #${newTicket.id}: ${title}`,
+              html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <style>
+                    body { font-family: Arial, sans-serif; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: #2563eb; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+                    .content { background: #f3f4f6; padding: 20px; border-radius: 0 0 10px 10px; }
+                    .badge { padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+                    .high { background: #ef4444; color: white; }
+                    .medium { background: #f59e0b; color: white; }
+                    .low { background: #10b981; color: white; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="header">
+                      <h2>🛠️ New Support Ticket</h2>
+                    </div>
+                    <div class="content">
+                      <p><strong>Ticket ID:</strong> #${newTicket.id}</p>
+                      <p><strong>Title:</strong> ${title}</p>
+                      <p><strong>Priority:</strong> <span class="badge ${urgency.toLowerCase()}">${urgency}</span></p>
+                      <p><strong>Room:</strong> ${newTicket.room?.roomNumber || "N/A"
+                }</p>
+                      <p><strong>Equipment:</strong> ${newTicket.equipment?.name || "N/A"
+                }</p>
+                      <p><strong>Category:</strong> ${newTicket.category?.name || "N/A"
+                }</p>
+                      <p><strong>Description:</strong></p>
+                      <div style="background: white; padding: 10px; border-radius: 5px;">
+                        ${description}
+                      </div>
+                      <p><strong>Reported by:</strong> ${newTicket.createdBy?.name || newTicket.createdBy?.email
+                }</p>
+                      <br>
+                      <a href="http://localhost:5173/it/ticket/${newTicket.id}" 
+                         style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                        View Ticket
+                      </a>
+                    </div>
+                  </div>
+                </body>
+                </html>
+              `,
+            };
+
+            await transporter.sendMail(mailOptions);
+            console.log("✅ Email Sent: Notification sent to IT staff");
+          } else {
+            console.warn("⚠️ No valid IT email addresses found");
+          }
+        }
       }
+    } catch (emailError) {
+      console.error("❌ Email Send Error:", emailError.message);
+      // ไม่ให้ email error ทำให้การสร้าง ticket ล้มเหลว
     }
 
+    // บันทึก Notification ใน database
+    const itUsers = await prisma.user.findMany({
+      where: {
+        OR: [{ role: "it_support" }, { role: "admin" }],
+        enabled: true,
+      },
+      select: { id: true },
+    });
 
-    // 2. Real-time Update via Socket.io
+    if (itUsers.length > 0) {
+      await prisma.notification.createMany({
+        data: itUsers.map((user) => ({
+          userId: user.id,
+          ticketId: newTicket.id,
+          title: "New Ticket Created",
+          message: `Ticket #${newTicket.id}: ${title}`,
+          type: "ticket_create",
+        })),
+      });
+    }
+
+    // Real-time notification
     if (req.io) {
       req.io.emit("server:new-ticket", newTicket);
     }
 
     res.json(newTicket);
-
   } catch (err) {
-    console.log(err);
+    console.error("❌ Create Ticket Error:", err);
     res.status(500).json({ message: "Server Error: Create Ticket Failed" });
   }
 };
 
-//ดูรายการ Ticket ของฉัน (List)
-exports.list = async (req, res) => {
-  try {
-    const tickets = await prisma.ticket.findMany({
-      where: { createdById: req.user.id },
-      include: {
-        createdBy: {
-          select: { id: true, username: true, name: true, role: true },
-        },
-        assignedTo: { select: { id: true, name: true } },
-        room: true,
-        equipment: true,
-        category: true, // เพิ่ม category
-        images: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(tickets);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Server Error: List Tickets Failed" });
-  }
-};
-
-//ดูรายละเอียด Ticket ตาม ID (Read)
-exports.read = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        assignedTo: true,
-        room: true,
-        equipment: true,
-        category: true, // เพิ่ม category
-        images: true,
-        logs: { orderBy: { createdAt: "desc" } },
-        appointment: true,
-      },
-    });
-    res.json(ticket);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Server Error: Read Ticket Failed" });
-  }
-};
-
-//อัปเดตสถานะ Ticket (Update)
+// อัพเดทสถานะและส่ง email แจ้ง user
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-    // รับค่า rating, userFeedback, categoryId เพิ่มเข้ามา
     const {
       status,
       urgency,
@@ -187,6 +181,8 @@ exports.update = async (req, res) => {
       userFeedback,
       categoryId,
     } = req.body;
+
+    console.log(`📝 Updating ticket #${id} - Status: ${status}`);
 
     let updateData = {};
     if (status) updateData.status = status;
@@ -198,194 +194,220 @@ exports.update = async (req, res) => {
 
     const updatedTicket = await prisma.ticket.update({
       where: { id: parseInt(id) },
-      data: {
-        ...updateData,
-        logs: {
-          create: {
-            action: "Update",
-            detail: `อัปเดตข้อมูล: ${status ? `สถานะ->${status} ` : ""}${adminNote ? `Note: ${adminNote}` : ""
-              }`,
-            updatedById: req.user?.id || null,
-          },
-        },
+      data: updateData,
+      include: {
+        createdBy: true,
+        assignedTo: true,
+        room: true,
+        equipment: true,
       },
     });
 
-    // --- Notification Logic ---
-    // Notify User via Email on status/update change
-    const ticketOwner = await prisma.user.findUnique({
-      where: { id: updatedTicket.createdById },
-      select: { id: true, email: true }
+    // ส่ง Email แจ้ง User เมื่อ ticket แก้ไขเสร็จ
+    if (status === "Fixed" && updatedTicket.createdBy?.email) {
+      try {
+        if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+          console.warn("⚠️ Email config missing, skipping notification");
+        } else {
+          console.log("📧 Sending completion notification to user...");
 
-    });
-
-    if (ticketOwner) {
-      // 1. Send Email
-      if (ticketOwner.email) {
-        const mailOptions = {
-          from: process.env.MAIL_USER,
-          to: ticketOwner.email,
-          subject: `[Ticket Updated] ${updatedTicket.title}`,
-          html: `
-              <h3>Ticket Updated</h3>
-              <p><strong>Status:</strong> ${updatedTicket.status}</p>
-              <p><strong>Note:</strong> ${adminNote || "-"}</p>
-              <br />
-              <p>Check "My Tickets" for details.</p>
+          const mailOptions = {
+            from: `"PSUIC Help Desk" <${process.env.MAIL_USER}>`,
+            to: updatedTicket.createdBy.email,
+            subject: `✅ Ticket #${updatedTicket.id} has been resolved`,
+            html: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <style>
+                  body { font-family: Arial, sans-serif; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: #10b981; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+                  .content { background: #f3f4f6; padding: 20px; border-radius: 0 0 10px 10px; }
+                  .success-box { background: #d1fae5; padding: 15px; border-radius: 5px; margin: 15px 0; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h2>✅ Your Ticket Has Been Resolved!</h2>
+                  </div>
+                  <div class="content">
+                    <div class="success-box">
+                      <p><strong>Good news!</strong> Your support ticket has been successfully resolved.</p>
+                    </div>
+                    
+                    <h3>Ticket Details:</h3>
+                    <p><strong>Ticket ID:</strong> #${updatedTicket.id}</p>
+                    <p><strong>Title:</strong> ${updatedTicket.title}</p>
+                    <p><strong>Room:</strong> ${updatedTicket.room?.roomNumber || "N/A"
+              }</p>
+                    <p><strong>IT Support:</strong> ${updatedTicket.assignedTo?.name || "IT Team"
+              }</p>
+                    
+                    <p style="margin-top: 20px;">Please take a moment to rate our service:</p>
+                    <a href="http://localhost:5173/user/feedback/${updatedTicket.id
+              }" 
+                       style="background: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                      ⭐ Rate Service
+                    </a>
+                    
+                    <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">
+                      Thank you for using PSUIC Help Desk System
+                    </p>
+                  </div>
+                </div>
+              </body>
+              </html>
             `,
-        };
+          };
 
-        transporter.sendMail(mailOptions, (err, info) => {
-          if (err) console.log("Email Send Error:", err);
-          else console.log("Email Sent:", info.response);
-        });
-      }
-
-      // 2. Save Notification to DB
-      await prisma.notification.create({
-        data: {
-          userId: ticketOwner.id,
-          ticketId: updatedTicket.id,
-          title: "Ticket Updated",
-          message: `Ticket "${updatedTicket.title}" status is now ${updatedTicket.status}.`,
-          type: "ticket_update"
+          await transporter.sendMail(mailOptions);
+          console.log("✅ Email Sent: User notified of ticket completion");
         }
-      });
+      } catch (emailError) {
+        console.error("❌ Email Error:", emailError.message);
+      }
     }
 
+    // บันทึก Notification
+    if (updatedTicket.createdBy) {
+      await prisma.notification.create({
+        data: {
+          userId: updatedTicket.createdById,
+          ticketId: updatedTicket.id,
+          title: status === "Fixed" ? "Ticket Resolved!" : "Ticket Updated",
+          message:
+            status === "Fixed"
+              ? `Your ticket "${updatedTicket.title}" has been resolved. Please rate our service.`
+              : `Your ticket "${updatedTicket.title}" status is now ${status}.`,
+          type: "ticket_update",
+        },
+      });
+    }
 
     if (req.io) {
       req.io.emit("server:update-ticket", updatedTicket);
     }
+
     res.json(updatedTicket);
-
-
   } catch (err) {
-    console.log(err);
+    console.error("❌ Update Error:", err);
     res.status(500).json({ message: "Server Error: Update Ticket Failed" });
   }
 };
 
-//ลบ Ticket (Remove)
-exports.remove = async (req, res) => {
+// Get all tickets for current user
+exports.list = async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.ticket.delete({ where: { id: parseInt(id) } });
-    res.json({ message: "Ticket Deleted Successfully" });
+    const tickets = await prisma.ticket.findMany({
+      where: { createdById: req.user.id },
+      include: {
+        room: true,
+        equipment: true,
+        category: true,
+        assignedTo: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(tickets);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Server Error: Remove Ticket Failed" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-//ดูใบแจ้งซ่อมทั้งหมด (ListAll) - Admin
+// Get single ticket by ID
+exports.read = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        room: true,
+        equipment: true,
+        category: true,
+        createdBy: true,
+        assignedTo: true,
+        logs: true
+      }
+    });
+    res.json(ticket);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Get ALL tickets (Admin/IT)
 exports.listAll = async (req, res) => {
   try {
     const tickets = await prisma.ticket.findMany({
       include: {
         room: true,
-        images: true,
-        category: true, // เพิ่ม category
-        createdBy: { select: { name: true, email: true } },
-        assignedTo: { select: { name: true } },
+        equipment: true,
+        category: true,
+        createdBy: true,
+        assignedTo: true
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' }
     });
     res.json(tickets);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Server Error: List All Failed" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-//ดูประวัติการซ่อมของอุปกรณ์ (By Equipment ID)
+// Delete ticket
+exports.remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.ticket.delete({
+      where: { id: parseInt(id) }
+    });
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// List tickets by equipment
 exports.listByEquipment = async (req, res) => {
   try {
     const { id } = req.params;
     const tickets = await prisma.ticket.findMany({
       where: { equipmentId: parseInt(id) },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        updatedAt: true,
-        urgency: true,
-        category: { select: { name: true } }, // แสดงชื่อหมวดหมู่ด้วย
+      include: {
+        createdBy: true,
+        category: true
       },
-      orderBy: { updatedAt: "desc" },
-      take: 5,
+      orderBy: { createdAt: 'desc' }
     });
     res.json(tickets);
   } catch (err) {
     console.log(err);
-    res
-      .status(500)
-      .json({ message: "Server Error: Get Equipment History Failed" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-//ให้คะแนนความพึงพอใจ (Submit Feedback)
+// Submit feedback
 exports.submitFeedback = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rating, comment } = req.body;
+    const { rating, userFeedback } = req.body;
 
-    const ticketId = parseInt(id);
-    if (isNaN(ticketId)) {
-      return res.status(400).json({ message: "Invalid Ticket ID" });
-    }
-
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: ticketId },
-      include: { assignedTo: true }
-    });
-
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
-
-    if (ticket.createdById !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
-    // Update Ticket
-    await prisma.ticket.update({
+    const updated = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
         rating: parseInt(rating),
-        userFeedback: comment,
-        logs: {
-          create: {
-            action: "Feedback",
-            detail: `User gave ${rating} stars. Comment: ${comment}`,
-            updatedById: req.user.id
-          }
-        }
+        userFeedback
       }
     });
-
-    // Update IT Stats if assigned
-    if (ticket.assignedToId) {
-      const itUser = await prisma.user.findUnique({ where: { id: ticket.assignedToId } });
-      if (itUser) {
-        const newTotalRated = itUser.totalRated + 1;
-        const currentTotalScore = (itUser.avgRating * itUser.totalRated);
-        const newAvg = (currentTotalScore + parseInt(rating)) / newTotalRated;
-
-        await prisma.user.update({
-          where: { id: ticket.assignedToId },
-          data: {
-            totalRated: newTotalRated,
-            avgRating: newAvg
-          }
-        });
-      }
-    }
-
-    res.json({ message: "Feedback submitted successfully" });
-
+    res.json(updated);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Server Error: Submit Feedback Failed" });
+    res.status(500).json({ message: "Server Error" });
   }
 };

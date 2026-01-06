@@ -11,12 +11,14 @@ const {
   closeJob,
   rescheduleAppointment,
   getSchedule,
+  getHistory,
 } = require("../controllers/it-support");
 
 // Dashboard data
 router.get("/it/stats", authCheck, itCheck, getStats);
 router.get("/it/tasks", authCheck, itCheck, getMyTasks);
 router.get("/it/schedule", authCheck, itCheck, getSchedule);
+router.get("/it/history", authCheck, itCheck, getHistory);
 router.get("/it/appointments/today", authCheck, itCheck, getTodayAppointments);
 
 // Actions

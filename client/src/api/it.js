@@ -76,3 +76,12 @@ export const getSchedule = async (token, date) => {
         },
     });
 };
+
+// Get history
+export const getHistory = async (token) => {
+    return await axios.get("http://localhost:5001/api/it/history", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
