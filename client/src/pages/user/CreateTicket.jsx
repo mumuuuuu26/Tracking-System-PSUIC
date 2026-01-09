@@ -34,7 +34,7 @@ const CreateTicket = () => {
     images: [],
   });
 
-  const urgencyLevels = ["Low", "Medium", "High", "Critical"];
+  const urgencyLevels = ["Low", "Medium", "High"];
 
   useEffect(() => {
     loadData();
@@ -106,8 +106,14 @@ const CreateTicket = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const newImages = files.map((file) => URL.createObjectURL(file));
-    setForm({ ...form, images: [...form.images, ...newImages] });
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setForm(prev => ({ ...prev, images: [...prev.images, reader.result] }));
+      };
+    });
   };
 
   const removeImage = (index) => {
@@ -163,6 +169,7 @@ const CreateTicket = () => {
         categoryId: parseInt(form.categoryId),
         roomId: parseInt(form.roomId),
         equipmentId: form.equipmentId ? parseInt(form.equipmentId) : null,
+        images: form.images, // Add images to payload
       };
 
       await createTicket(token, payload);
@@ -303,19 +310,17 @@ const CreateTicket = () => {
                 {/* Priority Selection */}
                 <div className="space-y-3">
                   <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Priority Level</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="flex flex-wrap justify-center gap-4">
                     {urgencyLevels.map((level) => {
                       const colors = {
                         Low: "hover:bg-blue-50 hover:border-blue-200 text-blue-700",
                         Medium: "hover:bg-yellow-50 hover:border-yellow-200 text-yellow-700",
-                        High: "hover:bg-orange-50 hover:border-orange-200 text-orange-700",
-                        Critical: "hover:bg-red-50 hover:border-red-200 text-red-700"
+                        High: "hover:bg-orange-50 hover:border-orange-200 text-orange-700"
                       };
                       const activeColors = {
                         Low: "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200",
                         Medium: "bg-yellow-500 border-yellow-500 text-white shadow-md shadow-yellow-200",
-                        High: "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200",
-                        Critical: "bg-red-600 border-red-600 text-white shadow-md shadow-red-200"
+                        High: "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200"
                       };
 
                       return (
@@ -324,7 +329,7 @@ const CreateTicket = () => {
                           type="button"
                           onClick={() => setForm({ ...form, urgency: level })}
                           className={`
-                            py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all duration-200
+                            py-3 px-6 rounded-xl border-2 font-bold text-sm transition-all duration-200 min-w-[120px] text-center
                             ${form.urgency === level ? activeColors[level] : `bg-white border-gray-100 text-gray-500 ${colors[level]}`}
                           `}
                         >
@@ -408,10 +413,9 @@ const CreateTicket = () => {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Priority</p>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${form.urgency === "Critical" ? "bg-red-100 text-red-700" :
-                        form.urgency === "High" ? "bg-orange-100 text-orange-700" :
-                          form.urgency === "Medium" ? "bg-yellow-100 text-yellow-700" :
-                            "bg-blue-100 text-blue-700"
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${form.urgency === "High" ? "bg-orange-100 text-orange-700" :
+                        form.urgency === "Medium" ? "bg-yellow-100 text-yellow-700" :
+                          "bg-blue-100 text-blue-700"
                         }`}>
                         {form.urgency} Priority
                       </span>

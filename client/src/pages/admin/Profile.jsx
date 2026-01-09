@@ -19,7 +19,7 @@ import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
 
-const ITProfile = () => {
+const AdminProfile = () => {
     const { token, checkUser, actionLogout } = useAuthStore();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -118,7 +118,7 @@ const ITProfile = () => {
         );
     if (!profile) return null;
 
-    const displayName = profile.name || (profile.email ? profile.email.split('@')[0] : "IT Support");
+    const displayName = profile.name || (profile.email ? profile.email.split('@')[0] : "Admin");
 
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 pb-24">
@@ -198,7 +198,7 @@ const ITProfile = () => {
                 </div>
                 <p className="text-gray-500 text-sm mb-3">{profile.email}</p>
                 <div className="bg-blue-50 text-blue-600 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                    {profile.role || "IT SUPPORT"}
+                    {profile.role || "ADMINISTRATOR"}
                 </div>
             </div>
 
@@ -371,7 +371,7 @@ const ITProfile = () => {
                         </div>
                         <div className="flex-1">
                             <p className="text-xs text-gray-400 font-medium mb-0.5">Role</p>
-                            <p className="text-gray-900 font-semibold text-sm uppercase">{profile.role || "IT SUPPORT"}</p>
+                            <p className="text-gray-900 font-semibold text-sm uppercase">{profile.role || "ADMINISTRATOR"}</p>
                         </div>
                     </div>
 
@@ -404,4 +404,4 @@ const ITProfile = () => {
     );
 };
 
-export default ITProfile;
+export default AdminProfile;

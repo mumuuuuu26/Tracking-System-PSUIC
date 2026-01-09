@@ -4,9 +4,9 @@ import {
   Bell,
   Calendar,
   Clock,
-  AlertTriangle,
-  CheckCircle,
   ChevronRight,
+  MoreHorizontal,
+  CheckCircle,
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
@@ -19,6 +19,7 @@ import {
   acceptJob,
   rejectTicket,
 } from "../../api/it";
+import Swal from "sweetalert2";
 
 dayjs.extend(relativeTime);
 
@@ -32,12 +33,11 @@ const ITDashboard = () => {
     pending: 0,
     inProgress: 0,
     completed: 0,
-    todayComplete: 0,
-    todayTotal: 0,
-    urgent: 0,
+    rejected: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState("All");
+
+  // Modal States
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -47,8 +47,6 @@ const ITDashboard = () => {
   useEffect(() => {
     if (token) {
       loadDashboardData();
-      const interval = setInterval(loadDashboardData, 30000); // Refresh every 30s
-      return () => clearInterval(interval);
     }
   }, [token]);
 
@@ -56,18 +54,36 @@ const ITDashboard = () => {
     try {
       setLoading(true);
 
-      const [ticketsRes, appointmentsRes, statsRes] = await Promise.all([
+      const [ticketsRes, appointmentsRes] = await Promise.all([
         getMyTasks(token),
         getTodayAppointments(token),
-        getStats(token),
       ]);
 
-      setTickets(ticketsRes.data);
+      const allTickets = ticketsRes.data;
+
+      // Calculate stats manually from tickets if needed, or use separate API if consistent
+      // The mockup has 4 specific stat blocks: Booking, In progress, Completed, Reject
+      // Booking = pending
+      // In progress = in_progress + scheduled
+      // Completed = fixed + closed
+      // Reject = rejected
+
+      const pendingCount = allTickets.filter(t => t.status === "pending").length;
+      const inProgressCount = allTickets.filter(t => ["in_progress", "scheduled"].includes(t.status)).length;
+      const completedCount = allTickets.filter(t => ["fixed", "closed"].includes(t.status)).length;
+      const rejectedCount = allTickets.filter(t => t.status === "rejected").length;
+
+      setStats({
+        pending: pendingCount,
+        inProgress: inProgressCount,
+        completed: completedCount,
+        rejected: rejectedCount
+      });
+
+      setTickets(allTickets);
       setAppointments(appointmentsRes.data);
-      setStats(statsRes.data);
     } catch (err) {
       console.error("Failed to load dashboard:", err);
-      // toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false);
     }
@@ -107,423 +123,276 @@ const ITDashboard = () => {
     }
   };
 
-  const handleReschedule = (ticketId) => {
-    navigate(`/it/reschedule/${ticketId}`);
-  };
-
-  const getFilteredTickets = () => {
-    switch (selectedFilter) {
-      case "Accept":
-        return tickets.filter((t) => ["in_progress", "scheduled"].includes(t.status));
-      case "Reject":
-        return tickets.filter((t) => t.status === "rejected"); // Or pending logic if used for actions
-      default:
-        return tickets;
-    }
-  };
-
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
-      case "Critical":
-        return "bg-red-100 text-red-600";
-      case "High":
-        return "bg-orange-100 text-orange-600";
-      case "Medium":
-        return "bg-yellow-100 text-yellow-600";
-      default:
-        return "bg-green-100 text-green-600";
+      case "Critical": return "text-red-600 bg-red-50 border border-red-100";
+      case "High": return "text-orange-600 bg-orange-50 border border-orange-100";
+      case "Medium": return "text-yellow-600 bg-yellow-50 border border-yellow-100";
+      default: return "text-green-600 bg-green-50 border border-green-100";
     }
   };
 
-  const urgencyWeight = {
-    Critical: 3,
-    High: 2,
-    Medium: 1,
-    Low: 0,
-  };
-
-  const getFilteredAndSortedTickets = () => {
-    let filtered = [];
-    switch (selectedFilter) {
-      case "Accept":
-        filtered = tickets.filter((t) => ["in_progress", "scheduled"].includes(t.status));
-        break;
-      case "Reject":
-        filtered = tickets.filter((t) => t.status === "rejected");
-        break;
-      default: // "All" -> Pending
-        filtered = tickets.filter((t) => t.status === "pending");
+  const getUrgencyBadge = (urgency) => {
+    switch (urgency) {
+      case "Critical": return "HIGH"; // Matching mockup style "HIGH"
+      case "High": return "HIGH";
+      case "Medium": return "MED";
+      case "Low": return "LOW";
+      default: return "NORM";
     }
-
-    return filtered.sort((a, b) => {
-      // 1. Urgency (Highest first)
-      const weightA = urgencyWeight[a.urgency] || 0;
-      const weightB = urgencyWeight[b.urgency] || 0;
-      if (weightA !== weightB) {
-        return weightB - weightA;
-      }
-      // 2. CreatedAt (Oldest first / First come first served)
-      return new Date(a.createdAt) - new Date(b.createdAt);
-    });
   };
 
-  const completionPercentage =
-    stats.todayTotal > 0
-      ? Math.round((stats.todayComplete / stats.todayTotal) * 100)
-      : 0;
+  const getCategoryColor = (categoryName) => {
+    // Pink circle for Hardware (Projector etc), Yellow/Orange for Software?
+    // Mockup shows: Pink circle for "Projector" (Hardware). Yellow circle for "Projector" (Hardware) too?
+    // Wait, second card is Projector too but yellow icon.
+    // Let's iterate colors based on id or name hash? Or check category.
+    // Assuming Hardware = Pink, Software/Wifi = Blue, etc.
+    // Let's stick to a simple mapping or random for now if category not explicit.
+    if (categoryName === "Hardware") return "bg-pink-200 text-pink-600";
+    if (categoryName === "Network") return "bg-blue-200 text-blue-600";
+    if (categoryName === "Software") return "bg-purple-200 text-purple-600";
+    return "bg-yellow-200 text-yellow-600";
+  };
 
-  if (loading && !stats.todayTotal) {
-    // Only show loader on initial load if no data
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  // Filter "New Tickets" -> Pending status
+  const newTickets = tickets.filter(t => t.status === "pending").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  // Filter "Completed Tickets" -> Fixed status
+  const completedTickets = tickets.filter(t => t.status === "fixed").sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-full overflow-hidden">
-                {user?.picture ? (
-                  <img
-                    src={user.picture}
-                    alt={user.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl">
-                    👨‍🔧
-                  </div>
-                )}
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Hello!</p>
-                <h1 className="text-xl font-bold">
-                  {user?.name || "IT Support"}
-                </h1>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate("/it/notifications")}
-              className="relative p-2"
-            >
-              <Bell size={24} />
-              {tickets.filter((t) => !t.readAt && t.assignedToId === user.id)
-                .length > 0 && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
-            </button>
-          </div>
+    <div className="min-h-screen bg-gray-50 pb-24">
 
-          {/* Progress Card */}
-          <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-2xl p-4 text-white">
-            <h3 className="text-sm opacity-90 mb-1">Your today's tickets</h3>
-            <p className="text-lg font-semibold mb-3">
-              {stats.todayComplete}/{stats.todayTotal || 0} completed
-            </p>
+      {/* Blue Header Section */}
+      {/* Blue Header Section */}
+      <div className="bg-blue-600 pt-6 pb-24 px-6 rounded-b-[2.5rem] shadow-lg relative z-0">
+      </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => navigate("/it/tickets")}
-                className="bg-white text-blue-500 px-4 py-2 rounded-lg text-sm font-semibold"
-              >
-                View Tickets
-              </button>
-
-              {/* Circular Progress */}
-              <div className="relative w-20 h-20">
-                <svg className="w-20 h-20 transform -rotate-90">
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="30"
-                    stroke="white"
-                    strokeWidth="8"
-                    fill="none"
-                    opacity="0.3"
-                  />
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="30"
-                    stroke="white"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${(2 * Math.PI * 30 * completionPercentage) / 100
-                      } ${2 * Math.PI * 30}`}
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-lg font-bold">
-                  {completionPercentage}%
-                </span>
-              </div>
-            </div>
-          </div>
+      {/* Floating Stats Card */}
+      <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
+        <div className="bg-white rounded-3xl shadow-xl p-6 flex justify-between items-center text-center">
+          <StatItem count={stats.pending} label="Booking" />
+          <StatItem count={stats.inProgress} label="In progress" />
+          <StatItem count={stats.completed} label="Completed" />
+          <StatItem count={stats.rejected} label="Reject" />
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="px-4 mt-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-red-50 rounded-xl p-4 text-center">
-            <div className="w-10 h-10 bg-red-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
-              <AlertTriangle className="text-red-500" size={20} />
-            </div>
-            <p className="text-2xl font-bold text-gray-800">{stats.urgent}</p>
-            <p className="text-xs text-gray-600">Urgent</p>
-          </div>
-
-          <div className="bg-orange-50 rounded-xl p-4 text-center">
-            <div className="w-10 h-10 bg-orange-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
-              <Clock className="text-orange-500" size={20} />
-            </div>
-            <p className="text-2xl font-bold text-gray-800">{stats.pending}</p>
-            <p className="text-xs text-gray-600">Pending</p>
-          </div>
-
-          <div className="bg-blue-50 rounded-xl p-4 text-center">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg mx-auto mb-2 flex items-center justify-center">
-              <CheckCircle className="text-blue-500" size={20} />
-            </div>
-            <p className="text-2xl font-bold text-gray-800">
-              {stats.inProgress}
-            </p>
-            <p className="text-xs text-gray-600">In Progress</p>
-          </div>
+      {/* My Schedule Section */}
+      <div className="max-w-4xl mx-auto px-6 mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-lg text-gray-800">My Schedule</h3>
+          <button onClick={() => navigate('/it/schedule')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
         </div>
+
+        {appointments.length > 0 ? (
+          <div className="space-y-4">
+            {appointments.slice(0, 2).map((appt) => (
+              <div key={appt.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+                    {/* Placeholder or Equipment Image */}
+                    <img
+                      src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2670&auto=format&fit=crop"
+                      alt="Tech"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">{appt.ticket?.title || "Ticket #" + appt.ticketId}</h4>
+                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                      <Calendar size={14} />
+                      <span>{dayjs(appt.start).format('DD MMM YY')}</span>
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="text-gray-400" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+            <p className="text-gray-500 text-sm">No upcoming appointments</p>
+          </div>
+        )}
       </div>
 
       {/* New Tickets Section */}
-      <div className="px-4 mt-6">
-        <h3 className="font-bold text-lg mb-3">Task List</h3>
-
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-4">
-          {["All", "Accept", "Reject"].map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setSelectedFilter(filter)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm ${selectedFilter === filter
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-600"
-                }`}
-            >
-              {filter}
-            </button>
-          ))}
+      <div className="max-w-4xl mx-auto px-6 mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-lg text-gray-800">New Tickets</h3>
+          <button onClick={() => navigate('/it/tickets')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
         </div>
 
-        {/* Tickets List */}
-        <div className="space-y-3">
-          {getFilteredAndSortedTickets().map((ticket) => (
-            <div key={ticket.id} className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${ticket.category?.name === "Hardware"
-                      ? "bg-pink-100"
-                      : "bg-yellow-100"
-                      }`}
-                  >
-                    {ticket.category?.name === "Hardware" ? "🖥️" : "📱"}
+        <div className="space-y-4">
+          {newTickets.length > 0 ? newTickets.map((ticket) => (
+            <div key={ticket.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(ticket.category?.name)}`}>
+                    {/* Show First Letter or Icon */}
+                    <span className="text-xl font-bold opacity-80">{ticket.category?.name?.[0] || 'T'}</span>
                   </div>
                   <div>
-                    <h4 className="font-semibold">
-                      {ticket.equipment?.name || ticket.title}
-                    </h4>
+                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1">{ticket.title}</h4>
                     <p className="text-sm text-gray-500">
-                      Floor {ticket.room?.floor}, Room {ticket.room?.roomNumber}{" "}
-                      - {ticket.category?.name}
+                      Floor {ticket.room?.floor} , Room {ticket.room?.roomNumber} - {ticket.category?.name}
                     </p>
                   </div>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${getUrgencyColor(
-                    ticket.urgency
-                  )}`}
-                >
-                  {ticket.urgency.toUpperCase()}
+                <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${getUrgencyColor(ticket.urgency)}`}>
+                  {getUrgencyBadge(ticket.urgency)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <p className="text-gray-500">
-                  {ticket.createdBy?.name || ticket.createdBy?.username || "Unknown"}
-                </p>
-                <p className="text-gray-400">
-                  {dayjs(ticket.createdAt).fromNow()}
-                </p>
+              <div className="flex justify-between items-center text-xs text-gray-400 mb-4 px-1">
+                <span>{ticket.createdBy?.name || "Unknown User"}</span>
+                <span>{dayjs(ticket.createdAt).fromNow(true)} ago</span>
               </div>
 
-              {selectedFilter !== "Reject" && ticket.status === "pending" && (
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => {
-                      setSelectedTicket(ticket);
-                      setShowAcceptModal(true);
-                    }}
-                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg font-medium hover:bg-blue-600"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedTicket(ticket);
-                      setShowRejectModal(true);
-                    }}
-                    className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg font-medium hover:bg-gray-200"
-                  >
-                    Reject
-                  </button>
-                </div>
-              )}
-
-              {ticket.status === "rejected" && (
-                <div className="mt-3 p-2 bg-red-50 rounded-lg">
-                  <p className="text-sm text-red-600">
-                    Rejected: {ticket.rejectedReason}
-                  </p>
-                </div>
-              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedTicket(ticket);
+                    setShowAcceptModal(true);
+                  }}
+                  className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedTicket(ticket);
+                    setShowRejectModal(true);
+                  }}
+                  className="flex-1 bg-white border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
-          ))}
-
-
-
-          {getFilteredAndSortedTickets().length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No tickets found</p>
+          )) : (
+            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+              <p className="text-gray-500">No new tickets</p>
             </div>
           )}
         </div>
       </div>
 
+      {/* Completed Tickets Section */}
+      <div className="max-w-4xl mx-auto px-6 mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-lg text-gray-800">Completed Tickets</h3>
+          <button onClick={() => navigate('/it/tickets')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
+        </div>
 
+        <div className="space-y-4">
+          {completedTickets.length > 0 ? completedTickets.slice(0, 5).map((ticket) => (
+            <div key={ticket.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 opacity-80 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
+                    <CheckCircle size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1">{ticket.title || ticket.description?.substring(0, 30)}</h4>
+                    <p className="text-sm text-gray-500">
+                      Floor {ticket.room?.floor} , Room {ticket.room?.roomNumber}
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded text-[10px] font-bold tracking-wider bg-green-100 text-green-600">
+                  DONE
+                </span>
+              </div>
 
+              <div className="flex justify-between items-center text-xs text-gray-400 pl-[4rem]">
+                <span>Fixed by me</span>
+                <span>{dayjs(ticket.updatedAt).fromNow()}</span>
+              </div>
+            </div>
+          )) : (
+            <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
+              <p className="text-gray-400 text-sm">No completed tickets yet</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals are kept similar but unstyled or minimally styled for now */}
       {/* Accept Modal */}
-      {
-        showAcceptModal && selectedTicket && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-bold mb-2 text-center">
-                Accept this ticket?
-              </h3>
-              <p className="text-gray-500 text-center mb-6">
-                Are you sure you want to accept this ticket now?
-              </p>
-
-              <button
-                onClick={handleAccept}
-                className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold mb-3 hover:bg-blue-600"
-              >
-                Accept Now
+      {showAcceptModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Accept Ticket</h3>
+            <p className="text-gray-500 text-center mb-8 text-sm">
+              Do you want to accept <strong>{selectedTicket.title}</strong>?
+            </p>
+            <div className="space-y-3">
+              <button onClick={handleAccept} className="w-full bg-blue-600 text-white py-3.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 hover:scale-[1.02] transition-transform">
+                Accept
               </button>
-
-              <button
-                onClick={() => {
-                  setShowAcceptModal(false);
-                  handleReschedule(selectedTicket.id);
-                }}
-                className="w-full text-gray-600 py-3 font-medium hover:bg-gray-50"
-              >
-                Reschedule
-              </button>
-              <button
-                onClick={() => {
-                  setShowAcceptModal(false);
-                }}
-                className="w-full text-red-500 py-1 font-medium text-sm"
-              >
+              <button onClick={() => setShowAcceptModal(false)} className="w-full bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-lg hover:bg-gray-200">
                 Cancel
               </button>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Reject Modal */}
-      {
-        showRejectModal && selectedTicket && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm max-h-[80vh] overflow-y-auto">
-              <h3 className="text-lg font-bold mb-4">Reject Ticket</h3>
+      {showRejectModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-6 text-gray-800">Reject Ticket</h3>
 
-              <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                <p className="font-semibold">
-                  {selectedTicket.equipment?.name || selectedTicket.title}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Floor {selectedTicket.room?.floor}, Room{" "}
-                  {selectedTicket.room?.roomNumber}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Req: {selectedTicket.createdBy?.name || selectedTicket.createdBy?.username || "Unknown"}
-                </p>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  Reason for rejection
-                </label>
-                <select
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
-                  <option value="">Select reason...</option>
-                  <option value="Not IT related">Not IT related</option>
-                  <option value="Insufficient information">
-                    Insufficient information
-                  </option>
-                  <option value="Duplicate ticket">Duplicate ticket</option>
-                  <option value="Equipment not found">Equipment not found</option>
-                  <option value="User should try quick fix first">
-                    User should try quick fix first
-                  </option>
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  Additional Notes
-                </label>
-                <textarea
-                  value={rejectNote}
-                  onChange={(e) => setRejectNote(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows="3"
-                  placeholder="Please provide details to help the user understand why this request is being rejected..."
-                />
-              </div>
-
-              <button
-                onClick={handleReject}
-                className="w-full bg-red-500 text-white py-3 rounded-xl font-semibold mb-3 hover:bg-red-600"
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Reason</label>
+              <select
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-medium focus:ring-2 focus:ring-red-500 focus:outline-none"
               >
-                Confirm Rejection
+                <option value="">Select a reason...</option>
+                <option value="Out of scope">Out of scope</option>
+                <option value="Duplicate">Duplicate</option>
+                <option value="Information missing">Information missing</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Note (Optional)</label>
+              <textarea
+                value={rejectNote}
+                onChange={(e) => setRejectNote(e.target.value)}
+                className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-red-500 focus:outline-none h-24 resize-none"
+                placeholder="Add details..."
+              />
+            </div>
+
+            <div className="space-y-3">
+              <button onClick={handleReject} className="w-full bg-red-500 text-white py-3.5 rounded-2xl font-bold text-lg shadow-lg shadow-red-200 hover:bg-red-600">
+                Confirm Reject
               </button>
-
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setRejectReason("");
-                  setRejectNote("");
-                }}
-                className="w-full text-gray-600 py-3 font-medium hover:bg-gray-50"
-              >
+              <button onClick={() => setShowRejectModal(false)} className="w-full bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-lg hover:bg-gray-200">
                 Cancel
               </button>
             </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+
+    </div>
   );
 };
+
+const StatItem = ({ count, label }) => (
+  <div className="flex flex-col items-center gap-1 min-w-[60px]">
+    <span className="text-2xl font-bold text-blue-900">{count}</span>
+    <span className="text-xs text-blue-600/80 font-bold">{label}</span>
+  </div>
+);
 
 export default ITDashboard;

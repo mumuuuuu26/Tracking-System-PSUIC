@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Clock, User, Menu, X, LogOut } from "lucide-react";
+import { Home, Plus, Clock, User, Menu, X, LogOut, ScanLine, Ticket, Calendar } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
@@ -38,17 +38,17 @@ const LayoutUser = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Mobile Header (Hidden on Desktop) */}
-      <header className="bg-white shadow-sm sticky top-0 z-40 md:hidden">
+      <header className="bg-blue-600 shadow-sm sticky top-0 z-40 md:hidden">
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-2 text-white">
+            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
               <span className="text-white text-sm">🛠️</span>
             </div>
-            <span className="font-semibold text-gray-800">PSUIC Service</span>
+            <span className="font-semibold">PSUIC Service</span>
           </div>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2"
+            className="p-2 text-white/90 hover:text-white"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -56,32 +56,32 @@ const LayoutUser = () => {
       </header>
 
       {/* Desktop Header (Visible on Desktop) */}
-      <header className="hidden md:flex bg-white shadow-sm sticky top-0 z-40 px-6 py-4 justify-between items-center">
+      <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 sticky top-0 z-40 px-6 py-4 justify-between items-center text-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
             <span className="text-white text-xl">🛠️</span>
           </div>
           <div>
-            <h1 className="font-bold text-gray-800 text-lg leading-tight">PSUIC Service</h1>
-            <p className="text-xs text-gray-500 font-medium">Internal Helpdesk</p>
+            <h1 className="font-bold text-lg leading-tight">PSUIC Service</h1>
+            <p className="text-xs text-blue-100 font-medium opacity-80">Internal Helpdesk</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="hidden lg:block text-right">
-            <p className="text-sm font-bold text-gray-700">{user?.name || user?.email}</p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{user?.role || "User"}</p>
+            <p className="text-sm font-bold">{user?.name || user?.email}</p>
+            <p className="text-xs text-blue-200 uppercase tracking-wide">{user?.role || "User"}</p>
           </div>
-          <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden">
+          <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 shadow-sm overflow-hidden backdrop-blur-sm">
             {user?.picture ? (
               <img src={user.picture} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <User size={20} className="text-gray-400" />
+              <User size={20} className="text-white" />
             )}
           </div>
           <button
             onClick={handleLogout}
-            className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/10 text-blue-100 hover:text-white rounded-lg transition-colors"
             title="Logout"
           >
             <LogOut size={20} />
@@ -111,16 +111,16 @@ const LayoutUser = () => {
                 <Home size={20} /> Dashboard
               </a>
               <a
-                href="/user/create-ticket"
-                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                <Plus size={20} /> Create Ticket
-              </a>
-              <a
                 href="/user/my-tickets"
                 className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
               >
-                <Clock size={20} /> My Tickets
+                <Ticket size={20} /> My Tickets
+              </a>
+              <a
+                href="/user/appointments"
+                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                <Calendar size={20} /> Appointments
               </a>
               <a
                 href="/user/profile"
@@ -141,18 +141,33 @@ const LayoutUser = () => {
       )}
 
       {/* Main Content */}
-      <main className="pb-24 md:pt-6 md:px-6">
+      <main className="pb-32 md:pb-24">
         <Outlet />
       </main>
 
-      {/* Floating Bottom Navigation (Dock Style on Desktop) */}
-      <div className="fixed bottom-0 left-0 right-0 md:bottom-8 md:flex md:justify-center z-30 pointer-events-none">
-        <nav className="pointer-events-auto bg-white/90 backdrop-blur-md border-t md:border border-gray-200/50 md:rounded-full md:shadow-2xl md:px-8 py-2 md:py-3 transition-all duration-300">
-          <div className="grid grid-cols-4 md:flex md:gap-8 w-full md:w-auto">
+      {/* Floating Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-30">
+        <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
+          <div className="flex items-end justify-between max-w-md mx-auto relative">
+
             <NavLink href="/user" icon={<Home size={24} />} label="Home" active={isActive("/user")} />
-            <NavLink href="/user/create-ticket" icon={<Plus size={24} />} label="Create" active={isActive("/user/create-ticket")} />
-            <NavLink href="/user/my-tickets" icon={<Clock size={24} />} label="History" active={isActive("/user/my-tickets")} />
+            <NavLink href="/user/my-tickets" icon={<Ticket size={24} />} label="Ticket" active={isActive("/user/my-tickets")} />
+
+            {/* Center Scan Button */}
+            <div className="relative -top-6">
+              <button
+                onClick={() => navigate("/user/scan-qr")}
+                className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center shadow-lg shadow-blue-200 border-4 border-white transform transition-transform active:scale-95"
+              >
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                  <ScanLine size={24} className="text-white" />
+                </div>
+              </button>
+            </div>
+
+            <NavLink href="/user/appointments" icon={<Calendar size={24} />} label="Appt." active={isActive("/user/appointments")} />
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
+
           </div>
         </nav>
       </div>
@@ -164,18 +179,17 @@ const LayoutUser = () => {
 const NavLink = ({ href, icon, label, active }) => (
   <a
     href={href}
-    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 group relative ${active
-      ? "text-blue-600 scale-110 md:-translate-y-1"
-      : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50"
+    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 w-16 ${active
+      ? "text-blue-600"
+      : "text-gray-400 hover:text-gray-600"
       }`}
   >
-    <div className={`transition-transform duration-200 ${active ? "bg-blue-100 p-2 rounded-xl mb-1" : ""}`}>
+    <div className={`transition-transform duration-200 ${active ? "-translate-y-1" : ""}`}>
       {icon}
     </div>
-    <span className={`text-[10px] font-bold ${active ? "opacity-100" : "opacity-0 md:group-hover:opacity-100"} transition-opacity duration-200 absolute -bottom-4 md:relative md:bottom-auto md:mt-1`}>
+    <span className={`text-[10px] font-medium mt-1 ${active ? "opacity-100 font-bold" : "opacity-70"}`}>
       {label}
     </span>
-    {active && <div className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full md:hidden" />}
   </a>
 )
 

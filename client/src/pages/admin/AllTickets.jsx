@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { listAllTickets, updateTicketStatus, removeTicket } from '../../api/admin'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { listAllTickets, removeTicket } from '../../api/admin'
 import useAuthStore from '../../store/auth-store'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { toast } from 'react-toastify'
-import { Search, Filter, Trash2, CheckCircle, Clock, AlertCircle, X, ChevronDown, User, Shield } from 'lucide-react'
+import { Search, MapPin, User, Clock, Trash2, Eye } from 'lucide-react'
 
 dayjs.extend(relativeTime);
 
 const AllTickets = () => {
+    const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const { token } = useAuthStore()
     const [tickets, setTickets] = useState([])
     const [filteredTickets, setFilteredTickets] = useState([])
@@ -18,6 +21,10 @@ const AllTickets = () => {
 
     useEffect(() => {
         loadTickets()
+        const query = searchParams.get('search')
+        if (query) {
+            setSearchTerm(query)
+        }
     }, [])
 
     useEffect(() => {
@@ -50,24 +57,17 @@ const AllTickets = () => {
                 item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 String(item.id).includes(searchTerm) ||
                 item.createdBy?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.createdBy?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                item.createdBy?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.assignedTo?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.assignedTo?.name?.toLowerCase().includes(searchTerm.toLowerCase())
             )
         }
 
         setFilteredTickets(temp)
     }
 
-    const handleStatusChange = async (id, status) => {
-        try {
-            await updateTicketStatus(token, id, { status })
-            toast.success(`Ticket #${id} updated to ${status}`)
-            loadTickets()
-        } catch (err) {
-            toast.error('Update Failed')
-        }
-    }
-
-    const handleDelete = async (id) => {
+    const handleDelete = async (e, id) => {
+        e.stopPropagation(); // Prevent card click
         if (!window.confirm('Are you sure you want to delete this ticket?')) return
         try {
             await removeTicket(token, id)
@@ -78,14 +78,29 @@ const AllTickets = () => {
         }
     }
 
-    const getStatusStyle = (status) => {
+    const getStatusColor = (status) => {
         switch (status) {
-            case 'pending': return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', icon: <Clock size={14} /> };
-            case 'in_progress': return { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', icon: <AlertCircle size={14} /> };
-            case 'fixed': return { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', icon: <CheckCircle size={14} /> };
-            default: return { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-100', icon: <AlertCircle size={14} /> };
+            case "pending":
+                return "border-l-4 border-yellow-400 bg-yellow-50";
+            case "in_progress":
+                return "border-l-4 border-blue-400 bg-blue-50";
+            case "fixed":
+                return "border-l-4 border-green-400 bg-green-50";
+            case "rejected":
+                return "border-l-4 border-red-400 bg-red-50";
+            default:
+                return "border-l-4 border-gray-400 bg-gray-50";
         }
-    }
+    };
+
+    const getUrgencyBadge = (urgency) => {
+        switch (urgency) {
+            case "Critical": return "bg-red-100 text-red-700";
+            case "High": return "bg-orange-100 text-orange-700";
+            case "Medium": return "bg-yellow-100 text-yellow-700";
+            default: return "bg-green-100 text-green-700";
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50/50 pb-20">
@@ -119,7 +134,7 @@ const AllTickets = () => {
                             />
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                            {['all', 'pending', 'in_progress', 'fixed'].map((status) => (
+                            {['all', 'pending', 'in_progress', 'fixed', 'rejected'].map((status) => (
                                 <button
                                     key={status}
                                     onClick={() => setFilterStatus(status)}
@@ -136,11 +151,11 @@ const AllTickets = () => {
                 </div>
             </div>
 
-            {/* Content */}
+            {/* Content - Grid View */}
             <div className="max-w-7xl mx-auto px-4">
                 {loading ? (
-                    <div className="space-y-4">
-                        {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-20 bg-white rounded-xl shadow-sm animate-pulse border border-gray-100"></div>)}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-48 bg-white rounded-xl shadow-sm animate-pulse border border-gray-100"></div>)}
                     </div>
                 ) : filteredTickets.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100">
@@ -151,135 +166,91 @@ const AllTickets = () => {
                         <p className="text-gray-400 text-sm">Try adjusting your filters</p>
                     </div>
                 ) : (
-                    <>
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50/50 border-b border-gray-100">
-                                    <tr>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Ticket</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">User</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {filteredTickets.map((ticket) => {
-                                        const statusStyle = getStatusStyle(ticket.status);
-                                        return (
-                                            <tr key={ticket.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                <td className="px-6 py-4">
-                                                    <div>
-                                                        <span className="text-xs font-mono font-bold text-gray-400">#{String(ticket.id).padStart(4, '0')}</span>
-                                                        <p className="font-bold text-gray-800 text-sm">{ticket.title}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 uppercase overflow-hidden border border-gray-100">
-                                                            {ticket.createdBy?.picture
-                                                                ? <img src={ticket.createdBy.picture} alt="" className="w-full h-full object-cover" />
-                                                                : (ticket.createdBy?.email?.[0] || 'U')
-                                                            }
-                                                        </div>
-                                                        <div className="max-w-[150px]">
-                                                            <p className="text-sm font-bold text-gray-700 truncate">{ticket.createdBy?.name || ticket.createdBy?.username || "Unknown Name"}</p>
-                                                            <p className="text-xs text-gray-400 truncate">{ticket.createdBy?.email || "Unknown Email"}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="relative inline-block">
-                                                        <select
-                                                            value={ticket.status}
-                                                            onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
-                                                            className={`appearance-none pl-3 pr-8 py-1.5 rounded-lg text-xs font-bold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500/20 ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
-                                                        >
-                                                            <option value="pending">Pending</option>
-                                                            <option value="in_progress">In Progress</option>
-                                                            <option value="fixed">Fixed</option>
-                                                        </select>
-                                                        <ChevronDown size={14} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${statusStyle.text}`} />
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <p className="text-sm font-medium text-gray-600">{dayjs(ticket.createdAt).format('DD MMM YYYY')}</p>
-                                                    <p className="text-xs text-gray-400">{dayjs(ticket.createdAt).fromNow()}</p>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => handleDelete(ticket.id)}
-                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                        title="Delete Ticket"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Mobile Card View */}
-                        <div className="md:hidden space-y-4">
-                            {filteredTickets.map((ticket) => {
-                                const statusStyle = getStatusStyle(ticket.status);
-                                return (
-                                    <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-mono font-bold text-gray-500">
-                                                    #{String(ticket.id).padStart(4, '0')}
-                                                </span>
-                                                <span className="text-xs text-gray-400">{dayjs(ticket.createdAt).fromNow()}</span>
-                                            </div>
-                                            <div className="relative">
-                                                <select
-                                                    value={ticket.status}
-                                                    onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
-                                                    className={`appearance-none pl-3 pr-7 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-wide cursor-pointer focus:outline-none ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
-                                                >
-                                                    <option value="pending">Pending</option>
-                                                    <option value="in_progress">Processing</option>
-                                                    <option value="fixed">Fixed</option>
-                                                </select>
-                                                <ChevronDown size={12} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${statusStyle.text}`} />
-                                            </div>
-                                        </div>
-
-                                        <h3 className="font-bold text-gray-800 text-lg mb-1">{ticket.title}</h3>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                                            <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-gray-100">
-                                                {ticket.createdBy?.picture
-                                                    ? <img src={ticket.createdBy.picture} alt="" className="w-full h-full object-cover" />
-                                                    : (ticket.createdBy?.email?.[0] || 'U')
-                                                }
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-gray-700">{ticket.createdBy?.name || ticket.createdBy?.username || "Unknown"}</span>
-                                                <span className="text-[10px] text-gray-400">{ticket.createdBy?.email}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                            <span className="text-xs text-gray-400 font-medium">
-                                                {dayjs(ticket.createdAt).format('DD MMM YYYY, HH:mm')}
-                                            </span>
-                                            <button
-                                                onClick={() => handleDelete(ticket.id)}
-                                                className="flex items-center gap-1 text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
-                                            >
-                                                <Trash2 size={14} /> Delete
-                                            </button>
-                                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredTickets.map((ticket) => (
+                            <div
+                                key={ticket.id}
+                                onClick={() => navigate(`/admin/ticket/${ticket.id}`)}
+                                className={`bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full relative group ${getStatusColor(ticket.status)}`}
+                            >
+                                {/* Header */}
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-blue-600 font-bold text-sm">
+                                            #TK-{String(ticket.id).padStart(4, "0")}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getUrgencyBadge(ticket.urgency)}`}>
+                                            {ticket.urgency}
+                                        </span>
                                     </div>
-                                )
-                            })}
-                        </div>
-                    </>
+                                    <span className="text-xs text-gray-500 font-medium">
+                                        {dayjs(ticket.createdAt).fromNow()}
+                                    </span>
+                                </div>
+
+                                {/* Title */}
+                                <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-1">{ticket.title}</h3>
+
+                                {/* Meta Info */}
+                                <div className="flex flex-col gap-1 text-xs text-gray-600 mb-4 flex-1">
+                                    {ticket.room && (
+                                        <div className="flex items-center gap-1.5">
+                                            <MapPin size={14} />
+                                            <span className="truncate">{ticket.room.roomNumber} (Fl. {ticket.room.floor})</span>
+                                        </div>
+                                    )}
+                                    {ticket.createdBy && (
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <User size={14} />
+                                            <span className="truncate font-medium text-gray-700">
+                                                Reported by: {ticket.createdBy.name || ticket.createdBy.username}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Status & Assigned To */}
+                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === "pending" ? "bg-yellow-400" :
+                                            ticket.status === "in_progress" ? "bg-blue-400" :
+                                                ticket.status === "rejected" ? "bg-red-400" :
+                                                    "bg-green-400"
+                                            }`} />
+                                        <span className="text-sm font-semibold text-gray-700 capitalize">
+                                            {ticket.status.replace("_", " ")}
+                                        </span>
+                                    </div>
+
+                                    {ticket.assignedTo ? (
+                                        <div className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-full">
+                                            <img
+                                                src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
+                                                alt={ticket.assignedTo.name}
+                                                className="w-6 h-6 rounded-full"
+                                            />
+                                            <span className="text-xs text-gray-600 font-medium truncate max-w-[80px]">
+                                                {ticket.assignedTo.name?.split(' ')[0]}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-400 italic">
+                                            Unassigned
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Delete Button - Admin Only Action */}
+                                <button
+                                    onClick={(e) => handleDelete(e, ticket.id)}
+                                    className="absolute top-4 right-4 p-2 bg-white/50 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Delete Ticket"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
         </div>

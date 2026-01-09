@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { saveImage } = require("../utils/uploadImage");
 
 // Get dashboard statistics
 exports.getStats = async (req, res) => {
@@ -81,7 +82,6 @@ exports.getMyTasks = async (req, res) => {
           },
           { status: "rejected" },
         ],
-        NOT: { status: "fixed" },
       },
       include: {
         room: true,
@@ -241,7 +241,22 @@ exports.rejectTicket = async (req, res) => {
 exports.closeJob = async (req, res) => {
   try {
     const { id } = req.params;
-    const { solution, afterImages } = req.body;
+    const { note, proof } = req.body;  // Frontend sends 'note' and 'proof'
+
+    // Handle Image Upload
+    let afterImages = [];
+    if (proof) {
+      const url = saveImage(proof);
+      if (url) {
+        afterImages.push({
+          url: url,
+          secure_url: url,
+          type: "after",
+          asset_id: "local",
+          public_id: "local"
+        });
+      }
+    }
 
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
@@ -250,16 +265,13 @@ exports.closeJob = async (req, res) => {
         logs: {
           create: {
             action: "Complete",
-            detail: `Fixed: ${solution}`,
+            detail: `Fixed: ${note || "No details provided"}`,
             updatedById: req.user.id,
           },
         },
-        images: afterImages
+        images: afterImages.length > 0
           ? {
-            create: afterImages.map((img) => ({
-              ...img,
-              type: "after",
-            })),
+            create: afterImages,
           }
           : undefined,
       },

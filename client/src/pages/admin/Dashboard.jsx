@@ -96,72 +96,85 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-20">
-            {/* Header / Welcome Section */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-8 px-4 mb-8 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div className="min-h-screen bg-gray-50 pb-24">
+            {/* Blue Header Section */}
+            <div className="bg-blue-600 pt-8 pb-24 px-6 rounded-b-[2.5rem] shadow-lg relative z-0">
+                <div className="max-w-4xl mx-auto flex justify-between items-start text-white">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                        <p className="text-gray-500 mt-1">Welcome back, {user?.name || "Admin"}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <Shield className="text-white" size={18} />
+                            </div>
+                            <span className="font-bold tracking-wider text-xs opacity-80 bg-blue-700 px-2 py-1 rounded-lg">ADMIN PORTAL</span>
+                        </div>
+                        <h1 className="text-2xl font-bold tracking-tight">PSUIC Service</h1>
+                        <p className="text-blue-100 text-sm mt-1 font-medium">Welcome back, {user?.name || "Admin"}</p>
                     </div>
-                    <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
-                        <Clock size={16} className="text-blue-600" />
-                        <span className="text-sm font-bold text-gray-700">
-                            {currentTime.format("dddd, DD MMMM YYYY")}
-                        </span>
+
+                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-xs text-blue-200 font-medium">{currentTime.format("dddd")}</p>
+                            <p className="font-bold text-sm">{currentTime.format("DD MMM YYYY")}</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center font-bold shadow-sm">
+                            <Clock size={20} />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 space-y-8">
-                {/* Stats Grid */}
-                <div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 px-1">Overview</h2>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {statCards.map((stat, index) => (
-                            <div
-                                key={index}
-                                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow cursor-default group"
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>
-                                        {stat.icon}
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-                                    <p className="text-sm font-medium text-gray-400">{stat.title}</p>
-                                </div>
-                            </div>
-                        ))}
+            {/* Floating Stats Card */}
+            <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
+                <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
+                    <div className="flex justify-between items-center text-center divide-x divide-gray-100">
+                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
+                            <p className="text-3xl font-extrabold text-blue-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.ticketCount}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Total Tickets</p>
+                        </div>
+                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
+                            <p className="text-3xl font-extrabold text-emerald-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.itStaffCount}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">IT Staff</p>
+                        </div>
+                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
+                            <p className="text-3xl font-extrabold text-orange-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.roomCount}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Rooms</p>
+                        </div>
+                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
+                            <p className="text-3xl font-extrabold text-purple-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.equipmentCount}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Equipment</p>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Management Grid */}
-                <div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 px-1">Quick Access</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {menuItems.map((item, index) => (
-                            <a
-                                href={item.link}
-                                key={index}
-                                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5 hover:shadow-lg hover:border-blue-100 transition-all group relative overflow-hidden"
-                            >
-                                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white to-transparent opacity-50 rounded-bl-full pointer-events-none group-hover:scale-150 transition-transform duration-500`}></div>
+            {/* Quick Access Grid */}
+            <div className="max-w-4xl mx-auto px-6 mt-10">
+                <h2 className="text-lg font-bold text-gray-800 mb-6 pl-1 flex items-center gap-2">
+                    <LayoutGrid size={20} className="text-gray-400" />
+                    Management
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {menuItems.map((item, index) => (
+                        <a
+                            href={item.link}
+                            key={index}
+                            className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5 hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 transition-all group relative overflow-hidden"
+                        >
+                            {/* Decorative Background Blob */}
+                            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.bg.replace('50', '100')} to-transparent opacity-50 rounded-bl-[100px] pointer-events-none group-hover:scale-150 transition-transform duration-700 ease-out`}></div>
 
-                                <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-sm`}>
-                                    {item.icon}
-                                </div>
-                                <div className="flex-1 relative z-10">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">{item.title}</h3>
-                                    <p className="text-sm text-gray-500">{item.desc}</p>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:translate-x-1">
-                                    <ChevronRight size={18} />
-                                </div>
-                            </a>
-                        ))}
-                    </div>
+                            <div className={`w-14 h-14 rounded-2xl ${item.bg} flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform shadow-inner`}>
+                                {item.icon}
+                            </div>
+                            <div className="flex-1 relative z-10">
+                                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">{item.title}</h3>
+                                <p className="text-sm text-gray-500 font-medium">{item.desc}</p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:translate-x-2">
+                                <ChevronRight size={18} />
+                            </div>
+                        </a>
+                    ))}
                 </div>
             </div>
         </div>

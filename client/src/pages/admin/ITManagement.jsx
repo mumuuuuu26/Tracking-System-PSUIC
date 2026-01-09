@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Calendar, Edit2, UserCheck, UserX, Clock, X, Phone, Briefcase, Trash2, CheckCircle, AlertCircle, Shield } from "lucide-react";
+import { Search, Calendar, Edit2, UserCheck, UserX, Clock, X, Phone, Briefcase, Trash2, CheckCircle, AlertCircle, Shield, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getITStaff, getITStaffStats, listAllTickets, updateTicketStatus } from "../../api/admin";
 import { updateUser, removeUser } from "../../api/user";
@@ -223,9 +223,17 @@ const ITManagement = () => {
                                         <button
                                             onClick={() => handleEditClick(member)}
                                             className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                            title="Edit Profile"
                                         >
                                             <Edit2 size={16} />
                                         </button>
+                                        <Link
+                                            to={`/admin/tickets?search=${member.name}`}
+                                            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all flex items-center justify-center"
+                                            title="View History / All Tickets"
+                                        >
+                                            <History size={16} />
+                                        </Link>
                                         <button
                                             onClick={() => handleDeleteClick(member.id)}
                                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -243,12 +251,7 @@ const ITManagement = () => {
                                                 <span className="text-xs font-bold uppercase">Working on</span>
                                             </div>
                                             <p className="text-sm font-bold text-gray-800 line-clamp-1 mb-2">#{member.currentTicket.id} {member.currentTicket.title}</p>
-                                            <Link
-                                                to={`/it/ticket/${member.currentTicket.id}`}
-                                                className="block w-full text-center py-1.5 bg-white text-orange-600 text-xs font-bold rounded-lg border border-orange-100 hover:bg-orange-50 transition-colors"
-                                            >
-                                                View Ticket
-                                            </Link>
+
                                         </div>
                                     ) : (
                                         <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100">
@@ -378,8 +381,8 @@ const ITManagement = () => {
                                                 <div className="flex justify-between items-start mb-1">
                                                     <span className="font-bold text-gray-800 text-sm truncate">#{ticket.id} {ticket.title}</span>
                                                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${ticket.urgency === 'High' ? 'bg-red-100 text-red-700' :
-                                                            ticket.urgency === 'Medium' ? 'bg-orange-100 text-orange-700' :
-                                                                'bg-green-100 text-green-700'
+                                                        ticket.urgency === 'Medium' ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-green-100 text-green-700'
                                                         }`}>
                                                         {ticket.urgency || "Normal"}
                                                     </span>

@@ -1,6 +1,7 @@
 // controllers/ticket.js (ส่วนที่ต้องแก้ไข)
 const prisma = require("../config/prisma");
 const transporter = require("../config/nodemailer");
+const { saveImage } = require("../utils/uploadImage");
 
 exports.create = async (req, res) => {
   try {
@@ -26,12 +27,25 @@ exports.create = async (req, res) => {
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         categoryId: categoryId ? parseInt(categoryId) : null,
         status: "pending",
+        images: images && images.length > 0 ? {
+          create: images.map(img => {
+            const imageUrl = saveImage(img);
+            return {
+              url: imageUrl,
+              secure_url: imageUrl,
+              type: "before",
+              asset_id: "local",
+              public_id: "local"
+            };
+          }).filter(img => img.url !== null)
+        } : undefined
       },
       include: {
         room: true,
         equipment: true,
         category: true,
         createdBy: true,
+        images: true
       },
     });
 
@@ -329,7 +343,12 @@ exports.read = async (req, res) => {
         category: true,
         createdBy: true,
         assignedTo: true,
-        logs: true
+        logs: {
+          orderBy: { createdAt: 'desc' }
+        },
+        images: true,
+        appointment: true,
+        notification: true
       }
     });
     res.json(ticket);

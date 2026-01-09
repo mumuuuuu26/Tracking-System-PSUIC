@@ -24,6 +24,8 @@ const quickFixRoutes = require("./routes/quickFix");
 app.use(morgan("dev"));
 app.use(express.json({ limit: "20mb" }));
 app.use(cors());
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api", authRoutes);

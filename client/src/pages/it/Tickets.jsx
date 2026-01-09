@@ -47,6 +47,7 @@ const Tickets = () => {
                 if (activeFilter === "Completed") return t.status === "fixed";
                 if (activeFilter === "In Progress") return t.status === "in_progress";
                 if (activeFilter === "Pending") return t.status === "pending";
+                if (activeFilter === "Rejected") return t.status === "rejected";
                 return true;
             });
         }
@@ -73,6 +74,8 @@ const Tickets = () => {
                 return "border-l-4 border-blue-400 bg-blue-50";
             case "fixed":
                 return "border-l-4 border-green-400 bg-green-50";
+            case "rejected":
+                return "border-l-4 border-red-400 bg-red-50";
             default:
                 return "border-l-4 border-gray-400 bg-gray-50";
         }
@@ -91,7 +94,7 @@ const Tickets = () => {
         }
     };
 
-    const filters = ["All", "Pending", "In Progress", "Completed"];
+    const filters = ["All", "Pending", "In Progress", "Completed", "Rejected"];
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
@@ -201,7 +204,8 @@ const Tickets = () => {
                                     <div className="flex items-center gap-2">
                                         <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === "pending" ? "bg-yellow-400" :
                                             ticket.status === "in_progress" ? "bg-blue-400" :
-                                                "bg-green-400"
+                                                ticket.status === "rejected" ? "bg-red-400" :
+                                                    "bg-green-400"
                                             }`} />
                                         <span className="text-sm font-semibold text-gray-700 capitalize">
                                             {ticket.status.replace("_", " ")}

@@ -58,46 +58,36 @@ const LayoutAdmin = () => {
             </header>
 
             {/* Desktop Header (Visible on Desktop) */}
-            <header className="hidden md:block bg-white/90 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-40 transition-all duration-300">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <span className="text-white text-lg filter drop-shadow-sm">🛠️</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                                <h1 className="font-bold text-gray-900 text-lg leading-tight tracking-tight">PSUIC Service</h1>
-                                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-                                    Admin
-                                </span>
-                            </div>
-                        </div>
+            <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 sticky top-0 z-40 px-6 py-4 justify-between items-center text-white">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
+                        <span className="text-white text-lg filter drop-shadow-sm">🛠️</span>
                     </div>
+                    <div>
+                        <h1 className="font-bold text-lg leading-tight">PSUIC Service</h1>
+                        <p className="text-xs text-blue-100 font-medium opacity-80">Admin Portal</p>
+                    </div>
+                </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="hidden lg:flex flex-col items-end">
-                            <p className="text-sm font-bold text-gray-800">{user?.name || user?.email}</p>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                {user?.role || "Administrator"}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-                            <div className="h-10 w-10 bg-gray-50 rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
-                                {user?.picture ? (
-                                    <img src={user.picture} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    <User size={20} className="text-gray-400" />
-                                )}
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="p-2.5 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-xl transition-all duration-200 group relative"
-                                title="Logout"
-                            >
-                                <LogOut size={20} className="group-hover:scale-110 transition-transform" />
-                            </button>
-                        </div>
+                <div className="flex items-center gap-4">
+                    <div className="hidden lg:block text-right">
+                        <p className="text-sm font-bold">{user?.name || "Administrator"}</p>
+                        <p className="text-xs text-blue-200 uppercase tracking-wide">{user?.role || "Admin"}</p>
                     </div>
+                    <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 shadow-sm overflow-hidden backdrop-blur-sm">
+                        {user?.picture ? (
+                            <img src={user.picture} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User size={20} className="text-white" />
+                        )}
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="p-2 hover:bg-white/10 text-blue-100 hover:text-white rounded-lg transition-colors"
+                        title="Logout"
+                    >
+                        <LogOut size={20} />
+                    </button>
                 </div>
             </header>
 
@@ -165,20 +155,19 @@ const LayoutAdmin = () => {
             )}
 
             {/* Main Content */}
-            <main className="pb-24 md:pt-6 md:px-6">
+            <main className="pb-32 md:pb-24">
                 <Outlet />
             </main>
 
-            {/* Floating Bottom Navigation (Dock Style on Desktop) */}
-            <div className="fixed bottom-0 left-0 right-0 md:bottom-8 md:flex md:justify-center z-30 pointer-events-none">
-                <nav className="pointer-events-auto bg-white/90 backdrop-blur-md border-t md:border border-gray-200/50 md:rounded-full md:shadow-2xl md:px-8 py-2 md:py-3 transition-all duration-300">
-                    <div className="grid grid-cols-6 md:flex md:gap-6 w-full md:w-auto">
-                        <NavLink href="/admin" icon={<LayoutDashboard size={24} />} label="Dash" active={isActive("/admin")} />
+            {/* Floating Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 z-30">
+                <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
+                    <div className="flex items-end justify-between max-w-md mx-auto relative px-2">
+                        <NavLink href="/admin" icon={<LayoutDashboard size={24} />} label="Home" active={isActive("/admin")} />
                         <NavLink href="/admin/tickets" icon={<Ticket size={24} />} label="Tickets" active={isActive("/admin/tickets")} />
                         <NavLink href="/admin/manage-users" icon={<Users size={24} />} label="Users" active={isActive("/admin/manage-users")} />
                         <NavLink href="/admin/manage-it" icon={<UserCog size={24} />} label="Staff" active={isActive("/admin/manage-it")} />
-                        <NavLink href="/admin/manage-rooms" icon={<Building2 size={24} />} label="Rooms" active={isActive("/admin/manage-rooms")} />
-                        <NavLink href="/admin/reports" icon={<BarChart size={24} />} label="Reports" active={isActive("/admin/reports")} />
+                        <NavLink href="/admin/profile" icon={<User size={24} />} label="Profile" active={isActive("/admin/profile")} />
                     </div>
                 </nav>
             </div>
@@ -190,18 +179,17 @@ const LayoutAdmin = () => {
 const NavLink = ({ href, icon, label, active }) => (
     <a
         href={href}
-        className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 group relative ${active
-            ? "text-blue-600 scale-110 md:-translate-y-1"
-            : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50"
+        className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 w-16 ${active
+            ? "text-blue-600"
+            : "text-gray-400 hover:text-gray-600"
             }`}
     >
-        <div className={`transition-transform duration-200 ${active ? "bg-blue-100 p-2 rounded-xl mb-1" : ""}`}>
+        <div className={`transition-transform duration-200 ${active ? "-translate-y-1" : ""}`}>
             {icon}
         </div>
-        <span className={`text-[10px] font-bold ${active ? "opacity-100" : "opacity-0 md:group-hover:opacity-100"} transition-opacity duration-200 absolute -bottom-4 md:relative md:bottom-auto md:mt-1`}>
+        <span className={`text-[10px] font-medium mt-1 ${active ? "opacity-100 font-bold" : "opacity-70"}`}>
             {label}
         </span>
-        {active && <div className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full md:hidden" />}
     </a>
 )
 
