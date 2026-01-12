@@ -167,6 +167,7 @@ const LayoutAdmin = () => {
                         <NavLink href="/admin/tickets" icon={<Ticket size={24} />} label="Tickets" active={isActive("/admin/tickets")} />
                         <NavLink href="/admin/manage-users" icon={<Users size={24} />} label="Users" active={isActive("/admin/manage-users")} />
                         <NavLink href="/admin/manage-it" icon={<UserCog size={24} />} label="Staff" active={isActive("/admin/manage-it")} />
+                        <NavLink href="/admin/reports" icon={<BarChart size={24} />} label="Reports" active={isActive("/admin/reports")} />
                         <NavLink href="/admin/profile" icon={<User size={24} />} label="Profile" active={isActive("/admin/profile")} />
                     </div>
                 </nav>
