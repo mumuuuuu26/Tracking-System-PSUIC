@@ -275,6 +275,18 @@ const ITDashboard = () => {
                               <Clock size={12} />
                               <span>{dayjs(appt.scheduledAt).format('HH:mm')}</span>
                             </div>
+                            {appt.status === 'reschedule_requested' && (
+                              <div className="mt-1 flex flex-col items-start gap-1">
+                                <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                  Reschedule Requested
+                                </span>
+                                {appt.newDate && (
+                                  <span className="text-[10px] text-gray-400">
+                                    Proposed: {dayjs(appt.newDate).format('D MMM, HH:mm')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

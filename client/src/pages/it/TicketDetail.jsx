@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getTicket } from "../../api/ticket";
 import { acceptJob, closeJob, rejectTicket } from "../../api/it";
+import { requestReschedule } from "../../api/appointment";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { toast } from "react-toastify";
@@ -22,6 +23,14 @@ const TicketDetail = () => {
     const [itNote, setItNote] = useState("");
     const [proofImage, setProofImage] = useState(null);
     const [selectedStatus, setSelectedStatus] = useState("");
+
+    // Reschedule Modal State
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [rescheduleData, setRescheduleData] = useState({
+        newDate: '',
+        newTime: '',
+        reason: ''
+    });
 
     useEffect(() => {
         loadTicket();
@@ -389,8 +398,113 @@ const TicketDetail = () => {
                         </div>
                     )}
                 </div>
+
+
+                {/* Appointment Info & Reschedule */}
+                {ticket.appointment && (selectedStatus !== 'fixed' && selectedStatus !== 'rejected') && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 relative overflow-hidden mb-8">
+                        <div className="absolute right-0 top-0 w-24 h-24 bg-blue-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+
+                        <div className="relative z-10 flex justify-between items-center">
+                            <div>
+                                <h3 className="font-bold text-blue-900 text-sm flex items-center gap-2">
+                                    <CalendarClock size={16} /> Current Appointment
+                                </h3>
+                                <p className="text-blue-800 font-bold text-lg mt-1">
+                                    {dayjs(ticket.appointment.scheduledAt).format('D MMM YYYY, HH:mm')}
+                                </p>
+                                {ticket.appointment.status === 'reschedule_requested' && (
+                                    <span className="inline-block mt-1 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        Reschedule Requested
+                                    </span>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setIsRescheduleModalOpen(true)}
+                                className="bg-white text-blue-600 px-4 py-2 rounded-xl font-bold text-sm shadow-sm hover:bg-blue-50 transition-colors border border-blue-100"
+                            >
+                                Reschedule
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
-        </div>
+
+            {/* Reschedule Modal */}
+            {
+                isRescheduleModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 animate-in zoom-in-95">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                    <CalendarClock className="text-blue-500" /> Reschedule
+                                </h3>
+                                <button onClick={() => setIsRescheduleModalOpen(false)}><X className="text-gray-400" /></button>
+                            </div>
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!ticket.appointment) return;
+                                try {
+                                    await requestReschedule(token, {
+                                        appointmentId: ticket.appointment.id,
+                                        ...rescheduleData
+                                    });
+                                    toast.success("Reschedule request sent");
+                                    setIsRescheduleModalOpen(false);
+                                    loadTicket();
+                                } catch (err) {
+                                    console.error(err);
+                                    toast.error(err.response?.data?.message || "Failed to request reschedule");
+                                }
+                            }} className="space-y-4">
+                                <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 mb-4">
+                                    Propose a new time for this appointment. The user will need to accept it.
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">New Date</label>
+                                        <input
+                                            type="date"
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700"
+                                            value={rescheduleData.newDate}
+                                            onChange={e => setRescheduleData({ ...rescheduleData, newDate: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">New Time</label>
+                                        <input
+                                            type="time"
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700"
+                                            value={rescheduleData.newTime}
+                                            onChange={e => setRescheduleData({ ...rescheduleData, newTime: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">Reason</label>
+                                    <textarea
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        placeholder="Why do you need to reschedule?"
+                                        rows={3}
+                                        value={rescheduleData.reason}
+                                        onChange={e => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
+                                        required
+                                    />
+                                </div>
+
+                                <button className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 mt-2">
+                                    Send Request
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

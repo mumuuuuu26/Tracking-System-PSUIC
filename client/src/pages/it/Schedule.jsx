@@ -336,9 +336,16 @@ const Schedule = () => {
                                                 {item.description || 'No details'}
                                             </p>
                                             {item.status === 'reschedule_requested' && (
-                                                <span className="inline-block mt-2 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                    Reschedule Requested
-                                                </span>
+                                                <div className="mt-2 flex flex-col items-start gap-1">
+                                                    <span className="inline-block bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                        Reschedule Requested
+                                                    </span>
+                                                    {item.newDate && (
+                                                        <span className="text-[10px] text-yellow-100 font-medium">
+                                                            Proposed: {dayjs(item.newDate).format('D MMM, HH:mm')}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
 

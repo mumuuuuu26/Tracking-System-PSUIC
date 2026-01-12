@@ -7,8 +7,8 @@ const { createAppointment, getAvailableSlots, requestReschedule, respondReschedu
 router.post("/appointment/create", authCheck, createAppointment);
 
 // Reschedule Routes
-router.post('/reschedule-request', authCheck, requestReschedule);
-router.post('/reschedule-respond', authCheck, respondReschedule);
+router.post('/appointment/reschedule-request', authCheck, requestReschedule);
+router.post('/appointment/reschedule-respond', authCheck, respondReschedule);
 
 // @ENDPOINT http://localhost:5001/api/appointment/slots
 // Public or User accessible to see when IT is busy
