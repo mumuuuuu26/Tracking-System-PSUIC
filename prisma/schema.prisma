@@ -217,6 +217,11 @@ model Appointment {
   note          String?  @db.Text
   googleEventId String?
 
+  status        String   @default("scheduled") // scheduled, reschedule_requested, completed, cancelled
+  newDate       DateTime? // Proposed new date for reschedule
+  rescheduleReason String? @db.Text
+  rescheduleInitiator String? // 'IT' or 'User'
+
   createdAt DateTime @default(now())
 }
 

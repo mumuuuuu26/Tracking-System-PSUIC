@@ -17,8 +17,11 @@ import {
     Bell,
     CheckCircle,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    AlertTriangle,
+    CalendarClock
 } from 'lucide-react';
+import { requestReschedule } from '../../api/appointment';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -41,6 +44,15 @@ const Schedule = () => {
         startTime: '',
         endTime: '',
         color: '#F87171' // Red-400 default as per mockup style
+    });
+
+    // Reschedule Modal State
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [rescheduleData, setRescheduleData] = useState({
+        appointmentId: null,
+        newDate: '',
+        newTime: '',
+        reason: ''
     });
 
     useEffect(() => {
@@ -264,55 +276,172 @@ const Schedule = () => {
                 </div>
 
                 <div className="space-y-6 relative ml-2">
-                    {personalTasks.length > 0 ? (
-                        personalTasks.map((task) => (
-                            <div key={task.id} className="relative pl-12 group">
+                    {/* MERGED LIST LOGIC */}
+                    {(() => {
+                        const allEvents = [
+                            ...personalTasks.map(t => ({ ...t, type: 'task' })),
+                            ...appointments.map(a => ({
+                                ...a,
+                                id: `apt-${a.id}`, // specific ID format
+                                realId: a.id,
+                                title: `Appointment: ${a.ticket?.title}`,
+                                description: `Ticket #${a.ticket?.id} - User: ${a.ticket?.createdBy?.email}`,
+                                startTime: a.scheduledAt,
+                                color: '#3B82F6', // Blue default for appointments
+                                type: 'appointment',
+                                ticketId: a.ticketId // Keep ref
+                            }))
+                        ].sort((a, b) => new Date(a.startTime || a.date) - new Date(b.startTime || b.date));
+
+                        if (allEvents.length === 0) {
+                            return (
+                                <div className="text-center py-10 bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                                    <p className="text-gray-400 text-sm">No tasks for today</p>
+                                </div>
+                            );
+                        }
+
+                        return allEvents.map((item) => (
+                            <div key={item.id} className="relative pl-12 group">
                                 {/* Time Label */}
                                 <div className="absolute left-0 top-0 text-gray-400 text-sm font-medium w-10 text-right">
-                                    {task.startTime ? dayjs(task.startTime).format('HH.mm') : 'All Day'}
+                                    {item.startTime ? dayjs(item.startTime).format('HH.mm') : 'All Day'}
                                 </div>
 
-                                {/* Task Card */}
+                                {/* Card */}
                                 <div
-                                    className="rounded-[2rem] p-4 flex items-center justify-between shadow-sm relative overflow-hidden transition-transform active:scale-[0.98]"
-                                    style={{ backgroundColor: task.color ? `${task.color}40` : '#FCA5A540' }}
+                                    className={`rounded-[2rem] p-4 flex items-center justify-between shadow-sm relative overflow-hidden transition-transform active:scale-[0.98] cursor-pointer
+                                        ${item.type === 'appointment' ? 'bg-blue-600 text-white' : ''}
+                                    `}
+                                    style={item.type === 'task' ? { backgroundColor: item.color ? `${item.color}40` : '#FCA5A540' } : {}}
+                                    onClick={() => {
+                                        if (item.type === 'appointment') navigate(`/it/ticket/${item.ticketId}`);
+                                    }}
                                 >
-                                    <div className="absolute inset-0 opacity-20" style={{ backgroundColor: task.color || '#F87171' }}></div>
+                                    {item.type === 'task' && (
+                                        <div className="absolute inset-0 opacity-20" style={{ backgroundColor: item.color || '#F87171' }}></div>
+                                    )}
 
                                     <div className="relative z-10 flex items-center gap-4 w-full">
-                                        <div className="flex-1">
-                                            <h4 className="font-bold text-gray-800">{task.title}</h4>
-                                            <p className="text-gray-600 text-xs mt-1">{task.description || 'Every Wednesday'}</p>
-                                        </div>
+                                        {/* Icon for Appointment */}
+                                        {item.type === 'appointment' && (
+                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                                                <CalendarIcon size={18} className="text-white" />
+                                            </div>
+                                        )}
 
-                                        {/* Avatars */}
-                                        <div className="flex -space-x-2">
-                                            {user?.picture ? (
-                                                <img src={user.picture} className="w-8 h-8 rounded-full border-2 border-white shadow-sm" alt="User" />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-600">
-                                                    {user?.username?.[0]}
-                                                </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className={`font-bold ${item.type === 'appointment' ? 'text-white' : 'text-gray-800'}`}>{item.title}</h4>
+                                            <p className={`text-xs mt-1 truncate ${item.type === 'appointment' ? 'text-blue-100' : 'text-gray-600'}`}>
+                                                {item.description || 'No details'}
+                                            </p>
+                                            {item.status === 'reschedule_requested' && (
+                                                <span className="inline-block mt-2 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                    Reschedule Requested
+                                                </span>
                                             )}
                                         </div>
 
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                                            className="p-2 text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        {/* Actions */}
+                                        <div className="flex items-center gap-1">
+                                            {item.type === 'task' ? (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTask(item.id); }}
+                                                    className="p-2 text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            ) : (
+                                                // Reschedule Button for Appointment
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setRescheduleData({ ...rescheduleData, appointmentId: item.realId });
+                                                        setIsRescheduleModalOpen(true);
+                                                    }}
+                                                    className="p-2 text-blue-200 hover:text-white transition-colors"
+                                                    title="Reschedule"
+                                                >
+                                                    <CalendarClock size={18} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-10 bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                            <p className="text-gray-400 text-sm">No tasks for today</p>
-                        </div>
-                    )}
+                        ));
+                    })()}
                 </div>
             </div>
+
+            {/* Reschedule Modal */}
+            {isRescheduleModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 animate-in zoom-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                <CalendarClock className="text-blue-500" /> Reschedule
+                            </h3>
+                            <button onClick={() => setIsRescheduleModalOpen(false)}><X className="text-gray-400" /></button>
+                        </div>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            try {
+                                await requestReschedule(token, rescheduleData);
+                                toast.success("Reschedule request sent");
+                                setIsRescheduleModalOpen(false);
+                                loadSchedule();
+                            } catch (err) {
+                                console.error(err);
+                                toast.error("Failed to request reschedule");
+                            }
+                        }} className="space-y-4">
+                            <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 mb-4">
+                                Propose a new time for this appointment. The user will need to accept it.
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">New Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700"
+                                        value={rescheduleData.newDate}
+                                        onChange={e => setRescheduleData({ ...rescheduleData, newDate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">New Time</label>
+                                    <input
+                                        type="time"
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700"
+                                        value={rescheduleData.newTime}
+                                        onChange={e => setRescheduleData({ ...rescheduleData, newTime: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">Reason</label>
+                                <textarea
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    placeholder="Why do you need to reschedule?"
+                                    rows={3}
+                                    value={rescheduleData.reason}
+                                    onChange={e => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <button className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 mt-2">
+                                Send Request
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
 
 
 

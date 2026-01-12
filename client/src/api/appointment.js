@@ -25,3 +25,19 @@ export const getITAvailability = async (token, start, end) => {
         },
     });
 };
+
+export const requestReschedule = async (token, data) => {
+    return await axios.post(`${import.meta.env.VITE_API_URL}/appointment/reschedule-request`, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
+export const respondReschedule = async (token, data) => {
+    return await axios.post(`${import.meta.env.VITE_API_URL}/appointment/reschedule-respond`, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};

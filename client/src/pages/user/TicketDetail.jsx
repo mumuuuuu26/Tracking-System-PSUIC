@@ -3,7 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, Calendar, XCircle } from "lucide-react";
 import { getTicket } from "../../api/ticket";
+import { respondReschedule } from "../../api/appointment";
 import useAuthStore from "../../store/auth-store";
+import { toast } from "react-toastify";
 
 const TicketDetail = () => {
   const navigate = useNavigate();
@@ -221,23 +223,86 @@ const TicketDetail = () => {
           </div>
         )}
 
-        {/* Appointment Info */}
+        {/* Appointment & Reschedule Info */}
         {ticket.appointment && (
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4">
+          <div className={`border rounded-xl p-4 mb-4 ${ticket.appointment.status === 'reschedule_requested'
+              ? 'bg-yellow-50 border-yellow-200'
+              : 'bg-purple-50 border-purple-200'
+            }`}>
             <div className="flex items-start gap-3">
-              <Calendar className="text-purple-500 shrink-0 mt-0.5" size={20} />
-              <div>
-                <h3 className="font-semibold text-purple-800 mb-1">Scheduled Appointment</h3>
-                <p className="text-sm text-purple-700">
-                  IT Support has scheduled a visit for: <br />
-                  <span className="font-bold">
-                    {new Date(ticket.appointment.scheduledAt).toLocaleString()}
-                  </span>
-                </p>
-                {ticket.appointment.note && (
-                  <p className="text-xs text-purple-600 mt-2 italic">
-                    Note: {ticket.appointment.note}
-                  </p>
+              {ticket.appointment.status === 'reschedule_requested' ? (
+                <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
+              ) : (
+                <Calendar className="text-purple-500 shrink-0 mt-0.5" size={20} />
+              )}
+
+              <div className="flex-1">
+                <h3 className={`font-semibold mb-1 ${ticket.appointment.status === 'reschedule_requested' ? 'text-yellow-800' : 'text-purple-800'
+                  }`}>
+                  {ticket.appointment.status === 'reschedule_requested' ? 'Reschedule Requested' : 'Scheduled Appointment'}
+                </h3>
+
+                {/* Reschedule Request Content */}
+                {ticket.appointment.status === 'reschedule_requested' ? (
+                  <div>
+                    <p className="text-sm text-yellow-700 mb-2">
+                      IT Support has requested to reschedule this appointment.
+                    </p>
+                    <div className="bg-white/50 rounded-lg p-3 text-sm text-yellow-900 border border-yellow-100 mb-3">
+                      <p><span className="font-bold">Original:</span> {new Date(ticket.appointment.scheduledAt).toLocaleString()}</p>
+                      <p className="mt-1"><span className="font-bold text-green-600">Proposed New Time:</span> {new Date(ticket.appointment.newDate).toLocaleString()}</p>
+                      <p className="mt-1"><span className="font-bold">Reason:</span> {ticket.appointment.rescheduleReason}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Accept new time?")) return;
+                          try {
+                            await respondReschedule(token, { appointmentId: ticket.appointment.id, action: 'accept' });
+                            toast.success("Reschedule accepted");
+                            fetchTicket();
+                          } catch (err) {
+                            console.error(err);
+                            toast.error("Failed to accept");
+                          }
+                        }}
+                        className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-green-700 transition-colors"
+                      >
+                        Accept New Time
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Reject this request? The appointment will remain at the original time.")) return;
+                          try {
+                            await respondReschedule(token, { appointmentId: ticket.appointment.id, action: 'reject' });
+                            toast.success("Reschedule rejected");
+                            fetchTicket();
+                          } catch (err) {
+                            console.error(err);
+                            toast.error("Failed to reject");
+                          }
+                        }}
+                        className="bg-white border border-gray-300 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Normal Appointment Display
+                  <div>
+                    <p className="text-sm text-purple-700">
+                      IT Support has scheduled a visit for: <br />
+                      <span className="font-bold">
+                        {new Date(ticket.appointment.scheduledAt).toLocaleString()}
+                      </span>
+                    </p>
+                    {ticket.appointment.note && (
+                      <p className="text-xs text-purple-600 mt-2 italic">
+                        Note: {ticket.appointment.note}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
