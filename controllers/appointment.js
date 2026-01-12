@@ -134,3 +134,82 @@ exports.getAvailableSlots = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 }
+
+exports.getITAvailability = async (req, res) => {
+    try {
+        const { start, end } = req.query; // YYYY-MM-DD
+
+        // If no specific IT is requested, typically we'd look for ANY available, 
+        // but for this specific "User seeing IT calendar" requirement, 
+        // they might be viewing a generic IT schedule or a specific one.
+        // Let's return ALL IT tasks/appointments for now to show "Busy" slots.
+        // Or better, let's just fetch everything for the given range.
+
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        endDate.setHours(23, 59, 59, 999);
+
+        // 1. Get Appointments
+        const appointments = await prisma.appointment.findMany({
+            where: {
+                scheduledAt: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            },
+            select: {
+                id: true,
+                scheduledAt: true,
+                itSupportId: true,
+                ticket: {
+                    select: { title: true }
+                }
+            }
+        });
+
+        // 2. Get Personal Tasks
+        const personalTasks = await prisma.personalTask.findMany({
+            where: {
+                date: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            },
+            select: {
+                id: true,
+                date: true,
+                startTime: true,
+                endTime: true,
+                userId: true,
+                title: true,
+                description: true, // Include description
+                color: true
+            }
+        });
+
+        // Merge and format
+        const events = [
+            ...appointments.map(a => ({
+                type: 'appointment',
+                date: a.scheduledAt,
+                endTime: new Date(new Date(a.scheduledAt).getTime() + 60 * 60 * 1000), // +1 Hour
+                title: `Appointment: ${a.ticket?.title || 'Unknown'}`,
+                description: 'User appointment'
+            })),
+            ...personalTasks.map(t => ({
+                type: 'task',
+                date: t.startTime || t.date,
+                endTime: t.endTime,
+                title: t.title,
+                description: t.description,
+                color: t.color
+            }))
+        ];
+
+        res.json(events);
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};

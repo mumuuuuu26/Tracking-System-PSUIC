@@ -19,6 +19,7 @@ const reportRoutes = require("./routes/report");
 const kbRoutes = require("./routes/knowledgeBase");
 const adminRoutes = require("./routes/admin");
 const quickFixRoutes = require("./routes/quickFix");
+const personalTaskRoutes = require("./routes/personalTask");
 
 //middleware
 app.use(morgan("dev"));
@@ -42,6 +43,7 @@ app.use("/api", reportRoutes);
 app.use("/api", kbRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", quickFixRoutes);
+app.use("/api", personalTaskRoutes);
 
 //Step 3 Router
 // app.post('/api',(req,res)=>{

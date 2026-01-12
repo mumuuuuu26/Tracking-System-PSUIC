@@ -10,4 +10,7 @@ router.post("/appointment/create", authCheck, createAppointment);
 // Public or User accessible to see when IT is busy
 router.get("/appointment/slots", authCheck, getAvailableSlots);
 
+// @ENDPOINT http://localhost:5001/api/appointment/availability
+router.get("/appointment/availability", authCheck, require("../controllers/appointment").getITAvailability);
+
 module.exports = router;

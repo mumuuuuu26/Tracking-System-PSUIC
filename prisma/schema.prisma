@@ -40,8 +40,33 @@ model User {
   availabilities  ITAvailability[]
   notifications   Notification[]   // [NEW]
   activityLogs    ActivityLog[]    @relation("LogCreator")
+
   kbEdits         KnowledgeBase[]  @relation("KBEditor")
+  personalTasks   PersonalTask[]   // [NEW]
 }
+
+// ... existing models ...
+
+// === [NEW] PERSONAL TASK MODEL ===
+model PersonalTask {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  title       String
+  description String?  @db.Text
+  
+  date        DateTime // For querying by day easily
+  startTime   DateTime?
+  endTime     DateTime?
+  
+  color       String?  @default("#3B82F6") // Blue is default
+  isCompleted Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 
 // === TICKET MODEL (อัปเดต) ===
 model Ticket {

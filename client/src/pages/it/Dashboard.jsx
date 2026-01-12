@@ -15,20 +15,25 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import {
   getStats,
   getMyTasks,
+  getSchedule,
   getTodayAppointments,
   acceptJob,
   rejectTicket,
 } from "../../api/it";
-import Swal from "sweetalert2";
-
-dayjs.extend(relativeTime);
+import { getPersonalTasks } from "../../api/personalTask";
+import { getITAvailability } from "../../api/appointment";
+import CalendarGrid from "../../components/CalendarGrid";
 
 const ITDashboard = () => {
   const navigate = useNavigate();
   const { token, user } = useAuthStore();
 
   const [tickets, setTickets] = useState([]);
-  const [appointments, setAppointments] = useState([]);
+  const [scheduleItems, setScheduleItems] = useState([]); // Selected Date items
+  const [monthlyEvents, setMonthlyEvents] = useState([]); // For calendar dots
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [currentMonth, setCurrentMonth] = useState(dayjs());
+
   const [stats, setStats] = useState({
     pending: 0,
     inProgress: 0,
@@ -50,23 +55,74 @@ const ITDashboard = () => {
     }
   }, [token]);
 
+  // Load monthly events when month changes
+  useEffect(() => {
+    if (token) {
+      loadMonthlyEvents();
+    }
+  }, [token, currentMonth.format('YYYY-MM')]);
+
+  // Load specific date schedule when selectedDate changes
+  useEffect(() => {
+    if (token) {
+      loadDailySchedule();
+    }
+  }, [token, selectedDate.format('YYYY-MM-DD')]);
+
+  const loadMonthlyEvents = async () => {
+    try {
+      const start = currentMonth.startOf('month').format('YYYY-MM-DD');
+      const end = currentMonth.endOf('month').format('YYYY-MM-DD');
+      const res = await getITAvailability(token, start, end);
+      setMonthlyEvents(res.data);
+    } catch (err) {
+      console.error("Failed to load monthly events", err);
+    }
+  };
+
+  const loadDailySchedule = async () => {
+    try {
+      const dateStr = selectedDate.format('YYYY-MM-DD');
+      const [appointmentsRes, personalTasksRes] = await Promise.all([
+        getSchedule(token, dateStr),
+        getPersonalTasks(token, { date: dateStr })
+      ]);
+
+      const combinedSchedule = [
+        ...(appointmentsRes.data || []).map(apt => ({
+          type: 'appointment',
+          time: dayjs(apt.scheduledAt),
+          data: apt,
+          id: `apt-${apt.id}`
+        })),
+        ...(personalTasksRes.data || []).map(task => ({
+          type: 'personal',
+          time: task.startTime ? dayjs(task.startTime) : dayjs(task.date).startOf('day'),
+          data: task,
+          id: `task-${task.id}`
+        }))
+      ].sort((a, b) => a.time.diff(b.time));
+
+      setScheduleItems(combinedSchedule);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
 
-      const [ticketsRes, appointmentsRes] = await Promise.all([
-        getMyTasks(token),
-        getTodayAppointments(token),
+      const [ticketsRes] = await Promise.all([
+        getMyTasks(token)
       ]);
 
-      const allTickets = ticketsRes.data;
+      // Load initial schedule for TODAY and Monthly Events
+      await loadDailySchedule();
+      await loadMonthlyEvents();
 
-      // Calculate stats manually from tickets if needed, or use separate API if consistent
-      // The mockup has 4 specific stat blocks: Booking, In progress, Completed, Reject
-      // Booking = pending
-      // In progress = in_progress + scheduled
-      // Completed = fixed + closed
-      // Reject = rejected
+      const allTickets = ticketsRes.data;
 
       const pendingCount = allTickets.filter(t => t.status === "pending").length;
       const inProgressCount = allTickets.filter(t => ["in_progress", "scheduled"].includes(t.status)).length;
@@ -81,7 +137,7 @@ const ITDashboard = () => {
       });
 
       setTickets(allTickets);
-      setAppointments(appointmentsRes.data);
+
     } catch (err) {
       console.error("Failed to load dashboard:", err);
     } finally {
@@ -186,36 +242,73 @@ const ITDashboard = () => {
           <button onClick={() => navigate('/it/schedule')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
         </div>
 
-        {appointments.length > 0 ? (
-          <div className="space-y-4">
-            {appointments.slice(0, 2).map((appt) => (
-              <div key={appt.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                    {/* Placeholder or Equipment Image */}
-                    <img
-                      src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2670&auto=format&fit=crop"
-                      alt="Tech"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{appt.ticket?.title || "Ticket #" + appt.ticketId}</h4>
-                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
-                      <Calendar size={14} />
-                      <span>{dayjs(appt.start).format('DD MMM YY')}</span>
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="text-gray-400" />
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Calendar Widget */}
+          <div className="md:w-1/2">
+            <CalendarGrid
+              currentDate={currentMonth}
+              setCurrentDate={setCurrentMonth}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              events={monthlyEvents}
+              onDateSelect={(day) => setSelectedDate(day)}
+            />
+          </div>
+
+          {/* List for Selected Day */}
+          <div className="md:flex-1 space-y-4">
+            <h4 className="text-gray-600 font-bold text-sm">Tasks for {selectedDate.format('DD MMM')}</h4>
+            {scheduleItems.length > 0 ? (
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                {scheduleItems.map((item) => {
+                  if (item.type === 'appointment') {
+                    const appt = item.data;
+                    return (
+                      <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-blue-50 text-blue-600">
+                            <Calendar size={20} />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{appt.ticket?.title}</h4>
+                            <div className="flex items-center gap-2 text-gray-500 text-xs mt-0.5">
+                              <Clock size={12} />
+                              <span>{dayjs(appt.scheduledAt).format('HH:mm')}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    const task = item.data;
+                    return (
+                      <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5`} style={{ backgroundColor: task.color || '#3B82F6' }}></div>
+                        <div className="flex items-center gap-3 pl-2">
+                          <div className="w-12 h-12 rounded-xl shrink-0 flex flex-col items-center justify-center bg-gray-50 text-gray-600">
+                            {task.startTime ? (
+                              <span className="text-xs font-bold">{dayjs(task.startTime).format('HH:mm')}</span>
+                            ) : (
+                              <span className="text-[10px] font-bold uppercase">All Day</span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{task.title}</h4>
+                            <p className="text-xs text-gray-500 line-clamp-1">{task.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
               </div>
-            ))}
+            ) : (
+              <div className="bg-white rounded-2xl p-6 text-center shadow-sm h-full flex flex-col justify-center">
+                <p className="text-gray-400 text-sm">No tasks for this day</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
-            <p className="text-gray-500 text-sm">No upcoming appointments</p>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* New Tickets Section */}

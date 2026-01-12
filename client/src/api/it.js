@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Get dashboard statistics
 export const getStats = async (token) => {
-    return await axios.get("http://localhost:5001/api/it/stats", {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/stats`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -11,7 +11,7 @@ export const getStats = async (token) => {
 
 // Get IT tasks
 export const getMyTasks = async (token) => {
-    return await axios.get("http://localhost:5001/api/it/tasks", {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/tasks`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -20,7 +20,7 @@ export const getMyTasks = async (token) => {
 
 // Get today's appointments
 export const getTodayAppointments = async (token) => {
-    return await axios.get("http://localhost:5001/api/it/appointments/today", {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/appointments/today`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -30,7 +30,7 @@ export const getTodayAppointments = async (token) => {
 // Accept job
 export const acceptJob = async (token, id) => {
     return await axios.put(
-        `http://localhost:5001/api/it/accept/${id}`,
+        `${import.meta.env.VITE_API_URL}/it/accept/${id}`,
         {},
         {
             headers: {
@@ -42,7 +42,7 @@ export const acceptJob = async (token, id) => {
 
 // Reject ticket
 export const rejectTicket = async (token, id, data) => {
-    return await axios.put(`http://localhost:5001/api/it/reject/${id}`, data, {
+    return await axios.put(`${import.meta.env.VITE_API_URL}/it/reject/${id}`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -51,7 +51,7 @@ export const rejectTicket = async (token, id, data) => {
 
 // Close job
 export const closeJob = async (token, id, data) => {
-    return await axios.put(`http://localhost:5001/api/it/close/${id}`, data, {
+    return await axios.put(`${import.meta.env.VITE_API_URL}/it/close/${id}`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -60,7 +60,7 @@ export const closeJob = async (token, id, data) => {
 
 // Reschedule appointment
 export const rescheduleAppointment = async (token, data) => {
-    return await axios.post("http://localhost:5001/api/it/reschedule", data, {
+    return await axios.post(`${import.meta.env.VITE_API_URL}/it/reschedule`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -69,7 +69,7 @@ export const rescheduleAppointment = async (token, data) => {
 
 // Get schedule
 export const getSchedule = async (token, date) => {
-    return await axios.get("http://localhost:5001/api/it/schedule", {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/schedule`, {
         params: { date },
         headers: {
             Authorization: `Bearer ${token}`,
@@ -79,7 +79,7 @@ export const getSchedule = async (token, date) => {
 
 // Get history
 export const getHistory = async (token) => {
-    return await axios.get("http://localhost:5001/api/it/history", {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/history`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },

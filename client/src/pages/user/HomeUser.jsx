@@ -122,11 +122,7 @@ const HomeUser = () => {
                 <h1 className="text-xl font-bold leading-tight">{user?.email || "User"}</h1>
               </div>
             </div>
-            <button className="relative p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
-              <Bell size={24} />
-              {/* Notification Badge Demo */}
-              <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-blue-600"></span>
-            </button>
+
           </div>
 
           <h2 className="text-white text-lg font-bold mb-4 opacity-90">Ticket Status</h2>
