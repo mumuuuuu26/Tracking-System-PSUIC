@@ -41,6 +41,7 @@ const ITDashboard = () => {
     rejected: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [showAllNew, setShowAllNew] = useState(false);
 
   // Modal States
   const [showAcceptModal, setShowAcceptModal] = useState(false);
@@ -327,11 +328,16 @@ const ITDashboard = () => {
       <div className="max-w-4xl mx-auto px-6 mt-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-bold text-lg text-gray-800">New Tickets</h3>
-          <button onClick={() => navigate('/it/tickets')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
+          <button
+            onClick={() => setShowAllNew(!showAllNew)}
+            className="text-blue-600 text-sm font-medium hover:underline"
+          >
+            {showAllNew ? "Show Less" : "See all"}
+          </button>
         </div>
 
         <div className="space-y-4">
-          {newTickets.length > 0 ? newTickets.map((ticket) => (
+          {newTickets.length > 0 ? newTickets.slice(0, showAllNew ? undefined : 5).map((ticket) => (
             <div key={ticket.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-start gap-4">

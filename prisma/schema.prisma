@@ -261,3 +261,15 @@ model KnowledgeBase {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// === [NEW] EMAIL TEMPLATE MODEL ===
+model EmailTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // "new_ticket_it", "ticket_resolved_user"
+  description String?  // Human readable description
+  subject     String
+  body        String   @db.Text
+  isEnabled   Boolean  @default(true)
+  variables   String?  // JSON string of available vars e.g. ["ticketId", "title"]
+  updatedAt   DateTime @updatedAt
+}

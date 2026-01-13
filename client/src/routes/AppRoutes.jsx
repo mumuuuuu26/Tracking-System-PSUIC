@@ -45,6 +45,7 @@ import Tickets from "../pages/it/Tickets";
 import ITTicketDetail from "../pages/it/TicketDetail";
 import ITKnowledgeBase from "../pages/it/kb/ITKnowledgeBase";
 import KnowledgeBaseForm from "../pages/it/kb/KnowledgeBaseForm";
+import EmailSettings from "../pages/it/EmailSettings";
 
 import KnowledgeBase from "../pages/kb/KnowledgeBase";
 import KnowledgeBaseDetail from "../pages/kb/KnowledgeBaseDetail";
@@ -102,6 +103,7 @@ const AppRoutes = () => {
         <Route path="kb" element={<ITKnowledgeBase />} />
         <Route path="kb/create" element={<KnowledgeBaseForm />} />
         <Route path="kb/edit/:id" element={<KnowledgeBaseForm />} />
+        <Route path="email-settings" element={<EmailSettings />} />
 
       </Route>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     User,
     Mail,
@@ -10,7 +11,8 @@ import {
     Check,
     X,
     Phone,
-    Briefcase
+    Briefcase,
+    Settings
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { currentUser } from "../../api/auth";
@@ -20,6 +22,7 @@ import dayjs from "dayjs";
 import Swal from "sweetalert2";
 
 const ITProfile = () => {
+    const navigate = useNavigate();
     const { token, checkUser, actionLogout } = useAuthStore();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -391,6 +394,15 @@ const ITProfile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Settings Button */}
+            <button
+                onClick={() => navigate('/it/email-settings')}
+                className="w-full bg-white text-blue-600 font-bold p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-100 transition-all"
+            >
+                <Settings size={20} />
+                Manage Email Notifications
+            </button>
 
             {/* Logout Button */}
             <button

@@ -53,104 +53,45 @@ exports.create = async (req, res) => {
 
     // ส่ง Email แจ้งเตือน IT Support
     try {
-      // ตรวจสอบ config ก่อนส่ง
-      if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-        console.warn(
-          "⚠️ WARNING: MAIL_USER or MAIL_PASS is not set in .env file"
-        );
-        console.log("Skipping email notification...");
-      } else {
-        console.log("📧 Attempting to send email notification...");
+      // ดึง IT Support emails
+      const itUsers = await prisma.user.findMany({
+        where: {
+          OR: [{ role: "it_support" }, { role: "admin" }],
+          enabled: true,
+        },
+        select: { email: true },
+      });
 
-        // ดึง IT Support emails
-        const itUsers = await prisma.user.findMany({
-          where: {
-            OR: [{ role: "it_support" }, { role: "admin" }],
-            enabled: true,
-          },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        });
+      if (itUsers.length > 0) {
+        const emails = itUsers
+          .map((u) => u.email)
+          .filter((email) => email && email.includes("@"));
 
-        console.log(`Found ${itUsers.length} IT staff to notify`);
-
-        if (itUsers.length > 0) {
-          const emails = itUsers
-            .map((u) => u.email)
-            .filter((email) => email && email.includes("@"));
-
-          if (emails.length > 0) {
-            console.log("Sending to:", emails.join(", "));
-
-            const mailOptions = {
-              from: `"PSUIC Help Desk" <${process.env.MAIL_USER}>`,
-              to: emails.join(", "),
-              subject: `🔔 [Urgent: ${urgency}] New Ticket #${newTicket.id}: ${title}`,
-              html: `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <style>
-                    body { font-family: Arial, sans-serif; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: #2563eb; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
-                    .content { background: #f3f4f6; padding: 20px; border-radius: 0 0 10px 10px; }
-                    .badge { padding: 5px 10px; border-radius: 5px; font-size: 12px; }
-                    .high { background: #ef4444; color: white; }
-                    .medium { background: #f59e0b; color: white; }
-                    .low { background: #10b981; color: white; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <div class="header">
-                      <h2>🛠️ New Support Ticket</h2>
-                    </div>
-                    <div class="content">
-                      <p><strong>Ticket ID:</strong> #${newTicket.id}</p>
-                      <p><strong>Title:</strong> ${title}</p>
-                      <p><strong>Priority:</strong> <span class="badge ${urgency.toLowerCase()}">${urgency}</span></p>
-                      <p><strong>Room:</strong> ${newTicket.room?.roomNumber || "N/A"
-                }</p>
-                      <p><strong>Equipment:</strong> ${newTicket.equipment?.name || "N/A"
-                }</p>
-                      <p><strong>Category:</strong> ${newTicket.category?.name || "N/A"
-                }</p>
-                      <p><strong>Description:</strong></p>
-                      <div style="background: white; padding: 10px; border-radius: 5px;">
-                        ${description}
-                      </div>
-                      <p><strong>Reported by:</strong> ${newTicket.createdBy?.name || newTicket.createdBy?.email
-                }</p>
-                      <br>
-                      <a href="http://localhost:5173/it/ticket/${newTicket.id}" 
-                         style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-                        View Ticket
-                      </a>
-                    </div>
-                  </div>
-                </body>
-                </html>
-              `,
-            };
-
-            await transporter.sendMail(mailOptions);
-            console.log("✅ Email Sent: Notification sent to IT staff");
-          } else {
-            console.warn("⚠️ No valid IT email addresses found");
-          }
+        if (emails.length > 0) {
+          const { sendEmailNotification } = require("../utils/sendEmailHelper");
+          await sendEmailNotification(
+            "new_ticket_it",
+            emails,
+            {
+              id: newTicket.id,
+              title: title,
+              urgency: newTicket.urgency,
+              description: description,
+              room: newTicket.room?.roomNumber || "N/A",
+              equipment: newTicket.equipment?.name || "N/A",
+              category: newTicket.category?.name || "N/A",
+              reporter: newTicket.createdBy?.name || newTicket.createdBy?.email,
+              link: `http://localhost:5173/it/ticket/${newTicket.id}`
+            }
+          );
         }
       }
     } catch (emailError) {
       console.error("❌ Email Send Error:", emailError.message);
-      // ไม่ให้ email error ทำให้การสร้าง ticket ล้มเหลว
     }
 
     // บันทึก Notification ใน database
-    const itUsers = await prisma.user.findMany({
+    const userForNotify = await prisma.user.findMany({
       where: {
         OR: [{ role: "it_support" }, { role: "admin" }],
         enabled: true,
@@ -158,9 +99,9 @@ exports.create = async (req, res) => {
       select: { id: true },
     });
 
-    if (itUsers.length > 0) {
+    if (userForNotify.length > 0) {
       await prisma.notification.createMany({
-        data: itUsers.map((user) => ({
+        data: userForNotify.map((user) => ({
           userId: user.id,
           ticketId: newTicket.id,
           title: "New Ticket Created",
@@ -244,69 +185,18 @@ exports.update = async (req, res) => {
 
     // ส่ง Email แจ้ง User เมื่อ ticket แก้ไขเสร็จ
     if (status === "fixed" && updatedTicket.createdBy?.email) {
-      try {
-        if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-          console.warn("⚠️ Email config missing, skipping notification");
-        } else {
-          console.log("📧 Sending completion notification to user...");
-
-          const mailOptions = {
-            from: `"PSUIC Help Desk" <${process.env.MAIL_USER}>`,
-            to: updatedTicket.createdBy.email,
-            subject: `✅ Ticket #${updatedTicket.id} has been resolved`,
-            html: `
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <style>
-                  body { font-family: Arial, sans-serif; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: #10b981; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
-                  .content { background: #f3f4f6; padding: 20px; border-radius: 0 0 10px 10px; }
-                  .success-box { background: #d1fae5; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h2>✅ Your Ticket Has Been Resolved!</h2>
-                  </div>
-                  <div class="content">
-                    <div class="success-box">
-                      <p><strong>Good news!</strong> Your support ticket has been successfully resolved.</p>
-                    </div>
-                    
-                    <h3>Ticket Details:</h3>
-                    <p><strong>Ticket ID:</strong> #${updatedTicket.id}</p>
-                    <p><strong>Title:</strong> ${updatedTicket.title}</p>
-                    <p><strong>Room:</strong> ${updatedTicket.room?.roomNumber || "N/A"
-              }</p>
-                    <p><strong>IT Support:</strong> ${updatedTicket.assignedTo?.name || "IT Team"
-              }</p>
-                    
-                    <p style="margin-top: 20px;">Please take a moment to rate our service:</p>
-                    <a href="http://localhost:5173/user/feedback/${updatedTicket.id
-              }" 
-                       style="background: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                      ⭐ Rate Service
-                    </a>
-                    
-                    <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">
-                      Thank you for using PSUIC Help Desk System
-                    </p>
-                  </div>
-                </div>
-              </body>
-              </html>
-            `,
-          };
-
-          await transporter.sendMail(mailOptions);
-          console.log("✅ Email Sent: User notified of ticket completion");
+      const { sendEmailNotification } = require("../utils/sendEmailHelper");
+      await sendEmailNotification(
+        "ticket_resolved_user",
+        updatedTicket.createdBy.email,
+        {
+          id: updatedTicket.id,
+          title: updatedTicket.title,
+          room: updatedTicket.room?.roomNumber || "N/A",
+          resolver: updatedTicket.assignedTo?.name || "IT Team",
+          link: `http://localhost:5173/user/feedback/${updatedTicket.id}`
         }
-      } catch (emailError) {
-        console.error("❌ Email Error:", emailError.message);
-      }
+      );
     }
 
     // บันทึก Notification
