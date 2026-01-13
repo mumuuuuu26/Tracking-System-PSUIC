@@ -139,6 +139,33 @@ exports.update = async (req, res) => {
 
     console.log(`📝 Updating ticket #${id} - Status: ${status}`);
 
+    // [New] Data Integrity Check
+    const checkTicket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!checkTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // ถ้าเป็น User ธรรมดา และสถานะไม่ใช่ Pending ห้ามแก้ไข
+    if (
+      req.user.role !== "admin" &&
+      req.user.role !== "it_support" &&
+      checkTicket.status !== "pending" &&
+      // อนุญาตให้แก้ไข rating/feedback ได้ตอน fixed
+      status !== "fixed" && // User ไม่ได้เป็นคนเปลี่ยน status เป็น fixed แต่ถ้า user ส่ง rating มา status น่าจะยังเป็น fixed หรือ user อาจจะไม่ได้ส่ง status มา
+      !rating && !userFeedback // ถ้าไม่ใช่การให้ rating/feedback
+    ) {
+      // แต่เดี๋ยวก่อน... userFeedback เรียก endpoint submitFeedback แยก หรือ update?
+      // ดูที่ submitFeedback export แยกต่างหาก (exports.submitFeedback)
+      // ดังนั้น update ตรงนี้ user แทบไม่ได้ใช้ นอกจากแก้รายละเอียด?
+
+      return res.status(403).json({
+        message: "Access Denied: Cannot edit ticket that is being processed."
+      });
+    }
+
     let updateData = {};
     if (status) updateData.status = status;
     if (urgency) updateData.urgency = urgency;
@@ -297,6 +324,27 @@ exports.listAll = async (req, res) => {
 exports.remove = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // [New] Data Integrity Check
+    const checkTicket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!checkTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // Role Check: If User AND Status != pending -> 403
+    if (
+      req.user.role !== "admin" &&
+      req.user.role !== "it_support" &&
+      checkTicket.status !== "pending"
+    ) {
+      return res.status(403).json({
+        message: "Access Denied: Cannot delete ticket that is being processed or completed."
+      });
+    }
+
     await prisma.ticket.delete({
       where: { id: parseInt(id) }
     });
