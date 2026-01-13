@@ -170,10 +170,29 @@ exports.getITPerformance = async (req, res) => {
             const pending = await prisma.ticket.count({
                 where: {
                     assignedToId: u.id,
-                    status: { not: 'fixed' } // assuming 'fixed' is completion status
+                    status: { not: 'fixed' }
                 }
             });
-            return { ...u, pendingJobs: pending };
+
+            // Calculate SLA Averages
+            const closedTickets = await prisma.ticket.findMany({
+                where: { assignedToId: u.id, status: 'fixed' },
+                select: { responseTime: true, resolutionTime: true }
+            });
+
+            let totalResponse = 0, totalResolution = 0, countResponse = 0, countResolution = 0;
+
+            closedTickets.forEach(t => {
+                if (t.responseTime) { totalResponse += t.responseTime; countResponse++; }
+                if (t.resolutionTime) { totalResolution += t.resolutionTime; countResolution++; }
+            });
+
+            return {
+                ...u,
+                pendingJobs: pending,
+                avgResponseTime: countResponse > 0 ? (totalResponse / countResponse).toFixed(0) : 0,
+                avgResolutionTime: countResolution > 0 ? (totalResolution / countResolution).toFixed(0) : 0
+            };
         }));
 
         res.json(result);

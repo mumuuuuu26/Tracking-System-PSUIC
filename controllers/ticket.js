@@ -206,6 +206,31 @@ exports.update = async (req, res) => {
     if (userFeedback) updateData.userFeedback = userFeedback;
     if (categoryId) updateData.categoryId = parseInt(categoryId);
 
+    // [New] SLA Calculation Logic
+    if (status) {
+      const currentTicket = await prisma.ticket.findUnique({
+        where: { id: parseInt(id) },
+        select: { createdAt: true, status: true, responseTime: true }
+      });
+
+      if (currentTicket) {
+        const now = new Date();
+        const created = new Date(currentTicket.createdAt);
+        const diffMins = Math.floor((now - created) / 60000); // Minutes
+
+        // Calculate Response Time (First time moving to in_progress)
+        if (status === 'in_progress' && !currentTicket.responseTime) {
+          updateData.responseTime = diffMins;
+        }
+
+        // Calculate Resolution Time (Moving to fixed)
+        // Note: This updates every time it's marked fixed, capturing the total time until resolution.
+        if (status === 'fixed') {
+          updateData.resolutionTime = diffMins;
+        }
+      }
+    }
+
     const updatedTicket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: updateData,
