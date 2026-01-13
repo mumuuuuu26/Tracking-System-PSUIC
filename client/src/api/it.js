@@ -58,6 +58,15 @@ export const closeJob = async (token, id, data) => {
     });
 };
 
+// Save Draft (Checklist & Notes)
+export const saveDraft = async (token, id, data) => {
+    return await axios.put(`${import.meta.env.VITE_API_URL}/it/draft/${id}`, data, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+};
+
 // Reschedule appointment
 export const rescheduleAppointment = async (token, data) => {
     return await axios.post(`${import.meta.env.VITE_API_URL}/it/reschedule`, data, {

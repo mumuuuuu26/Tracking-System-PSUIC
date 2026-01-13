@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Clock, User, Menu, X, LogOut, ScanLine, Ticket, Calendar } from "lucide-react";
+import { Home, Plus, Clock, User, Menu, X, LogOut, ScanLine, Ticket, Calendar, MessageSquare } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
-const LayoutUser = () => {
+const LayoutUser = ({ children }) => {
   const { user, actionLogout } = useAuthStore();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -142,7 +142,7 @@ const LayoutUser = () => {
 
       {/* Main Content */}
       <main className="pb-32 md:pb-24">
-        <Outlet />
+        {children || <Outlet />}
       </main>
 
       {/* Floating Bottom Navigation */}
@@ -165,7 +165,7 @@ const LayoutUser = () => {
               </button>
             </div>
 
-            <NavLink href="/user/appointments" icon={<Calendar size={24} />} label="Appt." active={isActive("/user/appointments")} />
+            <NavLink href="/user/quick-fix" icon={<MessageSquare size={24} />} label="QuickFix" active={isActive("/user/quick-fix")} />
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
 
           </div>

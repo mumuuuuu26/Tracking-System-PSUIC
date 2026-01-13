@@ -33,6 +33,7 @@ import ReportDashboard from "../pages/admin/reports/ReportDashboard";
 import AdminProfile from "../pages/admin/Profile";
 import AdminTicketDetail from "../pages/admin/TicketDetail";
 
+
 // IT
 import ITDashboard from "../pages/it/Dashboard";
 import Schedule from "../pages/it/Schedule";
@@ -42,9 +43,11 @@ import History from "../pages/it/History";
 import QuickFixManagement from "../pages/it/QuickFixManagement";
 import Tickets from "../pages/it/Tickets";
 import ITTicketDetail from "../pages/it/TicketDetail";
+import ITKnowledgeBase from "../pages/it/kb/ITKnowledgeBase";
+import KnowledgeBaseForm from "../pages/it/kb/KnowledgeBaseForm";
 
 import KnowledgeBase from "../pages/kb/KnowledgeBase";
-import ArticleDetail from "../pages/kb/ArticleDetail";
+import KnowledgeBaseDetail from "../pages/kb/KnowledgeBaseDetail";
 
 
 
@@ -83,6 +86,7 @@ const AppRoutes = () => {
         <Route path="reports" element={<ReportDashboard />} />
         <Route path="profile" element={<AdminProfile />} />
         <Route path="ticket/:id" element={<AdminTicketDetail />} />
+
       </Route>
 
       {/* IT Support Routes */}
@@ -95,6 +99,9 @@ const AppRoutes = () => {
         <Route path="manage-quick-fix" element={<QuickFixManagement />} />
         <Route path="tickets" element={<Tickets />} />
         <Route path="ticket/:id" element={<ITTicketDetail />} />
+        <Route path="kb" element={<ITKnowledgeBase />} />
+        <Route path="kb/create" element={<KnowledgeBaseForm />} />
+        <Route path="kb/edit/:id" element={<KnowledgeBaseForm />} />
 
       </Route>
 
@@ -102,7 +109,7 @@ const AppRoutes = () => {
 
       {/* Knowledge Base Public Access */}
       <Route path="/kb" element={<LayoutUser><KnowledgeBase /></LayoutUser>} />
-      <Route path="/kb/:id" element={<LayoutUser><ArticleDetail /></LayoutUser>} />
+      <Route path="/kb/:id" element={<LayoutUser><KnowledgeBaseDetail /></LayoutUser>} />
 
     </Routes>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Ticket, Users, UserCog, Building2, Menu, X, LogOut, User, BarChart } from "lucide-react";
+import { LayoutDashboard, Ticket, Users, UserCog, Building2, Menu, X, LogOut, User, BarChart, BookOpen } from "lucide-react";
 
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
@@ -142,6 +142,7 @@ const LayoutAdmin = () => {
                             >
                                 <BarChart size={20} /> Reports
                             </a>
+
                             <hr className="my-4 border-gray-100" />
                             <button
                                 onClick={handleLogout}

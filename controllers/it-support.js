@@ -237,15 +237,54 @@ exports.rejectTicket = async (req, res) => {
   }
 };
 
+// Save Draft (Checklist & Notes)
+exports.saveDraft = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note, checklist, proof } = req.body;
+
+    // Handle Image Upload (Optional for draft)
+    let afterImages = [];
+    if (proof && proof.startsWith("data:image")) {
+      const url = saveImage(proof);
+      if (url) {
+        afterImages.push({
+          url: url,
+          secure_url: url,
+          type: "after",
+          asset_id: "local",
+          public_id: "local"
+        });
+      }
+    }
+
+    const ticket = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        note: note, // Save draft note
+        checklist: checklist ? JSON.stringify(checklist) : undefined, // Save checklist JSON string
+        images: afterImages.length > 0
+          ? { create: afterImages }
+          : undefined,
+      },
+    });
+
+    res.json(ticket);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 // Close job with completion details
 exports.closeJob = async (req, res) => {
   try {
     const { id } = req.params;
-    const { note, proof } = req.body;  // Frontend sends 'note' and 'proof'
+    const { note, proof, checklist } = req.body;  // Frontend sends 'note', 'proof', and 'checklist'
 
     // Handle Image Upload
     let afterImages = [];
-    if (proof) {
+    if (proof && proof.startsWith("data:image")) {
       const url = saveImage(proof);
       if (url) {
         afterImages.push({
@@ -262,6 +301,8 @@ exports.closeJob = async (req, res) => {
       where: { id: parseInt(id) },
       data: {
         status: "fixed",
+        note: note, // Ensure note is saved to the main field too
+        checklist: checklist ? JSON.stringify(checklist) : undefined,
         logs: {
           create: {
             action: "Complete",

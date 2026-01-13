@@ -2,7 +2,7 @@ import axios from "axios";
 
 // List KB items
 export const listKB = async (token, params) => {
-    return await axios.get("http://localhost:5001/api/kb", {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/kb`, {
         params,
         headers: {
             Authorization: `Bearer ${token}`,
@@ -12,7 +12,7 @@ export const listKB = async (token, params) => {
 
 // Read KB item
 export const readKB = async (token, id) => {
-    return await axios.get(`http://localhost:5001/api/kb/${id}`, {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/kb/${id}`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -21,7 +21,7 @@ export const readKB = async (token, id) => {
 
 // Create KB item
 export const createKB = async (token, data) => {
-    return await axios.post("http://localhost:5001/api/kb", data, {
+    return await axios.post(`${import.meta.env.VITE_API_URL}/kb`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -30,7 +30,7 @@ export const createKB = async (token, data) => {
 
 // Update KB item
 export const updateKB = async (token, id, data) => {
-    return await axios.put(`http://localhost:5001/api/kb/${id}`, data, {
+    return await axios.put(`${import.meta.env.VITE_API_URL}/kb/${id}`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -39,7 +39,7 @@ export const updateKB = async (token, id, data) => {
 
 // Remove KB item
 export const removeKB = async (token, id) => {
-    return await axios.delete(`http://localhost:5001/api/kb/${id}`, {
+    return await axios.delete(`${import.meta.env.VITE_API_URL}/kb/${id}`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -48,9 +48,10 @@ export const removeKB = async (token, id) => {
 
 // Vote helpful
 export const voteKB = async (token, id) => {
-    return await axios.put(`http://localhost:5001/api/kb/${id}/vote`, {}, {
+    return await axios.put(`${import.meta.env.VITE_API_URL}/kb/${id}/vote`, {}, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     });
 };
+

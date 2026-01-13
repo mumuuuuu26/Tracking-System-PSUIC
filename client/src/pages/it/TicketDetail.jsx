@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock, Plus, Trash2, Save, PenTool } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getTicket } from "../../api/ticket";
-import { acceptJob, closeJob, rejectTicket } from "../../api/it";
+import { acceptJob, closeJob, rejectTicket, saveDraft } from "../../api/it";
 import { requestReschedule } from "../../api/appointment";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -24,6 +24,10 @@ const TicketDetail = () => {
     const [proofImage, setProofImage] = useState(null);
     const [selectedStatus, setSelectedStatus] = useState("");
 
+    // Checklist State
+    const [checklistItems, setChecklistItems] = useState([]); // [{id: 1, text: "Check Power", checked: false}]
+    const [newChecklistInput, setNewChecklistInput] = useState("");
+
     // Reschedule Modal State
     const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
     const [rescheduleData, setRescheduleData] = useState({
@@ -39,6 +43,16 @@ const TicketDetail = () => {
     useEffect(() => {
         if (ticket) {
             setSelectedStatus(ticket.status);
+            // Pre-fill notes and checklist
+            if (ticket.note) setItNote(ticket.note);
+            if (ticket.checklist) {
+                try {
+                    const parsed = JSON.parse(ticket.checklist);
+                    if (Array.isArray(parsed)) setChecklistItems(parsed);
+                } catch (e) {
+                    console.error("Failed to parse checklist JSON", e);
+                }
+            }
         }
     }, [ticket]);
 
@@ -47,7 +61,7 @@ const TicketDetail = () => {
             setLoading(true);
             const res = await getTicket(token, id);
             setTicket(res.data);
-            // Pre-fill existing note if available and status is fixed/rejected
+            // Pre-fill existing note if available and status is fixed/rejected (handled in useEffect above partially, but let's keep logic cleaner there)
             if (res.data.status === 'fixed' || res.data.status === 'rejected') {
                 setItNote(res.data.note || (res.data.rejectedReason ? res.data.rejectedReason.split(':')[1]?.trim() : "") || "");
             }
@@ -70,6 +84,43 @@ const TicketDetail = () => {
         reader.onloadend = () => {
             setProofImage(reader.result);
         };
+    };
+
+    // Checklist Handlers
+    const addChecklistItem = () => {
+        if (!newChecklistInput.trim()) return;
+        const newItem = {
+            id: Date.now(),
+            text: newChecklistInput,
+            checked: false
+        };
+        setChecklistItems([...checklistItems, newItem]);
+        setNewChecklistInput("");
+    };
+
+    const toggleChecklistItem = (itemId) => {
+        if (ticket.status === 'fixed') return; // Read-only if fixed
+        setChecklistItems(checklistItems.map(item =>
+            item.id === itemId ? { ...item, checked: !item.checked } : item
+        ));
+    };
+
+    const removeChecklistItem = (itemId) => {
+        setChecklistItems(checklistItems.filter(item => item.id !== itemId));
+    };
+
+    const handleSaveDraft = async () => {
+        try {
+            await saveDraft(token, id, {
+                note: itNote,
+                checklist: checklistItems,
+                proof: proofImage
+            });
+            toast.success("Draft saved successfully!");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save draft");
+        }
     };
 
     const handleUpdateStatus = async () => {
@@ -96,6 +147,19 @@ const TicketDetail = () => {
         if (selectedStatus === 'fixed') {
             if (!itNote.trim()) return toast.warning("Please add some internal notes of diagnosis.");
 
+            // Check if all checklist items are checked (Optional warning)
+            const unchecked = checklistItems.filter(i => !i.checked).length;
+            if (unchecked > 0) {
+                const proceed = await Swal.fire({
+                    title: "Unfinished Checklist",
+                    text: `You have ${unchecked} unchecked items. Complete anyway?`,
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, Complete",
+                });
+                if (!proceed.isConfirmed) return;
+            }
+
             Swal.fire({
                 title: "Complete Job?",
                 text: "Are you sure you want to mark this ticket as fixed?",
@@ -107,7 +171,11 @@ const TicketDetail = () => {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        await closeJob(token, id, { note: itNote, proof: proofImage });
+                        await closeJob(token, id, {
+                            note: itNote,
+                            proof: proofImage,
+                            checklist: checklistItems
+                        });
                         toast.success("Ticket closed successfully!");
                         loadTicket();
                     } catch (err) {
@@ -294,8 +362,63 @@ const TicketDetail = () => {
                     </div>
                 </div>
 
-                {/* IT Notes Section - Visible when Completing or In Progress */}
-                <div className={`${(ticket.status === 'pending' && selectedStatus !== 'fixed') || selectedStatus === 'rejected' ? 'opacity-50 hidden' : ''} transition-opacity`}>
+                {/* Checklist & IT Notes Section */}
+                <div className={`${(ticket.status === 'pending' && selectedStatus !== 'fixed') || selectedStatus === 'rejected' ? 'hidden' : ''} transition-opacity`}>
+
+                    {/* Checklist */}
+                    <h3 className="font-bold text-gray-900 mb-3 uppercase text-sm tracking-wide flex items-center justify-between">
+                        <span>Checklist</span>
+                        <span className="text-xs text-gray-400 lowercase font-normal">{checklistItems.filter(i => i.checked).length}/{checklistItems.length} completed</span>
+                    </h3>
+                    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-6">
+                        <div className="space-y-3 mb-4">
+                            {checklistItems.map((item) => (
+                                <div key={item.id} className="flex items-center gap-3 group">
+                                    <button
+                                        onClick={() => toggleChecklistItem(item.id)}
+                                        className={`transition-colors flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center ${item.checked ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300 hover:border-blue-400'}`}
+                                        disabled={ticket.status === 'fixed'}
+                                    >
+                                        {item.checked && <Check size={14} className="text-white" strokeWidth={3} />}
+                                    </button>
+                                    <span className={`flex-1 text-sm font-medium transition-all ${item.checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                                        {item.text}
+                                    </span>
+                                    {ticket.status !== 'fixed' && (
+                                        <button
+                                            onClick={() => removeChecklistItem(item.id)}
+                                            className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            {checklistItems.length === 0 && (
+                                <p className="text-sm text-gray-400 italic text-center py-2">No items in checklist.</p>
+                            )}
+                        </div>
+
+                        {ticket.status !== 'fixed' && (
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    className="flex-1 bg-gray-50 border-0 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                                    placeholder="Add new checklist item..."
+                                    value={newChecklistInput}
+                                    onChange={(e) => setNewChecklistInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && addChecklistItem()}
+                                />
+                                <button
+                                    onClick={addChecklistItem}
+                                    className="bg-blue-100 text-blue-600 p-2 rounded-xl hover:bg-blue-200 transition-colors"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <h3 className="font-bold text-gray-900 mb-3 uppercase text-sm tracking-wide">IT Notes & Proof</h3>
                     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
 
@@ -310,20 +433,31 @@ const TicketDetail = () => {
                                 ></textarea>
 
                                 {ticket.status !== 'fixed' && (
-                                    <label className="block w-full bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer transition-colors">
-                                        {proofImage ? (
-                                            <div className="relative h-40 rounded-lg overflow-hidden">
-                                                <img src={proofImage} alt="Proof" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white font-medium">Click to change</div>
-                                            </div>
-                                        ) : (
-                                            <div className="py-4">
-                                                <Upload className="mx-auto text-gray-400 mb-2" size={24} />
-                                                <span className="text-sm font-bold text-gray-500">Upload Proof of Fix</span>
-                                            </div>
-                                        )}
-                                        <input type="file" className="hidden" accept="image/*" onChange={handleProofUpload} />
-                                    </label>
+                                    <div className="flex flex-col gap-4">
+                                        <label className="block w-full bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer transition-colors">
+                                            {proofImage ? (
+                                                <div className="relative h-40 rounded-lg overflow-hidden">
+                                                    <img src={proofImage} alt="Proof" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white font-medium">Click to change</div>
+                                                </div>
+                                            ) : (
+                                                <div className="py-4">
+                                                    <Upload className="mx-auto text-gray-400 mb-2" size={24} />
+                                                    <span className="text-sm font-bold text-gray-500">Upload Proof of Fix</span>
+                                                </div>
+                                            )}
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleProofUpload} />
+                                        </label>
+
+                                        {/* Save Draft Button */}
+                                        <button
+                                            onClick={handleSaveDraft}
+                                            className="w-full bg-indigo-50 text-indigo-600 font-bold py-3 rounded-xl hover:bg-indigo-100 transition flex items-center justify-center gap-2 border border-indigo-100"
+                                        >
+                                            <Save size={18} />
+                                            Save Draft
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         ) : null}
@@ -385,7 +519,7 @@ const TicketDetail = () => {
                                 onClick={handleUpdateStatus}
                                 className="col-span-2 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center justify-center gap-2"
                             >
-                                {selectedStatus === 'fixed' ? 'Completed' : 'Update'}
+                                {selectedStatus === 'fixed' ? 'Complete Job' : 'Update Status'}
                             </button>
                         </div>
                     )}

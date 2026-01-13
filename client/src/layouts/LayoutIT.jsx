@@ -111,7 +111,8 @@ const LayoutIT = () => {
             <NavLink href="/it" icon={<Home size={24} />} label="Home" active={isActive("/it")} />
             <NavLink href="/it/schedule" icon={<Calendar size={24} />} label="Appointment" active={isActive("/it/schedule")} />
             <NavLink href="/it/tickets" icon={<FileText size={24} />} label="Ticket" active={isActive("/it/tickets") || isActive("/it/history")} />
-            <NavLink href="/it/manage-quick-fix" icon={<BookOpen size={24} />} label="Guide" active={isActive("/it/manage-quick-fix")} />
+            <NavLink href="/it/kb" icon={<BookOpen size={24} />} label="KB" active={isActive("/it/kb")} />
+            <NavLink href="/it/manage-quick-fix" icon={<Wrench size={24} />} label="QuickFix" active={isActive("/it/manage-quick-fix")} />
             <NavLink href="/it/profile" icon={<User size={24} />} label="Profile" active={isActive("/it/profile")} />
           </div>
         </nav>

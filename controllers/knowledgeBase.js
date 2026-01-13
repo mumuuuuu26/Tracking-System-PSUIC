@@ -28,7 +28,7 @@ exports.listKB = async (req, res) => {
             orderBy: { createdAt: "desc" },
             include: {
                 updatedBy: {
-                    select: { name: true }
+                    select: { name: true, role: true }
                 }
             }
         });
@@ -53,7 +53,7 @@ exports.readKB = async (req, res) => {
             },
             include: {
                 updatedBy: {
-                    select: { name: true }
+                    select: { name: true, role: true }
                 }
             }
         });

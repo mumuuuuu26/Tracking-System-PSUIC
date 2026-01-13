@@ -12,7 +12,8 @@ import {
   Ticket,
   MessageSquare,
   Smile,
-  Bell
+  Bell,
+  BookOpen
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
@@ -86,11 +87,11 @@ const HomeUser = () => {
       action: () => navigate("/user/my-tickets"),
     },
     {
-      icon: <MessageSquare className="w-8 h-8" />,
-      title: "Quick Fix",
-      color: "text-indigo-500",
-      bg: "bg-indigo-50",
-      action: () => navigate("/user/quick-fix"),
+      icon: <BookOpen className="w-8 h-8" />,
+      title: "Help Center",
+      color: "text-teal-500",
+      bg: "bg-teal-50",
+      action: () => navigate("/kb"),
     },
     {
       icon: <Smile className="w-8 h-8" />,

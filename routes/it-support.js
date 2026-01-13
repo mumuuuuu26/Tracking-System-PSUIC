@@ -9,6 +9,7 @@ const {
   acceptJob,
   rejectTicket,
   closeJob,
+  saveDraft,
   rescheduleAppointment,
   getSchedule,
   getHistory,
@@ -25,6 +26,7 @@ router.get("/it/appointments/today", authCheck, itCheck, getTodayAppointments);
 router.put("/it/accept/:id", authCheck, itCheck, acceptJob);
 router.put("/it/reject/:id", authCheck, itCheck, rejectTicket);
 router.put("/it/close/:id", authCheck, itCheck, closeJob);
+router.put("/it/draft/:id", authCheck, itCheck, saveDraft); // [NEW] Draft mode
 router.post("/it/reschedule", authCheck, itCheck, rescheduleAppointment);
 
 module.exports = router;

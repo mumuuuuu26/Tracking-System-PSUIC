@@ -106,7 +106,7 @@ const QuickFix = () => {
           <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <input
             type="text"
-            placeholder="ค้นหาปัญหา..."
+            placeholder="Search..."
             className="w-full pl-10 pr-4 py-3 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -122,7 +122,7 @@ const QuickFix = () => {
               : "bg-white text-gray-600 border border-gray-100"
               }`}
           >
-            ทั้งหมด
+            All
           </button>
           {categories.map((cat) => (
             <button
@@ -178,13 +178,13 @@ const QuickFix = () => {
 
                 <div className="mt-4 pt-3 border-t">
                   <p className="text-xs text-gray-500">
-                    หากยังไม่สามารถแก้ไขได้
+                    If the issue persists
                   </p>
                   <button
                     onClick={() => navigate("/user/create-ticket")}
                     className="mt-2 w-full bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
                   >
-                    แจ้งปัญหา
+                    Report Issue
                   </button>
                 </div>
               </div>
@@ -193,12 +193,12 @@ const QuickFix = () => {
         ) : (
           <div className="bg-white rounded-xl p-8 text-center shadow-sm">
             <HelpCircle className="mx-auto text-gray-300 mb-3" size={48} />
-            <p className="text-gray-500">ไม่พบคู่มือที่ค้นหา</p>
+            <p className="text-gray-500">No guides found</p>
             <button
               onClick={() => { setSearchTerm(""); setSelectedCategory("all"); }}
               className="mt-2 text-blue-500 text-sm font-medium"
             >
-              ล้างการค้นหา
+              Clear Search
             </button>
           </div>
         )}

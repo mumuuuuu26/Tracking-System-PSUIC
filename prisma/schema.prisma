@@ -91,10 +91,14 @@ model Ticket {
   responseTime   Int?       // เวลาตอบสนอง (นาที)
   resolutionTime Int?       // เวลาแก้ไข (นาที)
   
+  // [NEW] Checklist & IT Note (Draft)
+  checklist      String?    @db.Text // JSON string: [{id, text, checked}]
+  note           String?    @db.Text // IT Note / Diagnosis / Solution
+
   // Relations
   createdById Int
   createdBy   User @relation("TicketCreator", fields: [createdById], references: [id])
-
+  
   assignedToId Int?
   assignedTo   User? @relation("TicketAssignee", fields: [assignedToId], references: [id])
 
