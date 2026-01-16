@@ -213,7 +213,18 @@ const ITDashboard = () => {
   };
 
   // Filter "New Tickets" -> Pending status
-  const newTickets = tickets.filter(t => t.status === "pending").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Sort by Priority (Critical > High > Medium > Low) THEN by Arrival (Oldest First)
+  const urgencyWeight = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
+  const newTickets = tickets
+    .filter(t => t.status === "pending")
+    .sort((a, b) => {
+      const weightA = urgencyWeight[a.urgency] || 0;
+      const weightB = urgencyWeight[b.urgency] || 0;
+      if (weightA !== weightB) {
+        return weightB - weightA; // Higher priority first
+      }
+      return new Date(a.createdAt) - new Date(b.createdAt); // Oldest first
+    });
 
   // Filter "Completed Tickets" -> Fixed status
   const completedTickets = tickets.filter(t => t.status === "fixed").sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -296,7 +307,7 @@ const ITDashboard = () => {
                     const task = item.data;
                     return (
                       <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
-                        <div className={`absolute left-0 top-0 bottom-0 w-1.5`} style={{ backgroundColor: task.color || '#3B82F6' }}></div>
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5`} style={{ backgroundColor: task.color || '#193C6C' }}></div>
                         <div className="flex items-center gap-3 pl-2">
                           <div className="w-12 h-12 rounded-xl shrink-0 flex flex-col items-center justify-center bg-gray-50 text-gray-600">
                             {task.startTime ? (
@@ -391,61 +402,29 @@ const ITDashboard = () => {
         </div>
       </div>
 
-      {/* Completed Tickets Section */}
-      <div className="max-w-4xl mx-auto px-6 mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg text-gray-800">Completed Tickets</h3>
-          <button onClick={() => navigate('/it/tickets')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
-        </div>
 
-        <div className="space-y-4">
-          {completedTickets.length > 0 ? completedTickets.slice(0, 5).map((ticket) => (
-            <div key={ticket.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 opacity-80 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
-                    <CheckCircle size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1">{ticket.title || ticket.description?.substring(0, 30)}</h4>
-                    <p className="text-sm text-gray-500">
-                      Floor {ticket.room?.floor} , Room {ticket.room?.roomNumber}
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2 py-1 rounded text-[10px] font-bold tracking-wider bg-green-100 text-green-600">
-                  DONE
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-xs text-gray-400 pl-[4rem]">
-                <span>Fixed by me</span>
-                <span>{dayjs(ticket.updatedAt).fromNow()}</span>
-              </div>
-            </div>
-          )) : (
-            <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
-              <p className="text-gray-400 text-sm">No completed tickets yet</p>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Modals are kept similar but unstyled or minimally styled for now */}
       {/* Accept Modal */}
       {showAcceptModal && selectedTicket && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Accept Ticket</h3>
+            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Accept this ticket?</h3>
             <p className="text-gray-500 text-center mb-8 text-sm">
-              Do you want to accept <strong>{selectedTicket.title}</strong>?
+              Are you sure you want to accept this ticket now ?
             </p>
             <div className="space-y-3">
               <button onClick={handleAccept} className="w-full bg-blue-600 text-white py-3.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 hover:scale-[1.02] transition-transform">
-                Accept
+                Accept Now
               </button>
-              <button onClick={() => setShowAcceptModal(false)} className="w-full bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-lg hover:bg-gray-200">
-                Cancel
+              <button
+                onClick={() => {
+                  setShowAcceptModal(false);
+                  navigate(`/it/ticket/${selectedTicket.id}/reschedule`);
+                }}
+                className="w-full bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-lg hover:bg-gray-200"
+              >
+                Reschedule
               </button>
             </div>
           </div>

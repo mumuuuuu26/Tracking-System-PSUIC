@@ -63,6 +63,27 @@ const AllTickets = () => {
             )
         }
 
+
+        // Sort by Work Process (Pending > In Progress > Scheduled > Fixed > Rejected)
+        const statusWeight = {
+            'pending': 1,
+            'in_progress': 2,
+            'scheduled': 3,
+            'fixed': 4,
+            'closed': 4,
+            'rejected': 5
+        };
+
+        temp.sort((a, b) => {
+            const weightA = statusWeight[a.status] || 99;
+            const weightB = statusWeight[b.status] || 99;
+
+            if (weightA !== weightB) {
+                return weightA - weightB;
+            }
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
         setFilteredTickets(temp)
     }
 
@@ -171,7 +192,7 @@ const AllTickets = () => {
                             <div
                                 key={ticket.id}
                                 onClick={() => navigate(`/admin/ticket/${ticket.id}`)}
-                                className={`bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full relative group ${getStatusColor(ticket.status)}`}
+                                className={`rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full relative group ${getStatusColor(ticket.status)}`}
                             >
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-3">

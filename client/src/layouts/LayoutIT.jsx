@@ -68,13 +68,7 @@ const LayoutIT = () => {
       {/* Desktop Header (Visible on Desktop) */}
       <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 sticky top-0 z-40 px-6 py-4 justify-between items-center text-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-            <Wrench className="text-white" size={20} />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight">PSUIC Service</h1>
-            <p className="text-xs text-blue-100 font-medium opacity-80">IT Support Portal</p>
-          </div>
+          <img src="/img/psuic_logo.png" alt="PSUIC Service" className="h-14 w-auto object-contain" />
         </div>
 
         <div className="flex items-center gap-4">

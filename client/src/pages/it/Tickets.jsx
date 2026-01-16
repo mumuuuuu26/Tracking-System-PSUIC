@@ -63,6 +63,27 @@ const Tickets = () => {
             );
         }
 
+        // Sort by Work Process (Pending > In Progress > Scheduled > Fixed > Rejected)
+        const statusWeight = {
+            'pending': 1,
+            'in_progress': 2,
+            'scheduled': 3,
+            'fixed': 4,
+            'closed': 4,
+            'rejected': 5
+        };
+
+        filtered.sort((a, b) => {
+            const weightA = statusWeight[a.status] || 99;
+            const weightB = statusWeight[b.status] || 99;
+
+            if (weightA !== weightB) {
+                return weightA - weightB; // Lower weight (earlier stage) first
+            }
+            // Secondary sort: Oldest First (First Come First Served) within same status
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        });
+
         setFilteredTickets(filtered);
     };
 

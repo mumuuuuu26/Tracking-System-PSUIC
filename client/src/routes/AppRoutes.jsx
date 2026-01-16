@@ -46,6 +46,7 @@ import ITTicketDetail from "../pages/it/TicketDetail";
 import ITKnowledgeBase from "../pages/it/kb/ITKnowledgeBase";
 import KnowledgeBaseForm from "../pages/it/kb/KnowledgeBaseForm";
 import EmailSettings from "../pages/it/EmailSettings";
+import RescheduleBooking from "../pages/it/RescheduleBooking";
 
 import KnowledgeBase from "../pages/kb/KnowledgeBase";
 import KnowledgeBaseDetail from "../pages/kb/KnowledgeBaseDetail";
@@ -100,6 +101,7 @@ const AppRoutes = () => {
         <Route path="manage-quick-fix" element={<QuickFixManagement />} />
         <Route path="tickets" element={<Tickets />} />
         <Route path="ticket/:id" element={<ITTicketDetail />} />
+        <Route path="ticket/:id/reschedule" element={<RescheduleBooking />} />
         <Route path="kb" element={<ITKnowledgeBase />} />
         <Route path="kb/create" element={<KnowledgeBaseForm />} />
         <Route path="kb/edit/:id" element={<KnowledgeBaseForm />} />

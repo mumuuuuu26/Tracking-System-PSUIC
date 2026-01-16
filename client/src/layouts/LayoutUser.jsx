@@ -41,10 +41,7 @@ const LayoutUser = ({ children }) => {
       <header className="bg-blue-600 shadow-sm sticky top-0 z-40 md:hidden">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2 text-white">
-            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm">🛠️</span>
-            </div>
-            <span className="font-semibold">PSUIC Service</span>
+            <img src="/img/psuic_logo.png" alt="PSUIC Service" className="h-10 w-auto object-contain" />
           </div>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -58,27 +55,11 @@ const LayoutUser = ({ children }) => {
       {/* Desktop Header (Visible on Desktop) */}
       <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 sticky top-0 z-40 px-6 py-4 justify-between items-center text-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-            <span className="text-white text-xl">🛠️</span>
-          </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight">PSUIC Service</h1>
-            <p className="text-xs text-blue-100 font-medium opacity-80">Internal Helpdesk</p>
-          </div>
+          <img src="/img/psuic_logo.png" alt="PSUIC Service" className="h-14 w-auto object-contain" />
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden lg:block text-right">
-            <p className="text-sm font-bold">{user?.name || user?.email}</p>
-            <p className="text-xs text-blue-200 uppercase tracking-wide">{user?.role || "User"}</p>
-          </div>
-          <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 shadow-sm overflow-hidden backdrop-blur-sm">
-            {user?.picture ? (
-              <img src={user.picture} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <User size={20} className="text-white" />
-            )}
-          </div>
+
           <button
             onClick={handleLogout}
             className="p-2 hover:bg-white/10 text-blue-100 hover:text-white rounded-lg transition-colors"
@@ -104,36 +85,42 @@ const LayoutUser = ({ children }) => {
               </button>
             </div>
             <nav className="p-4 space-y-2">
-              <a
+              <MobileNavLink
                 href="/user"
-                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                <Home size={20} /> Dashboard
-              </a>
-              <a
+                icon={<Home size={20} />}
+                label="Dashboard"
+                active={isActive("/user")}
+              />
+              <MobileNavLink
                 href="/user/my-tickets"
-                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                <Ticket size={20} /> My Tickets
-              </a>
-              <a
+                icon={<Ticket size={20} />}
+                label="My Tickets"
+                active={isActive("/user/my-tickets")}
+              />
+              <MobileNavLink
                 href="/user/appointments"
-                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                <Calendar size={20} /> Appointments
-              </a>
-              <a
+                icon={<Calendar size={20} />}
+                label="Appointments"
+                active={isActive("/user/appointments")}
+              />
+              <MobileNavLink
                 href="/user/profile"
-                className="flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                <User size={20} /> My Profile
-              </a>
+                icon={<User size={20} />}
+                label="My Profile"
+                active={isActive("/user/profile")}
+              />
               <hr className="my-4 border-gray-100" />
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 py-3 px-4 text-red-600 rounded-xl hover:bg-red-50 font-medium transition-colors"
+                className="w-full"
               >
-                <LogOut size={20} /> Logout
+                <MobileNavLink
+                  href="#"
+                  icon={<LogOut size={20} />}
+                  label="Logout"
+                  isLogout={true}
+                  onClick={(e) => { e.preventDefault(); handleLogout(); }}
+                />
               </button>
             </nav>
           </div>
@@ -192,5 +179,22 @@ const NavLink = ({ href, icon, label, active }) => (
     </span>
   </a>
 )
+
+// Helper Component for Mobile Nav Links
+const MobileNavLink = ({ href, icon, label, active, onClick, isLogout }) => (
+  <a
+    href={href}
+    onClick={onClick}
+    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${isLogout
+      ? "text-red-600 hover:bg-red-50 font-medium"
+      : active
+        ? "bg-blue-50 text-blue-600 font-bold shadow-sm"
+        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium"
+      }`}
+  >
+    {icon}
+    {label}
+  </a>
+);
 
 export default LayoutUser;

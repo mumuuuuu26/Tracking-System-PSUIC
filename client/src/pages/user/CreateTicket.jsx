@@ -1,6 +1,7 @@
 // client/src/pages/user/CreateTicket.jsx
 import React, { useState, useEffect } from "react";
 import { Camera, X, ChevronDown, Info } from "lucide-react";
+import CustomSelect from "../../components/ui/CustomSelect";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createTicket } from "../../api/ticket";
 import { listRooms } from "../../api/room"; // [New] API ดึงห้อง
@@ -56,10 +57,13 @@ const CreateTicket = () => {
         if (err.response?.status === 431) {
           toast.error("Session expired. Logging out now...");
           actionLogout();
-          setTimeout(() => window.location.href = "/login", 1000);
+          setTimeout(() => (window.location.href = "/login"), 1000);
           return;
         }
-        toast.error("Failed to load categories: " + (err.response?.data?.message || err.message));
+        toast.error(
+          "Failed to load categories: " +
+          (err.response?.data?.message || err.message)
+        );
       }
 
       // โหลดห้องและจัดการเลขชั้น
@@ -68,9 +72,9 @@ const CreateTicket = () => {
         setDbRooms(roomRes.data);
 
         if (Array.isArray(roomRes.data)) {
-          const uniqueFloors = [...new Set(roomRes.data.map((r) => r.floor))].sort(
-            (a, b) => a - b
-          );
+          const uniqueFloors = [
+            ...new Set(roomRes.data.map((r) => r.floor)),
+          ].sort((a, b) => a - b);
           setFloors(uniqueFloors);
         } else {
           console.error("Invalid rooms data format:", roomRes.data);
@@ -80,19 +84,21 @@ const CreateTicket = () => {
         if (err.response?.status === 431) {
           toast.error("Session expired. Logging out now...");
           actionLogout();
-          setTimeout(() => window.location.href = "/login", 1000);
+          setTimeout(() => (window.location.href = "/login"), 1000);
           return;
         }
-        toast.error("Failed to load rooms: " + (err.response?.data?.message || err.message));
+        toast.error(
+          "Failed to load rooms: " +
+          (err.response?.data?.message || err.message)
+        );
       }
-
     } catch (err) {
       console.log("Unexpected error:", err);
-      if (err.response?.status === 431 || err.message?.includes('431')) {
+      if (err.response?.status === 431 || err.message?.includes("431")) {
         toast.error("Session data too large. Resetting session...");
         const { actionLogout } = useAuthStore.getState(); // Securely get logout action
         actionLogout();
-        setTimeout(() => window.location.href = "/login", 1500);
+        setTimeout(() => (window.location.href = "/login"), 1500);
         return;
       }
     }
@@ -107,11 +113,14 @@ const CreateTicket = () => {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
 
-    files.forEach(file => {
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onloadend = () => {
-        setForm(prev => ({ ...prev, images: [...prev.images, reader.result] }));
+        setForm((prev) => ({
+          ...prev,
+          images: [...prev.images, reader.result],
+        }));
       };
     });
   };
@@ -194,25 +203,49 @@ const CreateTicket = () => {
 
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100">
           {/* Header with Progress */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white relative overflow-hidden">
+          <div className="bg-[#1e3a8a] p-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-            <h1 className="text-3xl font-bold mb-2 relative z-10">Create Ticket</h1>
-            <p className="text-blue-100 relative z-10">Report an issue or request assistance</p>
+            <h1 className="text-3xl font-bold mb-2 relative z-10">
+              Create Ticket
+            </h1>
+            <p className="text-blue-100 relative z-10">
+              Report an issue or request assistance
+            </p>
 
             <div className="flex items-center mt-8 relative z-10">
               <div className="flex flex-col items-center relative">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ring-4 ring-blue-500/50 ${step >= 1 ? "bg-white text-blue-600" : "bg-blue-800 text-blue-400"}`}>
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ring-4 ring-blue-500/50 ${step >= 1
+                    ? "bg-white text-blue-600"
+                    : "bg-blue-800 text-blue-400"
+                    }`}
+                >
                   1
                 </div>
-                <span className="absolute -bottom-6 text-xs font-semibold whitespace-nowrap opacity-90">Details</span>
+                <span className="absolute -bottom-6 text-xs font-semibold whitespace-nowrap opacity-90">
+                  Details
+                </span>
               </div>
-              <div className={`flex-1 h-1 mx-4 rounded-full transition-all duration-500 ${step >= 2 ? "bg-white" : "bg-blue-800"}`}></div>
+              <div
+                className={`flex-1 h-1 mx-4 rounded-full transition-all duration-500 ${step >= 2 ? "bg-white" : "bg-blue-800"
+                  }`}
+              ></div>
               <div className="flex flex-col items-center relative">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ring-4 ring-blue-500/50 ${step >= 2 ? "bg-white text-blue-600" : "bg-blue-800 text-blue-400"}`}>
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ring-4 ring-blue-500/50 ${step >= 2
+                    ? "bg-white text-blue-600"
+                    : "bg-blue-800 text-blue-400"
+                    }`}
+                >
                   2
                 </div>
-                <span className={`absolute -bottom-6 text-xs font-semibold whitespace-nowrap ${step >= 2 ? "opacity-90" : "opacity-50"}`}>Review</span>
+                <span
+                  className={`absolute -bottom-6 text-xs font-semibold whitespace-nowrap ${step >= 2 ? "opacity-90" : "opacity-50"
+                    }`}
+                >
+                  Review
+                </span>
               </div>
             </div>
           </div>
@@ -230,7 +263,10 @@ const CreateTicket = () => {
                         Linked Equipment
                       </p>
                       <h3 className="font-bold text-blue-900 text-lg">
-                        {prefilledData.equipmentName} <span className="text-blue-400 font-normal">({prefilledData.equipmentCode})</span>
+                        {prefilledData.equipmentName}{" "}
+                        <span className="text-blue-400 font-normal">
+                          ({prefilledData.equipmentCode})
+                        </span>
                       </h3>
                       <p className="text-sm text-blue-700 flex items-center gap-1 mt-1">
                         <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
@@ -242,85 +278,108 @@ const CreateTicket = () => {
 
                 {/* Category Section */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Category</label>
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Category
+                  </label>
                   <div className="relative">
-                    <select
-                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-gray-700"
+                    <CustomSelect
+                      options={dbCategories}
                       value={form.categoryId}
-                      onChange={handleCategorySelect}
-                    >
-                      <option value="">Select a category...</option>
-                      {dbCategories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                      onChange={(e) => {
+                        // Mocking event object to match handleCategorySelect expectation or calling logic directly
+                        const selectedId = e.target.value;
+                        const selectedCat = dbCategories.find(c => c.id === selectedId);
+                        setForm({
+                          ...form,
+                          categoryId: selectedId,
+                          categoryName: selectedCat ? selectedCat.name : "",
+                        });
+                      }}
+                      placeholder="Select a category..."
+                    />
                   </div>
                 </div>
 
                 {/* Issue Description */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Issue Description</label>
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Issue Description
+                  </label>
                   <textarea
                     className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all min-h-[120px]"
                     placeholder="Please verify current location..."
                     value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value })
+                    }
                   />
                 </div>
 
                 {/* Location Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Floor</label>
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                      Floor
+                    </label>
                     <div className="relative">
-                      <select
+                      <CustomSelect
                         disabled={!!prefilledData}
-                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
+                        options={floors.map(f => ({ id: f, name: `Floor ${f}` }))}
                         value={form.floor}
-                        onChange={(e) => setForm({ ...form, floor: e.target.value, roomId: "", room: "" })}
-                      >
-                        <option value="">Select Floor</option>
-                        {floors.map((f) => (
-                          <option key={f} value={f}>Floor {f}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                        onChange={(e) => {
+                          setForm({
+                            ...form,
+                            floor: e.target.value,
+                            roomId: "",
+                            room: "",
+                          });
+                        }}
+                        placeholder="Select Floor"
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Room</label>
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                      Room
+                    </label>
                     <div className="relative">
-                      <select
+                      <CustomSelect
                         disabled={!!prefilledData || !form.floor}
-                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
+                        options={getAvailableRooms().map(r => ({ ...r, name: r.roomNumber }))}
                         value={form.roomId}
-                        onChange={handleRoomSelect}
-                      >
-                        <option value="">Select Room</option>
-                        {getAvailableRooms().map((r) => (
-                          <option key={r.id} value={r.id}>{r.roomNumber}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          const selectedRoom = dbRooms.find(r => r.id === selectedId);
+                          setForm({
+                            ...form,
+                            roomId: selectedId,
+                            room: selectedRoom ? selectedRoom.roomNumber : "",
+                          });
+                        }}
+                        placeholder="Select Room"
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* Priority Selection */}
                 <div className="space-y-3">
-                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Priority Level</label>
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Priority Level
+                  </label>
                   <div className="flex flex-wrap justify-center gap-4">
                     {urgencyLevels.map((level) => {
                       const colors = {
                         Low: "hover:bg-blue-50 hover:border-blue-200 text-blue-700",
-                        Medium: "hover:bg-yellow-50 hover:border-yellow-200 text-yellow-700",
-                        High: "hover:bg-orange-50 hover:border-orange-200 text-orange-700"
+                        Medium:
+                          "hover:bg-yellow-50 hover:border-yellow-200 text-yellow-700",
+                        High: "hover:bg-red-50 hover:border-orange-200 text-orange-700",
                       };
                       const activeColors = {
                         Low: "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200",
-                        Medium: "bg-yellow-500 border-yellow-500 text-white shadow-md shadow-yellow-200",
-                        High: "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-200"
+                        Medium:
+                          "bg-yellow-500 border-yellow-500 text-white shadow-md shadow-yellow-200",
+                        High: "bg-red-500 border-orange-500 text-white shadow-md shadow-orange-200",
                       };
 
                       return (
@@ -330,7 +389,10 @@ const CreateTicket = () => {
                           onClick={() => setForm({ ...form, urgency: level })}
                           className={`
                             py-3 px-6 rounded-xl border-2 font-bold text-sm transition-all duration-200 min-w-[120px] text-center
-                            ${form.urgency === level ? activeColors[level] : `bg-white border-gray-100 text-gray-500 ${colors[level]}`}
+                            ${form.urgency === level
+                              ? activeColors[level]
+                              : `bg-white border-gray-100 text-gray-500 ${colors[level]}`
+                            }
                           `}
                         >
                           {level}
@@ -342,7 +404,9 @@ const CreateTicket = () => {
 
                 {/* Photo Upload */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Evidence Photos</label>
+                  <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Evidence Photos
+                  </label>
                   <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:bg-gray-50 hover:border-blue-300 transition-all text-center group cursor-pointer relative">
                     <input
                       type="file"
@@ -355,18 +419,32 @@ const CreateTicket = () => {
                     <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                       <Camera size={32} />
                     </div>
-                    <p className="text-gray-900 font-bold">Click or Drag photos here</p>
-                    <p className="text-gray-400 text-sm mt-1">Supports JPG, PNG (Max 5MB)</p>
+                    <p className="text-gray-900 font-bold">
+                      Click or Drag photos here
+                    </p>
+                    <p className="text-gray-400 text-sm mt-1">
+                      Supports JPG, PNG (Max 5MB)
+                    </p>
                   </div>
 
                   {form.images.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 animate-in fade-in">
                       {form.images.map((img, index) => (
-                        <div key={index} className="relative group rounded-xl overflow-hidden shadow-sm aspect-square">
-                          <img src={img} alt="preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                        <div
+                          key={index}
+                          className="relative group rounded-xl overflow-hidden shadow-sm aspect-square"
+                        >
+                          <img
+                            src={img}
+                            alt="preview"
+                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                          />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <button
-                              onClick={(e) => { e.preventDefault(); removeImage(index); }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                removeImage(index);
+                              }}
                               className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors transform hover:scale-110"
                             >
                               <X size={16} />
@@ -387,7 +465,7 @@ const CreateTicket = () => {
                   </button>
                   <button
                     onClick={nextStep}
-                    className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                    className="flex-1 py-4 bg-[#1e3a8a] text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 transition-all"
                   >
                     Next Step
                   </button>
@@ -397,33 +475,53 @@ const CreateTicket = () => {
               /* Step 2: Review */
               <div className="space-y-8 animate-in slide-in-from-right duration-300">
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold text-gray-800">Review Ticket Details</h2>
-                  <p className="text-gray-500 mt-1">Please confirm everything is correct before submitting</p>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Review Ticket Details
+                  </h2>
+                  <p className="text-gray-500 mt-1">
+                    Please confirm everything is correct before submitting
+                  </p>
                 </div>
 
                 <div className="bg-gray-50 rounded-3xl p-6 sm:p-8 space-y-6 border border-gray-100">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Equipment / Category</p>
-                      <p className="text-lg font-bold text-gray-800">{prefilledData?.equipmentName || form.categoryName}</p>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Equipment / Category
+                      </p>
+                      <p className="text-lg font-bold text-gray-800">
+                        {prefilledData?.equipmentName || form.categoryName}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Location</p>
-                      <p className="text-lg font-bold text-gray-800">Floor {form.floor}, Room {form.room}</p>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Location
+                      </p>
+                      <p className="text-lg font-bold text-gray-800">
+                        Floor {form.floor}, Room {form.room}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Priority</p>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${form.urgency === "High" ? "bg-orange-100 text-orange-700" :
-                        form.urgency === "Medium" ? "bg-yellow-100 text-yellow-700" :
-                          "bg-blue-100 text-blue-700"
-                        }`}>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                        Priority
+                      </p>
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${form.urgency === "High"
+                          ? "bg-orange-100 text-orange-700"
+                          : form.urgency === "Medium"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-blue-100 text-blue-700"
+                          }`}
+                      >
                         {form.urgency} Priority
                       </span>
                     </div>
                   </div>
 
                   <div className="pt-6 border-t border-gray-200">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Issue Description</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                      Issue Description
+                    </p>
                     <div className="bg-white p-6 rounded-2xl border border-gray-100 text-gray-700 leading-relaxed shadow-sm">
                       {form.description}
                     </div>
@@ -431,10 +529,16 @@ const CreateTicket = () => {
 
                   {form.images.length > 0 && (
                     <div className="pt-2">
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Attached Photos ({form.images.length})</p>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                        Attached Photos ({form.images.length})
+                      </p>
                       <div className="flex gap-3 overflow-x-auto pb-2">
                         {form.images.map((img, idx) => (
-                          <img key={idx} src={img} className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
+                          <img
+                            key={idx}
+                            src={img}
+                            className="w-20 h-20 rounded-xl object-cover border border-gray-200"
+                          />
                         ))}
                       </div>
                     </div>

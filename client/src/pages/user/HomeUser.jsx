@@ -13,7 +13,9 @@ import {
   MessageSquare,
   Smile,
   Bell,
-  BookOpen
+  BookOpen,
+  MapPin,
+  HelpCircle
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
@@ -24,7 +26,6 @@ const HomeUser = () => {
   const [stats, setStats] = useState({
     pending: 0,
     inProgress: 0,
-    verify: 0,
     completed: 0,
   });
 
@@ -37,20 +38,11 @@ const HomeUser = () => {
       const res = await listMyTickets(token);
       const tickets = res.data;
 
-      // Status Logic matching the mockup reqs
-      // Pending: status = 'pending'
-      // In Progress: status = 'in_progress'
-      // To Verify: status = 'fixed' AND NO rating
-      // Completed: status = 'fixed' AND HAS rating (or just finished) -> Mockup says "เสร็จสิ้น"
-      // Note: If 'rejected' exists, it's not explicitly in the 4 columns, maybe add to completed or ignore? 
-      // For now, I'll count 'fixed' with rating as completed.
-
       const pending = tickets.filter((t) => t.status === "pending").length;
       const inProgress = tickets.filter((t) => t.status === "in_progress").length;
-      const verify = tickets.filter((t) => t.status === "fixed" && !t.rating).length;
-      const completed = tickets.filter((t) => t.status === "fixed").length; // All fixed tickets count as completed
+      const completed = tickets.filter((t) => t.status === "fixed" || t.status === "rejected").length; // Count fixed and rejected as completed history
 
-      setStats({ pending, inProgress, verify, completed });
+      setStats({ pending, inProgress, completed });
     } catch (err) {
       console.log(err);
     }
@@ -60,44 +52,43 @@ const HomeUser = () => {
     {
       icon: <ScanLine className="w-8 h-8" />,
       title: "Scan QR",
-      color: "text-green-500",
-      bg: "bg-green-50",
+      color: "text-green-600",
+      bg: "bg-green-100",
       action: () => navigate("/user/scan-qr"),
-      isNew: true
     },
     {
       icon: <FileText className="w-8 h-8" />,
       title: "Create Ticket",
       color: "text-blue-500",
-      bg: "bg-blue-50",
+      bg: "bg-blue-100",
       action: () => navigate("/user/create-ticket"),
     },
     {
       icon: <Calendar className="w-8 h-8" />,
       title: "Appointment",
-      color: "text-purple-500",
-      bg: "bg-purple-50",
+      color: "text-indigo-500",
+      bg: "bg-indigo-100",
       action: () => navigate("/user/appointments"),
     },
     {
-      icon: <Ticket className="w-8 h-8" />,
+      icon: <MapPin className="w-8 h-8" />,
       title: "All Tickets",
-      color: "text-pink-500",
-      bg: "bg-pink-50",
+      color: "text-red-500",
+      bg: "bg-red-100",
       action: () => navigate("/user/my-tickets"),
     },
     {
-      icon: <BookOpen className="w-8 h-8" />,
-      title: "Help Center",
-      color: "text-teal-500",
-      bg: "bg-teal-50",
+      icon: <HelpCircle className="w-8 h-8" />,
+      title: "Quick Fix",
+      color: "text-purple-500",
+      bg: "bg-purple-100",
       action: () => navigate("/kb"),
     },
     {
       icon: <Smile className="w-8 h-8" />,
       title: "Satisfaction",
       color: "text-yellow-500",
-      bg: "bg-yellow-50",
+      bg: "bg-yellow-100",
       action: () => navigate("/user/feedback"),
     },
   ];
@@ -126,20 +117,18 @@ const HomeUser = () => {
 
           </div>
 
-          <h2 className="text-white text-lg font-bold mb-4 opacity-90">Ticket Status</h2>
+
         </div>
       </div>
 
       {/* Floating Stats Card - Overlapping the blue header */}
       <div className="max-w-4xl mx-auto px-6 -mt-16 relative z-10">
         <div className="bg-white rounded-3xl shadow-xl p-6 flex justify-between items-center text-center">
-          <StatItem count={stats.pending} label="Pending" color="text-blue-600" />
+          <StatItem count={stats.pending} label="Pending" color="text-[#193C6C]" />
           <div className="w-px h-10 bg-gray-100"></div>
-          <StatItem count={stats.inProgress} label="In Progress" color="text-blue-600" />
+          <StatItem count={stats.inProgress} label="In Progress" color="text-[#193C6C]" />
           <div className="w-px h-10 bg-gray-100"></div>
-          <StatItem count={stats.verify} label="To Verify" color="text-blue-600" />
-          <div className="w-px h-10 bg-gray-100"></div>
-          <StatItem count={stats.completed} label="Completed" color="text-blue-600" />
+          <StatItem count={stats.completed} label="Completed" color="text-[#193C6C]" />
         </div>
       </div>
 

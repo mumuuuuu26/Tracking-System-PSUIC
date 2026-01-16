@@ -56,7 +56,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-blue-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-blue-600">
       <div className="w-full max-w-md flex flex-col items-center justify-center p-6 space-y-10 animate-fade-in">
         {/* System Logo */}
         <div className="flex flex-col items-center mb-8">
@@ -80,7 +80,7 @@ const Login = () => {
           {/* Primary Button: PSU Passport */}
           <button
             onClick={handlePSUPassport}
-            className="w-full group relative overflow-hidden bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+            className="w-full group relative overflow-hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="relative z-10 flex items-center justify-center gap-3">
               <span>Login with PSU Passport</span>

@@ -48,6 +48,7 @@ const MyTickets = () => {
         if (activeFilter === "Completed") return t.status === "fixed";
         if (activeFilter === "In Progress") return t.status === "in_progress";
         if (activeFilter === "Pending") return t.status === "pending";
+        if (activeFilter === "Rejected") return t.status === "rejected";
         return true;
       });
     }
@@ -62,6 +63,27 @@ const MyTickets = () => {
       );
     }
 
+    // Sort by Work Process (Pending > In Progress > Scheduled > Fixed > Rejected)
+    const statusWeight = {
+      'pending': 1,
+      'in_progress': 2,
+      'scheduled': 3,
+      'fixed': 4,
+      'closed': 4,
+      'rejected': 5
+    };
+
+    filtered.sort((a, b) => {
+      const weightA = statusWeight[a.status] || 99;
+      const weightB = statusWeight[b.status] || 99;
+
+      if (weightA !== weightB) {
+        return weightA - weightB; // Lower weight (earlier stage) first
+      }
+      // Secondary sort: Newest First (Descending)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
     setFilteredTickets(filtered);
   };
 
@@ -73,6 +95,10 @@ const MyTickets = () => {
         return "border-l-4 border-blue-400 bg-blue-50";
       case "fixed":
         return "border-l-4 border-green-400 bg-green-50";
+      case "rejected":
+        return "border-l-4 border-red-400 bg-red-50";
+      case "scheduled":
+        return "border-l-4 border-slate-500 bg-slate-50";
       default:
         return "border-l-4 border-gray-400 bg-gray-50";
     }
@@ -91,7 +117,7 @@ const MyTickets = () => {
     }
   };
 
-  const filters = ["All", "Pending", "In Progress", "Completed"];
+  const filters = ["All", "Pending", "In Progress", "Completed", "Rejected"];
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
@@ -199,7 +225,10 @@ const MyTickets = () => {
                   <div className="flex items-center gap-2">
                     <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === "pending" ? "bg-yellow-400" :
                       ticket.status === "in_progress" ? "bg-blue-400" :
-                        "bg-green-400"
+                        ticket.status === "fixed" ? "bg-green-400" :
+                          ticket.status === "rejected" ? "bg-red-400" :
+                            ticket.status === "scheduled" ? "bg-slate-500" :
+                              "bg-gray-400"
                       }`} />
                     <span className="text-sm font-semibold text-gray-700 capitalize">
                       {ticket.status.replace("_", " ")}

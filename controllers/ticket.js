@@ -266,7 +266,30 @@ exports.list = async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(tickets);
+
+    // Custom Sort: Pending > In Progress > Scheduled > Fixed > Rejected
+    const statusOrder = {
+      'pending': 1,
+      'in_progress': 2,
+      'scheduled': 3,
+      'fixed': 4,
+      'closed': 4,
+      'rejected': 5
+    };
+
+    const sortedTickets = tickets.sort((a, b) => {
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // Secondary sort: Newest First (Descending)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    res.json(sortedTickets);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error" });
@@ -313,7 +336,30 @@ exports.listAll = async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(tickets);
+
+    // Custom Sort: Pending > In Progress > Scheduled > Fixed > Rejected
+    const statusOrder = {
+      'pending': 1,
+      'in_progress': 2,
+      'scheduled': 3,
+      'fixed': 4,
+      'closed': 4,
+      'rejected': 5
+    };
+
+    const sortedTickets = tickets.sort((a, b) => {
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // Secondary sort: Newest First (Descending)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    res.json(sortedTickets);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error" });

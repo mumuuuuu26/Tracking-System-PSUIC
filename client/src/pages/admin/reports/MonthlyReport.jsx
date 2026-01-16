@@ -9,12 +9,10 @@ import ExportButtons from '../../../components/admin/ExportButtons';
 import { Download, Calendar, Ticket, CheckCircle, Clock } from 'lucide-react';
 import dayjs from 'dayjs';
 
-const MonthlyReport = () => {
+const MonthlyReport = ({ month, year }) => {
     const { token } = useAuthStore();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [month, setMonth] = useState(dayjs().month() + 1); // 1-12
-    const [year, setYear] = useState(dayjs().year());
 
     useEffect(() => {
         loadData();
@@ -86,34 +84,6 @@ const MonthlyReport = () => {
 
     return (
         <div className="space-y-6">
-            {/* Controls Bar */}
-            <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100 gap-4">
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
-                        <Calendar size={18} className="text-gray-400" />
-                        <select
-                            value={month}
-                            onChange={e => setMonth(e.target.value)}
-                            className="bg-transparent border-none text-sm font-semibold text-gray-700 focus:ring-0 cursor-pointer"
-                        >
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                <option key={m} value={m}>Month {m}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
-                        <select
-                            value={year}
-                            onChange={e => setYear(e.target.value)}
-                            className="bg-transparent border-none text-sm font-semibold text-gray-700 focus:ring-0 cursor-pointer"
-                        >
-                            {Array.from({ length: 3 }, (_, i) => 2024 + i).map(y => (
-                                <option key={y} value={y}>{y}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-            </div>
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

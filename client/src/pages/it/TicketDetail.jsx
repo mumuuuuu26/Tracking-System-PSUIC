@@ -28,13 +28,7 @@ const TicketDetail = () => {
     const [checklistItems, setChecklistItems] = useState([]); // [{id: 1, text: "Check Power", checked: false}]
     const [newChecklistInput, setNewChecklistInput] = useState("");
 
-    // Reschedule Modal State
-    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-    const [rescheduleData, setRescheduleData] = useState({
-        newDate: '',
-        newTime: '',
-        reason: ''
-    });
+    // Reschedule Modal State REMOVED
 
     useEffect(() => {
         loadTicket();
@@ -250,6 +244,7 @@ const TicketDetail = () => {
             case "Critical": return "bg-red-100 text-red-600 border border-red-200";
             case "High": return "bg-orange-100 text-orange-600 border border-orange-200";
             case "Medium": return "bg-yellow-100 text-yellow-600 border border-yellow-200";
+            case "Low": return "bg-blue-100 text-blue-600 border border-blue-200";
             default: return "bg-green-100 text-green-600 border border-green-200";
         }
     };
@@ -327,7 +322,7 @@ const TicketDetail = () => {
                         </div>
                         <div className="flex justify-between items-end">
                             <div>
-                                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-0.5">Equipment Type</label>
+                                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-0.5">Category</label>
                                 <p className="font-bold text-gray-800 text-sm">{ticket.category?.name || "General"}</p>
                             </div>
                             <span className="text-xs text-gray-400">{dayjs(ticket.createdAt).format('D MMM YY, HH:mm A')}</span>
@@ -554,7 +549,7 @@ const TicketDetail = () => {
                                 )}
                             </div>
                             <button
-                                onClick={() => setIsRescheduleModalOpen(true)}
+                                onClick={() => navigate(`/it/ticket/${id}/reschedule`)}
                                 className="bg-white text-blue-600 px-4 py-2 rounded-xl font-bold text-sm shadow-sm hover:bg-blue-50 transition-colors border border-blue-100"
                             >
                                 Reschedule
@@ -563,81 +558,6 @@ const TicketDetail = () => {
                     </div>
                 )}
             </div>
-
-            {/* Reschedule Modal */}
-            {
-                isRescheduleModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 animate-in zoom-in-95">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                                    <CalendarClock className="text-blue-500" /> Reschedule
-                                </h3>
-                                <button onClick={() => setIsRescheduleModalOpen(false)}><X className="text-gray-400" /></button>
-                            </div>
-                            <form onSubmit={async (e) => {
-                                e.preventDefault();
-                                if (!ticket.appointment) return;
-                                try {
-                                    await requestReschedule(token, {
-                                        appointmentId: ticket.appointment.id,
-                                        ...rescheduleData
-                                    });
-                                    toast.success("Reschedule request sent");
-                                    setIsRescheduleModalOpen(false);
-                                    loadTicket();
-                                } catch (err) {
-                                    console.error(err);
-                                    toast.error(err.response?.data?.message || "Failed to request reschedule");
-                                }
-                            }} className="space-y-4">
-                                <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 mb-4">
-                                    Propose a new time for this appointment. The user will need to accept it.
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">New Date</label>
-                                        <input
-                                            type="date"
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700"
-                                            value={rescheduleData.newDate}
-                                            onChange={e => setRescheduleData({ ...rescheduleData, newDate: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">New Time</label>
-                                        <input
-                                            type="time"
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-gray-700"
-                                            value={rescheduleData.newTime}
-                                            onChange={e => setRescheduleData({ ...rescheduleData, newTime: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1 block">Reason</label>
-                                    <textarea
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                        placeholder="Why do you need to reschedule?"
-                                        rows={3}
-                                        value={rescheduleData.reason}
-                                        onChange={e => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
-                                        required
-                                    />
-                                </div>
-
-                                <button className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 mt-2">
-                                    Send Request
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
         </div >
     );
 };
