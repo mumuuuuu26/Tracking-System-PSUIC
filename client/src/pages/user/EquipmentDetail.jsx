@@ -1,5 +1,5 @@
 // client/src/pages/user/EquipmentDetail.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -27,13 +27,7 @@ const EquipmentDetail = () => {
   const [activeTab, setActiveTab] = useState("info");
   const [loading, setLoading] = useState(!equipment);
 
-  useEffect(() => {
-    if (!equipment) {
-      loadEquipmentData();
-    }
-  }, [id]);
-
-  const loadEquipmentData = async () => {
+  const loadEquipmentData = useCallback(async () => {
     try {
       const res = await axios.get(`/api/equipment/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -44,20 +38,15 @@ const EquipmentDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, token]);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Normal":
-        return "bg-green-100 text-green-700";
-      case "Maintenance":
-        return "bg-yellow-100 text-yellow-700";
-      case "Broken":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
+  useEffect(() => {
+    if (!equipment) {
+      loadEquipmentData();
     }
-  };
+  }, [id, equipment, loadEquipmentData]);
+
+
 
   const getTicketStatusIcon = (status) => {
     switch (status) {
@@ -105,11 +94,10 @@ const EquipmentDetail = () => {
             <div className="flex items-center justify-between mb-4">
               <Monitor size={48} className="text-white/80" />
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  equipment?.status === "Normal"
-                    ? "bg-green-500 text-white"
-                    : "bg-red-500 text-white"
-                }`}
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${equipment?.status === "Normal"
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
+                  }`}
               >
                 {equipment?.status || "Normal"}
               </span>
@@ -122,31 +110,28 @@ const EquipmentDetail = () => {
           <div className="flex border-b">
             <button
               onClick={() => setActiveTab("info")}
-              className={`flex-1 py-3 text-sm font-medium ${
-                activeTab === "info"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
-              }`}
+              className={`flex-1 py-3 text-sm font-medium ${activeTab === "info"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500"
+                }`}
             >
               Information
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`flex-1 py-3 text-sm font-medium ${
-                activeTab === "history"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
-              }`}
+              className={`flex-1 py-3 text-sm font-medium ${activeTab === "history"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500"
+                }`}
             >
               History
             </button>
             <button
               onClick={() => setActiveTab("specs")}
-              className={`flex-1 py-3 text-sm font-medium ${
-                activeTab === "specs"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
-              }`}
+              className={`flex-1 py-3 text-sm font-medium ${activeTab === "specs"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500"
+                }`}
             >
               Specifications
             </button>

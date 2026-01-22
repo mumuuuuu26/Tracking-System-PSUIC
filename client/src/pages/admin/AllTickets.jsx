@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { listAllTickets, removeTicket } from '../../api/admin'
 import useAuthStore from '../../store/auth-store'
@@ -19,19 +19,7 @@ const AllTickets = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('all')
 
-    useEffect(() => {
-        loadTickets()
-        const query = searchParams.get('search')
-        if (query) {
-            setSearchTerm(query)
-        }
-    }, [])
-
-    useEffect(() => {
-        filterTickets()
-    }, [searchTerm, filterStatus, tickets])
-
-    const loadTickets = async () => {
+    const loadTickets = useCallback(async () => {
         try {
             setLoading(true)
             const res = await listAllTickets(token)
@@ -43,9 +31,17 @@ const AllTickets = () => {
         } finally {
             setLoading(false)
         }
-    }
+    }, [token])
 
-    const filterTickets = () => {
+    useEffect(() => {
+        loadTickets()
+        const query = searchParams.get('search')
+        if (query) {
+            setSearchTerm(query)
+        }
+    }, [loadTickets, searchParams])
+
+    const filterTickets = useCallback(() => {
         let temp = [...tickets]
 
         if (filterStatus !== 'all') {
@@ -85,7 +81,11 @@ const AllTickets = () => {
         });
 
         setFilteredTickets(temp)
-    }
+    }, [tickets, filterStatus, searchTerm])
+
+    useEffect(() => {
+        filterTickets()
+    }, [filterTickets])
 
     const handleDelete = async (e, id) => {
         e.stopPropagation(); // Prevent card click
@@ -94,7 +94,7 @@ const AllTickets = () => {
             await removeTicket(token, id)
             toast.success('Ticket Deleted')
             loadTickets()
-        } catch (err) {
+        } catch {
             toast.error('Delete Failed')
         }
     }

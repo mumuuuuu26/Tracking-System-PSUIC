@@ -6,6 +6,7 @@ import ITPerformance from './ITPerformance';
 import SatisfactionReport from './SatisfactionReport';
 import { BarChart, PieChart, Activity, Server, Heart, Calendar } from 'lucide-react';
 import dayjs from 'dayjs';
+import ErrorBoundary from '../../../components/common/ErrorBoundary';
 
 const ReportDashboard = () => {
     const [activeTab, setActiveTab] = useState('monthly');
@@ -83,11 +84,13 @@ const ReportDashboard = () => {
 
             {/* Content Area */}
             <div id="report-content" className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white/50 min-h-[500px]">
-                {activeTab === 'monthly' && <MonthlyReport month={month} year={year} />}
-                {activeTab === 'annual' && <AnnualReport />}
-                {activeTab === 'equipment' && <EquipmentAnalysis />}
-                {activeTab === 'performance' && <ITPerformance />}
-                {activeTab === 'satisfaction' && <SatisfactionReport />}
+                <ErrorBoundary>
+                    {activeTab === 'monthly' && <MonthlyReport month={month} year={year} />}
+                    {activeTab === 'annual' && <AnnualReport />}
+                    {activeTab === 'equipment' && <EquipmentAnalysis />}
+                    {activeTab === 'performance' && <ITPerformance />}
+                    {activeTab === 'satisfaction' && <SatisfactionReport />}
+                </ErrorBoundary>
             </div>
         </div >
     );

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import FilterDropdown from "../../components/ui/FilterDropdown";
+import React, { useEffect, useState, useCallback } from "react";
+
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import { getITAvailability } from "../../api/appointment";
@@ -26,7 +26,7 @@ const MiniCalendar = ({
     events,
 }) => {
     const startOfMonth = currentMonth.startOf("month");
-    const endOfMonth = currentMonth.endOf("month");
+
     const daysInMonth = currentMonth.daysInMonth();
     const startDayOfWeek = startOfMonth.day() === 0 ? 6 : startOfMonth.day() - 1; // Mon=0, Sun=6
 
@@ -143,12 +143,7 @@ const UserAppointments = () => {
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [selectedDate, setSelectedDate] = useState(dayjs());
 
-    useEffect(() => {
-        loadMySchedule(); // Load user's tickets
-        loadMonthlyEvents(); // Load IT calendar availability
-    }, [currentMonth.format("YYYY-MM")]);
-
-    const loadMySchedule = async () => {
+    const loadMySchedule = useCallback(async () => {
         try {
             const res = await listMyTickets(token);
             // Filter tickets that have appointments, or just list tickets as "Tasks"
@@ -158,9 +153,9 @@ const UserAppointments = () => {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [token]);
 
-    const loadMonthlyEvents = async () => {
+    const loadMonthlyEvents = useCallback(async () => {
         try {
             const startOfMonth = currentMonth.startOf("month").format("YYYY-MM-DD");
             const endOfMonth = currentMonth.endOf("month").format("YYYY-MM-DD");
@@ -169,7 +164,14 @@ const UserAppointments = () => {
         } catch (err) {
             console.error("Error loading monthly events:", err);
         }
-    };
+    }, [token, currentMonth]);
+
+    const monthStr = currentMonth.format("YYYY-MM");
+
+    useEffect(() => {
+        loadMySchedule(); // Load user's tickets
+        loadMonthlyEvents(); // Load IT calendar availability
+    }, [loadMySchedule, loadMonthlyEvents, monthStr]);
 
     // Filter appointments for "My Schedule" section
     // In mockup: It's a list card.
@@ -178,7 +180,7 @@ const UserAppointments = () => {
     // 2. Pending Requests (status: in_progress/pending)
     const [showAll, setShowAll] = useState(false);
     const [filterPriority, setFilterPriority] = useState("All"); // All, Low, Medium, High
-    const [filterTime, setFilterTime] = useState("Upcoming"); // Upcoming, Past 7 Days, All History
+    const [filterTime, setFilterTime] = useState("All"); // All, Today, Yesterday...
 
     // Filter appointments
     const filteredAppointments = myTickets
@@ -330,18 +332,17 @@ const UserAppointments = () => {
 
                             {/* Time Filter */}
                             <div className="w-1/2">
-                                <FilterDropdown
+                                <CustomSelect
                                     options={[
-                                        { label: "Upcoming", value: "Upcoming" },
-                                        { label: "Today", value: "Today" },
-                                        { label: "Yesterday", value: "Yesterday" },
-                                        { label: "Last 3 Days", value: "Last 3 Days" },
-                                        { label: "Last 7 Days", value: "Last 7 Days" }
+                                        "All",
+                                        "Today",
+                                        "Yesterday",
+                                        "Last 3 Days",
+                                        "Last 7 Days"
                                     ]}
                                     value={filterTime}
                                     onChange={(e) => setFilterTime(e.target.value)}
                                     placeholder="Time"
-                                    label="Select days"
                                 />
                             </div>
                         </div>

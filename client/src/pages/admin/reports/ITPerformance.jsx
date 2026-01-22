@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import useAuthStore from '../../../store/auth-store';
 import { getITPerformance } from '../../../api/report';
 import { Star, CheckCircle, Clock, Trophy, Medal, Award } from 'lucide-react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 import ExportButtons from '../../../components/admin/ExportButtons';
@@ -13,11 +12,7 @@ const ITPerformance = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
             const res = await getITPerformance(token);
@@ -29,109 +24,53 @@ const ITPerformance = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const getRankIcon = (index) => {
-        if (index === 0) return <Trophy className="text-yellow-500 fill-yellow-500" size={24} />;
+        if (index === 0) return <Trophy className="text-blue-600 fill-blue-600" size={24} />;
         if (index === 1) return <Medal className="text-gray-400 fill-gray-400" size={24} />;
-        if (index === 2) return <Medal className="text-amber-700 fill-amber-700" size={24} />;
+        if (index === 2) return <Medal className="text-slate-500 fill-slate-500" size={24} />;
         return <span className="text-lg font-bold text-gray-400 w-6 text-center">{index + 1}</span>;
     };
 
     const getRankStyle = (index) => {
-        if (index === 0) return "bg-gradient-to-r from-yellow-50 to-white border-yellow-200 shadow-md";
-        if (index === 1) return "bg-gradient-to-r from-gray-50 to-white border-gray-200";
-        if (index === 2) return "bg-gradient-to-r from-amber-50 to-white border-amber-200";
+        if (index === 0) return "bg-blue-50 border-blue-200 shadow-md";
+        if (index === 1) return "bg-gray-50 border-gray-200";
+        if (index === 2) return "bg-slate-50 border-slate-200";
         return "bg-white border-gray-100";
     };
 
     const exportPDF = async () => {
         try {
             setLoading(true);
-            console.log("Starting PDF Export...");
-
-            // 1. Scroll to top to prevent viewport clipping issues
-            window.scrollTo(0, 0);
-
-            const reportElement = document.getElementById('it-performance-report');
-            if (!reportElement) {
-                throw new Error("Report element not found");
-            }
-
-            // 2. Clone the element to ensure a clean capture context
-            // This fixes "Unable to find element in cloned iframe" by ensuring the node is at the root body
-            const clone = reportElement.cloneNode(true);
-
-            // 3. Style the clone to be visible to html2canvas but hidden from user
-            // We strip margins/padding that might shift it, and force a white background
-            clone.style.position = 'absolute';
-            clone.style.top = '0px';
-            clone.style.left = '0px';
-            // Match original width to keep layout
-            clone.style.width = `${reportElement.offsetWidth}px`;
-            clone.style.zIndex = '-9999'; // Behind everything
-            clone.style.backgroundColor = '#ffffff';
-
-            document.body.appendChild(clone);
-
-            // Wait a moment for images in the clone to 'settle'
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Determine correct html2canvas function
-            const h2c = html2canvas.default || html2canvas;
-            if (typeof h2c !== 'function') {
-                throw new Error("html2canvas is not loaded correctly");
-            }
-
-            console.log("Capturing clone...");
-            const canvas = await h2c(clone, {
-                scale: 2,
-                useCORS: true,
-                logging: false, // Reduce console noise
-                backgroundColor: '#ffffff',
-                allowTaint: true, // Allow unsafe images if necessary, though useCORS should handle it
-                scrollY: 0,
-                scrollX: 0
-            });
-
-            // 4. Remove the clone immediately
-            document.body.removeChild(clone);
-
-            console.log("Canvas captured. Generating PNG...");
-            const imgData = canvas.toDataURL('image/png');
-
-            console.log("Generating PDF...");
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = pageWidth - 20; // 10mm margin each side
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            let heightLeft = imgHeight;
-            let position = 10; // Top margin
+            let pageIndex = 1;
+            let element = document.getElementById(`pdf-page-${pageIndex}`);
 
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+            while (element) {
+                if (pageIndex > 1) {
+                    pdf.addPage();
+                }
 
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 10, -pageHeight + 10, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
+                const canvas = await html2canvas(element, { scale: 3, useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+                pageIndex++;
+                element = document.getElementById(`pdf-page-${pageIndex}`);
             }
 
             pdf.save(`it_performance_${new Date().toISOString().split('T')[0]}.pdf`);
-            console.log("PDF Saved.");
-
         } catch (err) {
             console.error("PDF Export failed:", err);
-            const errMsg = err?.message || (typeof err === 'string' ? err : JSON.stringify(err));
-            alert(`PDF Export failed: ${errMsg}`);
-
-            // Cleanup in case of error (if clone is still there)
-            // Note: We don't have a reference to 'clone' here easily unless we move declaration up, 
-            // but effectively the page refresh or next render cleans up. 
-            // For robustness, we could declare clone outside try, but this is usually fine.
         } finally {
             setLoading(false);
         }
@@ -171,52 +110,60 @@ const ITPerformance = () => {
                     <div id="it-performance-report">
                         {/* Team Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                            {/* Total Resolved - Deepest Blue */}
+                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                        <CheckCircle size={20} />
+                                    <div className="p-2 bg-blue-50 text-blue-900 rounded-lg">
+                                        <CheckCircle size={24} />
                                     </div>
                                     <p className="text-sm font-bold text-gray-500 uppercase">Total Resolved</p>
                                 </div>
-                                <p className="text-3xl font-extrabold text-gray-800">
+                                <p className="text-3xl font-extrabold text-blue-900">
                                     {data.reduce((acc, curr) => acc + (curr.totalResolved || 0), 0)}
                                 </p>
+                                <div className="absolute top-0 left-0 w-full h-1 bg-blue-900"></div>
                             </div>
 
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                            {/* Active Jobs - Corporate Blue */}
+                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                                        <Clock size={20} />
+                                    <div className="p-2 bg-blue-50 text-blue-700 rounded-lg">
+                                        <Clock size={24} />
                                     </div>
                                     <p className="text-sm font-bold text-gray-500 uppercase">Active Jobs</p>
                                 </div>
-                                <p className="text-3xl font-extrabold text-gray-800">
+                                <p className="text-3xl font-extrabold text-blue-700">
                                     {data.reduce((acc, curr) => acc + (curr.pendingJobs || 0), 0)}
                                 </p>
+                                <div className="absolute top-0 left-0 w-full h-1 bg-blue-700"></div>
                             </div>
 
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                            {/* Avg Response - Medium Blue */}
+                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                                        <Clock size={20} />
+                                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                        <Clock size={24} />
                                     </div>
                                     <p className="text-sm font-bold text-gray-500 uppercase">Avg Response</p>
                                 </div>
-                                <p className="text-3xl font-extrabold text-indigo-600">
+                                <p className="text-3xl font-extrabold text-blue-600">
                                     {(data.reduce((acc, curr) => acc + Number(curr.avgResponseTime || 0), 0) / (data.filter(d => Number(d.avgResponseTime) > 0).length || 1)).toFixed(0)} <span className="text-sm font-normal text-gray-400">min</span>
                                 </p>
+                                <div className="absolute top-0 left-0 w-full h-1 bg-blue-600"></div>
                             </div>
 
-                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                            {/* Avg Resolution - Lighter Blue */}
+                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                                        <Clock size={20} />
+                                    <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
+                                        <Clock size={24} />
                                     </div>
                                     <p className="text-sm font-bold text-gray-500 uppercase">Avg Resolution</p>
                                 </div>
-                                <p className="text-3xl font-extrabold text-emerald-600">
+                                <p className="text-3xl font-extrabold text-blue-500">
                                     {(data.reduce((acc, curr) => acc + Number(curr.avgResolutionTime || 0), 0) / (data.filter(d => Number(d.avgResolutionTime) > 0).length || 1)).toFixed(0)} <span className="text-sm font-normal text-gray-400">min</span>
                                 </p>
+                                <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
                             </div>
                         </div>
 
@@ -242,19 +189,13 @@ const ITPerformance = () => {
                                             <div>
                                                 <h3 className="font-bold text-lg text-gray-800">{it.name || it.email}</h3>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <div className="flex gap-0.5">
-                                                        {[...Array(5)].map((_, i) => (
-                                                            <Star
-                                                                key={i}
-                                                                size={14}
-                                                                className={i < Math.round(it.avgRating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <span className="text-xs font-semibold text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
-                                                        {Number(it.avgRating || 0).toFixed(1)}
+                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${(it.avgRating || 0) >= 80 ? 'bg-blue-100 text-blue-800' :
+                                                        (it.avgRating || 0) >= 60 ? 'bg-blue-50 text-blue-600' :
+                                                            'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                        Score: {Number(it.avgRating || 0).toFixed(1)}
                                                     </span>
-                                                    <span className="text-xs text-gray-400 ml-1">
+                                                    <span className="text-xs text-gray-400">
                                                         ({it.totalRated || 0} reviews)
                                                     </span>
                                                 </div>
@@ -265,14 +206,14 @@ const ITPerformance = () => {
                                     <div className="flex gap-4 md:gap-12 w-full md:w-auto justify-between md:justify-end px-4 md:px-0">
                                         <div className="text-center md:text-right">
                                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center justify-end gap-1">
-                                                <CheckCircle size={14} className="text-emerald-500" />
+                                                <CheckCircle size={14} className="text-blue-600" />
                                                 Resolved
                                             </p>
                                             <p className="font-extrabold text-2xl text-gray-800">{it.totalResolved || 0}</p>
                                         </div>
                                         <div className="text-center md:text-right">
                                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center justify-end gap-1">
-                                                <Clock size={14} className="text-amber-500" />
+                                                <Clock size={14} className="text-blue-400" />
                                                 Active
                                             </p>
                                             <p className="font-extrabold text-2xl text-gray-800">{it.pendingJobs || 0}</p>
@@ -282,7 +223,7 @@ const ITPerformance = () => {
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
                                                     Avg Response
                                                 </p>
-                                                <p className="font-bold text-lg text-blue-600">
+                                                <p className="font-bold text-lg text-blue-800">
                                                     {it.avgResponseTime || 0} m
                                                 </p>
                                             </div>
@@ -290,7 +231,7 @@ const ITPerformance = () => {
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
                                                     Avg Resol.
                                                 </p>
-                                                <p className="font-bold text-lg text-emerald-600">
+                                                <p className="font-bold text-lg text-blue-600">
                                                     {it.avgResolutionTime || 0} m
                                                 </p>
                                             </div>
@@ -308,6 +249,114 @@ const ITPerformance = () => {
                     </div>
 
                     <ExportButtons onExportPDF={exportPDF} onExportExcel={exportExcel} />
+
+                    {/* Hidden PDF Export Content - PAGINATED */}
+                    <div className="absolute -left-[9999px] top-0 font-['Sarabun'] text-black">
+                        {/* Page 1: Header, Summary, and First Batch */}
+                        <div id="pdf-page-1" className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between">
+                            <div>
+                                {/* Header Section */}
+                                <div className="relative mb-8">
+                                    {/* Logo Centered */}
+                                    <div className="flex justify-center mb-4">
+                                        <img src="/img/psu_emblem.png" alt="PSU Emblem" className="h-24 w-auto object-contain grayscale" />
+                                    </div>
+
+                                    {/* Text Centered */}
+                                    <div className="text-center space-y-1">
+                                        <h1 className="text-xl font-bold text-black uppercase">Prince of Songkla University</h1>
+                                        <h2 className="text-lg font-medium text-black">International College</h2>
+                                        <h3 className="text-2xl font-bold mt-4 text-black uppercase">IT Staff Performance Report</h3>
+                                        <p className="text-lg font-medium text-black">Academic Year {new Date().getFullYear()}</p>
+                                    </div>
+
+                                    {/* Document Info (Top Right) */}
+                                    <div className="absolute top-0 right-0 text-right text-xs text-black">
+                                        <p>Doc ID: PSUIC-ITP-{new Date().getFullYear()}-01</p>
+                                        <p>Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                    </div>
+                                </div>
+
+                                {/* Executive Summary Ranking */}
+                                <div className="mb-6">
+                                    <h4 className="text-lg font-bold mb-2 text-black">1. Performance Ranking</h4>
+                                    <table className="w-full border-collapse border border-black text-sm text-black">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="border border-black p-2 text-center font-bold w-16 text-black">Rank</th>
+                                                <th className="border border-black p-2 text-left font-bold text-black">Name</th>
+                                                <th className="border border-black p-2 text-center font-bold text-black">Resolved</th>
+                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Score</th>
+                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Time/Task</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {/* Limited to 10 to fit page 1 */}
+                                            {data.slice(0, 10).map((it, index) => (
+                                                <tr key={index}>
+                                                    <td className="border border-black p-2 text-center font-bold text-black">{index + 1}</td>
+                                                    <td className="border border-black p-2 font-medium text-black">{it.name || it.email}</td>
+                                                    <td className="border border-black p-2 text-center text-black">{it.totalResolved}</td>
+                                                    <td className="border border-black p-2 text-center font-bold text-black">{Number(it.avgRating || 0).toFixed(1)}</td>
+                                                    <td className="border border-black p-2 text-center text-black">{it.avgResolutionTime || 0} min</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="text-right text-sm text-black">Page 1</div>
+                        </div>
+
+                        {/* Subsequent Pages (20 items per page) */}
+                        {Array.from({ length: Math.ceil(Math.max(data.length - 10, 0) / 20) }).map((_, pageIndex) => (
+                            <div key={pageIndex} id={`pdf-page-${pageIndex + 2}`} className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between mt-10">
+                                <div>
+                                    {/* Header Repeat */}
+                                    <div className="flex justify-between items-center border-b border-black pb-2 mb-6">
+                                        <span className="font-bold text-black">Performance Ranking (Continued)</span>
+                                        <span className="text-sm text-black">{new Date().toLocaleDateString('en-GB')}</span>
+                                    </div>
+
+                                    <table className="w-full border-collapse border border-black text-sm text-black">
+                                        <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="border border-black p-2 text-center font-bold w-16 text-black">Rank</th>
+                                                <th className="border border-black p-2 text-left font-bold text-black">Name</th>
+                                                <th className="border border-black p-2 text-center font-bold text-black">Resolved</th>
+                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Score</th>
+                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Time/Task</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.slice(10 + (pageIndex * 20), 10 + ((pageIndex + 1) * 20)).map((it, index) => (
+                                                <tr key={index}>
+                                                    <td className="border border-black p-2 text-center font-bold text-black">{10 + index + (pageIndex * 20) + 1}</td>
+                                                    <td className="border border-black p-2 font-medium text-black">{it.name || it.email}</td>
+                                                    <td className="border border-black p-2 text-center text-black">{it.totalResolved}</td>
+                                                    <td className="border border-black p-2 text-center font-bold text-black">{Number(it.avgRating || 0).toFixed(1)}</td>
+                                                    <td className="border border-black p-2 text-center text-black">{it.avgResolutionTime || 0} min</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Signature Area on Last Page */}
+                                {pageIndex === Math.ceil(Math.max(data.length - 10, 0) / 20) - 1 && (
+                                    <div className="mt-8 flex justify-end">
+                                        <div className="text-center w-64">
+                                            <div className="border-b border-black mb-2 h-8"></div>
+                                            <p className="text-sm font-bold text-black">Authorized Signature</p>
+                                            <p className="text-xs text-black">Admin / Manager</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="text-right text-sm text-black">Page {pageIndex + 2}</div>
+                            </div>
+                        ))}
+                    </div>
                 </>
             )}
         </div>

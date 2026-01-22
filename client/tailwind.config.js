@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
@@ -16,6 +16,9 @@ module.exports = {
           800: '#1d3254',
           900: '#1b2b45',
           950: '#111b2d',
+        },
+        gold: {
+          500: '#D4AF37', // Standard Gold for accents
         },
       },
       fontFamily: {

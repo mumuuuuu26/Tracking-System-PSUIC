@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, Plus, MoreVertical, Filter, Trash2, Shield, User, Power, CheckCircle, XCircle } from "lucide-react";
-import { listUsers, changeStatus, changeRole, removeUser } from "../../api/user";
+import { listUsers, changeStatus, removeUser } from "../../api/user";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
@@ -15,11 +15,7 @@ const UserManagement = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUsers();
-  }, [filter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       let roleParam = "all";
@@ -35,14 +31,18 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, filter]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleStatusToggle = async (id, currentStatus) => {
     try {
       await changeStatus(token, { id, enabled: !currentStatus });
       toast.success(currentStatus ? "User Disabled" : "User Enabled");
       loadUsers();
-    } catch (err) {
+    } catch {
       toast.error("Status Update Failed");
     }
   };
@@ -53,7 +53,7 @@ const UserManagement = () => {
         await removeUser(token, id);
         toast.success("User Deleted Successfully");
         loadUsers();
-      } catch (err) {
+      } catch {
         toast.error("Delete Failed");
       }
     }

@@ -24,8 +24,6 @@ exports.getMonthlyStats = async (req, res) => {
                 id: true,
                 status: true,
                 createdAt: true,
-                urgency: true,
-                // Logic check: Schema has 'urgency'.
             }
         });
 
@@ -202,6 +200,7 @@ exports.getITPerformance = async (req, res) => {
     }
 };
 // 5. Satisfaction Stats
+// 5. Satisfaction Stats
 exports.getSatisfactionStats = async (req, res) => {
     try {
         const tickets = await prisma.ticket.findMany({
@@ -211,26 +210,35 @@ exports.getSatisfactionStats = async (req, res) => {
                 rating: true,
                 userFeedback: true,
                 createdAt: true,
-                assignedTo: { select: { name: true } }
+                assignedTo: { select: { name: true } },
+                createdBy: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' }
         });
 
         const totalRated = tickets.length;
         const averageRating = totalRated > 0
-            ? tickets.reduce((acc, t) => acc + t.rating, 0) / totalRated
+            ? tickets.reduce((acc, t) => acc + (t.rating || 0), 0) / totalRated
             : 0;
 
-        const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        // Distribution by Score Ranges (SUS 0-100)
+        const distribution = { "0-20": 0, "21-40": 0, "41-60": 0, "61-80": 0, "81-100": 0 };
+
         tickets.forEach(t => {
-            if (distribution[t.rating] !== undefined) distribution[t.rating]++;
+            const r = t.rating || 0;
+            if (r <= 20) distribution["0-20"]++;
+            else if (r <= 40) distribution["21-40"]++;
+            else if (r <= 60) distribution["41-60"]++;
+            else if (r <= 80) distribution["61-80"]++;
+            else distribution["81-100"]++;
         });
 
         res.json({
-            averageRating,
+            averageRating, // Now 0-100
             totalRated,
             distribution,
-            recentFeedback: tickets.slice(0, 10) // Last 10 feedbacks
+            recentFeedback: tickets.slice(0, 10),
+            allFeedback: tickets // Send all tickets for export purposes
         });
 
     } catch (err) {

@@ -505,21 +505,86 @@ exports.listByEquipment = async (req, res) => {
 };
 
 // Submit feedback
+// Submit feedback (SUS Score Calculation)
 exports.submitFeedback = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rating, userFeedback } = req.body;
+    const { susValues, userFeedback } = req.body; // Expecting array of 10 integers (1-5)
 
-    const updated = await prisma.ticket.update({
+    // 1. Validate Input
+    if (!susValues || !Array.isArray(susValues) || susValues.length !== 10) {
+      // Fallback: If legacy call or simplified rating, handle cautiously? 
+      // User requested "Correct calculation", so we enforce SUS.
+      // But if frontend sends old format temporarily, we might break. 
+      // Let's assume frontend is also updated.
+      return res.status(400).json({ message: "Invalid Survey Data. Please answer all 10 questions." });
+    }
+
+    // 2. Calculate SUS Score
+    // Odd items (1,3,5... index 0,2,4...): Score - 1
+    // Even items (2,4,6... index 1,3,5...): 5 - Score
+    let sum = 0;
+    susValues.forEach((val, index) => {
+      const score = parseInt(val);
+      if (index % 2 === 0) {
+        // Odd Question (Index 0, 2, 4...)
+        sum += (score - 1);
+      } else {
+        // Even Question (Index 1, 3, 5...)
+        sum += (5 - score);
+      }
+    });
+
+    // SUS Score = Sum * 2.5 (Range 0-100)
+    const finalScore = sum * 2.5;
+
+    // 3. Get Ticket & Current IT Stats
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+      include: { assignedTo: true }
+    });
+
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+    // 4. Update Ticket
+    const updatedTicket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
-        rating: parseInt(rating),
+        rating: Math.round(finalScore), // Store Int 0-100
+        susDetails: JSON.stringify(susValues),
         userFeedback
       }
     });
-    res.json(updated);
+
+    // 5. Update IT Support Stats
+    if (ticket.assignedToId) {
+      const itId = ticket.assignedToId;
+      // Fetch fresh stats just in case
+      const itUser = await prisma.user.findUnique({
+        where: { id: itId },
+        select: { totalRated: true, avgRating: true }
+      });
+
+      if (itUser) {
+        const oldTotal = itUser.totalRated || 0;
+        const oldAvg = itUser.avgRating || 0;
+
+        const newTotal = oldTotal + 1;
+        const newAvg = ((oldAvg * oldTotal) + finalScore) / newTotal;
+
+        await prisma.user.update({
+          where: { id: itId },
+          data: {
+            totalRated: newTotal,
+            avgRating: newAvg
+          }
+        });
+      }
+    }
+
+    res.json(updatedTicket);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server Error: Feedback Submission Failed" });
   }
 };

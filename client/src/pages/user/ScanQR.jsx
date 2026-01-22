@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, FlashlightOff, Flashlight, Loader2 } from "lucide-react";
@@ -11,42 +11,10 @@ const ScanQR = () => {
   const [flashOn, setFlashOn] = useState(false);
   const [manualMode, setManualMode] = useState(false);
 
-  useEffect(() => {
-    let scanner;
-    if (!manualMode) {
-      scanner = new Html5QrcodeScanner("qr-reader", {
-        qrbox: { width: 250, height: 250 },
-        fps: 10, // เพิ่ม FPS ให้ลื่นไหลขึ้น
-        aspectRatio: 1.0,
-        showTorchButtonIfSupported: true,
-      });
-
-      scanner.render(onScanSuccess, onScanError);
-    }
-
-    function onScanSuccess(decodedText) {
-      scanner.clear();
-      fetchEquipmentData(decodedText);
-    }
-
-    function onScanError(err) {
-      // ปล่อยว่างไว้เพื่อไม่ให้ขึ้น Error log ตลอดเวลาขณะสแกน
-    }
-
-    return () => {
-      if (scanner) {
-        scanner
-          .clear()
-          .catch((error) => console.error("Scanner cleanup failed", error));
-      }
-    };
-  }, [manualMode]);
-
-  const fetchEquipmentData = async (qrCode) => {
+  const fetchEquipmentData = useCallback(async (qrCode) => {
     setLoading(true);
     try {
       // 1. ดึงข้อมูลอุปกรณ์จาก API โดยใช้ QR Code
-      // หมายเหตุ: ตรวจสอบพอร์ตและ URL ของ API ให้ถูกต้อง (เช่น http://localhost:5000/api/...)
       const res = await axios.get(`/api/equipment/qr/${qrCode}`);
       const equipmentData = res.data;
 
@@ -71,7 +39,38 @@ const ScanQR = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    let scanner;
+    if (!manualMode) {
+      scanner = new Html5QrcodeScanner("qr-reader", {
+        qrbox: { width: 250, height: 250 },
+        fps: 10, // เพิ่ม FPS ให้ลื่นไหลขึ้น
+        aspectRatio: 1.0,
+        showTorchButtonIfSupported: true,
+      });
+
+      scanner.render(onScanSuccess, onScanError);
+    }
+
+    function onScanSuccess(decodedText) {
+      scanner.clear();
+      fetchEquipmentData(decodedText);
+    }
+
+    function onScanError() {
+      // ปล่อยว่างไว้เพื่อไม่ให้ขึ้น Error log ตลอดเวลาขณะสแกน
+    }
+
+    return () => {
+      if (scanner) {
+        scanner
+          .clear()
+          .catch((error) => console.error("Scanner cleanup failed", error));
+      }
+    };
+  }, [manualMode, fetchEquipmentData]);
 
   if (loading) {
     return (

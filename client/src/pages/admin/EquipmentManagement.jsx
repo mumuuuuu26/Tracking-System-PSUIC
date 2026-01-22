@@ -1,5 +1,5 @@
 // client/src/pages/admin/EquipmentManagement.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Plus, QrCode, Printer, Edit, Trash } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
@@ -19,12 +19,7 @@ const EquipmentManagement = () => {
     roomId: "",
   });
 
-  useEffect(() => {
-    loadEquipments();
-    loadRooms();
-  }, []);
-
-  const loadEquipments = async () => {
+  const loadEquipments = useCallback(async () => {
     try {
       const res = await axios.get("/api/equipment", {
         headers: { Authorization: `Bearer ${token}` },
@@ -33,9 +28,9 @@ const EquipmentManagement = () => {
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [token]);
 
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     try {
       const res = await axios.get("/api/room", {
         headers: { Authorization: `Bearer ${token}` },
@@ -44,19 +39,24 @@ const EquipmentManagement = () => {
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadEquipments();
+    loadRooms();
+  }, [loadEquipments, loadRooms]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("/api/equipment", form, {
+      await axios.post("/api/equipment", form, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Equipment created with QR Code");
       loadEquipments();
       setShowAddModal(false);
       setForm({ name: "", type: "", serialNo: "", roomId: "" });
-    } catch (err) {
+    } catch {
       toast.error("Failed to create equipment");
     }
   };
@@ -68,7 +68,7 @@ const EquipmentManagement = () => {
       });
       setSelectedQR(res.data);
       setShowQRModal(true);
-    } catch (err) {
+    } catch {
       toast.error("Failed to generate QR Code");
     }
   };
@@ -111,20 +111,16 @@ const EquipmentManagement = () => {
                     <div class="container">
                         <h2>PSUIC Service</h2>
                         <div class="qr-code">
-                            <img src="${
-                              selectedQR.qrCodeImage
-                            }" style="width: 250px; height: 250px;">
+                            <img src="${selectedQR.qrCodeImage
+      }" style="width: 250px; height: 250px;">
                         </div>
                         <div class="info">
-                            <p><strong>อุปกรณ์:</strong> ${
-                              selectedQR.equipment.name
-                            }</p>
-                            <p><strong>ห้อง:</strong> ${
-                              selectedQR.equipment.room.roomNumber
-                            }</p>
-                            <p><strong>Serial:</strong> ${
-                              selectedQR.equipment.serialNo || "-"
-                            }</p>
+                            <p><strong>อุปกรณ์:</strong> ${selectedQR.equipment.name
+      }</p>
+                            <p><strong>ห้อง:</strong> ${selectedQR.equipment.room.roomNumber
+      }</p>
+                            <p><strong>Serial:</strong> ${selectedQR.equipment.serialNo || "-"
+      }</p>
                         </div>
                         <div class="footer">
                             สแกน QR Code เพื่อแจ้งปัญหา<br>
@@ -203,11 +199,10 @@ const EquipmentManagement = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      item.status === "Normal"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
+                    className={`px-2 py-1 rounded text-xs font-medium ${item.status === "Normal"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                      }`}
                   >
                     {item.status}
                   </span>

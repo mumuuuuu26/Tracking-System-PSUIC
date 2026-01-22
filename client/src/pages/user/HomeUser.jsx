@@ -1,5 +1,5 @@
 // client/src/pages/user/HomeUser.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   QrCode,
@@ -29,12 +29,7 @@ const HomeUser = () => {
     completed: 0,
   });
 
-  useEffect(() => {
-    checkUser(); // Sync user data on mount
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const res = await listMyTickets(token);
       const tickets = res.data;
@@ -51,7 +46,12 @@ const HomeUser = () => {
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    checkUser(); // Sync user data on mount
+    loadStats();
+  }, [checkUser, loadStats]);
 
   const services = [
     {

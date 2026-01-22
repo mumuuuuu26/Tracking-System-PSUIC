@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAuthStore from '../../store/auth-store';
 import { getSchedule } from '../../api/it';
 import { createPersonalTask, getPersonalTasks, deletePersonalTask } from '../../api/personalTask';
@@ -28,12 +28,12 @@ import { toast } from 'react-toastify';
 const Schedule = () => {
     const { token, user } = useAuthStore();
     const navigate = useNavigate();
-    const [currentDate, setCurrentDate] = useState(dayjs());
+
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [appointments, setAppointments] = useState([]);
     const [personalTasks, setPersonalTasks] = useState([]);
     const [monthlyEvents, setMonthlyEvents] = useState([]); // For calendar dots
-    const [loading, setLoading] = useState(true);
+
     const [isMonthView, setIsMonthView] = useState(false);
 
     // Modal State
@@ -43,7 +43,7 @@ const Schedule = () => {
         description: '',
         startTime: '',
         endTime: '',
-        color: '#F87171' // Red-400 default as per mockup style
+        color: '#3B82F6' // Blue default as per Deep Blue theme
     });
 
     // Reschedule Modal State
@@ -55,17 +55,9 @@ const Schedule = () => {
         reason: ''
     });
 
-    useEffect(() => {
-        loadSchedule();
-    }, [selectedDate, token]);
-
-    useEffect(() => {
-        loadMonthlyEvents();
-    }, [selectedDate.format('YYYY-MM'), token]);
-
-    const loadSchedule = async () => {
+    const loadSchedule = React.useCallback(async () => {
         try {
-            setLoading(true);
+
             const dateStr = selectedDate.format('YYYY-MM-DD');
 
             const [aptRes, taskRes] = await Promise.all([
@@ -78,12 +70,10 @@ const Schedule = () => {
         } catch (err) {
             console.error("Error loading schedule:", err);
             // toast.error("Failed to load schedule");
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [selectedDate, token]);
 
-    const loadMonthlyEvents = async () => {
+    const loadMonthlyEvents = React.useCallback(async () => {
         try {
             const startOfMonth = selectedDate.startOf('month').format('YYYY-MM-DD');
             const endOfMonth = selectedDate.endOf('month').format('YYYY-MM-DD');
@@ -92,7 +82,15 @@ const Schedule = () => {
         } catch (err) {
             console.error("Error loading monthly events:", err);
         }
-    };
+    }, [selectedDate, token]);
+
+    useEffect(() => {
+        loadSchedule();
+    }, [loadSchedule]);
+
+    useEffect(() => {
+        loadMonthlyEvents();
+    }, [loadMonthlyEvents]);
 
     const handleAddTask = async (e) => {
         e.preventDefault();
@@ -108,7 +106,7 @@ const Schedule = () => {
             await createPersonalTask(token, payload);
             toast.success("Task added successfully");
             setIsModalOpen(false);
-            setFormData({ title: '', description: '', startTime: '', endTime: '', color: '#F87171' });
+            setFormData({ title: '', description: '', startTime: '', endTime: '', color: '#3B82F6' });
             loadSchedule();
             loadMonthlyEvents();
         } catch (err) {
@@ -143,12 +141,7 @@ const Schedule = () => {
 
     const days = getDaysArray();
 
-    // Check if a day has events
-    const hasEvents = (day) => {
-        // Check local monthlyEvents cache
-        const dateStr = day.format('YYYY-MM-DD');
-        return monthlyEvents.some(e => dayjs(e.date).format('YYYY-MM-DD') === dateStr);
-    };
+
 
     const getEventColorDot = (day) => {
         const dateStr = day.format('YYYY-MM-DD');
@@ -313,13 +306,13 @@ const Schedule = () => {
                                     className={`rounded-[2rem] p-4 flex items-center justify-between shadow-sm relative overflow-hidden transition-transform active:scale-[0.98] cursor-pointer
                                         ${item.type === 'appointment' ? 'bg-blue-600 text-white' : ''}
                                     `}
-                                    style={item.type === 'task' ? { backgroundColor: item.color ? `${item.color}40` : '#FCA5A540' } : {}}
+                                    style={item.type === 'task' ? { backgroundColor: item.color ? `${item.color}40` : '#3B82F640' } : {}}
                                     onClick={() => {
                                         if (item.type === 'appointment') navigate(`/it/ticket/${item.ticketId}`);
                                     }}
                                 >
                                     {item.type === 'task' && (
-                                        <div className="absolute inset-0 opacity-20" style={{ backgroundColor: item.color || '#F87171' }}></div>
+                                        <div className="absolute inset-0 opacity-20" style={{ backgroundColor: item.color || '#3B82F6' }}></div>
                                     )}
 
                                     <div className="relative z-10 flex items-center gap-4 w-full">
@@ -483,7 +476,7 @@ const Schedule = () => {
                                 />
                             </div>
                             <div className="flex gap-2 justify-center py-2">
-                                {['#F87171', '#FBBF24', '#34D399', '#60A5FA', '#A78BFA'].map(c => (
+                                {['#193C6C', '#1E40AF', '#2563EB', '#3B82F6', '#60A5FA'].map(c => (
                                     <button
                                         key={c}
                                         type="button"

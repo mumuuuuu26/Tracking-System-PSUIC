@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Search, MapPin, User, Clock, Filter } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getAllTickets } from "../../api/ticket";
@@ -17,15 +17,7 @@ const Tickets = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadTickets();
-    }, []);
-
-    useEffect(() => {
-        filterTickets();
-    }, [tickets, activeFilter, searchTerm]);
-
-    const loadTickets = async () => {
+    const loadTickets = useCallback(async () => {
         try {
             setLoading(true);
             const res = await getAllTickets(token);
@@ -36,9 +28,13 @@ const Tickets = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
-    const filterTickets = () => {
+    useEffect(() => {
+        loadTickets();
+    }, [loadTickets]);
+
+    const filterTickets = useCallback(() => {
         let filtered = [...tickets];
 
         // Filter by status
@@ -85,7 +81,11 @@ const Tickets = () => {
         });
 
         setFilteredTickets(filtered);
-    };
+    }, [tickets, activeFilter, searchTerm]);
+
+    useEffect(() => {
+        filterTickets();
+    }, [filterTickets]);
 
     const getStatusColor = (status) => {
         switch (status) {

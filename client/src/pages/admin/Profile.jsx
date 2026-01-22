@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     User,
     Mail,
@@ -37,11 +37,7 @@ const AdminProfile = () => {
     const [isEditingDept, setIsEditingDept] = useState(false);
     const [deptInput, setDeptInput] = useState("");
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         try {
             const res = await currentUser(token);
             setProfile(res.data);
@@ -51,7 +47,11 @@ const AdminProfile = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
 
     const handleImageChange = async (e) => {
         const file = e.target.files[0];

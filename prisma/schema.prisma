@@ -80,8 +80,9 @@ model Ticket {
   urgency     String @default("Normal")
   status      String @default("Draft")
   
-  rating       Int?     // 1-5 ดาว
+  rating       Int?     // 0-100 (SUS Score)
   userFeedback String?  @db.Text
+  susDetails   String?  @db.Text // JSON: [5, 1, 5, ...]
   
   // [NEW] Fields สำหรับ reject
   rejectedReason String?   @db.Text  // เหตุผลที่ reject

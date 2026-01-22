@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { listQuickFix, readQuickFix } from "../../api/quickFix";
 import { Search, ChevronDown, ChevronUp, BookOpen, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -14,15 +14,7 @@ const QuickFix = () => {
     const [openId, setOpenId] = useState(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    useEffect(() => {
-        filterItems();
-    }, [search, selectedCategory, data]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const res = await listQuickFix();
             setData(res.data);
@@ -30,9 +22,9 @@ const QuickFix = () => {
         } catch (err) {
             console.log(err);
         }
-    };
+    }, []);
 
-    const filterItems = () => {
+    const filterItems = useCallback(() => {
         let filtered = data;
 
         // Filter by Search
@@ -51,7 +43,15 @@ const QuickFix = () => {
         }
 
         setFilteredData(filtered);
-    };
+    }, [search, selectedCategory, data]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    useEffect(() => {
+        filterItems();
+    }, [filterItems]);
 
     const toggleAccordion = async (id) => {
         if (openId === id) {

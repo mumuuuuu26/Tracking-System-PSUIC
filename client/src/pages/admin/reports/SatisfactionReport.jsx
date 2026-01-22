@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import useAuthStore from '../../../store/auth-store';
 import { getSatisfactionStats } from '../../../api/report';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
-import { Star, MessageSquare, AlertCircle } from 'lucide-react';
+import { Award, MessageSquare, AlertCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import ExportButtons from '../../../components/admin/ExportButtons';
+import html2canvas from 'html2canvas';
+// Font import removed to fix build error
 
 const SatisfactionReport = () => {
     const { token } = useAuthStore();
@@ -14,11 +15,7 @@ const SatisfactionReport = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         try {
             setLoading(true);
             const res = await getSatisfactionStats(token);
@@ -30,9 +27,13 @@ const SatisfactionReport = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
-    const COLORS = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#16A34A']; // 1 to 5 stars
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    const COLORS = ['#193C6C', '#1E40AF', '#2563EB', '#3B82F6', '#60A5FA']; // Monochromatic Blue Scale
 
     if (loading) return (
         <div className="flex justify-center items-center h-64">
@@ -49,105 +50,78 @@ const SatisfactionReport = () => {
 
     if (!data || data.totalRated === 0) return (
         <div className="flex flex-col items-center justify-center h-96 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 text-gray-400">
-            <Star size={48} className="mb-4 text-gray-300" />
+            <Award size={48} className="mb-4 text-gray-300" />
             <p className="text-lg font-medium">No feedback received yet</p>
-            <p className="text-sm">User ratings and comments will appear here.</p>
+            <p className="text-sm">User SUS ratings and comments will appear here.</p>
         </div>
     );
 
-    // Prepare chart data: ensure keys 1-5 exist
-    const chartData = [1, 2, 3, 4, 5].map(star => ({
-        name: `${star} Stars`,
-        value: data.distribution[star] || 0
+    // Prepare chart data
+    const ranges = ["0-20", "21-40", "41-60", "61-80", "81-100"];
+    const chartData = ranges.map(range => ({
+        name: range,
+        value: data.distribution[range] || 0
     }));
 
-    const exportPDF = () => {
-        const doc = new jsPDF();
+    const exportPDF = async () => {
+        try {
+            setLoading(true);
 
-        // Header
-        doc.setFontSize(20);
-        doc.text('Satisfaction Report', 14, 20);
-        doc.setFontSize(10);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
+            // Temporarily make it visible for capture (if it was hidden) or just clone it? 
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // Summary Statistics Section
-        doc.setFontSize(14);
-        doc.text('Summary Statistics', 14, 38);
+            let pageIndex = 1;
+            let element = document.getElementById(`pdf-page-${pageIndex}`);
 
-        const summaryColumn = ["Metric", "Value"];
-        const summaryRows = [
-            ["Total Rated", data.totalRated],
-            ["Average Rating", `${data.averageRating.toFixed(2)} / 5.0`]
-        ];
-        // Add star distribution data
-        Object.entries(data.distribution).forEach(([star, count]) => {
-            summaryRows.push([`${star} Stars`, count]);
-        });
+            while (element) {
+                if (pageIndex > 1) {
+                    pdf.addPage();
+                }
 
-        autoTable(doc, {
-            startY: 42,
-            head: [summaryColumn],
-            body: summaryRows,
-            theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246] },
-            styles: { fontSize: 10 },
-            margin: { left: 14, right: 100 } // Keep summary table narrower
-        });
+                const canvas = await html2canvas(element, { scale: 3, useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
 
-        // Recent Feedback Section
-        const finalY = doc.lastAutoTable.finalY || 50;
-        doc.text('Recent Feedback Details', 14, finalY + 15);
+                // Add image filling the full A4 page (since the div is sized to A4)
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-        const feedbackColumn = ["Date", "Rating", "User Comment", "Assigned IT"];
-        const feedbackRows = data.recentFeedback.map(item => [
-            new Date(item.createdAt).toLocaleDateString(),
-            `${item.rating} Stars`,
-            item.userFeedback || "No comment",
-            item.assignedTo?.name || "Unknown"
-        ]);
+                pageIndex++;
+                element = document.getElementById(`pdf-page-${pageIndex}`);
+            }
 
-        autoTable(doc, {
-            startY: finalY + 20,
-            head: [feedbackColumn],
-            body: feedbackRows,
-            theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246] },
-            styles: { fontSize: 10 },
-            columnStyles: { 2: { cellWidth: 80 } } // Wider column for comments
-        });
-
-        // Footer
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(10);
-            doc.text('Generated by Admin System', 14, doc.internal.pageSize.height - 10);
-            doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+            pdf.save(`satisfaction_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (err) {
+            console.error("PDF Export failed:", err);
+            // toast.error("PDF Export failed");
+        } finally {
+            setLoading(false);
         }
-
-        doc.save(`satisfaction_report_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     const exportExcel = () => {
+        // Use ALL feedback if available
+        const feedbackList = data.allFeedback || data.recentFeedback;
+
         // Feedback Sheet
-        const feedbackWs = XLSX.utils.json_to_sheet(data.recentFeedback.map(item => ({
+        const feedbackWs = XLSX.utils.json_to_sheet(feedbackList.map(item => ({
             Date: new Date(item.createdAt).toLocaleDateString(),
-            Rating: item.rating,
-            Comment: item.userFeedback,
-            AssignedTo: item.assignedTo?.name
+            SUS_Score: item.rating,
+            Comment: item.userFeedback || "No Comment",
+            User: item.createdBy?.name || "Unknown"
         })));
 
         // Summary Sheet
         const summaryData = [
-            { Metric: "Average Rating", Value: data.averageRating.toFixed(2) },
-            { Metric: "Total Rated", Value: data.totalRated },
-            ...Object.entries(data.distribution).map(([stars, count]) => ({ Metric: `${stars} Stars`, Value: count }))
+            { Metric: "Average SUS Score", Value: data.averageRating.toFixed(1) },
+            { Metric: "Total Respondants", Value: data.totalRated },
+            ...Object.entries(data.distribution).map(([range, count]) => ({ Metric: `Range ${range}`, Value: count }))
         ];
         const summaryWs = XLSX.utils.json_to_sheet(summaryData);
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
-        XLSX.utils.book_append_sheet(wb, feedbackWs, "Feedback");
+        XLSX.utils.book_append_sheet(wb, feedbackWs, "Feedback_Detail");
         XLSX.writeFile(wb, `satisfaction_report_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
@@ -155,24 +129,27 @@ const SatisfactionReport = () => {
         <div className="space-y-6 animate-fade-in">
             <div id="satisfaction-report-content" className="space-y-6 p-4 bg-white rounded-2xl">
                 {/* Summary Cards */}
+                {/* Summary Cards */}
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-6 rounded-lg text-center border border-blue-100">
-                        <h3 className="text-blue-600 font-bold text-lg mb-2">Total Rated</h3>
-                        <p className="text-4xl font-bold text-gray-800">{data.totalRated}</p>
+                    <div className="bg-white p-6 rounded-lg text-center border border-gray-200 shadow-sm relative overflow-hidden">
+                        <h3 className="text-gray-600 font-bold text-lg mb-2">Total Respondants</h3>
+                        <p className="text-4xl font-bold text-blue-600">{data.totalRated}</p>
+                        <div className="absolute top-0 left-0 w-full h-1 bg-blue-600"></div>
                     </div>
-                    <div className="bg-yellow-50 p-6 rounded-lg text-center border border-yellow-100">
-                        <h3 className="text-yellow-600 font-bold text-lg mb-2">Average Rating</h3>
+                    <div className="bg-white p-6 rounded-lg text-center border border-gray-200 shadow-sm relative overflow-hidden">
+                        <h3 className="text-gray-600 font-bold text-lg mb-2">Average SUS Score</h3>
                         <div className="flex items-center justify-center gap-2">
-                            <span className="text-4xl font-bold text-gray-800">{data.averageRating.toFixed(1)}</span>
-                            <Star size={32} className="text-yellow-500 fill-yellow-500" />
+                            <span className="text-4xl font-bold text-blue-800">{data.averageRating.toFixed(1)}</span>
+                            <span className="text-sm font-bold text-gray-400 mt-2">/ 100</span>
                         </div>
+                        <div className="absolute top-0 left-0 w-full h-1 bg-blue-800"></div>
                     </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* Chart */}
                     <div className="bg-white p-4 border rounded-lg h-96 shadow-sm">
-                        <h3 className="font-bold mb-4 text-gray-700">Rating Distribution</h3>
+                        <h3 className="font-bold mb-4 text-gray-700">SUS Score Distribution</h3>
                         <div className="h-80 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -205,24 +182,25 @@ const SatisfactionReport = () => {
                                 data.recentFeedback.map((item, index) => (
                                     <div key={index} className="border-b border-gray-100 pb-3 last:border-0 hover:bg-gray-50 p-2 rounded transition-colors">
                                         <div className="flex justify-between items-start mb-1">
-                                            <div className="flex gap-1">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        size={12}
-                                                        className={i < item.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}
-                                                    />
-                                                ))}
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${item.rating >= 80 ? 'bg-blue-100 text-blue-800' :
+                                                    item.rating >= 60 ? 'bg-blue-50 text-blue-600' :
+                                                        'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                    {item.rating}
+                                                </span>
                                             </div>
                                             <span className="text-xs text-gray-400">
                                                 {new Date(item.createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-gray-600 italic">"{item.userFeedback || "No comment"}"</p>
+                                        {item.userFeedback && (
+                                            <p className="text-sm text-gray-600 italic mt-1">"{item.userFeedback}"</p>
+                                        )}
                                         <div className="flex items-center gap-1 mt-2">
-                                            <span className="text-xs text-gray-400">Support by:</span>
+                                            <span className="text-xs text-gray-400">User:</span>
                                             <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                {item.assignedTo?.name || "Unknown"}
+                                                {item.createdBy?.name || "Unknown"}
                                             </span>
                                         </div>
                                     </div>
@@ -231,6 +209,144 @@ const SatisfactionReport = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Hidden PDF Export Content - PAGINATED */}
+            <div className="absolute -left-[9999px] top-0 font-['Sarabun'] text-black">
+                {/* Page 1: Header, Summary, and First Batch */}
+                <div id="pdf-page-1" className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between">
+                    <div>
+                        {/* Header Section */}
+                        <div className="relative mb-8">
+                            {/* Logo Centered */}
+                            <div className="flex justify-center mb-4">
+                                <img src="/img/psu_emblem.png" alt="PSU Emblem" className="h-24 w-auto object-contain grayscale" />
+                            </div>
+
+                            {/* Text Centered */}
+                            <div className="text-center space-y-1">
+                                <h1 className="text-xl font-bold text-black uppercase">Prince of Songkla University</h1>
+                                <h2 className="text-lg font-medium text-black">International College</h2>
+                                <h3 className="text-2xl font-bold mt-4 text-black uppercase">Satisfaction Assessment Report</h3>
+                                <p className="text-lg font-medium text-black">Academic Year {new Date().getFullYear()}</p>
+                            </div>
+
+                            {/* Document Info (Top Right) */}
+                            <div className="absolute top-0 right-0 text-right text-xs text-black">
+                                <p>Doc ID: PSUIC-SAT-{new Date().getFullYear()}-01</p>
+                                <p>Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                            </div>
+                        </div>
+
+                        {/* Part 1: Executive Summary */}
+                        <div className="mb-8">
+                            <h4 className="text-lg font-bold mb-2 text-black">1. Executive Summary</h4>
+                            <table className="w-full border-collapse border border-black text-sm text-black">
+                                <tbody>
+                                    <tr>
+                                        <td className="border border-black p-2 bg-gray-100 font-bold w-1/3 text-black">Overall Score</td>
+                                        <td className="border border-black p-2 text-center text-lg font-bold text-black">{data.averageRating.toFixed(1)} / 100</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border border-black p-2 bg-gray-100 font-bold text-black">Total Respondents</td>
+                                        <td className="border border-black p-2 text-center text-black">{data.totalRated} Persons</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="border border-black p-2 bg-gray-100 font-bold text-black">Satisfaction Level</td>
+                                        <td className="border border-black p-2 text-center font-medium text-black">
+                                            {data.averageRating >= 80 ? 'Excellent' :
+                                                data.averageRating >= 60 ? 'Good' :
+                                                    'Need Improvement'}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Part 2: Detailed Assessment (First Batch) */}
+                        <div className="mb-6">
+                            <h4 className="text-lg font-bold mb-2 text-black">2. Detailed Assessment</h4>
+                            <table className="w-full border-collapse border border-black text-sm text-black">
+                                <thead className="bg-gray-100">
+                                    <tr>
+                                        <th className="border border-black p-2 text-center w-12 text-black">No.</th>
+                                        <th className="border border-black p-2 text-left w-48 text-black">Evaluator Name</th>
+                                        <th className="border border-black p-2 text-center w-20 text-black">Score</th>
+                                        <th className="border border-black p-2 text-left text-black">Comments</th>
+                                        <th className="border border-black p-2 text-center w-28 text-black">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {/* Reduced to 10 items to prevent page cut-off */}
+                                    {(data.allFeedback || []).slice(0, 10).map((item, index) => (
+                                        <tr key={index}>
+                                            <td className="border border-black p-2 text-center text-black">{index + 1}</td>
+                                            <td className="border border-black p-2 text-black">{item.createdBy?.name || 'Anonymous'}</td>
+                                            <td className="border border-black p-2 text-center font-bold text-black">{item.rating}</td>
+                                            <td className="border border-black p-2 text-black italic">{item.userFeedback || "-"}</td>
+                                            <td className="border border-black p-2 text-center text-black">
+                                                {new Date(item.createdAt).toLocaleDateString('en-GB')}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {/* Footer */}
+                    <div className="text-right text-sm text-black">Page 1</div>
+                </div>
+
+                {/* Subsequent Pages */}
+                {(data.allFeedback || []).length > 10 && Array.from({ length: Math.ceil(((data.allFeedback || []).length - 10) / 20) }).map((_, pageIndex) => (
+                    <div key={pageIndex} id={`pdf-page-${pageIndex + 2}`} className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between mt-10">
+                        <div>
+                            {/* Header Continuation */}
+                            <div className="flex justify-between items-center border-b border-black pb-2 mb-6">
+                                <span className="font-bold text-black">Detailed Assessment (Continued)</span>
+                                <span className="text-sm text-black">{new Date().toLocaleDateString('en-GB')}</span>
+                            </div>
+
+                            <table className="w-full border-collapse border border-black text-sm text-black">
+                                <thead className="bg-gray-100">
+                                    <tr>
+                                        <th className="border border-black p-2 text-center w-12 text-black">No.</th>
+                                        <th className="border border-black p-2 text-left w-48 text-black">Evaluator Name</th>
+                                        <th className="border border-black p-2 text-center w-20 text-black">Score</th>
+                                        <th className="border border-black p-2 text-left text-black">Comments</th>
+                                        <th className="border border-black p-2 text-center w-28 text-black">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(data.allFeedback || []).slice(10 + (pageIndex * 20), 10 + ((pageIndex + 1) * 20)).map((item, index) => (
+                                        <tr key={index}>
+                                            <td className="border border-black p-2 text-center text-black">{10 + index + (pageIndex * 20) + 1}</td>
+                                            <td className="border border-black p-2 text-black">{item.createdBy?.name || 'Anonymous'}</td>
+                                            <td className="border border-black p-2 text-center font-bold text-black">{item.rating}</td>
+                                            <td className="border border-black p-2 text-black italic">{item.userFeedback || "-"}</td>
+                                            <td className="border border-black p-2 text-center text-black">
+                                                {new Date(item.createdAt).toLocaleDateString('en-GB')}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Signature on Last Page */}
+                        {pageIndex === Math.ceil(((data.allFeedback || []).length - 10) / 20) - 1 && (
+                            <div className="mt-8 flex justify-end">
+                                <div className="text-center w-64">
+                                    <div className="border-b border-black mb-2 h-8"></div>
+                                    <p className="text-sm font-bold text-black">Authorized Signature</p>
+                                    <p className="text-xs text-black">Admin / Manager</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="text-right text-sm text-black">Page {pageIndex + 2}</div>
+                    </div>
+                ))}
             </div>
 
             <ExportButtons onExportPDF={exportPDF} onExportExcel={exportExcel} />

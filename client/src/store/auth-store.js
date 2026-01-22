@@ -9,16 +9,12 @@ const useAuthStore = create(
             token: null,
 
             actionLogin: async (form) => {
-                try {
-                    const res = await login(form)
+                const res = await login(form)
                     set({
                         user: res.data.payload,
                         token: res.data.token
                     })
                     return res
-                } catch (err) {
-                    throw err
-                }
             },
 
             actionLogout: () => {

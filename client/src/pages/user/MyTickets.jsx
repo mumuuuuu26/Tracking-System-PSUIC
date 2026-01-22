@@ -1,5 +1,5 @@
 // client/src/pages/user/MyTickets.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Search, ChevronLeft, Plus } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
@@ -26,15 +26,7 @@ const MyTickets = () => {
     completed: 0,
   });
 
-  useEffect(() => {
-    loadTickets();
-  }, []);
-
-  useEffect(() => {
-    filterTickets();
-  }, [tickets, activeFilter, searchTerm]);
-
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       setLoading(true);
       const res = await listMyTickets(token);
@@ -46,7 +38,11 @@ const MyTickets = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
 
   const calculateStats = (ticketData) => {
     let pending = 0;
@@ -66,7 +62,7 @@ const MyTickets = () => {
     setStats({ pending, inProgress, completed });
   };
 
-  const filterTickets = () => {
+  const filterTickets = useCallback(() => {
     let filtered = [...tickets];
 
     // Filter by status (Tabs)
@@ -121,7 +117,11 @@ const MyTickets = () => {
     });
 
     setFilteredTickets(filtered);
-  };
+  }, [tickets, activeFilter, searchTerm]);
+
+  useEffect(() => {
+    filterTickets();
+  }, [filterTickets]);
 
   const getPriorityBadge = (urgency) => {
     switch (urgency) {
@@ -261,11 +261,10 @@ const MyTickets = () => {
                 onClick={() => setActiveFilter(filter)}
                 className={`
                         md:px-6 md:py-2.5 rounded-xl md:text-sm font-bold border transition-all md:w-auto md:whitespace-nowrap md:flex-shrink-0
-                        ${
-                          activeFilter === filter
-                            ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
-                            : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"
-                        }
+                        ${activeFilter === filter
+                    ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"
+                  }
                     `}
               >
                 {filter}
@@ -287,16 +286,15 @@ const MyTickets = () => {
                 onClick={() => navigate(`/user/ticket/${ticket.id}`)}
                 className={`
                             bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
-                            ${
-                              ticket.status === "pending"
-                                ? "border-l-amber-400 border-gray-100"
-                                : ticket.status === "in_progress"
-                                ? "border-l-blue-400 border-gray-100"
-                                : ticket.status === "fixed" ||
-                                  ticket.status === "closed"
-                                ? "border-l-green-400 border-gray-100"
-                                : "border-l-gray-400 border-gray-100"
-                            }
+                            ${ticket.status === "pending"
+                    ? "border-l-amber-400 border-gray-100"
+                    : ticket.status === "in_progress"
+                      ? "border-l-blue-400 border-gray-100"
+                      : ticket.status === "fixed" ||
+                        ticket.status === "closed"
+                        ? "border-l-green-400 border-gray-100"
+                        : "border-l-gray-400 border-gray-100"
+                  }
                         `}
               >
                 {/* Header: ID & Priority & Time */}

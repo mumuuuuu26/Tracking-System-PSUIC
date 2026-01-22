@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Clock, Calendar, CheckCircle, Search, Filter, Printer, User, Wifi, Monitor, Cpu, Box } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getHistory } from "../../api/it";
@@ -16,12 +16,7 @@ const History = () => {
     const [filterCategory, setFilterCategory] = useState("All");
     const [categories, setCategories] = useState([]);
 
-    useEffect(() => {
-        fetchHistory();
-        fetchCategories();
-    }, [token]);
-
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
         try {
             setLoading(true);
             const res = await getHistory(token);
@@ -31,16 +26,21 @@ const History = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             const res = await listCategories(token);
             setCategories(res.data);
         } catch (err) {
             console.error("Failed to load categories:", err);
         }
-    }
+    }, [token]);
+
+    useEffect(() => {
+        fetchHistory();
+        fetchCategories();
+    }, [fetchHistory, fetchCategories]);
 
     const filteredTickets = tickets.filter(ticket => {
         const matchesSearch =

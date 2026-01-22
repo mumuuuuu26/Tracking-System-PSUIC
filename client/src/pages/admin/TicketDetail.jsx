@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, Briefcase } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
@@ -16,11 +16,7 @@ const AdminTicketDetail = () => {
     const [ticket, setTicket] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadTicket();
-    }, [id, token]);
-
-    const loadTicket = async () => {
+    const loadTicket = useCallback(async () => {
         try {
             setLoading(true);
             const res = await getTicket(token, id);
@@ -31,7 +27,11 @@ const AdminTicketDetail = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, id]);
+
+    useEffect(() => {
+        loadTicket();
+    }, [loadTicket]);
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">

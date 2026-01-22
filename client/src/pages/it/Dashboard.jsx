@@ -13,12 +13,9 @@ import {
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
 import {
-  getStats,
   getMyTasks,
   getSchedule,
-  getTodayAppointments,
   acceptJob,
   rejectTicket,
 } from "../../api/it";
@@ -28,7 +25,7 @@ import CalendarGrid from "../../components/CalendarGrid";
 
 const ITDashboard = () => {
   const navigate = useNavigate();
-  const { token, user } = useAuthStore();
+  const { token } = useAuthStore();
 
   const [tickets, setTickets] = useState([]);
   const [scheduleItems, setScheduleItems] = useState([]); // Selected Date items
@@ -42,7 +39,7 @@ const ITDashboard = () => {
     completed: 0,
     rejected: 0,
   });
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [showAllNew, setShowAllNew] = useState(false);
 
   // Modal States
@@ -53,27 +50,21 @@ const ITDashboard = () => {
   const [rejectNote, setRejectNote] = useState("");
   const [isRejectDropdownOpen, setIsRejectDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      loadDashboardData();
-    }
-  }, [token]);
-
   // Load monthly events when month changes
   useEffect(() => {
     if (token) {
       loadMonthlyEvents();
     }
-  }, [token, currentMonth.format('YYYY-MM')]);
+  }, [token, loadMonthlyEvents]);
 
   // Load specific date schedule when selectedDate changes
   useEffect(() => {
     if (token) {
       loadDailySchedule();
     }
-  }, [token, selectedDate.format('YYYY-MM-DD'), tickets]);
+  }, [token, loadDailySchedule]);
 
-  const loadMonthlyEvents = async () => {
+  const loadMonthlyEvents = React.useCallback(async () => {
     try {
       const start = currentMonth.startOf('month').format('YYYY-MM-DD');
       const end = currentMonth.endOf('month').format('YYYY-MM-DD');
@@ -82,9 +73,9 @@ const ITDashboard = () => {
     } catch (err) {
       console.error("Failed to load monthly events", err);
     }
-  };
+  }, [token, currentMonth]);
 
-  const loadDailySchedule = async () => {
+  const loadDailySchedule = React.useCallback(async () => {
     try {
       const dateStr = selectedDate.format('YYYY-MM-DD');
       const [appointmentsRes, personalTasksRes] = await Promise.all([
@@ -137,9 +128,9 @@ const ITDashboard = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [token, selectedDate, tickets]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = React.useCallback(async () => {
     try {
       setLoading(true);
 
@@ -148,6 +139,14 @@ const ITDashboard = () => {
       ]);
 
       // Load initial schedule for TODAY and Monthly Events
+      // Note: loadDailySchedule and loadMonthlyEvents might depend on updated state if not careful,
+      // but here they depend on selectedDate/currentMonth which are state.
+      // We can call them directly here or rely on their useEffects?
+      // If we call them here, we might be duplicate calling if deps change.
+      // However, loadDashboardData is mainly for the 'tickets' and 'stats'.
+      // Let's just load tickets here.
+
+      // Actually original code called them. Let's keep calling them but they are now callbacks.
       await loadDailySchedule();
       await loadMonthlyEvents();
 
@@ -172,7 +171,13 @@ const ITDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, loadDailySchedule, loadMonthlyEvents]);
+
+  useEffect(() => {
+    if (token) {
+      loadDashboardData();
+    }
+  }, [token, loadDashboardData]);
 
   const handleAccept = async () => {
     try {
@@ -254,8 +259,7 @@ const ITDashboard = () => {
       return new Date(a.createdAt) - new Date(b.createdAt); // Oldest first
     });
 
-  // Filter "Completed Tickets" -> Fixed status
-  const completedTickets = tickets.filter(t => t.status === "fixed").sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">

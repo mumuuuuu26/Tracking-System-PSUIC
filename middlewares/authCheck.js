@@ -12,6 +12,10 @@ exports.authCheck = async (req, res, next) => {
 
     const token = headerToken.split(" ")[1];
 
+    if (!token) {
+      return res.status(401).json({ message: "No Token" });
+    }
+
     const decode = jwt.verify(token, process.env.SECRET);
 
     req.user = decode;

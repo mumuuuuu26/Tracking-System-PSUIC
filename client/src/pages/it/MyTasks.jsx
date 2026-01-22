@@ -1,6 +1,7 @@
 // MyTasks.jsx - Enhanced Version
 import React, { useEffect, useState } from "react";
-import { getMyTasks, acceptJob, closeJob, getSchedule } from "../../api/it";
+import { useNavigate } from "react-router-dom";
+import { getMyTasks, acceptJob, getSchedule } from "../../api/it";
 import {
   Calendar,
   Clock,
@@ -8,13 +9,15 @@ import {
   CheckCircle,
   Users,
   Bell,
+  ChevronRight,
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 
 const MyTasks = () => {
-  const { token, user } = useAuthStore();
+  const { token } = useAuthStore();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState({
     urgent: 0,
@@ -22,16 +25,12 @@ const MyTasks = () => {
     inProgress: 0,
     todaySchedule: [],
   });
+  // eslint-disable-next-line no-unused-vars
   const [selectedTab, setSelectedTab] = useState("new");
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
 
-  useEffect(() => {
-    loadTasks();
-    loadSchedule();
-  }, []);
-
-  const loadTasks = async () => {
+  const loadTasks = React.useCallback(async () => {
     try {
       const res = await getMyTasks(token);
       setTasks(res.data);
@@ -48,17 +47,24 @@ const MyTasks = () => {
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [token]);
 
-  const loadSchedule = async () => {
+  const loadSchedule = React.useCallback(async () => {
     try {
       const res = await getSchedule(token);
       setStats((prev) => ({ ...prev, todaySchedule: res.data }));
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [token]);
 
+  useEffect(() => {
+    loadTasks();
+    loadSchedule();
+  }, [loadTasks, loadSchedule]);
+
+  /* eslint-disable no-unused-vars */
+  // eslint-disable-next-line no-unused-vars
   const handleAcceptTicket = async (ticket) => {
     setSelectedTicket(ticket);
     setShowAcceptModal(true);
@@ -70,7 +76,7 @@ const MyTasks = () => {
       toast.success("Ticket Accepted!");
       setShowAcceptModal(false);
       loadTasks();
-    } catch (err) {
+    } catch {
       toast.error("Failed to accept ticket");
     }
   };

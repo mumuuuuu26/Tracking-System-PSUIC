@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Edit, Trash2, X, Folder } from "lucide-react";
 import { listCategories, createCategory, updateCategory, removeCategory } from "../../api/category";
 import useAuthStore from "../../store/auth-store";
@@ -18,18 +18,7 @@ const CategoryManagement = () => {
         name: ""
     });
 
-    useEffect(() => {
-        loadCategories();
-    }, []);
-
-    useEffect(() => {
-        const filtered = categories.filter(cat =>
-            cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredCategories(filtered);
-    }, [searchTerm, categories]);
-
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         try {
             const res = await listCategories(token);
             setCategories(res.data);
@@ -38,7 +27,18 @@ const CategoryManagement = () => {
             console.log(err);
             toast.error("Failed to load categories");
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadCategories();
+    }, [loadCategories]);
+
+    useEffect(() => {
+        const filtered = categories.filter(cat =>
+            cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredCategories(filtered);
+    }, [searchTerm, categories]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

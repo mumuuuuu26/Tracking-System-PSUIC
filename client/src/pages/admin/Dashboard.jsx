@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Ticket, Users, Monitor, Building, ChevronRight, Clock, Shield, Database, LayoutGrid } from "lucide-react";
 import { getDashboardStats } from "../../api/admin";
 import useAuthStore from "../../store/auth-store";
@@ -14,83 +14,50 @@ const Dashboard = () => {
     });
     const [currentTime, setCurrentTime] = useState(dayjs());
 
-    useEffect(() => {
-        loadStats();
-        const timer = setInterval(() => setCurrentTime(dayjs()), 60000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const loadStats = async () => {
+    const loadStats = useCallback(async () => {
         try {
             const res = await getDashboardStats(token);
             setStats(res.data);
         } catch (err) {
             console.log(err);
         }
-    };
+    }, [token]);
 
-    const statCards = [
-        {
-            title: "Total tickets",
-            value: stats.ticketCount,
-            icon: <Ticket size={24} className="text-white" />,
-            bg: "bg-blue-500",
-            lightBg: "bg-blue-50",
-            textColor: "text-blue-600"
-        },
-        {
-            title: "Active IT Staff",
-            value: stats.itStaffCount,
-            icon: <Users size={24} className="text-white" />,
-            bg: "bg-emerald-500",
-            lightBg: "bg-emerald-50",
-            textColor: "text-emerald-600"
-        },
-        {
-            title: "Rooms",
-            value: stats.roomCount,
-            icon: <Building size={24} className="text-white" />,
-            bg: "bg-orange-500",
-            lightBg: "bg-orange-50",
-            textColor: "text-orange-600"
-        },
-        {
-            title: "Equipment",
-            value: stats.equipmentCount,
-            icon: <Monitor size={24} className="text-white" />,
-            bg: "bg-purple-500",
-            lightBg: "bg-purple-50",
-            textColor: "text-purple-600"
-        },
-    ];
+    useEffect(() => {
+        loadStats();
+        const timer = setInterval(() => setCurrentTime(dayjs()), 60000);
+        return () => clearInterval(timer);
+    }, [loadStats]);
+
+
 
     const menuItems = [
         {
             title: "User Management",
             desc: "Manage student & staff accounts",
-            icon: <Users size={24} className="text-blue-600" />,
+            icon: <Users size={24} className="text-[#193C6C]" />,
             bg: "bg-blue-50",
             link: "/admin/manage-users",
         },
         {
             title: "IT Staff Management",
             desc: "Assign roles and schedules",
-            icon: <Shield size={24} className="text-emerald-600" />,
-            bg: "bg-emerald-50",
+            icon: <Shield size={24} className="text-[#193C6C]" />,
+            bg: "bg-blue-50",
             link: "/admin/manage-it",
         },
         {
             title: "Room Management",
             desc: "Lab and server room status",
-            icon: <LayoutGrid size={24} className="text-orange-600" />,
-            bg: "bg-orange-50",
+            icon: <LayoutGrid size={24} className="text-[#193C6C]" />,
+            bg: "bg-blue-50",
             link: "/admin/manage-rooms",
         },
         {
             title: "Category Management",
             desc: "Add or edit equipment categories",
-            icon: <Database size={24} className="text-purple-600" />,
-            bg: "bg-purple-50",
+            icon: <Database size={24} className="text-[#193C6C]" />,
+            bg: "bg-blue-50",
             link: "/admin/manage-categories",
         },
     ];
@@ -98,14 +65,14 @@ const Dashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Blue Header Section */}
-            <div className="bg-blue-600 pt-8 pb-24 px-6 rounded-b-[2.5rem] shadow-lg relative z-0">
+            <div className="bg-[#193C6C] pt-8 pb-24 px-6 rounded-b-[2.5rem] shadow-lg relative z-0">
                 <div className="max-w-4xl mx-auto flex justify-between items-start text-white">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
                                 <Shield className="text-white" size={18} />
                             </div>
-                            <span className="font-bold tracking-wider text-xs opacity-80 bg-blue-700 px-2 py-1 rounded-lg">ADMIN PORTAL</span>
+                            <span className="font-bold tracking-wider text-xs opacity-80 bg-[#15325b] px-2 py-1 rounded-lg">ADMIN PORTAL</span>
                         </div>
                         <h1 className="text-2xl font-bold tracking-tight">PSUIC Service</h1>
                         <p className="text-blue-100 text-sm mt-1 font-medium">Welcome back, {user?.name || "Admin"}</p>
@@ -124,24 +91,24 @@ const Dashboard = () => {
             </div>
 
             {/* Floating Stats Card */}
-            <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
-                <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
-                    <div className="flex justify-between items-center text-center divide-x divide-gray-100">
-                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
-                            <p className="text-3xl font-extrabold text-blue-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.ticketCount}</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Total Tickets</p>
+            <div className="max-w-4xl mx-auto px-3 sm:px-6 -mt-20 relative z-10">
+                <div className="bg-white rounded-3xl shadow-xl p-3 sm:p-6 border border-gray-100">
+                    <div className="flex justify-between items-center text-center divide-x divide-gray-100 overflow-x-auto sm:overflow-visible scrollbar-hide">
+                        <div className="flex-1 px-1 sm:px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2 min-w-[70px]">
+                            <p className="text-2xl sm:text-3xl font-extrabold text-[#193C6C] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.ticketCount}</p>
+                            <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider truncate">Total Tickets</p>
                         </div>
-                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
-                            <p className="text-3xl font-extrabold text-emerald-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.itStaffCount}</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">IT Staff</p>
+                        <div className="flex-1 px-1 sm:px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2 min-w-[60px]">
+                            <p className="text-2xl sm:text-3xl font-extrabold text-[#193C6C] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.itStaffCount}</p>
+                            <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider truncate">IT Staff</p>
                         </div>
-                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
-                            <p className="text-3xl font-extrabold text-orange-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.roomCount}</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Rooms</p>
+                        <div className="flex-1 px-1 sm:px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2 min-w-[60px]">
+                            <p className="text-2xl sm:text-3xl font-extrabold text-[#193C6C] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.roomCount}</p>
+                            <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider truncate">Rooms</p>
                         </div>
-                        <div className="flex-1 px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2">
-                            <p className="text-3xl font-extrabold text-purple-600 mb-1 group-hover:scale-110 transition-transform duration-300">{stats.equipmentCount}</p>
-                            <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider">Equipment</p>
+                        <div className="flex-1 px-1 sm:px-2 group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors py-2 min-w-[70px]">
+                            <p className="text-2xl sm:text-3xl font-extrabold text-[#193C6C] mb-1 group-hover:scale-110 transition-transform duration-300">{stats.equipmentCount}</p>
+                            <p className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider truncate">Equipment</p>
                         </div>
                     </div>
                 </div>

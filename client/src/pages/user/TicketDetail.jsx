@@ -3,9 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ChevronDown } from "lucide-react";
 import { getTicket } from "../../api/ticket";
-import { respondReschedule } from "../../api/appointment";
 import useAuthStore from "../../store/auth-store";
-import { toast } from "react-toastify";
 
 const TicketDetail = () => {
   const navigate = useNavigate();
@@ -56,25 +54,7 @@ const TicketDetail = () => {
   }
 
   // Determine status color/label
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending": return "text-yellow-600";
-      case "in_progress": return "text-blue-600";
-      case "fixed": return "text-green-600";
-      case "rejected": return "text-red-600";
-      default: return "text-gray-600";
-    }
-  };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "pending": return "Pending";
-      case "in_progress": return "In Progress";
-      case "fixed": return "Completed";
-      case "rejected": return "Rejected";
-      default: return status || "Unknown";
-    }
-  };
 
   // Safe date formatter
   const formatDate = (dateString, options = {}) => {
@@ -86,7 +66,7 @@ const TicketDetail = () => {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
         ...options
       });
-    } catch (e) {
+    } catch {
       return "Date Error";
     }
   };
@@ -186,7 +166,7 @@ const TicketDetail = () => {
               {/* Vertical Line */}
               <div className="absolute left-[19px] top-3 bottom-6 w-0.5 bg-gray-200"></div>
 
-              {timelineSteps.map((step, index) => (
+              {timelineSteps.map((step) => (
                 <div key={step.id} className="flex gap-4 relative z-10 font-sans">
                   {/* Icon Bubble */}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-[3px] border-white shadow-sm ring-1 ring-gray-100 ${step.completed ? 'bg-green-500' :

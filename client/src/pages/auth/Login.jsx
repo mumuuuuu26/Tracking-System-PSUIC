@@ -20,7 +20,7 @@ const Login = () => {
     });
   };
 
-  const roleRedirect = (role) => {
+  const roleRedirect = React.useCallback((role) => {
     if (role === "admin") {
       navigate("/admin");
     } else if (role === "it_support") {
@@ -28,13 +28,13 @@ const Login = () => {
     } else {
       navigate("/user");
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     if (user && user.role) {
       roleRedirect(user.role);
     }
-  }, [user]);
+  }, [user, roleRedirect]);
 
   const hdlSubmit = async (e) => {
     e.preventDefault();

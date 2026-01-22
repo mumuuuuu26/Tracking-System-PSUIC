@@ -6,7 +6,6 @@ const CalendarGrid = ({
     currentDate,
     setCurrentDate,
     selectedDate,
-    setSelectedDate,
     events = [],
     onDateSelect
 }) => {

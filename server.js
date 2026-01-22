@@ -1,9 +1,7 @@
-// Step 1 import...
 const express = require("express");
 require("dotenv").config();
 const app = express();
 const morgan = require("morgan");
-const { readdirSync } = require("fs"); //อ่านจากไดเรกทอรี่
 const cors = require("cors"); //อนุญาตให้ server กับ clien ติดต่อกันได้่
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, MapPin, MoreVertical, Plus, Edit, Trash2, X, Image } from "lucide-react";
 import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
 import useAuthStore from "../../store/auth-store";
@@ -20,19 +20,7 @@ const RoomManagement = () => {
         floor: ""
     });
 
-    useEffect(() => {
-        loadRooms();
-    }, []);
-
-    useEffect(() => {
-        const filtered = rooms.filter(room =>
-            room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.building?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredRooms(filtered);
-    }, [searchTerm, rooms]);
-
-    const loadRooms = async () => {
+    const loadRooms = useCallback(async () => {
         try {
             const res = await listRooms(token);
             setRooms(res.data);
@@ -41,7 +29,11 @@ const RoomManagement = () => {
             console.log(err);
             toast.error("Failed to load rooms");
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadRooms();
+    }, [loadRooms]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

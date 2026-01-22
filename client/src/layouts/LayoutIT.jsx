@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Home, Calendar, Clock, User, Menu, X, LogOut, LayoutDashboard, Wrench, Bell, FileText, BookOpen, Briefcase, Settings } from "lucide-react";
 import useAuthStore from "../store/auth-store";
@@ -7,7 +7,6 @@ import Swal from "sweetalert2";
 const LayoutIT = () => {
   const { user, actionLogout } = useAuthStore();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   // Assuming role is 'it_support' based on backend
@@ -38,7 +37,6 @@ const LayoutIT = () => {
     }).then((result) => {
       if (result.isConfirmed) {
         actionLogout();
-        setMobileMenuOpen(false);
         navigate("/login");
       }
     });

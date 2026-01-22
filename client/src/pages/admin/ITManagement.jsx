@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, Calendar, Edit2, UserCheck, UserX, Clock, X, Phone, Briefcase, Trash2, CheckCircle, AlertCircle, Shield, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getITStaff, getITStaffStats, listAllTickets, updateTicketStatus } from "../../api/admin";
@@ -29,11 +29,7 @@ const ITManagement = () => {
     const [pendingTickets, setPendingTickets] = useState([]);
     const [selectedTicketId, setSelectedTicketId] = useState("");
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const [staffRes, statsRes] = await Promise.all([
                 getITStaff(token),
@@ -58,7 +54,11 @@ const ITManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleEditClick = (member) => {
         setCurrentStaffId(member.id);
@@ -147,15 +147,33 @@ const ITManagement = () => {
                             <h1 className="text-2xl font-bold text-gray-900">IT Staff Management</h1>
                             <p className="text-gray-500 text-sm mt-1">Manage support team, assignments, and availability</p>
                         </div>
-                        <div className="flex gap-2">
-                            <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-bold border border-blue-100 flex items-center gap-2">
-                                <UserCheck size={16} /> Total: {stats.active}
+                        <div className="flex gap-4">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md">
+                                    <UserCheck size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none">Total</span>
+                                    <span className="text-sm font-bold text-gray-800 leading-none mt-1">{stats.active}</span>
+                                </div>
                             </div>
-                            <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold border border-emerald-100 flex items-center gap-2">
-                                <CheckCircle size={16} /> Free: {stats.available}
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                <div className="p-1.5 bg-green-50 text-green-600 rounded-md">
+                                    <CheckCircle size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none">Free</span>
+                                    <span className="text-sm font-bold text-gray-800 leading-none mt-1">{stats.available}</span>
+                                </div>
                             </div>
-                            <div className="bg-orange-50 text-orange-700 px-4 py-2 rounded-xl text-sm font-bold border border-orange-100 flex items-center gap-2">
-                                <Briefcase size={16} /> Busy: {stats.busy}
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                <div className="p-1.5 bg-blue-50 text-[#193C6C] rounded-md">
+                                    <Briefcase size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none">Busy</span>
+                                    <span className="text-sm font-bold text-gray-800 leading-none mt-1">{stats.busy}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -191,7 +209,7 @@ const ITManagement = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredStaff.map((member) => (
                             <div key={member.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
-                                <div className={`absolute top-0 left-0 w-1 h-full ${member.status === 'Available' ? 'bg-emerald-500' : 'bg-orange-500'}`}></div>
+                                <div className={`absolute top-0 left-0 w-1 h-full ${member.status === 'Available' ? 'bg-emerald-500' : 'bg-[#193C6C]'}`}></div>
 
                                 <div className="flex justify-between items-start mb-4 pl-3">
                                     <div className="flex gap-4">
@@ -203,7 +221,7 @@ const ITManagement = () => {
                                                     member.name?.[0] || 'S'
                                                 )}
                                             </div>
-                                            <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${member.status === 'Available' ? 'bg-emerald-500' : 'bg-orange-500'
+                                            <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${member.status === 'Available' ? 'bg-emerald-500' : 'bg-[#193C6C]'
                                                 }`}>
                                                 {member.status === 'Available' ? <CheckCircle size={10} className="text-white" /> : <Clock size={10} className="text-white" />}
                                             </div>
@@ -212,7 +230,7 @@ const ITManagement = () => {
                                             <h3 className="font-bold text-gray-800 text-lg leading-tight">{member.name || "No Name"}</h3>
                                             <p className="text-xs text-gray-500 mb-1">{member.email}</p>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase tracking-wide">
+                                                <span className="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-md uppercase tracking-wide">
                                                     {member.department || "IT Support"}
                                                 </span>
                                             </div>
@@ -243,28 +261,29 @@ const ITManagement = () => {
                                     </div>
                                 </div>
 
-                                <div className="pl-3 mt-4 pt-4 border-t border-gray-50">
+                                <div className="pl-3 mt-4 pt-4 border-t border-gray-100">
                                     {member.status === 'Busy' && member.currentTicket ? (
-                                        <div className="bg-orange-50/50 rounded-xl p-3 border border-orange-100">
-                                            <div className="flex items-center gap-2 mb-2 text-orange-700">
+                                        <div className="bg-white rounded-xl p-3 border border-blue-200 shadow-sm relative overflow-hidden group-hover:border-blue-300 transition-colors">
+                                            <div className="absolute left-0 top-0 w-1 h-full bg-[#193C6C]"></div>
+                                            <div className="flex items-center gap-2 mb-2 text-[#193C6C] pl-2">
                                                 <Clock size={14} />
                                                 <span className="text-xs font-bold uppercase">Working on</span>
                                             </div>
-                                            <p className="text-sm font-bold text-gray-800 line-clamp-1 mb-2">#{member.currentTicket.id} {member.currentTicket.title}</p>
-
+                                            <p className="text-sm font-bold text-gray-800 line-clamp-1 mb-2 pl-2">#{member.currentTicket.id} {member.currentTicket.title}</p>
                                         </div>
                                     ) : (
-                                        <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100">
-                                            <div className="flex items-center gap-2 mb-2 text-emerald-700">
+                                        <div className="bg-white rounded-xl p-3 border border-emerald-200 shadow-sm relative overflow-hidden group-hover:border-emerald-300 transition-colors">
+                                            <div className="absolute left-0 top-0 w-1 h-full bg-emerald-400"></div>
+                                            <div className="flex items-center gap-2 mb-2 text-emerald-600 pl-2">
                                                 <CheckCircle size={14} />
                                                 <span className="text-xs font-bold uppercase">Available</span>
                                             </div>
-                                            <p className="text-sm text-gray-600 mb-2">Ready for new assignment</p>
+                                            <p className="text-sm text-gray-500 mb-3 pl-2">Ready for task</p>
                                             <button
                                                 onClick={() => handleAssignClick(member)}
-                                                className="w-full py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200"
+                                                className="w-full py-2 bg-white text-emerald-600 border border-emerald-200 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-all"
                                             >
-                                                Assign New Task
+                                                + Assign Task
                                             </button>
                                         </div>
                                     )}

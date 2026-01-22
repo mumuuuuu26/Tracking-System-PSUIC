@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Star, Clock, AlertCircle, Quote, ChevronRight, ChevronLeft } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
@@ -14,23 +14,23 @@ const WaitingForFeedback = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadTickets();
-    }, []);
-
-    const loadTickets = async () => {
+    const loadTickets = useCallback(async () => {
         try {
             setLoading(true);
             const res = await listMyTickets(token);
             // Filter tickets that are completed (fixed) BUT not yet rated
-            const waiting = res.data.filter(t => t.status === 'fixed' && !t.rating);
+            const waiting = res.data.filter(t => t.status === 'fixed' && t.rating === null);
             setTickets(waiting);
         } catch (err) {
             console.log(err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadTickets();
+    }, [loadTickets]);
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 animate-in fade-in duration-500 font-sans">

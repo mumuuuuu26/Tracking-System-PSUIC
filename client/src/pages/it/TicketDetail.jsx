@@ -4,7 +4,7 @@ import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upl
 import useAuthStore from "../../store/auth-store";
 import { getTicket } from "../../api/ticket";
 import { acceptJob, closeJob, rejectTicket, saveDraft } from "../../api/it";
-import { requestReschedule } from "../../api/appointment";
+
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { toast } from "react-toastify";

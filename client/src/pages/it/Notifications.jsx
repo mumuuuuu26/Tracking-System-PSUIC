@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Bell, Check, Trash2, Clock, FilePlus, RefreshCw, AlertCircle } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { useNavigate } from "react-router-dom";
@@ -19,11 +19,7 @@ const Notifications = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchNotifications();
-    }, [token]);
-
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         try {
             setLoading(true);
             const res = await listNotifications(token);
@@ -34,7 +30,11 @@ const Notifications = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     const handleMarkRead = async (e, id) => {
         e.stopPropagation();
@@ -44,7 +44,7 @@ const Notifications = () => {
                 prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
             );
             toast.success("Marked as read");
-        } catch (err) {
+        } catch {
             toast.error("Failed to mark as read");
         }
     };
@@ -55,7 +55,7 @@ const Notifications = () => {
             await removeNotification(token, id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             toast.success("Notification removed");
-        } catch (err) {
+        } catch {
             toast.error("Failed to remove notification");
         }
     };

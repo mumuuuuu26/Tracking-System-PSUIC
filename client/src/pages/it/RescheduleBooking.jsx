@@ -25,12 +25,12 @@ const RescheduleBooking = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // Ticket ID
 
-    const [currentDate, setCurrentDate] = useState(dayjs());
+
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [appointments, setAppointments] = useState([]);
     const [personalTasks, setPersonalTasks] = useState([]);
     const [monthlyEvents, setMonthlyEvents] = useState([]);
-    const [loading, setLoading] = useState(true);
+
     const [isMonthView, setIsMonthView] = useState(false);
 
     // Ticket & Booking State
@@ -38,19 +38,7 @@ const RescheduleBooking = () => {
     const [selectedTime, setSelectedTime] = useState("");
     const [reason, setReason] = useState("");
 
-    useEffect(() => {
-        loadTicket();
-    }, [id, token]);
-
-    useEffect(() => {
-        loadSchedule();
-    }, [selectedDate, token]);
-
-    useEffect(() => {
-        loadMonthlyEvents();
-    }, [selectedDate.format('YYYY-MM'), token]);
-
-    const loadTicket = async () => {
+    const loadTicket = React.useCallback(async () => {
         try {
             const res = await getTicket(token, id);
             setTicket(res.data);
@@ -58,11 +46,10 @@ const RescheduleBooking = () => {
             console.error(err);
             toast.error("Failed to load ticket");
         }
-    };
+    }, [id, token]);
 
-    const loadSchedule = async () => {
+    const loadSchedule = React.useCallback(async () => {
         try {
-            setLoading(true);
             const dateStr = selectedDate.format('YYYY-MM-DD');
             const [aptRes, taskRes] = await Promise.all([
                 getSchedule(token, dateStr),
@@ -72,12 +59,10 @@ const RescheduleBooking = () => {
             setPersonalTasks(Array.isArray(taskRes?.data) ? taskRes.data : []);
         } catch (err) {
             console.error(err);
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [selectedDate, token]);
 
-    const loadMonthlyEvents = async () => {
+    const loadMonthlyEvents = React.useCallback(async () => {
         try {
             const startOfMonth = selectedDate.startOf('month').format('YYYY-MM-DD');
             const endOfMonth = selectedDate.endOf('month').format('YYYY-MM-DD');
@@ -86,7 +71,19 @@ const RescheduleBooking = () => {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [selectedDate, token]);
+
+    useEffect(() => {
+        loadTicket();
+    }, [loadTicket]);
+
+    useEffect(() => {
+        loadSchedule();
+    }, [loadSchedule]);
+
+    useEffect(() => {
+        loadMonthlyEvents();
+    }, [loadMonthlyEvents]);
 
     const handleReschedule = async () => {
         if (!selectedTime) return toast.warning("Please select a time");

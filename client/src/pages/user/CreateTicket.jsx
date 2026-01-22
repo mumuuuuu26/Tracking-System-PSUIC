@@ -1,5 +1,5 @@
 // client/src/pages/user/CreateTicket.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Camera,
   X,
@@ -26,7 +26,7 @@ dayjs.extend(isBetween);
 const CreateTicket = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { token, actionLogout } = useAuthStore();
+  const { token } = useAuthStore();
 
   const prefilledData = location.state;
 
@@ -55,19 +55,7 @@ const CreateTicket = () => {
 
   const urgencyLevels = ["Low", "Medium", "High"];
 
-  useEffect(() => {
-    loadData();
-    loadITCapacity();
-  }, []);
-
-  // Fetch Availability when Date changes
-  useEffect(() => {
-    if (form.date && itCount > 0) {
-      checkAvailability(form.date);
-    }
-  }, [form.date, itCount]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!token) return;
     try {
       const catRes = await listCategories(token);
@@ -84,18 +72,23 @@ const CreateTicket = () => {
     } catch (err) {
       console.error("Error loading data:", err);
     }
-  };
+  }, [token]);
 
-  const loadITCapacity = async () => {
+  const loadITCapacity = useCallback(async () => {
     try {
       const res = await listITStaff(token);
       setItCount(res.data.length);
     } catch (err) {
       console.error("Error loading IT staff:", err);
     }
-  };
+  }, [token]);
 
-  const checkAvailability = async (dateStr) => {
+  useEffect(() => {
+    loadData();
+    loadITCapacity();
+  }, [loadData, loadITCapacity]);
+
+  const checkAvailability = useCallback(async (dateStr) => {
     try {
       const res = await getITAvailability(token, dateStr, dateStr);
       const events = res.data; // [{ type, date, endTime, ... }]
@@ -111,28 +104,6 @@ const CreateTicket = () => {
         const slotEnd = slotStart.add(1, 'hour'); // Assume 1 hour slots for booking resolution
 
         // Count how many ITs are busy during this slot
-        // An IT is busy if they have an event that overlaps with this slot
-        let busyCount = 0;
-
-        // We need to count unique ITs busy? 
-        // getITAvailability returns events, but doesn't explicitly guarantee grouping by IT unless we check user IDs (which are in personalTasks, but appointments linked to ticket->itSupportId might need lookup if not populated).
-        // Actually, getITAvailability controller returns:
-        // Appointments: itSupportId
-        // PersonalTasks: userId
-        // So we can count UNIQUE busy userIds.
-
-        // Wait, controller response for appointment:
-        // { type: 'appointment', date, endTime, title, description } -- IT DOES NOT RETURN IT ID in the mapped response!
-        // Let's check controller appointment.js again.
-        // It returns:
-        // ...appointments.map(a => ({ type: 'appointment', ... }))
-        // It DOES NOT include itSupportId in the final MAPPED object.
-        // I need to update the controller or assume 1 event = 1 busy IT?
-        // Actually, if there are 2 events at the same time, are they same IT or different?
-        // Since `appointment` table has `itSupportId`, distinct appointments at same time MUST be different ITs (an IT can't double book usually, or if they do key is they are busy).
-        // But if I have 5 appointments at 10:00, that means 5 ITs are busy.
-        // So counting the number of events overlapping the slot is a safe proxy for "Number of Busy ITs".
-
         const eventsInSlot = events.filter(e => {
           const eStart = dayjs(e.date);
           const eEnd = dayjs(e.endTime);
@@ -149,7 +120,14 @@ const CreateTicket = () => {
     } catch (err) {
       console.error("Error checking availability:", err);
     }
-  };
+  }, [token, itCount]);
+
+  // Fetch Availability when Date changes
+  useEffect(() => {
+    if (form.date && itCount > 0) {
+      checkAvailability(form.date);
+    }
+  }, [form.date, itCount, checkAvailability]);
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);

@@ -20,15 +20,7 @@ const EmailSettings = () => {
     const [body, setBody] = useState("");
     const [isEnabled, setIsEnabled] = useState(true);
 
-    useEffect(() => {
-        loadTemplates();
-        if (user) {
-            setMyEmailEnabled(user.isEmailEnabled !== false); // Default true
-            setMyNotifyEmail(user.notificationEmail || user.email || "");
-        }
-    }, [user, token]);
-
-    const loadTemplates = async () => {
+    const loadTemplates = React.useCallback(async () => {
         try {
             setLoading(true);
             const res = await getEmailTemplates(token);
@@ -39,16 +31,20 @@ const EmailSettings = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        loadTemplates();
+        if (user) {
+            setMyEmailEnabled(user.isEmailEnabled !== false); // Default true
+            setMyNotifyEmail(user.notificationEmail || user.email || "");
+        }
+    }, [user, token, loadTemplates]);
 
     const handleSavePreference = async () => {
         try {
             // Optimistic update local
-            const updatedUser = {
-                ...user,
-                isEmailEnabled: myEmailEnabled,
-                notificationEmail: myNotifyEmail
-            };
+
 
             await updateProfile(token, {
                 isEmailEnabled: myEmailEnabled,
@@ -99,7 +95,7 @@ const EmailSettings = () => {
             });
             toast.success(`${template.isEnabled ? 'Disabled' : 'Enabled'} notification`);
             loadTemplates();
-        } catch (err) {
+        } catch {
             toast.error("Failed to update status");
         }
     };
@@ -107,7 +103,7 @@ const EmailSettings = () => {
     const getVariables = (jsonStr) => {
         try {
             return JSON.parse(jsonStr) || [];
-        } catch (e) {
+        } catch {
             return [];
         }
     };
