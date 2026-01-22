@@ -1,210 +1,201 @@
-// client/src/pages/user/QuickFix.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  ArrowLeft,
-  Search,
-  Monitor,
-  Printer,
-  Wifi,
-  HelpCircle,
-  Wrench
-} from "lucide-react";
-import { listQuickFixes } from "../../api/quickFix";
-import { listCategories } from "../../api/category";
-import useAuthStore from "../../store/auth-store";
+import { listQuickFix, readQuickFix } from "../../api/quickFix";
+import { Search, ChevronDown, ChevronUp, BookOpen, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+const CATEGORIES = ["ACCOUNT & LOGIN", "COMPUTER", "PROJECTOR", "SOFTWARE", "OTHER"];
 
 const QuickFix = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { token } = useAuthStore(); // Using token if available, but API might need to be public or we use guest token concept. 
-  // However, listQuickFixes uses authCheck. user/QuickFix is under LayoutUser, so user is logged in.
+    const [data, setData] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
+    const [search, setSearch] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [openId, setOpenId] = useState(null);
+    const navigate = useNavigate();
 
-  const equipmentType = location.state?.equipmentType;
+    useEffect(() => {
+        loadData();
+    }, []);
 
-  // Initial State: "all" or specific category ID if we can map it
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
+    useEffect(() => {
+        filterItems();
+    }, [search, selectedCategory, data]);
 
-  const [quickFixes, setQuickFixes] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const loadData = async () => {
+        try {
+            const res = await listQuickFix();
+            setData(res.data);
+            // Initial filter will happen via useEffect
+        } catch (err) {
+            console.log(err);
+        }
+    };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+    const filterItems = () => {
+        let filtered = data;
 
-  useEffect(() => {
-    // If specific equipment type came from navigation, try to select that category
-    if (equipmentType && categories.length > 0) {
-      const found = categories.find(c => c.name.toLowerCase() === equipmentType.toLowerCase());
-      if (found) {
-        setSelectedCategory(found.id);
-      }
-    }
-  }, [equipmentType, categories]);
+        // Filter by Search
+        if (search) {
+            const text = search.toLowerCase();
+            filtered = filtered.filter(
+                (item) =>
+                    item.title.toLowerCase().includes(text) ||
+                    item.description.toLowerCase().includes(text)
+            );
+        }
 
-  const loadData = async () => {
-    try {
-      // NOTE: ensure listQuickFixes and listCategories work for user role
-      // In routes/category.js: router.get("/category", authCheck, list); -> Accessible by any auth user
-      // In routes/quickFix.js: router.get("/quick-fix", authCheck, list); -> Accessible by any auth user
+        // Filter by Category
+        if (selectedCategory !== "All") {
+            filtered = filtered.filter(item => item.category === selectedCategory);
+        }
 
-      const [fixRes, catRes] = await Promise.all([
-        listQuickFixes(token),
-        listCategories(token)
-      ]);
-      setQuickFixes(fixRes.data);
-      setCategories(catRes.data);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setFilteredData(filtered);
+    };
 
-  // Helper to get icon based on category name
-  const getCategoryIcon = (catName) => {
-    switch (catName?.toLowerCase()) {
-      case "hardware": return <Monitor className="text-blue-500" />;
-      case "computer": return <Monitor className="text-blue-500" />;
-      case "printer": return <Printer className="text-green-500" />;
-      case "network": return <Wifi className="text-purple-500" />;
-      case "software": return <Wrench className="text-orange-500" />;
-      default: return <HelpCircle className="text-gray-500" />;
-    }
-  };
+    const toggleAccordion = async (id) => {
+        if (openId === id) {
+            setOpenId(null);
+        } else {
+            setOpenId(id);
+            try {
+                await readQuickFix(id);
+            } catch (err) {
+                console.log(err);
+            }
+        }
+    };
 
-  const filteredGuides = quickFixes.filter(guide => {
-    // Filter by category
-    const matchesCategory = selectedCategory === "all" || guide.categoryId === selectedCategory;
-    // Filter by search
-    const matchesSearch = guide.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guide.steps.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesCategory && matchesSearch;
-  });
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
-              <ArrowLeft className="text-gray-600" size={24} />
-            </button>
-            <h1 className="text-lg font-semibold">Quick Fix Guide</h1>
-            <div className="w-8" />
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-3 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Category Filter */}
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
-          <button
-            onClick={() => setSelectedCategory("all")}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-colors ${selectedCategory === "all"
-              ? "bg-blue-600 text-white"
-              : "bg-white text-gray-600 border border-gray-100"
-              }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-colors ${selectedCategory === cat.id
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-600 border border-gray-100"
-                }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Guide Cards */}
-      <div className="px-4 pb-4">
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white h-40 rounded-xl shadow-sm animate-pulse" />
-            ))}
-          </div>
-        ) : filteredGuides.length > 0 ? (
-          <div className="space-y-3">
-            {filteredGuides.map((guide) => (
-              <div key={guide.id} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gray-50 rounded-lg">
-                    {getCategoryIcon(guide.category?.name)}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800 flex-1">
-                      {guide.title}
-                    </h3>
-                    <p className="text-xs text-gray-400">{guide.category?.name}</p>
-                  </div>
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20">
+            {/* Header */}
+            {/* Header */}
+            <div className="bg-[#193C6C] pt-8 pb-16 px-6 rounded-b-[2.5rem] shadow-lg relative">
+                <div className="absolute inset-0 rounded-b-[2.5rem] overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                 </div>
 
-                <div className="space-y-2">
-                  {/* Handle steps: split by newline if string */}
-                  {/* We assume guide.steps is a string from DB text field */}
-                  {guide.steps && guide.steps.split('\n').map((step, index) => (
-                    <div key={index} className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">
-                        {index + 1}
-                      </span>
-                      <p className="text-sm text-gray-600 flex-1 leading-relaxed">{step}</p>
+                <div className="max-w-3xl mx-auto relative z-30">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="text-white/80 hover:text-white mb-4 flex items-center gap-2 transition-colors"
+                    >
+                        <ArrowLeft size={20} />
+                        Back
+                    </button>
+
+                    <h1 className="text-3xl font-bold text-white mb-2">Quick Fix Guide</h1>
+                    <p className="text-blue-200">Common solutions for frequent problems.</p>
+
+                    <div className="mt-6 flex gap-3 relative">
+                        <div className="relative flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search for problems..."
+                                className="w-full py-4 pl-12 pr-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 backdrop-blur-sm focus:outline-none focus:bg-white/20 transition-all"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <Search className="absolute left-4 top-4 text-blue-200" />
+                        </div>
+
+                        {/* Filter Button */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                className={`h-full px-5 rounded-xl border border-white/20 backdrop-blur-sm flex items-center justify-center gap-2 transition-all whitespace-nowrap ${selectedCategory !== "All"
+                                    ? "bg-white text-[#193C6C] font-bold"
+                                    : "bg-white/10 text-white hover:bg-white/20"
+                                    }`}
+                            >
+                                <span>{selectedCategory === "All" ? "Filter" : selectedCategory}</span>
+                                <ChevronDown size={18} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isFilterOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl z-30 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right ring-1 ring-black/5">
+                                    <div className="p-2 space-y-1">
+                                        <button
+                                            onClick={() => { setSelectedCategory("All"); setIsFilterOpen(false); }}
+                                            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all ${selectedCategory === "All" ? "bg-blue-50 text-blue-600 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                                        >
+                                            All Categories
+                                        </button>
+                                        {CATEGORIES.map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => { setSelectedCategory(cat); setIsFilterOpen(false); }}
+                                                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all ${selectedCategory === cat ? "bg-blue-50 text-blue-600 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                  ))}
                 </div>
+            </div>
 
-                <div className="mt-4 pt-3 border-t">
-                  <p className="text-xs text-gray-500">
-                    If the issue persists
-                  </p>
-                  <button
-                    onClick={() => navigate("/user/create-ticket")}
-                    className="mt-2 w-full bg-blue-50 text-blue-600 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
-                  >
-                    Report Issue
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl p-8 text-center shadow-sm">
-            <HelpCircle className="mx-auto text-gray-300 mb-3" size={48} />
-            <p className="text-gray-500">No guides found</p>
-            <button
-              onClick={() => { setSearchTerm(""); setSelectedCategory("all"); }}
-              className="mt-2 text-blue-500 text-sm font-medium"
-            >
-              Clear Search
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+            {/* Content */}
+            <div className="max-w-3xl mx-auto px-6 -mt-8 relative z-20 space-y-4">
+                {filteredData.length === 0 ? (
+                    <div className="bg-white p-8 rounded-2xl shadow-sm text-center">
+                        <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No guides found matching "{search}"</p>
+                    </div>
+                ) : (
+                    filteredData.map((item) => (
+                        <div
+                            key={item.id}
+                            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md"
+                        >
+                            <button
+                                onClick={() => toggleAccordion(item.id)}
+                                className="w-full text-left p-5 flex justify-between items-center bg-white hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
+                                        ?
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            {item.category && (
+                                                <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide">
+                                                    {item.category}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="font-bold text-gray-800 text-base md:text-lg break-words pr-4">{item.title}</h3>
+                                        <p className="text-xs text-gray-400 mt-1">{item.views} views</p>
+                                    </div>
+                                </div>
+                                {openId === item.id ? (
+                                    <ChevronUp className="text-blue-500 flex-shrink-0 ml-2" />
+                                ) : (
+                                    <ChevronDown className="text-gray-400 flex-shrink-0 ml-2" />
+                                )}
+                            </button>
+
+                            <div
+                                className={`transition-all duration-300 ease-in-out ${openId === item.id ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+                                    } overflow-hidden`}
+                            >
+                                <div className="p-5 pt-0 border-t border-gray-100/50">
+                                    <div className="p-4 bg-gray-50 rounded-xl text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                        {item.description}
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default QuickFix;

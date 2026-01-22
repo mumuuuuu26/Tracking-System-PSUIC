@@ -1,25 +1,37 @@
 import axios from "axios";
 
-export const listQuickFixes = async (token) => {
-    return await axios.get("/api/quick-fix", {
-        headers: { Authorization: `Bearer ${token}` },
+export const listQuickFix = async () => {
+    return await axios.get(import.meta.env.VITE_API_URL + "/quick-fix");
+};
+
+export const createQuickFix = async (token, value) => {
+    return await axios.post(import.meta.env.VITE_API_URL + "/quick-fix", value, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
     });
 };
 
-export const createQuickFix = async (token, data) => {
-    return await axios.post("/api/quick-fix", data, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-};
-
-export const updateQuickFix = async (token, id, data) => {
-    return await axios.put("/api/quick-fix/" + id, data, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+export const updateQuickFix = async (token, id, value) => {
+    return await axios.put(
+        import.meta.env.VITE_API_URL + "/quick-fix/" + id,
+        value,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 };
 
 export const removeQuickFix = async (token, id) => {
-    return await axios.delete("/api/quick-fix/" + id, {
-        headers: { Authorization: `Bearer ${token}` },
+    return await axios.delete(import.meta.env.VITE_API_URL + "/quick-fix/" + id, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
     });
 };
+
+export const readQuickFix = async (id) => {
+    return await axios.get(import.meta.env.VITE_API_URL + "/quick-fix/" + id);
+}

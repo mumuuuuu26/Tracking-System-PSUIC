@@ -2,11 +2,15 @@ const prisma = require("../config/prisma");
 
 exports.list = async (req, res) => {
     try {
-        const quickFixes = await prisma.quickFix.findMany({
-            include: { category: true },
-            orderBy: { createdAt: "desc" },
+        const data = await prisma.quickFix.findMany({
+            where: {
+                isActive: true
+            },
+            orderBy: {
+                views: 'desc'
+            }
         });
-        res.json(quickFixes);
+        res.send(data);
     } catch (err) {
         console.log(err);
         res.status(500).json({ message: "Server Error" });
@@ -15,15 +19,17 @@ exports.list = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { title, steps, categoryId } = req.body;
-        const quickFix = await prisma.quickFix.create({
+        const { title, description, image, category } = req.body;
+        const newFix = await prisma.quickFix.create({
             data: {
                 title,
-                steps, // Expecting JSON string or text
-                categoryId: parseInt(categoryId),
+                description,
+                image,
+                category,
+                createdBy: req.user.username,
             },
         });
-        res.json(quickFix);
+        res.send(newFix);
     } catch (err) {
         console.log(err);
         res.status(500).json({ message: "Server Error" });
@@ -33,16 +39,18 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, steps, categoryId } = req.body;
-        const quickFix = await prisma.quickFix.update({
-            where: { id: parseInt(id) },
+        const { title, description, image, category } = req.body;
+
+        const updated = await prisma.quickFix.update({
+            where: { id: Number(id) },
             data: {
                 title,
-                steps,
-                categoryId: parseInt(categoryId),
+                description,
+                image,
+                category,
             },
         });
-        res.json(quickFix);
+        res.send(updated);
     } catch (err) {
         console.log(err);
         res.status(500).json({ message: "Server Error" });
@@ -52,12 +60,31 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
     try {
         const { id } = req.params;
-        await prisma.quickFix.delete({
-            where: { id: parseInt(id) },
+        const deleted = await prisma.quickFix.delete({
+            where: { id: Number(id) }
         });
-        res.json({ message: "Quick Fix deleted successfully" });
+        res.send(deleted);
     } catch (err) {
         console.log(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+exports.read = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Increment view count
+        await prisma.quickFix.update({
+            where: { id: Number(id) },
+            data: { views: { increment: 1 } }
+        });
+
+        const data = await prisma.quickFix.findUnique({
+            where: { id: Number(id) }
+        });
+        res.send(data);
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+}

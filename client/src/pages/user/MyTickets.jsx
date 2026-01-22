@@ -1,11 +1,12 @@
 // client/src/pages/user/MyTickets.jsx
 import React, { useEffect, useState } from "react";
-import { Search, MapPin, Monitor, Star, Clock, AlertCircle, CheckCircle, Activity, Filter } from "lucide-react";
+import { Search, ChevronLeft, Plus } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useNavigate } from "react-router-dom";
+import CustomSelect from "../../components/ui/CustomSelect";
 
 dayjs.extend(relativeTime);
 
@@ -17,6 +18,13 @@ const MyTickets = () => {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Stats Counters
+  const [stats, setStats] = useState({
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+  });
 
   useEffect(() => {
     loadTickets();
@@ -31,6 +39,7 @@ const MyTickets = () => {
       setLoading(true);
       const res = await listMyTickets(token);
       setTickets(res.data);
+      calculateStats(res.data);
       setFilteredTickets(res.data);
     } catch (err) {
       console.log(err);
@@ -39,14 +48,35 @@ const MyTickets = () => {
     }
   };
 
+  const calculateStats = (ticketData) => {
+    let pending = 0;
+    let inProgress = 0;
+    let completed = 0;
+
+    ticketData.forEach((t) => {
+      // Pending
+      if (t.status === "pending") pending++;
+      // In Progress
+      else if (["in_progress", "scheduled", "accepted"].includes(t.status))
+        inProgress++;
+      // Completed
+      else if (["fixed", "closed"].includes(t.status)) completed++;
+    });
+
+    setStats({ pending, inProgress, completed });
+  };
+
   const filterTickets = () => {
     let filtered = [...tickets];
 
-    // Filter by status
+    // Filter by status (Tabs)
     if (activeFilter !== "All") {
       filtered = filtered.filter((t) => {
-        if (activeFilter === "Completed") return t.status === "fixed";
-        if (activeFilter === "In Progress") return t.status === "in_progress";
+        if (activeFilter === "Completed")
+          return ["fixed", "closed"].includes(t.status);
+        if (activeFilter === "In progress")
+          return ["in_progress", "accepted"].includes(t.status);
+        if (activeFilter === "Scheduled") return t.status === "scheduled";
         if (activeFilter === "Pending") return t.status === "pending";
         if (activeFilter === "Rejected") return t.status === "rejected";
         return true;
@@ -63,214 +93,304 @@ const MyTickets = () => {
       );
     }
 
-    // Sort by Work Process (Pending > In Progress > Scheduled > Fixed > Rejected)
-    const statusWeight = {
-      'pending': 1,
-      'in_progress': 2,
-      'scheduled': 3,
-      'fixed': 4,
-      'closed': 4,
-      'rejected': 5
+    // Sort: Status Priority then Newest First
+    const statusOrder = {
+      pending: 1,
+      in_progress: 2,
+      accepted: 2,
+      scheduled: 3,
+      fixed: 4,
+      closed: 4,
+      rejected: 5,
     };
 
     filtered.sort((a, b) => {
-      const weightA = statusWeight[a.status] || 99;
-      const weightB = statusWeight[b.status] || 99;
+      // 1. Status
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+      if (orderA !== orderB) return orderA - orderB;
 
-      if (weightA !== weightB) {
-        return weightA - weightB; // Lower weight (earlier stage) first
-      }
-      // Secondary sort: Newest First (Descending)
+      // 2. Priority (Critical > High > Medium > Low)
+      const priorityOrder = { Critical: 1, High: 2, Medium: 3, Low: 4 };
+      const pA = priorityOrder[a.urgency] || 5;
+      const pB = priorityOrder[b.urgency] || 5;
+      if (pA !== pB) return pA - pB;
+
+      // 3. Date (Newest first)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
     setFilteredTickets(filtered);
   };
 
+  const getPriorityBadge = (urgency) => {
+    switch (urgency) {
+      case "High":
+      case "Critical":
+        return "bg-red-50 text-red-600 border border-red-100";
+      case "Medium":
+        return "bg-amber-50 text-amber-600 border border-amber-100";
+      case "Low":
+        return "bg-green-50 text-green-600 border border-green-100";
+      default:
+        return "bg-gray-50 text-gray-600 border border-gray-100";
+    }
+  };
+
+  // Status Dot Color
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
-        return "border-l-4 border-yellow-400 bg-yellow-50";
+        return "bg-amber-500";
       case "in_progress":
-        return "border-l-4 border-blue-400 bg-blue-50";
+        return "bg-blue-500";
       case "fixed":
-        return "border-l-4 border-green-400 bg-green-50";
+        return "bg-green-500";
       case "rejected":
-        return "border-l-4 border-red-400 bg-red-50";
-      case "scheduled":
-        return "border-l-4 border-slate-500 bg-slate-50";
+        return "bg-red-500";
       default:
-        return "border-l-4 border-gray-400 bg-gray-50";
+        return "bg-gray-400";
     }
   };
 
-  const getUrgencyBadge = (urgency) => {
-    switch (urgency) {
-      case "Critical":
-        return "bg-red-100 text-red-700";
-      case "High":
-        return "bg-orange-100 text-orange-700";
-      case "Medium":
-        return "bg-yellow-100 text-yellow-700";
-      default:
-        return "bg-green-100 text-green-700";
-    }
+  const getStatusText = (status) => {
+    if (status === "fixed") return "Completed";
+    return status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
-
-  const filters = ["All", "Pending", "In Progress", "Completed", "Rejected"];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
-      {/* Header Section */}
-      <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-10 bg-opacity-80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Tickets</h1>
-              <p className="text-gray-500 mt-1">Track and manage your support requests</p>
-            </div>
-            <button
-              onClick={() => navigate('/user/create-ticket')}
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-medium shadow-md hover:bg-blue-700 transition-all hover:-translate-y-0.5"
-            >
-              + New Ticket
-            </button>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search by ID, title, or keyword..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-5 py-3 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${activeFilter === filter
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                    }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans relative">
+      {/* Deep Blue Header */}
+      <div className="bg-[#193C6C] px-6 pt-10 pb-8 rounded-b-[2rem] shadow-lg mb-6 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
+          >
+            <ChevronLeft size={28} />
+          </button>
+          <h1 className="text-white text-2xl md:text-2xl font-bold flex-1 text-center pr-8">
+            Ticket
+          </h1>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4">
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white h-48 rounded-xl animate-pulse shadow-sm border border-gray-100"></div>
+      <div className="max-w-7xl mx-auto px-6 space-y-8 animate-in fade-in duration-500">
+        {/* Stats Row */}
+        <div className="flex gap-4 justify-between">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col items-center justify-center text-center">
+            <span className="text-[#193C6C] font-bold text-3xl">
+              {stats.pending}
+            </span>
+            <span className="text-gray-400 text-sm font-medium mt-1">
+              Pending
+            </span>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col items-center justify-center text-center">
+            <span className="text-[#193C6C] font-bold text-3xl">
+              {stats.inProgress}
+            </span>
+            <span className="text-gray-400 text-sm font-medium mt-1">
+              In progress
+            </span>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col items-center justify-center text-center">
+            <span className="text-[#193C6C] font-bold text-3xl">
+              {stats.completed}
+            </span>
+            <span className="text-gray-400 text-sm font-medium mt-1">
+              Completed
+            </span>
+          </div>
+        </div>
+
+        {/* Search & New Ticket Button */}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Search by ID, title, or user..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-sm md:text-base"
+            />
+          </div>
+          <button
+            onClick={() => navigate("/user/create-ticket")}
+            className="bg-[#193C6C] text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 hover:bg-[#132E52] active:scale-95 transition-all text-sm md:text-base"
+          >
+            <Plus size={18} /> New Ticket
+          </button>
+        </div>
+
+        {/* Filter Tabs */}
+        <div>
+          {/* Mobile: Custom Select Dropdown */}
+          <div className="md:hidden">
+            <CustomSelect
+              options={[
+                "All",
+                "Pending",
+                "In progress",
+                "Scheduled",
+                "Completed",
+                "Rejected",
+              ]}
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value)}
+              placeholder="Filter by Status"
+            />
+          </div>
+
+          {/* Desktop: Horizontal Buttons */}
+          <div className="hidden md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
+            {[
+              "All",
+              "Pending",
+              "In progress",
+              "Scheduled",
+              "Completed",
+              "Rejected",
+            ].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`
+                        md:px-6 md:py-2.5 rounded-xl md:text-sm font-bold border transition-all md:w-auto md:whitespace-nowrap md:flex-shrink-0
+                        ${
+                          activeFilter === filter
+                            ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                            : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"
+                        }
+                    `}
+              >
+                {filter}
+              </button>
             ))}
           </div>
-        ) : filteredTickets.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100 max-w-lg mx-auto">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Search className="w-10 h-10 text-slate-300" />
+        </div>
+
+        {/* Ticket Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="col-span-full py-20 text-center text-gray-400">
+              Loading tickets...
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No tickets found</h3>
-            <p className="text-gray-500 max-w-xs mx-auto">
-              {searchTerm || activeFilter !== "All" ? "No matches for your search filters." : "You haven't created any support tickets yet."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTickets.map((ticket) => (
+          ) : filteredTickets.length > 0 ? (
+            filteredTickets.map((ticket) => (
               <div
                 key={ticket.id}
                 onClick={() => navigate(`/user/ticket/${ticket.id}`)}
-                className={`rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full ${getStatusColor(ticket.status)}`}
+                className={`
+                            bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
+                            ${
+                              ticket.status === "pending"
+                                ? "border-l-amber-400 border-gray-100"
+                                : ticket.status === "in_progress"
+                                ? "border-l-blue-400 border-gray-100"
+                                : ticket.status === "fixed" ||
+                                  ticket.status === "closed"
+                                ? "border-l-green-400 border-gray-100"
+                                : "border-l-gray-400 border-gray-100"
+                            }
+                        `}
               >
-                {/* Header */}
+                {/* Header: ID & Priority & Time */}
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-blue-600 font-bold text-sm">
+                    <span className="text-[#193C6C] font-bold text-sm">
                       #TK-{String(ticket.id).padStart(4, "0")}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getUrgencyBadge(ticket.urgency)}`}>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${getPriorityBadge(
+                        ticket.urgency
+                      )}`}
+                    >
                       {ticket.urgency}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500 font-medium">
-                    {dayjs(ticket.createdAt).fromNow()}
+                  <span className="text-gray-400 text-xs font-medium">
+                    {dayjs(ticket.createdAt)
+                      .fromNow(true)
+                      .replace(" days", "d")
+                      .replace(" months", "mo")}{" "}
+                    ago
                   </span>
                 </div>
 
                 {/* Title */}
-                <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-1">{ticket.title}</h3>
+                <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2 min-h-[56px]">
+                  {ticket.title}
+                </h3>
 
-                {/* Meta Info */}
-                <div className="flex flex-col gap-1 text-xs text-gray-600 mb-4 flex-1">
-                  {ticket.room && (
-                    <div className="flex items-center gap-1.5">
-                      <MapPin size={14} />
-                      <span className="truncate">{ticket.room.name}</span>
-                    </div>
-                  )}
-                </div>
+                {/* Location */}
+                <p className="text-gray-500 text-xs mb-6 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                  {ticket.room
+                    ? `Floor ${ticket.room.floor}, ${ticket.room.roomNumber}`
+                    : "Location N/A"}
+                </p>
 
-                {/* Status & User */}
-                <div className="flex items-center justify-between mt-auto">
+                {/* Footer: Status & User */}
+                <div className="flex justify-between items-end border-t border-gray-50 pt-4">
+                  {/* Status */}
                   <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === "pending" ? "bg-yellow-400" :
-                      ticket.status === "in_progress" ? "bg-blue-400" :
-                        ticket.status === "fixed" ? "bg-green-400" :
-                          ticket.status === "rejected" ? "bg-red-400" :
-                            ticket.status === "scheduled" ? "bg-slate-500" :
-                              "bg-gray-400"
-                      }`} />
-                    <span className="text-sm font-semibold text-gray-700 capitalize">
-                      {ticket.status.replace("_", " ")}
+                    <div
+                      className={`w-2 h-2 rounded-full ${getStatusColor(
+                        ticket.status
+                      )}`}
+                    ></div>
+                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      {getStatusText(ticket.status)}
                     </span>
                   </div>
 
-                  {ticket.assignedTo && (
-                    <div className="flex items-center gap-2 bg-white/50 px-2 py-1 rounded-full">
-                      <img
-                        src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
-                        alt={ticket.assignedTo.name}
-                        className="w-6 h-6 rounded-full"
-                      />
-                      <span className="text-xs text-gray-600 font-medium truncate max-w-[80px]">
-                        {(ticket.assignedTo.name || ticket.assignedTo.username || "IT Support").split(' ')[0]}
+                  {/* User Avatar */}
+                  {ticket.assignedTo ? (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-gray-400 mb-0.5">
+                        Assigned to
                       </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-gray-600">
+                          {ticket.assignedTo.name?.split(" ")[0]}
+                        </span>
+                        <img
+                          src={
+                            ticket.assignedTo.picture ||
+                            `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`
+                          }
+                          alt="Agent"
+                          className="w-6 h-6 rounded-full object-cover ring-2 ring-white"
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    <span className="text-xs text-gray-300 italic">
+                      Unassigned
+                    </span>
                   )}
                 </div>
-
-                {/* Rate Button */}
-                {ticket.status === 'fixed' && !ticket.rating && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/user/feedback/${ticket.id}`);
-                    }}
-                    className="mt-4 w-full flex items-center justify-center gap-2 bg-yellow-100 text-yellow-700 py-2.5 rounded-lg text-sm font-bold hover:bg-yellow-200 transition-colors"
-                  >
-                    <Star size={16} /> Rate Service
-                  </button>
-                )}
-                {ticket.rating && (
-                  <div className="mt-4 w-full flex items-center justify-center gap-1 text-yellow-600 text-sm font-bold bg-yellow-50/80 py-2.5 rounded-lg border border-yellow-100">
-                    <Star size={16} fill="#EAB308" className="text-yellow-500" />
-                    <span>Rated {ticket.rating}</span>
-                  </div>
-                )}
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-3xl p-12 text-center shadow-sm border border-gray-100 flex flex-col items-center">
+              <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 text-gray-400">
+                <Search size={32} opacity={0.5} />
+              </div>
+              <h3 className="text-xl font-bold text-[#193C6C]">
+                No tickets found
+              </h3>
+              <p className="text-gray-400 text-sm mt-2">
+                No tickets match your current filters.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

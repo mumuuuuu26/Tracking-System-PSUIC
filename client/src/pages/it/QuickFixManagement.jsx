@@ -1,26 +1,37 @@
+
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Edit, Trash2, X, Wrench, Save } from "lucide-react";
-import { listQuickFixes, createQuickFix, updateQuickFix, removeQuickFix } from "../../api/quickFix";
-import { listCategories } from "../../api/category";
+import {
+    listQuickFix,
+    createQuickFix,
+    updateQuickFix,
+    removeQuickFix,
+} from "../../api/quickFix";
 import useAuthStore from "../../store/auth-store";
+import { Trash2, Edit, Plus, X, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
+
+const CATEGORIES = ["ACCOUNT & LOGIN", "COMPUTER", "PROJECTOR", "SOFTWARE", "OTHER"];
 
 const QuickFixManagement = () => {
+    const navigate = useNavigate();
     const { token } = useAuthStore();
-    const [quickFixes, setQuickFixes] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [filteredFixes, setFilteredFixes] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filterCategory, setFilterCategory] = useState("All");
-
-    // Modal State
+    const [data, setData] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [currentId, setCurrentId] = useState(null);
-    const [formData, setFormData] = useState({
+    const [editId, setEditId] = useState(null);
+
+    // Filter State
+    const [selectedCategory, setSelectedCategory] = useState("All Categories");
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isFormCategoryOpen, setIsFormCategoryOpen] = useState(false);
+
+
+    const [form, setForm] = useState({
         title: "",
-        steps: "",
-        categoryId: ""
+        description: "",
+        category: "",
     });
 
     useEffect(() => {
@@ -28,290 +39,298 @@ const QuickFixManagement = () => {
     }, []);
 
     useEffect(() => {
-        let filtered = quickFixes;
-
-        if (searchTerm) {
-            filtered = filtered.filter(f => f.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        if (selectedCategory === "All Categories") {
+            setFilteredData(data);
+        } else {
+            setFilteredData(data.filter(item => item.category === selectedCategory));
         }
-
-        if (filterCategory !== "All") {
-            filtered = filtered.filter(f => f.categoryId === parseInt(filterCategory));
-        }
-
-        setFilteredFixes(filtered);
-    }, [searchTerm, filterCategory, quickFixes]);
+    }, [selectedCategory, data]);
 
     const loadData = async () => {
         try {
-            const [fixRes, catRes] = await Promise.all([
-                listQuickFixes(token),
-                listCategories(token)
-            ]);
-            setQuickFixes(fixRes.data);
-            setFilteredFixes(fixRes.data);
-            setCategories(catRes.data);
+            const res = await listQuickFix();
+            setData(res.data);
         } catch (err) {
             console.log(err);
-            toast.error("Failed to load data");
         }
     };
 
-    const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const openCreateModal = () => {
-        setIsEditMode(false);
-        setFormData({ title: "", steps: "", categoryId: "" });
-        setIsModalOpen(true);
-    };
-
-    const openEditModal = (item) => {
-        setIsEditMode(true);
-        setCurrentId(item.id);
-        setFormData({
-            title: item.title,
-            steps: item.steps, // Assume simple text with newlines or JSON
-            categoryId: item.categoryId
+    const handleChange = (e) => {
+        setForm({
+            ...form,
+            [e.target.name]: e.target.value,
         });
-        setIsModalOpen(true);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Steps: Convert to string if array, or keep as string
-            // For now, we'll store steps as a newline-separated string in the DB text field
-            // and split it when displaying.
-
-            if (isEditMode) {
-                await updateQuickFix(token, currentId, formData);
+            if (editId) {
+                await updateQuickFix(token, editId, form);
                 toast.success("Updated successfully");
             } else {
-                await createQuickFix(token, formData);
+                await createQuickFix(token, form);
                 toast.success("Created successfully");
             }
             setIsModalOpen(false);
+
+            // Reset Form
+            setForm({ title: "", description: "", image: "", category: "" });
+            setEditId(null);
             loadData();
         } catch (err) {
             console.log(err);
-            toast.error("Failed to save");
+            toast.error("Action failed");
         }
+    };
+
+    const handleEdit = (item) => {
+        setEditId(item.id);
+        setForm({
+            title: item.title,
+            description: item.description,
+            image: item.image || "",
+            category: item.category || "",
+        });
+        setIsModalOpen(true);
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure?")) {
-            try {
-                await removeQuickFix(token, id);
-                toast.success("Deleted successfully");
-                loadData();
-            } catch (err) {
-                console.log(err);
-                toast.error("Failed to delete");
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#1e3a8a",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await removeQuickFix(token, id);
+                    toast.success("Deleted successfully");
+                    loadData();
+                } catch (err) {
+                    console.log(err);
+                    toast.error("Delete Failed");
+                }
             }
-        }
+        });
+    };
+
+    const openNew = () => {
+        setEditId(null);
+        setForm({ title: "", description: "", image: "", category: "" });
+        setIsModalOpen(true);
+    }
+
+    // Helper to format description as numbered list if simple text
+    const renderSteps = (desc) => {
+        // Split by newline and filter empty
+        const steps = desc.split('\n').filter(s => s.trim() !== "");
+        return (
+            <div className="bg-gray-50 rounded-lg p-3 space-y-1 mt-2">
+                {steps.map((step, idx) => (
+                    <div key={idx} className="flex gap-2 text-sm text-gray-700">
+                        <span className="font-bold text-gray-400 bg-white w-5 h-5 flex items-center justify-center rounded-full text-[10px] border border-gray-100 shadow-sm shrink-0">
+                            {idx + 1}
+                        </span>
+                        <span>{step}</span>
+                    </div>
+                ))}
+            </div>
+        )
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <div className="min-h-screen bg-gray-50 pb-20">
+
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight">Quick Fix Management</h1>
-                    <p className="text-gray-500 text-sm mt-1">Manage troubleshooting guides for users</p>
+            <div className="bg-[#1B365D] text-white p-4 pt-6 pb-6 sticky top-0 z-30 shadow-md">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate(-1)} className="p-1 rounded-full hover:bg-white/10">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold">Quick Fix Management</h1>
                 </div>
-                <button
-                    onClick={openCreateModal}
-                    className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-95 font-medium"
-                >
-                    <Plus size={20} />
-                    Add New Guide
-                </button>
             </div>
 
-            {/* Filters */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 sticky top-20 z-10 backdrop-blur-xl bg-white/80">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search guides by title or steps..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all border"
-                    />
-                </div>
-                <select
-                    className="px-4 py-3 bg-gray-50/50 border-gray-100 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-w-[200px]"
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                >
-                    <option value="All">All Categories</option>
-                    {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                </select>
-            </div>
+            <div className="p-4 max-w-lg mx-auto">
 
-            {/* List */}
-            <div className="grid grid-cols-1 gap-4">
-                {filteredFixes.length > 0 ? (
-                    filteredFixes.map((item) => (
-                        <div
-                            key={item.id}
-                            className="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                {/* Controls */}
+                <div className="flex justify-between items-center mb-6 gap-3">
+                    {/* Filter Dropdown */}
+                    <div className="relative flex-1">
+                        <button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 flex justify-between items-center text-gray-700 font-medium shadow-sm active:bg-gray-50"
                         >
-                            <div className="flex justify-between items-start gap-4">
-                                <div className="space-y-3 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
-                                            // Dynamic color could be improved, but hardcoded for now is ok
-                                            "bg-blue-50 text-blue-600"
-                                            }`}>
-                                            {item.category?.name}
-                                        </span>
-                                        <span className="text-xs text-gray-400 flex items-center gap-1">
-                                            <Wrench size={12} />
-                                            Guide #{item.id}
-                                        </span>
-                                    </div>
+                            <span className="truncate">{selectedCategory}</span>
+                            <ChevronDown size={18} className="text-gray-400" />
+                        </button>
 
-                                    <h3 className="font-bold text-gray-800 text-lg sm:text-xl leading-snug group-hover:text-blue-600 transition-colors">
-                                        {item.title}
-                                    </h3>
-
-                                    <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100/50">
-                                        {item.steps.split('\n').slice(0, 3).map((step, idx) => (
-                                            <div key={idx} className="flex gap-3">
-                                                <span className="flex-shrink-0 w-5 h-5 bg-white border border-gray-200 text-gray-500 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm mt-0.5">
-                                                    {idx + 1}
-                                                </span>
-                                                <p className="text-gray-600 text-sm leading-relaxed">{step}</p>
-                                            </div>
-                                        ))}
-                                        {item.steps.split('\n').length > 3 && (
-                                            <p className="text-blue-500 text-xs font-medium pl-8 pt-1">
-                                                + {item.steps.split('\n').length - 3} more steps
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-2">
+                        {isFilterOpen && (
+                            <div className="absolute top-full left-0 mt-2 w-full min-w-[220px] bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left">
+                                <div className="p-2 flex flex-col gap-1 max-h-[280px] overflow-y-auto custom-scrollbar">
                                     <button
-                                        onClick={() => openEditModal(item)}
-                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                        title="Edit"
+                                        onClick={() => { setSelectedCategory("All Categories"); setIsFilterOpen(false); }}
+                                        className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${selectedCategory === "All Categories" ? "bg-gray-100 text-gray-900 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
                                     >
+                                        <span>All Categories</span>
+                                    </button>
+                                    {CATEGORIES.map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => { setSelectedCategory(cat); setIsFilterOpen(false); }}
+                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${selectedCategory === cat ? "bg-gray-100 text-gray-900 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                                        >
+                                            <span>{cat}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={openNew}
+                        className="bg-[#1B365D] hover:bg-[#152a48] text-white px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap font-medium"
+                    >
+                        <Plus size={18} />
+                        Add New Guide
+                    </button>
+                </div>
+
+                {/* List */}
+                <div className="space-y-4">
+                    {filteredData.map(item => (
+                        <div key={item.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+                            <div className="flex justify-between items-start mb-1">
+                                {item.category && (
+                                    <span className="bg-blue-100 text-[#1B365D] text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
+                                        {item.category}
+                                    </span>
+                                )}
+                                <div className="flex gap-3">
+                                    <button onClick={() => handleEdit(item)} className="text-gray-400 hover:text-blue-600">
                                         <Edit size={20} />
                                     </button>
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                        title="Delete"
-                                    >
+                                    <button onClick={() => handleDelete(item.id)} className="text-gray-400 hover:text-red-600">
                                         <Trash2 size={20} />
                                     </button>
                                 </div>
                             </div>
+
+                            <h3 className="font-bold text-gray-900 text-lg mb-2">{item.title}</h3>
+
+                            {renderSteps(item.description)}
                         </div>
-                    ))
-                ) : (
-                    <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
-                        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <Wrench size={32} />
+                    ))}
+
+                    {filteredData.length === 0 && (
+                        <div className="text-center py-10 text-gray-400">
+                            No guides found in this category.
                         </div>
-                        <h3 className="text-gray-800 font-bold text-lg">No guides found</h3>
-                        <p className="text-gray-500 text-sm mt-1">Try adjusting your search or add a new guide.</p>
-                        <button
-                            onClick={openCreateModal}
-                            className="text-blue-600 font-medium text-sm mt-4 hover:underline"
-                        >
-                            Add New Guide
-                        </button>
-                    </div>
-                )}
+                    )}
+                </div>
+
             </div>
 
-            {/* Modal */}
+            {/* Modal - Bottom Sheet feel on mobile, Modal on desktop */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                        {/* Modal Header */}
-                        <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-3xl z-10">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-800">
-                                    {isEditMode ? "Edit Quick Fix" : "Create New Guide"}
-                                </h2>
-                                <p className="text-xs text-gray-500 mt-1">Fill in the details below</p>
-                            </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h2 className="text-xl font-bold text-gray-800">
+                                {editId ? "Edit Guide" : "Create New Guide"}
+                            </h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition"
+                                className="text-gray-400 hover:text-gray-600 bg-white p-1 rounded-full shadow-sm border border-gray-200"
                             >
-                                <X size={24} />
+                                <X size={20} />
                             </button>
                         </div>
 
-                        {/* Modal Form */}
-                        <div className="p-6 overflow-y-auto">
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Guide Title</label>
-                                    <input
-                                        type="text"
-                                        name="title"
-                                        value={formData.title}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder:text-gray-400"
-                                        placeholder="e.g. Printer Paper Jam Solution"
-                                    />
-                                </div>
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
-                                    <select
-                                        name="categoryId"
-                                        value={formData.categoryId}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
-                                    >
-                                        <option value="">Select a Category</option>
-                                        {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            {/* Title */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Guide Title</label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={form.title}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#1B365D] focus:border-transparent outline-none transition-all placeholder-gray-400"
+                                    placeholder="e.g. Printer paper jam"
+                                    required
+                                />
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Troubleshooting Steps
-                                        <span className="text-gray-400 font-normal ml-1">(One step per line)</span>
-                                    </label>
-                                    <textarea
-                                        name="steps"
-                                        value={formData.steps}
-                                        onChange={handleInputChange}
-                                        required
-                                        rows="6"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder:text-gray-400 resize-none"
-                                        placeholder="1. Turn off the device&#10;2. Wait for 30 seconds&#10;3. Turn it back on"
-                                    />
-                                </div>
-
-                                <div className="pt-2">
+                            {/* Category */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Category</label>
+                                <div className="relative">
                                     <button
-                                        type="submit"
-                                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                        type="button"
+                                        onClick={() => setIsFormCategoryOpen(!isFormCategoryOpen)}
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 flex justify-between items-center text-left focus:ring-2 focus:ring-[#1B365D] transition-all"
                                     >
-                                        <Save size={20} />
-                                        {isEditMode ? "Save Changes" : "Create Guide"}
+                                        <span className={form.category ? "text-gray-900" : "text-gray-400"}>
+                                            {form.category || "Select a Category"}
+                                        </span>
+                                        <ChevronDown size={20} className="text-gray-400" />
                                     </button>
+
+                                    {isFormCategoryOpen && (
+                                        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="p-2 flex flex-col gap-1 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                                {CATEGORIES.map(cat => (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setForm({ ...form, category: cat });
+                                                            setIsFormCategoryOpen(false);
+                                                        }}
+                                                        className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${form.category === cat ? "bg-gray-100 text-gray-900 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                                                    >
+                                                        <span>{cat}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+
+                            {/* Description / Steps */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Troubleshooting Steps</label>
+                                <textarea
+                                    name="description"
+                                    value={form.description}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 h-32 focus:ring-2 focus:ring-[#1B365D] focus:border-transparent outline-none transition-all resize-none placeholder-gray-400"
+                                    placeholder="1. Turn off device&#10;2. Wait 30 seconds..."
+                                    required
+                                ></textarea>
+                                <p className="text-xs text-gray-400 mt-1 text-right">Separate steps with new lines</p>
+                            </div>
+
+                            {/* Image URL (Optional) */}
+
+
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    className="w-full py-3.5 rounded-xl bg-[#1B365D] hover:bg-[#152a48] text-white font-bold shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {editId ? "Update Guide" : "Create Guide"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

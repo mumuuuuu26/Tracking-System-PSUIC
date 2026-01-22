@@ -1,62 +1,169 @@
-import React, { useEffect, useState } from 'react';
-import useAuthStore from '../../store/auth-store';
-import { listMyTickets } from '../../api/ticket';
-import { createAppointment, getITAvailability } from '../../api/appointment';
-import { toast } from 'react-toastify';
-import dayjs from 'dayjs';
-import isBetween from 'dayjs/plugin/isBetween';
-import { Calendar, Clock, ChevronRight, Check } from 'lucide-react';
-import CalendarGrid from '../../components/CalendarGrid';
+import React, { useEffect, useState } from "react";
+import FilterDropdown from "../../components/ui/FilterDropdown";
+import useAuthStore from "../../store/auth-store";
+import { listMyTickets } from "../../api/ticket";
+import { getITAvailability } from "../../api/appointment";
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+import {
+    Calendar,
+    ChevronRight,
+    ChevronLeft,
+    Calendar as CalendarIcon,
+    Plus,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import CustomSelect from "../../components/ui/CustomSelect";
 
 dayjs.extend(isBetween);
 
+// Mini Calendar Component (Custom for this page to match mockup)
+const MiniCalendar = ({
+    currentMonth,
+    setCurrentMonth,
+    selectedDate,
+    setSelectedDate,
+    events,
+}) => {
+    const startOfMonth = currentMonth.startOf("month");
+    const endOfMonth = currentMonth.endOf("month");
+    const daysInMonth = currentMonth.daysInMonth();
+    const startDayOfWeek = startOfMonth.day() === 0 ? 6 : startOfMonth.day() - 1; // Mon=0, Sun=6
+
+    const days = [];
+    // Previous month placeholders
+    for (let i = 0; i < startDayOfWeek; i++) {
+        days.push(null);
+    }
+    // Days
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push(currentMonth.date(i));
+    }
+
+    const hasEvent = (date) => {
+        if (!date) return false;
+        const dStr = date.format("YYYY-MM-DD");
+        return events.some((e) => dayjs(e.date).format("YYYY-MM-DD") === dStr);
+    };
+
+    const getEventColor = (date) => {
+        if (!date) return "";
+        const dStr = date.format("YYYY-MM-DD");
+        const event = events.find(
+            (e) => dayjs(e.date).format("YYYY-MM-DD") === dStr
+        );
+        if (!event) return "";
+        // Mockup uses Blue and Green dots
+        return event.type === "appointment" ? "bg-blue-400" : "bg-green-400";
+    };
+
+    return (
+        <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-[#193C6C] font-bold text-lg">IT Calendar</h3>
+                <div className="flex items-center gap-4">
+                    <div className="bg-white border border-gray-200 rounded-xl px-3 py-1 flex items-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-shadow">
+                        <span className="text-gray-600 font-bold text-sm">
+                            {currentMonth.format("MMM")}
+                        </span>
+                        <CalendarIcon size={16} className="text-gray-400" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Navigation (Hidden in mockup but good for UX) */}
+            <div className="flex justify-between mb-4 px-2">
+                <button
+                    onClick={() => setCurrentMonth(currentMonth.subtract(1, "month"))}
+                >
+                    <ChevronLeft
+                        size={20}
+                        className="text-gray-300 hover:text-blue-600"
+                    />
+                </button>
+                <button onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}>
+                    <ChevronRight
+                        size={20}
+                        className="text-gray-300 hover:text-blue-600"
+                    />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-7 mb-4 text-center">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                    <span key={d} className="text-gray-400 text-xs font-medium uppercase">
+                        {d}
+                    </span>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-4 gap-x-1 justify-items-center">
+                {days.map((date, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-1 w-8">
+                        {date ? (
+                            <>
+                                <button
+                                    onClick={() => setSelectedDate(date)}
+                                    className={`
+                                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all
+                                        ${date.isSame(selectedDate, "day")
+                                            ? "bg-blue-400 text-white shadow-md shadow-blue-200"
+                                            : "text-gray-700 hover:bg-gray-100"
+                                        }
+                                    `}
+                                >
+                                    {date.date()}
+                                </button>
+                                {/* Dots */}
+                                <div className="h-1 flex gap-0.5">
+                                    {hasEvent(date) && (
+                                        <div
+                                            className={`w-1 h-1 rounded-full ${getEventColor(date)}`}
+                                        ></div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="w-8 h-8"></div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 const UserAppointments = () => {
     const { token } = useAuthStore();
+    const navigate = useNavigate();
 
     // States
-    const [tickets, setTickets] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [step, setStep] = useState(1); // 1: Select Ticket, 2: Select Date/Time, 3: Success?
-    const [selectedTicket, setSelectedTicket] = useState(null);
-    const [selectedDate, setSelectedDate] = useState(dayjs().add(1, 'day')); // Object dayjs
-    const [currentMonth, setCurrentMonth] = useState(dayjs().add(1, 'day'));
-    const [selectedTime, setSelectedTime] = useState('');
-    const [note, setNote] = useState('');
-    const [modalEvent, setModalEvent] = useState(null);
-
-    // Calendar States
+    const [myTickets, setMyTickets] = useState([]);
     const [monthlyEvents, setMonthlyEvents] = useState([]);
+    const [currentMonth, setCurrentMonth] = useState(dayjs());
+    const [selectedDate, setSelectedDate] = useState(dayjs());
 
-    // Load user's 'in_progress' tickets that don't have appointment
     useEffect(() => {
-        loadTickets();
-    }, []);
+        loadMySchedule(); // Load user's tickets
+        loadMonthlyEvents(); // Load IT calendar availability
+    }, [currentMonth.format("YYYY-MM")]);
 
-    // Load availability when date changes (month/year) or entering Step 2
-    useEffect(() => {
-        if (step === 2) {
-            loadMonthlyEvents();
-        }
-    }, [step, currentMonth.format('YYYY-MM')]);
-
-    const loadTickets = async () => {
+    const loadMySchedule = async () => {
         try {
-            setLoading(true);
             const res = await listMyTickets(token);
-            // Filter: Status is in_progress (accepted by IT) AND no appointment booked yet
-            const schedulable = res.data.filter(t => t.status === 'in_progress');
-            setTickets(schedulable);
+            // Filter tickets that have appointments, or just list tickets as "Tasks"
+            // Mockup shows "AP-01 : Wifi", "AP-02: Projector".
+            // Let's show "Scheduled" tickets as appointments.
+            setMyTickets(res.data);
         } catch (err) {
             console.error(err);
-        } finally {
-            setLoading(false);
         }
     };
 
     const loadMonthlyEvents = async () => {
         try {
-            const startOfMonth = currentMonth.startOf('month').format('YYYY-MM-DD');
-            const endOfMonth = currentMonth.endOf('month').format('YYYY-MM-DD');
+            const startOfMonth = currentMonth.startOf("month").format("YYYY-MM-DD");
+            const endOfMonth = currentMonth.endOf("month").format("YYYY-MM-DD");
             const res = await getITAvailability(token, startOfMonth, endOfMonth);
             setMonthlyEvents(res.data);
         } catch (err) {
@@ -64,256 +171,284 @@ const UserAppointments = () => {
         }
     };
 
-    const handleTicketSelect = (ticket) => {
-        setSelectedTicket(ticket);
-        setStep(2);
-    };
+    // Filter appointments for "My Schedule" section
+    // In mockup: It's a list card.
+    // Let's show:
+    // 1. Confirmed Appointments (status: scheduled)
+    // 2. Pending Requests (status: in_progress/pending)
+    const [showAll, setShowAll] = useState(false);
+    const [filterPriority, setFilterPriority] = useState("All"); // All, Low, Medium, High
+    const [filterTime, setFilterTime] = useState("Upcoming"); // Upcoming, Past 7 Days, All History
 
-    const handleBooking = async () => {
-        if (!selectedTime || !selectedDate) return toast.error("Please select date and time");
+    // Filter appointments
+    const filteredAppointments = myTickets
+        .filter((t) => {
+            // 1. Basic Validity Check
+            const hasAppointment =
+                t.appointment && t.appointment.status !== "cancelled";
+            const hasRequest = t.description?.includes("[Requested Appointment:");
+            if (!hasAppointment && !hasRequest) return false;
 
-        try {
-            const appointmentData = {
-                ticketId: selectedTicket.id,
-                date: selectedDate.format('YYYY-MM-DD'),
-                time: selectedTime,
-                note
+            // 2. Get Date
+            let date = null;
+            if (hasAppointment) date = dayjs(t.appointment.scheduledAt);
+            else {
+                const match = t.description?.match(
+                    /\[Requested Appointment: (\d{4}-\d{2}-\d{2})/
+                );
+                if (match) date = dayjs(match[1]);
+            }
+            if (!date) return false;
+
+            // 3. Time Filter
+            const now = dayjs();
+            if (filterTime === "Upcoming") {
+                // Keep existing behavior or improve: Upcoming usually means >= Today
+                // But Original Code was: if (!date.isSame(currentMonth, "month")) return false;
+                // Stick to currentMonth check if that was the intention, OR change to future.
+                // Giving the user options like "Today" implies they want to drill down.
+                // Let's make "Upcoming" mean >= Today.
+                if (date.isBefore(now, 'day')) return false;
+            } else if (filterTime === "Today") {
+                if (!date.isSame(now, 'day')) return false;
+            } else if (filterTime === "Yesterday") {
+                if (!date.isSame(now.subtract(1, 'day'), 'day')) return false;
+            } else if (filterTime === "Last 3 Days") {
+                if (!date.isBetween(now.subtract(3, 'day'), now, 'day', '[]')) return false;
+            } else if (filterTime === "Last 7 Days") {
+                if (!date.isBetween(now.subtract(7, 'day'), now, 'day', '[]')) return false;
+            }
+
+            // 4. Priority Filter (Urgency)
+            if (filterPriority !== "All" && t.urgency !== filterPriority)
+                return false;
+
+            return true;
+        })
+        .sort((a, b) => {
+            const getDate = (ticket) => {
+                if (ticket.appointment) return new Date(ticket.appointment.scheduledAt);
+                const match = ticket.description?.match(
+                    /\[Requested Appointment: (\d{4}-\d{2}-\d{2})/
+                );
+                return match ? new Date(match[1]) : new Date(0);
             };
-
-            await createAppointment(token, appointmentData);
-            toast.success("Appointment booked successfully!");
-            setStep(1);
-            loadTickets(); // Refresh list
-        } catch (err) {
-            toast.error(err.response?.data?.message || "Booking failed");
-        }
-    };
-
-    const getBusyEvent = (time) => {
-        const slotStart = dayjs(`${selectedDate.format('YYYY-MM-DD')}T${time}:00`);
-        const slotEnd = slotStart.add(1, 'hour');
-
-        return monthlyEvents.find(event => {
-            const eventDate = dayjs(event.date);
-            if (!eventDate.isSame(selectedDate, 'day')) return false;
-
-            if (event.type === 'task' && !event.endTime && !eventDate.hour()) return true;
-
-            const eventStart = dayjs(event.date);
-            const eventEnd = event.endTime ? dayjs(event.endTime) : eventStart.add(1, 'hour');
-
-            return slotStart.isBefore(eventEnd) && slotEnd.isAfter(eventStart);
+            return getDate(a) - getDate(b);
         });
-    };
 
-    const isBusyToday = (slots) => {
-        return slots.every(time => !!getBusyEvent(time));
-    };
-
-    const handleTimeSelect = (time) => {
-        const busyEvent = getBusyEvent(time);
-        if (busyEvent) {
-            setModalEvent(busyEvent);
-        } else {
-            setSelectedTime(time);
-        }
-    };
-
-    const timeSlots = [
-        "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"
-    ];
-
-
+    const displayedAppointments = showAll
+        ? filteredAppointments
+        : filteredAppointments.slice(0, 3);
 
     return (
-        <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans relative">
-            {/* Modal for Busy Event */}
-            {modalEvent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95">
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-800">Slot Unavailable</h3>
-                                <p className="text-sm text-gray-500">This time slot is already booked.</p>
-                            </div>
-                            <button onClick={() => setModalEvent(null)} className="p-1 hover:bg-gray-100 rounded-full">
-                                <ChevronRight className="rotate-90 text-gray-400" />
-                            </button>
-                        </div>
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans relative">
+            {/* Deep Blue Header */}
+            <div className="bg-[#193C6C] px-6 pt-10 pb-8 rounded-b-[2rem] shadow-lg mb-6 sticky top-0 z-20">
+                <div className="max-w-7xl mx-auto flex items-center gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
+                    >
+                        <ChevronLeft size={28} />
+                    </button>
 
-                        <div className={`p-4 rounded-2xl mb-4 ${modalEvent.type === 'appointment' ? 'bg-blue-50' : 'bg-green-50'}`}>
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className={`w-3 h-3 rounded-full ${modalEvent.type === 'appointment' ? 'bg-blue-500' : 'bg-green-500'}`} />
-                                <span className={`text-xs font-bold uppercase ${modalEvent.type === 'appointment' ? 'text-blue-600' : 'text-green-600'}`}>
-                                    {modalEvent.type}
-                                </span>
-                            </div>
-                            <h4 className="font-bold text-gray-800 text-lg mb-1">{modalEvent.title}</h4>
-                            <p className="text-gray-600 text-sm">{modalEvent.description || 'No additional details provided.'}</p>
-                            <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                                <Clock size={14} />
-                                {dayjs(modalEvent.date).format('HH:mm')} - {modalEvent.endTime ? dayjs(modalEvent.endTime).format('HH:mm') : 'N/A'}
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={() => setModalEvent(null)}
-                            className="w-full py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
-                        >
-                            Close
-                        </button>
-                    </div>
                 </div>
-            )}
-
-            <h1 className="text-2xl font-bold mb-6 text-gray-800">Book an Appointment</h1>
-
-            {/* Steps Indicator */}
-            <div className="flex items-center mb-8 bg-gray-50 p-2 rounded-xl">
-                {[1, 2, 3].map((s) => (
-                    <div key={s} className="flex-1 flex items-center justify-center">
-                        <div className={`
-                            w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors
-                            ${step >= s ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}
-                        `}>
-                            {s}
-                        </div>
-                        {s < 3 && <div className={`h-1 flex-1 mx-2 ${step > s ? 'bg-blue-600' : 'bg-gray-200'}`} />}
-                    </div>
-                ))}
             </div>
 
-            {step === 1 && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                    <h2 className="text-lg font-semibold text-gray-700">Select a Ticket</h2>
-                    {loading ? (
-                        <p>Loading...</p>
-                    ) : tickets.length > 0 ? (
-                        tickets.map(ticket => (
-                            <button
-                                key={ticket.id}
-                                onClick={() => handleTicketSelect(ticket)}
-                                className="w-full bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between hover:border-blue-500 hover:shadow-md transition-all text-left"
-                            >
-                                <div>
-                                    <h3 className="font-bold text-gray-800">{ticket.title}</h3>
-                                    <p className="text-sm text-gray-500">#{ticket.id} • {ticket.equipment?.name || 'Unknown Device'}</p>
-                                </div>
-                                <ChevronRight className="text-gray-400" />
-                            </button>
-                        ))
-                    ) : (
-                        <div className="text-center py-10 bg-gray-50 rounded-xl">
-                            <p className="text-gray-500">No tickets available for booking.</p>
-                            <p className="text-xs text-gray-400 mt-1">Wait for IT to accept your request.</p>
-                        </div>
-                    )}
-                </div>
-            )}
+            <div className="max-w-7xl mx-auto px-6 space-y-6 animate-in fade-in duration-500">
+                <div className="flex flex-col space-y-6">
+                    {/* Calendar Section */}
+                    <div className="w-full">
+                        <MiniCalendar
+                            currentMonth={currentMonth}
+                            setCurrentMonth={setCurrentMonth}
+                            selectedDate={selectedDate}
+                            setSelectedDate={setSelectedDate}
+                            events={monthlyEvents}
+                        />
 
-            {step === 2 && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                    <div>
-                        <button onClick={() => setStep(1)} className="text-sm text-gray-500 hover:text-gray-800 mb-2">← Back</button>
-                        <h2 className="text-lg font-semibold text-gray-700">Select Date & Time</h2>
-                        <p className="text-sm text-gray-500">Check IT availability and pick a slot for <span className="text-blue-600 font-bold">{selectedTicket?.title}</span></p>
+                        {/* IT Schedule for Selected Date */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm mt-6">
+                            <h3 className="text-[#193C6C] font-bold text-lg mb-4 flex items-center gap-2">
+                                <CalendarIcon size={20} />
+                                IT Schedule & Availability
+                                <span className="text-sm font-normal text-gray-400 ml-auto">
+                                    {selectedDate.format("D MMM YYYY")}
+                                </span>
+                            </h3>
+
+                            <div className="space-y-3">
+                                {(() => {
+                                    const dateStr = selectedDate.format("YYYY-MM-DD");
+                                    const dailyEvents = monthlyEvents.filter(e =>
+                                        dayjs(e.date).format("YYYY-MM-DD") === dateStr
+                                    ).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                                    if (dailyEvents.length === 0) {
+                                        return (
+                                            <div className="text-center py-6 bg-green-50 rounded-2xl border border-green-100">
+                                                <p className="text-green-600 font-bold mb-1">All Clear!</p>
+                                                <p className="text-green-500 text-xs text-opacity-80">IT Support is available all day</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    return dailyEvents.map((event, idx) => (
+                                        <div key={idx} className="flex items-center gap-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                                            <div className={`w-2 h-10 rounded-full ${event.type === 'appointment' ? 'bg-blue-400' : 'bg-red-400'}`}></div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-gray-800 font-bold text-sm">
+                                                        {event.title}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                                                        {dayjs(event.date).format("HH:mm")} - {event.endTime ? dayjs(event.endTime).format("HH:mm") : '...'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 truncate">{event.description || 'Busy'}</p>
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {/* Calendar Column */}
-                        <div className="md:w-full">
-                            <CalendarGrid
-                                currentDate={currentMonth}
-                                setCurrentDate={setCurrentMonth}
-                                selectedDate={selectedDate}
-                                setSelectedDate={setSelectedDate}
-                                events={monthlyEvents}
-                                onDateSelect={(day) => {
-                                    if (day.isBefore(dayjs(), 'day')) return; // Prevent selecting past
-                                    setSelectedDate(day);
-                                    setSelectedTime(''); // Reset time on date change
-                                }}
-                            />
-                            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
-                                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Busy (Appt)</div>
-                                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> Busy (Task)</div>
+                    {/* Filters & Schedule Section */}
+                    <div className="space-y-6">
+                        {/* Filters Row */}
+                        <div className="flex gap-3">
+                            {/* Urgency Filter */}
+                            <div className="w-1/2">
+                                <CustomSelect
+                                    options={["All", "Low", "Medium", "High"]}
+                                    value={filterPriority}
+                                    onChange={(e) => setFilterPriority(e.target.value)}
+                                    placeholder="Status"
+                                />
+                            </div>
+
+                            {/* Time Filter */}
+                            <div className="w-1/2">
+                                <FilterDropdown
+                                    options={[
+                                        { label: "Upcoming", value: "Upcoming" },
+                                        { label: "Today", value: "Today" },
+                                        { label: "Yesterday", value: "Yesterday" },
+                                        { label: "Last 3 Days", value: "Last 3 Days" },
+                                        { label: "Last 7 Days", value: "Last 7 Days" }
+                                    ]}
+                                    value={filterTime}
+                                    onChange={(e) => setFilterTime(e.target.value)}
+                                    placeholder="Time"
+                                    label="Select days"
+                                />
                             </div>
                         </div>
 
-                        {/* Time & Note Column */}
-                        <div className="space-y-6">
-                            <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm h-full">
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium mb-3 flex items-center gap-2">
-                                        <Clock size={16} className="text-blue-500" />
-                                        Available Slots for {selectedDate.format('DD MMM')}
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {timeSlots.map(time => {
-                                            const busyEvent = getBusyEvent(time);
-                                            const isBusy = !!busyEvent;
-                                            return (
-                                                <button
-                                                    key={time}
-                                                    onClick={() => handleTimeSelect(time)}
-                                                    className={`
-                                            py-2.5 px-3 rounded-xl border transition-all font-medium relative overflow-hidden group flex items-center justify-center
-                                            ${isBusy
-                                                            ? 'bg-red-50 border-red-100 cursor-pointer hover:bg-red-100'
-                                                            : selectedTime === time
-                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-100'
-                                                                : 'hover:bg-gray-50 border-gray-200 text-gray-600'
-                                                        }
-                                        `}
-                                                >
-                                                    {isBusy ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs text-red-300 line-through decoration-red-300">{time}</span>
-                                                            <span className="text-[10px] font-bold text-red-500 uppercase flex items-center bg-white/60 px-2 py-0.5 rounded-md shadow-sm">
-                                                                Busy <ChevronRight size={10} className="ml-0.5" />
-                                                            </span>
-                                                        </div>
+                        {/* My Schedule */}
+                        <div>
+                            <div className="flex justify-between items-center px-1 mb-4">
+                                <h3 className="text-[#193C6C] font-bold text-lg">
+                                    My Schedule
+                                </h3>
+                                {filteredAppointments.length > 3 && (
+                                    <button
+                                        onClick={() => setShowAll(!showAll)}
+                                        className="text-blue-500 text-sm font-bold hover:underline"
+                                    >
+                                        {showAll ? "Show less" : "See all"}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                {displayedAppointments.length > 0 ? (
+                                    displayedAppointments.map((ticket) => {
+                                        // Extract date for display
+                                        let displayDate = "N/A";
+                                        if (ticket.appointment) {
+                                            displayDate = dayjs(
+                                                ticket.appointment.scheduledAt
+                                            ).format("DD MMM YYYY");
+                                        } else {
+                                            const match = ticket.description?.match(
+                                                /\[Requested Appointment: (\d{4}-\d{2}-\d{2})/
+                                            );
+                                            if (match) {
+                                                displayDate = dayjs(match[1]).format("DD MMM YYYY");
+                                            }
+                                        }
+
+                                        return (
+                                            <div
+                                                key={ticket.id}
+                                                className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer"
+                                                onClick={() => navigate(`/user/ticket/${ticket.id}`)}
+                                            >
+                                                {/* Image Thumbnail */}
+                                                <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                                                    {ticket.images && ticket.images.length > 0 ? (
+                                                        <img
+                                                            src={ticket.images[0].url}
+                                                            className="w-full h-full object-cover"
+                                                            alt="Ticket"
+                                                        />
                                                     ) : (
-                                                        <span className="text-sm">{time}</span>
+                                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                                            <CalendarIcon size={24} />
+                                                        </div>
                                                     )}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                    {isBusyToday(timeSlots) && (
-                                        <p className="text-xs text-red-500 mt-2 text-center">Fully booked this day.</p>
-                                    )}
-                                </div>
+                                                </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Note (Optional)</label>
-                                    <textarea
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                        rows="3"
-                                        placeholder="Specific request details..."
-                                        value={note}
-                                        onChange={e => setNote(e.target.value)}
-                                    />
-                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-gray-900 truncate">
+                                                        AP-{ticket.id} : {ticket.category?.name || "Issue"}
+                                                    </h4>
+                                                    <div className="flex items-center gap-2 mt-1 text-gray-500 text-sm">
+                                                        <CalendarIcon size={14} />
+                                                        <span>{displayDate}</span>
+                                                    </div>
+                                                    {!ticket.appointment && (
+                                                        <p className="text-xs text-amber-500 font-bold mt-1">
+                                                            Waiting for Confirmation
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <ChevronRight className="text-gray-400" />
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                                            <CalendarIcon size={24} />
+                                        </div>
+                                        <p className="text-gray-500 font-medium">
+                                            No appointments scheduled.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    <button
-                        onClick={handleBooking}
-                        disabled={!selectedTime}
-                        className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg shadow-blue-200 transition-all active:scale-[0.99]"
-                    >
-                        Confirm Booking
-                    </button>
                 </div>
-            )}
+            </div>
 
-            {step === 3 && (
-                <div className="text-center py-10 animate-in zoom-in-95">
-                    {/* Success state if we want to show it explicitly */}
-                </div>
-            )}
+            {/* Floating Add Action Button (To resemble a primary action) */}
+            {/* Note: Mockup doesn't show FAB but usually needed to create new appt */}
+            {/* Wait, the mockup has Navigation Bar at bottom (Home, Ticket, Scan, Profile). */}
+            {/* But User requested to "Adjust Appointment new look like picture". Picture 3 is "Appointment" Form. */}
+            {/* So we need a way to get to that form. I'll add a FAB or just rely on Sidebar/Menu? */}
+            {/* The mockup shows a flow where you might click a '+' or select a slot. */}
+            {/* For now, I'll assume they navigate here via menu, and maybe want to 'Book' something. */}
+            <button
+                onClick={() => navigate("/user/create-ticket")}
+                className="fixed bottom-24 right-6 w-14 h-14 bg-[#193C6C] text-white rounded-full shadow-xl flex items-center justify-center hover:bg-[#132E52] active:scale-95 transition-all z-30"
+            >
+                <Plus size={28} />
+            </button>
         </div>
     );
 };

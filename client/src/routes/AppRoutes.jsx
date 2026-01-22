@@ -8,7 +8,7 @@ import PSUCallback from "../pages/auth/PSUCallback";
 import ScanQR from "../pages/user/ScanQR";
 import TicketDetail from "../pages/user/TicketDetail";
 import EquipmentDetail from "../pages/user/EquipmentDetail";
-import QuickFix from "../pages/user/QuickFix";
+
 // Auth
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -21,6 +21,7 @@ import Profile from "../pages/user/Profile";
 import UserAppointments from "../pages/user/Appointments";
 import Feedback from "../pages/user/Feedback";
 import WaitingForFeedback from "../pages/user/WaitingForFeedback";
+import QuickFix from "../pages/user/QuickFix";
 
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
@@ -40,16 +41,15 @@ import Schedule from "../pages/it/Schedule";
 import Notifications from "../pages/it/Notifications";
 import ITProfile from "../pages/it/Profile";
 import History from "../pages/it/History";
-import QuickFixManagement from "../pages/it/QuickFixManagement";
+
 import Tickets from "../pages/it/Tickets";
 import ITTicketDetail from "../pages/it/TicketDetail";
-import ITKnowledgeBase from "../pages/it/kb/ITKnowledgeBase";
-import KnowledgeBaseForm from "../pages/it/kb/KnowledgeBaseForm";
+
 import EmailSettings from "../pages/it/EmailSettings";
 import RescheduleBooking from "../pages/it/RescheduleBooking";
+import QuickFixManagement from "../pages/it/QuickFixManagement";
 
-import KnowledgeBase from "../pages/kb/KnowledgeBase";
-import KnowledgeBaseDetail from "../pages/kb/KnowledgeBaseDetail";
+
 
 
 
@@ -71,10 +71,11 @@ const AppRoutes = () => {
         <Route path="scan-qr" element={<ScanQR />} />
         <Route path="equipment/:id" element={<EquipmentDetail />} />
         <Route path="ticket/:id" element={<TicketDetail />} />
-        <Route path="quick-fix" element={<QuickFix />} />
+
         <Route path="profile" element={<Profile />} />
         <Route path="feedback" element={<WaitingForFeedback />} />
         <Route path="feedback/:ticketId" element={<Feedback />} />
+        <Route path="quick-fix" element={<QuickFix />} />
       </Route>
 
       {/* Admin Routes */}
@@ -98,22 +99,19 @@ const AppRoutes = () => {
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<ITProfile />} />
         <Route path="history" element={<History />} />
-        <Route path="manage-quick-fix" element={<QuickFixManagement />} />
+
         <Route path="tickets" element={<Tickets />} />
         <Route path="ticket/:id" element={<ITTicketDetail />} />
         <Route path="ticket/:id/reschedule" element={<RescheduleBooking />} />
-        <Route path="kb" element={<ITKnowledgeBase />} />
-        <Route path="kb/create" element={<KnowledgeBaseForm />} />
-        <Route path="kb/edit/:id" element={<KnowledgeBaseForm />} />
+
         <Route path="email-settings" element={<EmailSettings />} />
+        <Route path="quick-fix" element={<QuickFixManagement />} />
 
       </Route>
 
       <Route path="*" element={<h1>404 Not Found</h1>} />
 
-      {/* Knowledge Base Public Access */}
-      <Route path="/kb" element={<LayoutUser><KnowledgeBase /></LayoutUser>} />
-      <Route path="/kb/:id" element={<LayoutUser><KnowledgeBaseDetail /></LayoutUser>} />
+
 
     </Routes>
   );

@@ -1,23 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Edit2, Check, X, AlertCircle } from 'lucide-react';
+import { Mail, Edit2, Check, X, AlertCircle, Save } from 'lucide-react';
 import useAuthStore from '../../store/auth-store';
 import { getEmailTemplates, updateEmailTemplate } from '../../api/it';
+import { updateProfile } from '../../api/user';
 import { toast } from 'react-toastify';
 
 const EmailSettings = () => {
-    const { token } = useAuthStore();
+    const { token, user, checkUser } = useAuthStore();
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingTemplate, setEditingTemplate] = useState(null);
 
-    // Form states
+    // Personal Preference States
+    const [myEmailEnabled, setMyEmailEnabled] = useState(true);
+    const [myNotifyEmail, setMyNotifyEmail] = useState("");
+
+    // Template Form states
     const [subject, setSubject] = useState("");
     const [body, setBody] = useState("");
     const [isEnabled, setIsEnabled] = useState(true);
 
     useEffect(() => {
         loadTemplates();
-    }, []);
+        if (user) {
+            setMyEmailEnabled(user.isEmailEnabled !== false); // Default true
+            setMyNotifyEmail(user.notificationEmail || user.email || "");
+        }
+    }, [user, token]);
 
     const loadTemplates = async () => {
         try {
@@ -31,6 +40,31 @@ const EmailSettings = () => {
             setLoading(false);
         }
     };
+
+    const handleSavePreference = async () => {
+        try {
+            // Optimistic update local
+            const updatedUser = {
+                ...user,
+                isEmailEnabled: myEmailEnabled,
+                notificationEmail: myNotifyEmail
+            };
+
+            await updateProfile(token, {
+                isEmailEnabled: myEmailEnabled,
+                notificationEmail: myNotifyEmail
+            });
+
+            // Refresh global user state from backend to ensure we have latest data & PERSIST it to localStorage
+            await checkUser();
+
+            toast.success("Preferences saved successfully");
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save preferences");
+        }
+    }
 
     const handleEdit = (template) => {
         setEditingTemplate(template);
@@ -82,10 +116,72 @@ const EmailSettings = () => {
         <div className="min-h-screen bg-gray-50 pb-12">
             <div className="bg-blue-600 pt-6 pb-24 px-6 rounded-b-[2.5rem] shadow-lg relative z-0">
                 <h1 className="text-2xl font-bold text-white text-center">Email Notification Settings</h1>
-                <p className="text-blue-100 text-center text-sm mt-1">Manage automated email templates</p>
+                <p className="text-blue-100 text-center text-sm mt-1">Manage your receiving preferences and automated templates</p>
             </div>
 
-            <div className="max-w-4xl mx-auto px-6 -mt-16 relative z-10 space-y-4">
+            <div className="max-w-4xl mx-auto px-6 -mt-16 relative z-10 space-y-6">
+
+                {/* My Preferences Section */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                            <Mail size={20} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 text-lg">My Preferences</h3>
+                            <p className="text-sm text-gray-500">Control how YOU receive notifications</p>
+                            {/* DEBUG */}
+                            <pre className="text-xs bg-gray-100 p-2 mt-2">
+                                State: {String(myEmailEnabled)} | User Prop: {String(user?.isEmailEnabled)}
+                            </pre>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                        <div className="flex items-center justify-between w-full md:w-auto gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="font-bold text-gray-700 text-sm">Receive Email Notifications</span>
+                            <button
+                                onClick={() => setMyEmailEnabled(!myEmailEnabled)}
+                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 relative ${myEmailEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                            >
+                                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${myEmailEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
+
+                        {myEmailEnabled && (
+                            <div className="flex-1 w-full relative">
+                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Send to Email Address</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="email"
+                                        value={myNotifyEmail}
+                                        onChange={(e) => setMyNotifyEmail(e.target.value)}
+                                        className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                        placeholder="Enter your email..."
+                                    />
+                                    <button
+                                        onClick={handleSavePreference}
+                                        className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2"
+                                    >
+                                        <Save size={18} /> Save
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">Leaves empty to use account email.</p>
+                            </div>
+                        )}
+
+                        {!myEmailEnabled && (
+                            <div className="flex-1 flex items-center text-gray-400 text-sm italic py-3">
+                                You have disabled email notifications for yourself.
+                                <button onClick={handleSavePreference} className="ml-4 text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg text-gray-600 font-bold transition">Save Setting</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Templates Section */}
+                <h3 className="text-gray-400 font-bold uppercase text-xs tracking-widest pl-2">Global Templates</h3>
+
                 {loading ? (
                     <div className="p-8 text-center bg-white rounded-2xl shadow-sm text-gray-500">Loading...</div>
                 ) : (

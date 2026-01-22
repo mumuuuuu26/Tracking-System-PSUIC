@@ -102,32 +102,51 @@ const AllTickets = () => {
     const getStatusColor = (status) => {
         switch (status) {
             case "pending":
-                return "border-l-4 border-yellow-400 bg-yellow-50";
+                return "border-l-amber-400 border-gray-100";
             case "in_progress":
-                return "border-l-4 border-blue-400 bg-blue-50";
+                return "border-l-blue-400 border-gray-100";
             case "fixed":
-                return "border-l-4 border-green-400 bg-green-50";
+            case "closed":
+                return "border-l-green-400 border-gray-100";
             case "rejected":
-                return "border-l-4 border-red-400 bg-red-50";
+                return "border-l-red-400 border-gray-100";
             default:
-                return "border-l-4 border-gray-400 bg-gray-50";
+                return "border-l-gray-400 border-gray-100";
         }
     };
 
     const getUrgencyBadge = (urgency) => {
         switch (urgency) {
-            case "Critical": return "bg-red-100 text-red-700";
-            case "High": return "bg-orange-100 text-orange-700";
-            case "Medium": return "bg-yellow-100 text-yellow-700";
-            default: return "bg-green-100 text-green-700";
+            case "High":
+            case "Critical":
+                return "bg-red-50 text-red-600 border border-red-100";
+            case "Medium":
+                return "bg-amber-50 text-amber-600 border border-amber-100";
+            case "Low":
+                return "bg-green-50 text-green-600 border border-green-100";
+            default:
+                return "bg-gray-50 text-gray-600 border border-gray-100";
+        }
+    };
+
+    // Helper for Status Dot
+    const getStatusDotColor = (status) => {
+        switch (status) {
+            case "pending": return "bg-amber-500";
+            case "in_progress": return "bg-blue-500";
+            case "fixed":
+            case "closed": return "bg-green-500";
+            case "rejected": return "bg-red-500";
+            default: return "bg-gray-400";
         }
     };
 
     return (
         <div className="min-h-screen bg-slate-50/50 pb-20">
-            {/* Header */}
+            {/* Header ... (Leaving Header as is or assuming it's fine) */}
             <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
                 <div className="max-w-7xl mx-auto">
+                    {/* ... Header contents ... */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Ticket Management</h1>
@@ -192,79 +211,76 @@ const AllTickets = () => {
                             <div
                                 key={ticket.id}
                                 onClick={() => navigate(`/admin/ticket/${ticket.id}`)}
-                                className={`rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer flex flex-col h-full relative group ${getStatusColor(ticket.status)}`}
+                                className={`
+                                    bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
+                                    ${getStatusColor(ticket.status)}
+                                `}
                             >
-                                {/* Header */}
+                                {/* Header: ID & Priority & Time */}
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-blue-600 font-bold text-sm">
+                                        <span className="text-[#193C6C] font-bold text-sm">
                                             #TK-{String(ticket.id).padStart(4, "0")}
                                         </span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getUrgencyBadge(ticket.urgency)}`}>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${getUrgencyBadge(ticket.urgency)}`}>
                                             {ticket.urgency}
                                         </span>
                                     </div>
-                                    <span className="text-xs text-gray-500 font-medium">
-                                        {dayjs(ticket.createdAt).fromNow()}
+                                    <span className="text-gray-400 text-xs font-medium">
+                                        {dayjs(ticket.createdAt).fromNow(true).replace(" days", "d").replace(" months", "mo")} ago
                                     </span>
                                 </div>
 
                                 {/* Title */}
-                                <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-1">{ticket.title}</h3>
+                                <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2 min-h-[56px]">
+                                    {ticket.title}
+                                </h3>
 
-                                {/* Meta Info */}
-                                <div className="flex flex-col gap-1 text-xs text-gray-600 mb-4 flex-1">
+                                {/* Location & User */}
+                                <div className="flex flex-col gap-1 text-xs text-gray-500 mb-6 font-medium">
                                     {ticket.room && (
-                                        <div className="flex items-center gap-1.5">
-                                            <MapPin size={14} />
-                                            <span className="truncate">{ticket.room.roomNumber} (Fl. {ticket.room.floor})</span>
-                                        </div>
+                                        <p className="flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                            {ticket.room.roomNumber} (Fl. {ticket.room.floor})
+                                        </p>
                                     )}
-                                    {ticket.createdBy && (
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                            <User size={14} />
-                                            <span className="truncate font-medium text-gray-700">
-                                                Reported by: {ticket.createdBy.name || ticket.createdBy.username}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <p className="flex items-center gap-1.5">
+                                        <User size={12} className="text-gray-400" /> Reported by: {ticket.createdBy?.name || ticket.createdBy?.username}
+                                    </p>
                                 </div>
 
-                                {/* Status & Assigned To */}
-                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
+                                {/* Footer: Status & Assigned To */}
+                                <div className="flex justify-between items-end border-t border-gray-50 pt-4">
                                     <div className="flex items-center gap-2">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === "pending" ? "bg-yellow-400" :
-                                            ticket.status === "in_progress" ? "bg-blue-400" :
-                                                ticket.status === "rejected" ? "bg-red-400" :
-                                                    "bg-green-400"
-                                            }`} />
-                                        <span className="text-sm font-semibold text-gray-700 capitalize">
+                                        <div className={`w-2 h-2 rounded-full ${getStatusDotColor(ticket.status)}`}></div>
+                                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
                                             {ticket.status.replace("_", " ")}
                                         </span>
                                     </div>
 
                                     {ticket.assignedTo ? (
-                                        <div className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-full">
-                                            <img
-                                                src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
-                                                alt={ticket.assignedTo.name}
-                                                className="w-6 h-6 rounded-full"
-                                            />
-                                            <span className="text-xs text-gray-600 font-medium truncate max-w-[80px]">
-                                                {ticket.assignedTo.name?.split(' ')[0]}
-                                            </span>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] text-gray-400 mb-0.5">Assigned to</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-medium text-gray-600">
+                                                    {ticket.assignedTo.name?.split(" ")[0]}
+                                                </span>
+                                                <img
+                                                    src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
+                                                    alt="Agent"
+                                                    className="w-6 h-6 rounded-full object-cover ring-2 ring-white"
+                                                />
+                                            </div>
                                         </div>
                                     ) : (
-                                        <div className="px-2 py-1 bg-gray-50 rounded-full text-xs text-gray-400 italic">
-                                            Unassigned
-                                        </div>
+                                        <span className="text-xs text-gray-300 italic">Unassigned</span>
                                     )}
                                 </div>
 
-                                {/* Delete Button - Admin Only Action */}
+                                {/* Delete Button - Admin Only */}
                                 <button
                                     onClick={(e) => handleDelete(e, ticket.id)}
-                                    className="absolute top-4 right-4 p-2 bg-white/50 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-full transition-all opacity-0 group-hover:opacity-100 shadow-sm"
                                     title="Delete Ticket"
                                 >
                                     <Trash2 size={16} />

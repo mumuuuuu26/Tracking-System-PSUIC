@@ -19,13 +19,21 @@ const LayoutUser = ({ children }) => {
   const handleLogout = () => {
     Swal.fire({
       title: "Log out",
-      text: "Are you sure you want to log out?",
-      icon: "warning",
+      text: "Are you sure you want to log out ?",
       showCancelButton: true,
       confirmButtonColor: "#2563eb",
-      cancelButtonColor: "#d33",
+      cancelButtonColor: "#fff",
       confirmButtonText: "Log out",
       cancelButtonText: "Cancel",
+      customClass: {
+        popup: "rounded-3xl p-6 md:p-8",
+        title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
+        htmlContainer: "text-gray-500 text-base",
+        confirmButton: "bg-[#2563eb] hover:bg-blue-700 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
+        cancelButton: "bg-white hover:bg-gray-50 text-[#2563eb] border border-[#2563eb] min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
+        actions: "gap-4 w-full px-4 mt-4"
+      },
+      buttonsStyling: false
     }).then((result) => {
       if (result.isConfirmed) {
         actionLogout();
@@ -152,7 +160,7 @@ const LayoutUser = ({ children }) => {
               </button>
             </div>
 
-            <NavLink href="/user/quick-fix" icon={<MessageSquare size={24} />} label="QuickFix" active={isActive("/user/quick-fix")} />
+            <NavLink href="/user/appointments" icon={<Calendar size={24} />} label="Appointment" active={isActive("/user/appointments")} />
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
 
           </div>
@@ -167,8 +175,8 @@ const NavLink = ({ href, icon, label, active }) => (
   <a
     href={href}
     className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 w-16 ${active
-      ? "text-blue-600"
-      : "text-gray-400 hover:text-gray-600"
+      ? "bg-blue-50 text-blue-600 shadow-sm"
+      : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/50"
       }`}
   >
     <div className={`transition-transform duration-200 ${active ? "-translate-y-1" : ""}`}>

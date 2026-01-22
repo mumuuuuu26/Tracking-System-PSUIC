@@ -7,6 +7,8 @@ import {
   ChevronRight,
   MoreHorizontal,
   CheckCircle,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
@@ -49,6 +51,7 @@ const ITDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectNote, setRejectNote] = useState("");
+  const [isRejectDropdownOpen, setIsRejectDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -68,7 +71,7 @@ const ITDashboard = () => {
     if (token) {
       loadDailySchedule();
     }
-  }, [token, selectedDate.format('YYYY-MM-DD')]);
+  }, [token, selectedDate.format('YYYY-MM-DD'), tickets]);
 
   const loadMonthlyEvents = async () => {
     try {
@@ -89,6 +92,30 @@ const ITDashboard = () => {
         getPersonalTasks(token, { date: dateStr })
       ]);
 
+      const requestedAppts = tickets
+        .filter(t => {
+          // Check if ticket has a requested date in description
+          const match = t.description?.match(/\[Requested Appointment: (\d{4}-\d{2}-\d{2}) at (\d{2}:\d{2})\]/);
+          if (match) {
+            const reqDate = match[1];
+            return reqDate === dateStr && !t.appointment; // Match date and ensure no formal appointment yet
+          }
+          return false;
+        })
+        .map(t => {
+          const match = t.description?.match(/\[Requested Appointment: (\d{4}-\d{2}-\d{2}) at (\d{2}:\d{2})\]/);
+          const timeStr = match ? match[2] : "00:00";
+          // Create a datetime object for sorting
+          const dateTime = dayjs(`${dateStr}T${timeStr}`);
+
+          return {
+            type: 'request',
+            time: dateTime,
+            data: t,
+            id: `req-${t.id}`
+          };
+        });
+
       const combinedSchedule = [
         ...(appointmentsRes.data || []).map(apt => ({
           type: 'appointment',
@@ -101,7 +128,8 @@ const ITDashboard = () => {
           time: task.startTime ? dayjs(task.startTime) : dayjs(task.date).startOf('day'),
           data: task,
           id: `task-${task.id}`
-        }))
+        })),
+        ...requestedAppts
       ].sort((a, b) => a.time.diff(b.time));
 
       setScheduleItems(combinedSchedule);
@@ -303,6 +331,29 @@ const ITDashboard = () => {
                         </div>
                       </div>
                     );
+                  } else if (item.type === 'request') {
+                    const ticket = item.data;
+                    return (
+                      <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-amber-100 ring-1 ring-amber-50 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-amber-50 text-amber-600">
+                            <Clock size={20} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{ticket.title}</h4>
+                              <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase">Request</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-500 text-xs mt-0.5">
+                              <Calendar size={12} />
+                              <span>{item.time.format('HH:mm')}</span>
+                              <span className="text-gray-300">|</span>
+                              <span>{ticket.room?.roomNumber || "N/A"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
                   } else {
                     const task = item.data;
                     return (
@@ -439,17 +490,39 @@ const ITDashboard = () => {
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Reason</label>
-              <select
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-medium focus:ring-2 focus:ring-red-500 focus:outline-none"
-              >
-                <option value="">Select a reason...</option>
-                <option value="Out of scope">Out of scope</option>
-                <option value="Duplicate">Duplicate</option>
-                <option value="Information missing">Information missing</option>
-                <option value="Other">Other</option>
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsRejectDropdownOpen(!isRejectDropdownOpen)}
+                  className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-medium focus:ring-2 focus:ring-red-500 focus:outline-none flex justify-between items-center text-left"
+                >
+                  <span className={rejectReason ? "text-gray-900" : "text-gray-500"}>
+                    {rejectReason || "Select a reason..."}
+                  </span>
+                  <ChevronDown size={20} className={`text-gray-400 transition-transform duration-200 ${isRejectDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isRejectDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-2 flex flex-col gap-1">
+                      {["Out of scope", "Duplicate", "Information missing", "Other"].map((reason) => (
+                        <button
+                          key={reason}
+                          type="button"
+                          onClick={() => {
+                            setRejectReason(reason);
+                            setIsRejectDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${rejectReason === reason ? "bg-red-50 text-red-700 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                        >
+                          <span>{reason}</span>
+                          {rejectReason === reason && <Check size={16} className="text-red-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mb-6">

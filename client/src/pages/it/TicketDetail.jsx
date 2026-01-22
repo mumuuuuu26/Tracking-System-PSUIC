@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock, Plus, Trash2, Save, PenTool } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock, Plus, Trash2, Save, PenTool, ChevronDown } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getTicket } from "../../api/ticket";
 import { acceptJob, closeJob, rejectTicket, saveDraft } from "../../api/it";
@@ -23,6 +23,7 @@ const TicketDetail = () => {
     const [itNote, setItNote] = useState("");
     const [proofImage, setProofImage] = useState(null);
     const [selectedStatus, setSelectedStatus] = useState("");
+    const [isStatusOpen, setIsStatusOpen] = useState(false);
 
     // Checklist State
     const [checklistItems, setChecklistItems] = useState([]); // [{id: 1, text: "Check Power", checked: false}]
@@ -485,23 +486,50 @@ const TicketDetail = () => {
 
                     <div className="bg-white rounded-2xl border border-gray-100 p-2">
                         <div className="relative">
-                            <select
-                                value={selectedStatus}
-                                onChange={(e) => setSelectedStatus(e.target.value)}
-                                className="w-full appearance-none bg-white font-bold text-gray-700 py-4 pl-4 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                                disabled={ticket.status === 'fixed' || ticket.status === 'rejected'}
+                            <button
+                                type="button"
+                                onClick={() => !(ticket.status === 'fixed' || ticket.status === 'rejected') && setIsStatusOpen(!isStatusOpen)}
+                                className={`w-full bg-white font-bold text-gray-700 py-4 pl-4 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 flex items-center justify-between transition-all ${ticket.status === 'fixed' || ticket.status === 'rejected' ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}`}
                             >
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="fixed">Completed</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                                <div className={`w-3 h-3 rounded-full ${getSelectStatusColor(selectedStatus)}`}></div>
-                                <div className="text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-3 h-3 rounded-full ${getSelectStatusColor(selectedStatus)}`}></div>
+                                    <span>
+                                        {selectedStatus === 'pending' && "Pending"}
+                                        {selectedStatus === 'in_progress' && "In Progress"}
+                                        {selectedStatus === 'fixed' && "Completed"}
+                                        {selectedStatus === 'rejected' && "Rejected"}
+                                        {!selectedStatus && "Select Status"}
+                                    </span>
                                 </div>
-                            </div>
+                                <ChevronDown size={20} className={`text-gray-400 transition-transform duration-200 ${isStatusOpen ? "rotate-180" : ""}`} />
+                            </button>
+
+                            {isStatusOpen && (
+                                <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="p-2 flex flex-col gap-1">
+                                        {[
+                                            { value: 'pending', label: 'Pending' },
+                                            { value: 'in_progress', label: 'In Progress' },
+                                            { value: 'fixed', label: 'Completed' },
+                                            { value: 'rejected', label: 'Rejected' }
+                                        ].map((option) => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedStatus(option.value);
+                                                    setIsStatusOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center gap-3 group ${selectedStatus === option.value ? "bg-gray-100 text-gray-900 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                                            >
+                                                <div className={`w-2 h-2 rounded-full ${getSelectStatusColor(option.value)}`}></div>
+                                                <span>{option.label}</span>
+                                                {selectedStatus === option.value && <Check size={16} className="ml-auto text-blue-600" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

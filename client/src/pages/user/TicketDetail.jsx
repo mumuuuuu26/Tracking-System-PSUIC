@@ -1,7 +1,7 @@
 // client/src/pages/user/TicketDetail.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Clock, AlertCircle, Calendar, XCircle } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ChevronDown } from "lucide-react";
 import { getTicket } from "../../api/ticket";
 import { respondReschedule } from "../../api/appointment";
 import useAuthStore from "../../store/auth-store";
@@ -55,376 +55,202 @@ const TicketDetail = () => {
     );
   }
 
+  // Determine status color/label
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "in_progress": return "bg-blue-100 text-blue-800";
-      case "fixed": return "bg-green-100 text-green-800";
-      case "rejected": return "bg-red-100 text-red-800";
-      case "scheduled": return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "pending": return "text-yellow-600";
+      case "in_progress": return "text-blue-600";
+      case "fixed": return "text-green-600";
+      case "rejected": return "text-red-600";
+      default: return "text-gray-600";
     }
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusText = (status) => {
     switch (status) {
       case "pending": return "Pending";
       case "in_progress": return "In Progress";
       case "fixed": return "Completed";
       case "rejected": return "Rejected";
-      case "scheduled": return "Scheduled";
-      default: return status;
+      default: return status || "Unknown";
     }
   };
 
-  // Helper to find specific images
-  const beforeImage = ticket.images?.find(img => img.type === "before")?.url;
-  const afterImage = ticket.images?.find(img => img.type === "after")?.url;
+  // Safe date formatter
+  const formatDate = (dateString, options = {}) => {
+    try {
+      if (!dateString) return "N/A";
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return "Invalid Date";
+      return d.toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        ...options
+      });
+    } catch (e) {
+      return "Date Error";
+    }
+  };
+
+  // Timeline Helper
+  const getTimelineSteps = () => {
+    if (!ticket) return [];
+
+    const steps = [
+      {
+        id: 'submitted',
+        label: 'Submitted',
+        date: ticket?.createdAt,
+        completed: true,
+        icon: <CheckCircle className="w-6 h-6 text-white" />
+      },
+      {
+        id: 'accepted',
+        label: ticket?.description?.includes("[Requested Appointment") ? 'Confirmed' : 'Accepted',
+        date: ticket?.status !== 'pending' ? ticket?.updatedAt : null, // Approximate
+        completed: ticket?.status !== 'pending' && ticket?.status !== 'rejected',
+        icon: <Clock className="w-6 h-6 text-white" />
+      },
+      {
+        id: 'completed',
+        label: 'Completed',
+        date: ticket?.status === 'fixed' ? ticket?.updatedAt : null,
+        completed: ticket?.status === 'fixed',
+        icon: <CheckCircle className="w-6 h-6 text-white" />
+      }
+    ];
+    return steps;
+  };
+
+  const timelineSteps = getTimelineSteps();
+
+  // Helper to find specific images (Safe access)
+  const beforeImage = ticket?.images?.find(img => img.type === "before")?.url;
+  const afterImage = ticket?.images?.find(img => img.type === "after")?.url;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => navigate("/user/my-tickets")}
-          className="text-blue-600 font-medium flex items-center gap-1"
-        >
-          ← Back
-        </button>
-        <h1 className="font-semibold text-lg">Ticket Details</h1>
-        <div className="w-8"></div> {/* Spacer for centering */}
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-gray-900">
+      {/* Deep Blue Header */}
+      <div className="bg-[#193C6C] px-6 pt-10 pb-10 rounded-b-[2rem] shadow-lg w-full mb-6">
+        <div className="max-w-md md:max-w-2xl mx-auto flex items-center gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-white hover:bg-white/10 p-3 -ml-3 rounded-full transition-colors"
+          >
+            <ChevronDown className="rotate-90" size={28} />
+          </button>
+          <h1 className="text-white text-xl md:text-2xl font-bold flex-1 text-center pr-10">
+            {ticket?.description?.includes("[Requested Appointment") ? "Appointment Details" : "Ticket Details"}
+          </h1>
+        </div>
       </div>
 
-      {/* Content Container */}
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-md md:max-w-2xl mx-auto px-4 pb-6 space-y-6 animate-in fade-in duration-500">
 
-        {/* Status Pipeline / Progress Bar (Mobile/Desktop friendly) */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between relative">
-            {/* Progress Line */}
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-100 -z-10 rounded-full"></div>
-            <div
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-500 -z-10 rounded-full transition-all duration-700"
-              style={{ width: ticket.status === 'fixed' ? '100%' : ticket.status === 'in_progress' ? '50%' : '0%' }}
-            ></div>
-
-            {['pending', 'in_progress', 'fixed'].map((step, idx) => {
-              const isActive =
-                (step === 'pending') ||
-                (step === 'in_progress' && ['in_progress', 'fixed'].includes(ticket.status)) ||
-                (step === 'fixed' && ticket.status === 'fixed');
-
-              const isRejected = ticket.status === 'rejected';
-
-              // Icons based on step
-              const stepIcon = step === 'pending' ? '1' : step === 'in_progress' ? '2' : '3';
-              const stepLabel = step === 'pending' ? 'Open' : step === 'in_progress' ? 'Processing' : 'Done';
-
-              return (
-                <div key={step} className="flex flex-col items-center gap-2 bg-white px-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${isActive ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-400'
-                    } ${isRejected ? 'opacity-50 grayscale' : ''}`}>
-                    {isActive ? <CheckCircle size={16} /> : stepIcon}
-                  </div>
-                  <span className={`text-xs font-semibold ${isActive ? 'text-blue-700' : 'text-gray-400'}`}>{stepLabel}</span>
-                </div>
-              );
-            })}
-          </div>
+        {/* Ticket Info Card */}
+        <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] p-6 space-y-4">
+          {/* Row item helper */}
+          {[
+            { label: "Ticket ID", value: "#" + ticket?.id, color: "text-blue-600 font-bold" },
+            { label: "Equipment Type", value: ticket?.category?.name || "General" },
+            { label: "Description", value: ticket?.description || "none" },
+            { label: "Floor", value: ticket?.room?.floor || "-" },
+            { label: "Room", value: ticket?.room?.roomNumber || "-" },
+            { label: "Priority", value: ticket?.urgency || "Normal" },
+            { label: "Time", value: formatDate(ticket?.createdAt, { hour: '2-digit', minute: '2-digit', hour12: true }) } // e.g. 26-12-2025, 10:30 AM
+          ].map((item, idx) => (
+            <div key={idx} className="flex justify-between items-start">
+              <span className="text-gray-600 font-medium text-[15px]">{item.label}</span>
+              <span className={`text-right font-bold text-[15px] ${item.color || "text-gray-900"}`}>{item.value}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Main Info Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Card Header */}
-          <div className="p-6 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                #{ticket.id} <span className="text-gray-400 font-normal">|</span> {ticket.title}
-              </h2>
-              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                <Clock size={14} />
-                Submitted on {new Date(ticket.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </p>
+        {/* Status Bar */}
+        <div className="bg-[#193C6C] rounded-lg px-5 py-4 flex justify-between items-center text-white shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 p-1.5 rounded-md">
+              <AlertCircle size={20} className="text-white" />
             </div>
-            <span className={`px-4 py-1.5 rounded-full text-sm font-bold shadow-sm whitespace-nowrap text-center ${getStatusColor(ticket.status)}`}>
-              {getStatusLabel(ticket.status)}
-            </span>
+            <span className="font-bold text-lg">Status</span>
           </div>
+          <span className="font-bold text-lg capitalize">
+            {ticket?.status ? ticket.status.replace("_", " ") : "Unknown"}
+          </span>
+        </div>
 
-          {/* Card Body */}
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left Column: Details */}
-            <div className="space-y-6">
+        {/* Timeline */}
+        <div>
+          <h3 className="font-bold text-[#3B4D68] uppercase text-sm mb-4">TIMELINE</h3>
+          <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] p-6">
+            <div className="space-y-8 relative pl-2">
+              {/* Vertical Line */}
+              <div className="absolute left-[19px] top-3 bottom-6 w-0.5 bg-gray-200"></div>
 
-              {/* Description */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Issue Description</label>
-                <p className="text-gray-700 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  {ticket.description}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1">Category</label>
-                  <div className="font-semibold text-gray-800 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                    {ticket.category?.name || "General"}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1">Priority</label>
-                  <div className={`font-semibold flex items-center gap-2 ${ticket.urgency === 'High' ? 'text-red-600' :
-                    ticket.urgency === 'Medium' ? 'text-orange-500' : 'text-green-600'
+              {timelineSteps.map((step, index) => (
+                <div key={step.id} className="flex gap-4 relative z-10 font-sans">
+                  {/* Icon Bubble */}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-[3px] border-white shadow-sm ring-1 ring-gray-100 ${step.completed ? 'bg-green-500' :
+                    (step.id === 'accepted' && ticket?.status === 'in_progress') ? 'bg-amber-400' : 'bg-gray-100' // Amber for hourglass
                     }`}>
-                    {ticket.urgency}
+                    {step.completed ? <CheckCircle size={20} className="text-white" /> :
+                      (step.id === 'accepted' && ticket?.status === 'in_progress') ? <Clock size={20} className="text-white" /> :
+                        <div className="w-3 h-3 bg-gray-300 rounded-full"></div>}
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Right Column: Location & Equipment */}
-            <div className="space-y-6">
-              <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-50 space-y-4">
-                <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2">
-                  <div className="w-1 h-4 bg-blue-500 rounded-full"></div> Detail Info
-                </h4>
-
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 shadow-sm">
-                    <span className="text-gray-500 text-xs">Room</span>
-                    <span className="font-bold text-gray-800">{ticket.room?.roomNumber || "N/A"}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 shadow-sm">
-                    <span className="text-gray-500 text-xs">Equipment</span>
-                    <span className="font-bold text-gray-800">{ticket.equipment?.name || "N/A"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Rejection / Schedule Alert */}
-        {ticket.status === 'rejected' && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <XCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
-              <div>
-                <h3 className="font-semibold text-red-800 mb-1">Ticket Rejected</h3>
-                <p className="text-sm text-red-700">{ticket.rejectedReason || "No reason provided."}</p>
-                {ticket.rejectedAt && (
-                  <p className="text-xs text-red-500 mt-2">
-                    Rejected on {new Date(ticket.rejectedAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Appointment & Reschedule Info */}
-        {ticket.appointment && (
-          <div className={`border rounded-xl p-4 mb-4 ${ticket.appointment.status === 'reschedule_requested'
-              ? 'bg-yellow-50 border-yellow-200'
-              : 'bg-purple-50 border-purple-200'
-            }`}>
-            <div className="flex items-start gap-3">
-              {ticket.appointment.status === 'reschedule_requested' ? (
-                <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
-              ) : (
-                <Calendar className="text-purple-500 shrink-0 mt-0.5" size={20} />
-              )}
-
-              <div className="flex-1">
-                <h3 className={`font-semibold mb-1 ${ticket.appointment.status === 'reschedule_requested' ? 'text-yellow-800' : 'text-purple-800'
-                  }`}>
-                  {ticket.appointment.status === 'reschedule_requested' ? 'Reschedule Requested' : 'Scheduled Appointment'}
-                </h3>
-
-                {/* Reschedule Request Content */}
-                {ticket.appointment.status === 'reschedule_requested' ? (
-                  <div>
-                    <p className="text-sm text-yellow-700 mb-2">
-                      IT Support has requested to reschedule this appointment.
-                    </p>
-                    <div className="bg-white/50 rounded-lg p-3 text-sm text-yellow-900 border border-yellow-100 mb-3">
-                      <p><span className="font-bold">Original:</span> {new Date(ticket.appointment.scheduledAt).toLocaleString()}</p>
-                      <p className="mt-1"><span className="font-bold text-green-600">Proposed New Time:</span> {new Date(ticket.appointment.newDate).toLocaleString()}</p>
-                      <p className="mt-1"><span className="font-bold">Reason:</span> {ticket.appointment.rescheduleReason}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={async () => {
-                          if (!window.confirm("Accept new time?")) return;
-                          try {
-                            await respondReschedule(token, { appointmentId: ticket.appointment.id, action: 'accept' });
-                            toast.success("Reschedule accepted");
-                            fetchTicket();
-                          } catch (err) {
-                            console.error(err);
-                            toast.error("Failed to accept");
-                          }
-                        }}
-                        className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-green-700 transition-colors"
-                      >
-                        Accept New Time
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (!window.confirm("Reject this request? The appointment will remain at the original time.")) return;
-                          try {
-                            await respondReschedule(token, { appointmentId: ticket.appointment.id, action: 'reject' });
-                            toast.success("Reschedule rejected");
-                            fetchTicket();
-                          } catch (err) {
-                            console.error(err);
-                            toast.error("Failed to reject");
-                          }
-                        }}
-                        className="bg-white border border-gray-300 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  // Normal Appointment Display
-                  <div>
-                    <p className="text-sm text-purple-700">
-                      IT Support has scheduled a visit for: <br />
-                      <span className="font-bold">
-                        {new Date(ticket.appointment.scheduledAt).toLocaleString()}
-                      </span>
-                    </p>
-                    {ticket.appointment.note && (
-                      <p className="text-xs text-purple-600 mt-2 italic">
-                        Note: {ticket.appointment.note}
+                  <div className="pt-0.5">
+                    <h4 className="font-bold text-gray-900 text-base">{step.label}</h4>
+                    {step.date && (
+                      <p className="text-gray-400 text-xs mt-1">
+                        {formatDate(step.date, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </p>
                     )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Timeline / Update History */}
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4 border border-gray-100">
-          <h3 className="font-semibold mb-4 text-gray-800 border-b pb-2">Update History</h3>
-
-          <div className="space-y-6">
-            {ticket.logs?.length > 0 ? (
-              ticket.logs.map((log, index) => (
-                <div key={index} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${index === 0 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'
-                      }`}>
-                      {index === 0 ? <Clock size={16} /> : <div className="w-2 h-2 bg-gray-400 rounded-full" />}
-                    </div>
-                    {index < ticket.logs.length - 1 && (
-                      <div className="w-0.5 h-full bg-gray-200 my-1"></div>
+                    {step.id === 'accepted' && ticket?.status === 'pending' && (
+                      <span className="inline-block bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full mt-2">Waiting</span>
                     )}
-                  </div>
-                  <div className="pb-2">
-                    <p className="text-sm font-medium text-gray-900">{log.action}</p>
-                    <p className="text-xs text-gray-500 mb-1">{log.detail}</p>
-                    <span className="text-[10px] text-gray-400">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </span>
+                    {step.id === 'completed' && ticket?.status !== 'fixed' && (
+                      <p className="text-xs text-gray-400 mt-1">Pending resolution</p>
+                    )}
                   </div>
                 </div>
-              ))) : (
-              <p className="text-sm text-gray-500 text-center py-4">No updates yet.</p>
-            )}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Before/After Photos */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-semibold mb-6 text-gray-800 flex items-center gap-2">
-            Photos
-            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Click to enlarge</span>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Before Image */}
-            <div className="flex flex-col gap-3">
-              <div
-                className="bg-gray-100 rounded-2xl aspect-[4/3] flex items-center justify-center overflow-hidden border border-gray-200 shadow-sm relative group cursor-pointer"
-                onClick={() => beforeImage && window.open(beforeImage, '_blank')}
-              >
+        {/* Upload Photo */}
+        <div>
+          <h3 className="font-bold text-[#3B4D68] text-base mb-4">Upload Photo</h3>
+          <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] p-4">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Before Photo */}
+              <div className="relative group rounded-2xl overflow-hidden aspect-square bg-gray-100 shadow-inner">
                 {beforeImage ? (
-                  <>
-                    <img
-                      src={beforeImage}
-                      alt="Before"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-bold shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
-                        View Fullsize
-                      </div>
-                    </div>
-                  </>
+                  <img src={beforeImage} className="w-full h-full object-cover" alt="Before" />
                 ) : (
-                  <div className="flex flex-col items-center gap-2 text-gray-400">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                      <span className="text-xl">📷</span>
-                    </div>
-                    <span className="text-xs font-medium">No before image</span>
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <span className="bg-gray-200 p-2 rounded-full mb-2"><Calendar size={20} /></span> {/* Placeholder icon */}
+                    <span className="text-[10px] font-bold uppercase">No Image</span>
                   </div>
                 )}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/40 text-white font-bold px-3 py-1 rounded-full backdrop-blur-sm text-sm uppercase tracking-wider">BEFORE</div>
               </div>
-              <p className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest">Before</p>
-            </div>
 
-            {/* After Image */}
-            <div className="flex flex-col gap-3">
-              <div
-                className="bg-gray-100 rounded-2xl aspect-[4/3] flex items-center justify-center overflow-hidden border border-gray-200 shadow-sm relative group cursor-pointer"
-                onClick={() => afterImage && window.open(afterImage, '_blank')}
-              >
+              {/* After Photo */}
+              <div className="relative group rounded-2xl overflow-hidden aspect-square bg-gray-100 shadow-inner">
                 {afterImage ? (
-                  <>
-                    <img
-                      src={afterImage}
-                      alt="After"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-bold shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
-                        View Fullsize
-                      </div>
-                    </div>
-                  </>
+                  <img src={afterImage} className="w-full h-full object-cover" alt="After" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-6 text-center h-full">
-                    {ticket.status === 'fixed' ? (
-                      <div className="flex flex-col items-center gap-2 text-gray-400">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-xl">🚫</span>
-                        </div>
-                        <span className="text-xs font-medium">No proof provided</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-400 flex items-center justify-center animate-pulse">
-                          <Clock size={24} />
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-gray-500 block">Pending</span>
-                          <span className="text-[10px] text-gray-400">Waiting for staff to complete</span>
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <span className="bg-gray-200 p-2 rounded-full mb-2"><Calendar size={20} /></span> {/* Placeholder icon */}
+                    <span className="text-[10px] font-bold uppercase">No Photo</span>
                   </div>
                 )}
+                {afterImage && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/40 text-white font-bold px-3 py-1 rounded-full backdrop-blur-sm text-sm uppercase tracking-wider">AFTER</div>}
               </div>
-              <p className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest">After</p>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

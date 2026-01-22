@@ -99,16 +99,25 @@ const ITProfile = () => {
     const handleLogout = () => {
         Swal.fire({
             title: "Log out",
-            text: "Are you sure you want to log out?",
-            icon: "warning",
+            text: "Are you sure you want to log out ?",
             showCancelButton: true,
             confirmButtonColor: "#2563eb",
-            cancelButtonColor: "#d33",
+            cancelButtonColor: "#fff",
             confirmButtonText: "Log out",
             cancelButtonText: "Cancel",
+            customClass: {
+                popup: "rounded-3xl p-6 md:p-8",
+                title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
+                htmlContainer: "text-gray-500 text-base",
+                confirmButton: "bg-[#2563eb] hover:bg-blue-700 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
+                cancelButton: "bg-white hover:bg-gray-50 text-[#2563eb] border border-[#2563eb] min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
+                actions: "gap-4 w-full px-4 mt-4"
+            },
+            buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
                 actionLogout();
+                navigate("/login");
             }
         });
     };
@@ -395,23 +404,16 @@ const ITProfile = () => {
                 </div>
             </div>
 
-            {/* Settings Button */}
-            <button
-                onClick={() => navigate('/it/email-settings')}
-                className="w-full bg-white text-blue-600 font-bold p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-100 transition-all"
-            >
-                <Settings size={20} />
-                Manage Email Notifications
-            </button>
-
             {/* Logout Button */}
             <button
                 onClick={handleLogout}
-                className="w-full bg-white text-red-500 font-bold p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 hover:bg-red-50 hover:border-red-100 transition-all"
+                className="w-full bg-white text-red-500 font-bold p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 hover:bg-red-50 hover:border-red-100 transition-all mb-4"
             >
                 <LogOut size={20} />
                 Log Out
             </button>
+
+
         </div>
     );
 };

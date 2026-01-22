@@ -2,11 +2,12 @@ const express = require("express");
 const router = express.Router();
 const { authCheck, adminCheck } = require("../middlewares/authCheck");
 
-const { listUsers, changeStatus, changeRole, updateProfileImage, updateProfile, updateUser, removeUser } = require("../controllers/user");
+const { listUsers, changeStatus, changeRole, updateProfileImage, updateProfile, updateUser, removeUser, listITStaff } = require("../controllers/user");
 
 
 // @ENDPOINT http://localhost:5001/api/users
 router.get("/users", authCheck, adminCheck, listUsers);
+router.get("/users/it-staff", authCheck, listITStaff);
 
 // @ENDPOINT http://localhost:5001/api/users/change-status
 router.post("/users/change-status", authCheck, adminCheck, changeStatus);

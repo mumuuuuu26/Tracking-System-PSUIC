@@ -77,6 +77,8 @@ exports.login = async (req, res) => {
       role: user.role,
       name: user.name,
       picture: user.picture,
+      isEmailEnabled: user.isEmailEnabled,
+      notificationEmail: user.notificationEmail
     };
 
     //Step 4 Generate Token
@@ -117,6 +119,8 @@ exports.currentUser = async (req, res) => {
         enabled: true, // [New] โชว์สถานะ
         createdAt: true, // [New] โชว์วันที่สมัคร "Member Since..."
         updatedAt: true,
+        isEmailEnabled: true,
+        notificationEmail: true
       },
     });
 

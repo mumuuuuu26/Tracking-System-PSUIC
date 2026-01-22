@@ -13,9 +13,71 @@ exports.create = async (req, res) => {
       equipmentId,
       images,
       categoryId,
+      date, // [NEW] YYYY-MM-DD
+      time  // [NEW] HH:mm
     } = req.body;
 
     console.log("📝 Creating new ticket...");
+
+    let assignedToId = null;
+    let appointmentStatus = "pending";
+    let scheduledDate = null;
+
+    // === [NEW] Auto-Booking Logic ===
+    if (date && time) {
+      const startDateTime = new Date(`${date}T${time}:00`);
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 Hour
+
+      // 1. Find ALL IT Support staff
+      const itStaff = await prisma.user.findMany({
+        where: { role: 'it_support', enabled: true },
+        select: { id: true }
+      });
+
+      // 2. Find Available IT
+      for (const it of itStaff) {
+        // Check appointments
+        const busyAppt = await prisma.appointment.findFirst({
+          where: {
+            itSupportId: it.id,
+            status: { not: 'cancelled' },
+            scheduledAt: {
+              gte: startDateTime,
+              lt: endDateTime
+            }
+          }
+        });
+
+        if (busyAppt) continue;
+
+        // Check personal tasks
+        const busyTask = await prisma.personalTask.findFirst({
+          where: {
+            userId: it.id,
+            // Simple check for overlap
+            startTime: { lt: endDateTime },
+            endTime: { gt: startDateTime }
+          }
+        });
+
+        if (busyTask) continue;
+
+        // Found one!
+        assignedToId = it.id;
+        break;
+      }
+
+      if (assignedToId) {
+        appointmentStatus = "scheduled";
+        scheduledDate = startDateTime;
+      } else {
+        // If user requested a time but NO IT is available
+        // Should we fail or just create pending?
+        // User said "If IT not free, cannot choose". Validation should have blocked it frontend.
+        // But double check backend.
+        return res.status(400).json({ message: "Selected time slot is no longer available." });
+      }
+    }
 
     const newTicket = await prisma.ticket.create({
       data: {
@@ -26,7 +88,8 @@ exports.create = async (req, res) => {
         roomId: parseInt(roomId),
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         categoryId: categoryId ? parseInt(categoryId) : null,
-        status: "pending",
+        status: appointmentStatus,
+        assignedToId: assignedToId, // Assigned if booked
         images: images && images.length > 0 ? {
           create: images.map(img => {
             const imageUrl = saveImage(img);
@@ -38,6 +101,15 @@ exports.create = async (req, res) => {
               public_id: "local"
             };
           }).filter(img => img.url !== null)
+        } : undefined,
+        // Create Appointment if Scheduled
+        appointment: scheduledDate ? {
+          create: {
+            itSupportId: assignedToId,
+            scheduledAt: scheduledDate,
+            status: 'scheduled',
+            note: 'Auto-booked via Create Ticket'
+          }
         } : undefined
       },
       include: {
@@ -45,11 +117,14 @@ exports.create = async (req, res) => {
         equipment: true,
         category: true,
         createdBy: true,
-        images: true
+        images: true,
+        appointment: true // Return appointment info
       },
     });
 
     console.log("✅ Ticket created:", newTicket.id);
+
+    // ... (Email notification logic remains same, but might need to notify Assigned IT specifically if booked)
 
     // ส่ง Email แจ้งเตือน IT Support
     try {
@@ -59,13 +134,19 @@ exports.create = async (req, res) => {
           OR: [{ role: "it_support" }, { role: "admin" }],
           enabled: true,
         },
-        select: { email: true },
+        select: {
+          email: true,
+          isEmailEnabled: true,
+          notificationEmail: true
+        },
       });
 
       if (itUsers.length > 0) {
+        // Filter users who want emails AND have a valid email address
         const emails = itUsers
-          .map((u) => u.email)
-          .filter((email) => email && email.includes("@"));
+          .filter(u => u.isEmailEnabled !== false) // Default is true, but check explicit false
+          .map(u => u.notificationEmail && u.notificationEmail.includes("@") ? u.notificationEmail : u.email)
+          .filter(email => email && email.includes("@"));
 
         if (emails.length > 0) {
           const { sendEmailNotification } = require("../utils/sendEmailHelper");
@@ -100,6 +181,8 @@ exports.create = async (req, res) => {
     });
 
     if (userForNotify.length > 0) {
+      // If auto-assigned, maybe notify SPECIFIC IT differently?
+      // For now broadcast new ticket is fine.
       await prisma.notification.createMany({
         data: userForNotify.map((user) => ({
           userId: user.id,
@@ -262,7 +345,8 @@ exports.list = async (req, res) => {
         room: true,
         equipment: true,
         category: true,
-        assignedTo: true
+        assignedTo: true,
+        appointment: true
       },
       orderBy: { createdAt: 'desc' }
     });

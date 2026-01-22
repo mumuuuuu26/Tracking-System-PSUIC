@@ -24,6 +24,12 @@ export const listUsers = async (token, params = {}) => {
     })
 }
 
+export const listITStaff = async (token) => {
+    return await axios.get('/api/users/it-staff', {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+}
+
 export const changeStatus = async (token, value) => {
     return await axios.post('/api/users/change-status', value, {
         headers: { Authorization: `Bearer ${token}` }

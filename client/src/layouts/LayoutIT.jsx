@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Home, Calendar, Clock, User, Menu, X, LogOut, LayoutDashboard, Wrench, Bell, FileText, BookOpen } from "lucide-react";
+import { Home, Calendar, Clock, User, Menu, X, LogOut, LayoutDashboard, Wrench, Bell, FileText, BookOpen, Briefcase, Settings } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
@@ -20,13 +20,21 @@ const LayoutIT = () => {
   const handleLogout = () => {
     Swal.fire({
       title: "Log out",
-      text: "Are you sure you want to log out?",
-      icon: "warning",
+      text: "Are you sure you want to log out ?",
       showCancelButton: true,
       confirmButtonColor: "#2563eb",
-      cancelButtonColor: "#d33",
+      cancelButtonColor: "#fff",
       confirmButtonText: "Log out",
       cancelButtonText: "Cancel",
+      customClass: {
+        popup: "rounded-3xl p-6 md:p-8",
+        title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
+        htmlContainer: "text-gray-500 text-base",
+        confirmButton: "bg-[#2563eb] hover:bg-blue-700 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
+        cancelButton: "bg-white hover:bg-gray-50 text-[#2563eb] border border-[#2563eb] min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
+        actions: "gap-4 w-full px-4 mt-4"
+      },
+      buttonsStyling: false
     }).then((result) => {
       if (result.isConfirmed) {
         actionLogout();
@@ -65,7 +73,6 @@ const LayoutIT = () => {
       </header>
 
       {/* Desktop Header (Visible on Desktop) */}
-      {/* Desktop Header (Visible on Desktop) */}
       <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 sticky top-0 z-40 px-6 py-4 justify-between items-center text-white">
         <div className="flex items-center gap-3">
           <img src="/img/psuic_logo.png" alt="PSUIC Service" className="h-14 w-auto object-contain" />
@@ -100,14 +107,17 @@ const LayoutIT = () => {
 
       {/* Floating Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-30">
-        <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
-          <div className="flex items-end justify-between max-w-md mx-auto relative px-2">
-            <NavLink href="/it" icon={<Home size={24} />} label="Home" active={isActive("/it")} />
-            <NavLink href="/it/schedule" icon={<Calendar size={24} />} label="Appointment" active={isActive("/it/schedule")} />
-            <NavLink href="/it/tickets" icon={<FileText size={24} />} label="Ticket" active={isActive("/it/tickets") || isActive("/it/history")} />
-            <NavLink href="/it/kb" icon={<BookOpen size={24} />} label="KB" active={isActive("/it/kb")} />
-            <NavLink href="/it/manage-quick-fix" icon={<Wrench size={24} />} label="QuickFix" active={isActive("/it/manage-quick-fix")} />
-            <NavLink href="/it/profile" icon={<User size={24} />} label="Profile" active={isActive("/it/profile")} />
+        <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-2 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
+          <div className="flex items-end justify-between w-full max-w-lg mx-auto relative">
+            <NavLink href="/it" icon={<Home size={22} />} label="Home" active={isActive("/it")} />
+            <NavLink href="/it/schedule" icon={<Calendar size={22} />} label="Appointment" active={isActive("/it/schedule")} />
+            <NavLink href="/it/tickets" icon={<FileText size={22} />} label="Ticket" active={isActive("/it/tickets") || isActive("/it/history")} />
+
+            {/* New Tools */}
+            <NavLink href="/it/quick-fix" icon={<Briefcase size={22} />} label="Quick Fix" active={isActive("/it/quick-fix")} />
+            <NavLink href="/it/email-settings" icon={<Settings size={22} />} label="Email" active={isActive("/it/email-settings")} />
+
+            <NavLink href="/it/profile" icon={<User size={22} />} label="Profile" active={isActive("/it/profile")} />
           </div>
         </nav>
       </div>
@@ -119,7 +129,7 @@ const LayoutIT = () => {
 const NavLink = ({ href, icon, label, active }) => (
   <a
     href={href}
-    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 w-16 ${active
+    className={`flex-1 flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${active
       ? "text-blue-600"
       : "text-gray-400 hover:text-gray-600"
       }`}
@@ -127,7 +137,7 @@ const NavLink = ({ href, icon, label, active }) => (
     <div className={`transition-transform duration-200 ${active ? "-translate-y-1" : ""}`}>
       {icon}
     </div>
-    <span className={`text-[10px] font-medium mt-1 ${active ? "opacity-100 font-bold" : "opacity-70"}`}>
+    <span className={`text-[9px] font-medium mt-1 truncate w-full text-center ${active ? "opacity-100 font-bold" : "opacity-70"}`}>
       {label}
     </span>
   </a>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Star, Clock, AlertCircle, Quote, ChevronRight } from "lucide-react";
+import { Star, Clock, AlertCircle, Quote, ChevronRight, ChevronLeft } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import { useNavigate } from "react-router-dom";
@@ -33,85 +33,89 @@ const WaitingForFeedback = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
+        <div className="min-h-screen bg-gray-50 pb-20 animate-in fade-in duration-500 font-sans">
             {/* Header */}
-            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 pt-16 pb-20 rounded-b-[3rem] shadow-xl shadow-orange-100">
-                <div className="max-w-4xl mx-auto px-6 text-center text-white">
-                    <div className="inline-flex items-center justify-center p-3 bg-white/20 backdrop-blur-md rounded-full mb-4 ring-4 ring-white/10">
-                        <Star className="text-white fill-current animate-pulse" size={32} />
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight">Satisfaction Survey</h1>
-                    <p className="text-orange-50 text-lg max-w-xl mx-auto opacity-95">
-                        Your feedback matters! Please take a moment to rate the service you received for the following requests.
+            <div className="bg-[#193C6C] px-6 pt-10 pb-8 rounded-b-[2rem] shadow-lg mb-6">
+                <div className="max-w-7xl mx-auto flex items-center justify-center relative">
+                    <button
+                        onClick={() => navigate('/user')}
+                        className="absolute left-0 text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
+                    >
+                        <ChevronLeft size={28} />
+                    </button>
+                    <h1 className="text-white text-xl md:text-2xl font-bold tracking-wide">Satisfaction Survey</h1>
+                </div>
+                <div className="text-center mt-2">
+                    <p className="text-blue-100/90 text-sm max-w-md mx-auto leading-relaxed">
+                        Please rate the service for your completed requests.
                     </p>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="max-w-4xl mx-auto px-4 -mt-10 relative z-10">
+            <div className="max-w-7xl mx-auto px-6 relative z-0">
                 {loading ? (
-                    <div className="space-y-4">
-                        {[1, 2].map(i => (
-                            <div key={i} className="bg-white p-6 rounded-3xl h-32 animate-pulse shadow-sm"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white p-6 rounded-2xl h-48 animate-pulse shadow-sm border border-gray-100"></div>
                         ))}
                     </div>
                 ) : tickets.length === 0 ? (
-                    <div className="text-center py-16 bg-white rounded-[2.5rem] shadow-lg border border-gray-100">
-                        <div className="bg-green-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-green-100">
-                            <Star className="text-green-500 fill-green-500" size={36} />
+                    <div className="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100 mt-4 max-w-2xl mx-auto">
+                        <div className="bg-green-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-green-50/50">
+                            <Star className="text-green-500 fill-green-500" size={32} />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3">All Caught Up!</h3>
-                        <p className="text-gray-500 max-w-sm mx-auto mb-8 text-lg">
-                            You've rated all your completed tickets. Thank you for your valuable feedback!
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">All Caught Up!</h3>
+                        <p className="text-gray-500 max-w-xs mx-auto mb-8 text-sm">
+                            Thank you for your valuable feedback!
                         </p>
                         <button
                             onClick={() => navigate('/user')}
-                            className="bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg hover:bg-gray-800 transition-all hover:-translate-y-1"
+                            className="bg-[#193C6C] text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-[#143057] transition-all hover:-translate-y-0.5"
                         >
                             Return to Dashboard
                         </button>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
                         {tickets.map(ticket => (
                             <div
                                 key={ticket.id}
-                                className="group bg-white p-6 md:p-8 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 relative overflow-hidden"
+                                className="group bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 relative overflow-hidden flex flex-col h-full"
                             >
-                                <div className="absolute top-0 left-0 w-2 h-full bg-yellow-400 group-hover:bg-orange-400 transition-colors"></div>
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#193C6C] group-hover:bg-blue-600 transition-colors"></div>
 
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <span className="font-mono text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-100">
+                                <div className="flex-1 pl-3 flex flex-col">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                                                 #{String(ticket.id).padStart(4, '0')}
                                             </span>
-                                            <span className="text-xs font-medium text-gray-400 flex items-center gap-1">
-                                                <Clock size={12} />
-                                                Completed {dayjs(ticket.updatedAt).fromNow()}
+                                            <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
+                                                <Clock size={10} />
+                                                {dayjs(ticket.updatedAt).fromNow()}
                                             </span>
                                         </div>
-
-                                        <h3 className="font-bold text-xl text-gray-800 mb-2 group-hover:text-orange-500 transition-colors">
-                                            {ticket.title}
-                                        </h3>
-
-                                        {ticket.description && (
-                                            <div className="relative pl-4 border-l-2 border-gray-200">
-                                                <p className="text-sm text-gray-500 line-clamp-2 italic">
-                                                    "{ticket.description}"
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
 
+                                    <h3 className="font-bold text-lg text-gray-800 mb-3 leading-tight group-hover:text-blue-700 transition-colors line-clamp-2">
+                                        {ticket.title}
+                                    </h3>
+
+                                    {ticket.description && (
+                                        <p className="text-gray-500 text-sm italic bg-gray-50 p-3 rounded-xl mb-4 line-clamp-3">
+                                            "{ticket.description}"
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="pl-3 mt-auto pt-2">
                                     <button
                                         onClick={() => navigate(`/user/feedback/${ticket.id}`)}
-                                        className="w-full md:w-auto bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-orange-200 hover:shadow-orange-300 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn"
+                                        className="w-full bg-white border border-[#193C6C] text-[#193C6C] group-hover:bg-[#193C6C] group-hover:text-white px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                                     >
-                                        <Star size={18} className="fill-white" />
+                                        <Star size={16} className="fill-current" />
                                         Rate Service
-                                        <ChevronRight size={18} className="opacity-70 group-hover/btn:translate-x-1 transition-transform" />
                                     </button>
                                 </div>
                             </div>

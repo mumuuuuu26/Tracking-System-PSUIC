@@ -25,6 +25,10 @@ model User {
   phoneNumber   String?  // เบอร์โทรสำหรับติดต่อด่วน
   lineId        String?  // Line ID สำหรับแจ้งเตือน
   
+  // [NEW] Personal Notification Settings
+  isEmailEnabled    Boolean @default(true)
+  notificationEmail String? // Custom email for notifications (overrides account email)
+  
   // [NEW] Performance metrics สำหรับ IT
   totalResolved Int    @default(0)  // จำนวน ticket ที่แก้ไขสำเร็จ
   avgRating     Float  @default(0)  // rating เฉลี่ยจาก user
@@ -41,7 +45,7 @@ model User {
   notifications   Notification[]   // [NEW]
   activityLogs    ActivityLog[]    @relation("LogCreator")
 
-  kbEdits         KnowledgeBase[]  @relation("KBEditor")
+
   personalTasks   PersonalTask[]   // [NEW]
 }
 
@@ -159,18 +163,9 @@ model Category {
   id      Int      @id @default(autoincrement())
   name    String   @unique
   tickets   Ticket[]
-  quickFixes QuickFix[]
 }
 
-model QuickFix {
-  id        Int      @id @default(autoincrement())
-  title     String
-  steps     String   @db.Text
-  categoryId Int
-  category  Category @relation(fields: [categoryId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+
 
 model Room {
   id         Int         @id @default(autoincrement())
@@ -242,25 +237,7 @@ model Image {
   createdAt DateTime @default(now())
 }
 
-// === [NEW] KNOWLEDGE BASE MODEL ===
-model KnowledgeBase {
-  id          Int      @id @default(autoincrement())
-  title       String
-  content     String   @db.Text
-  category    String   // "Article", "FAQ", "Video"
-  tags        String?  // Comma separated
-  viewCount   Int      @default(0)
-  helpful     Int      @default(0)
-  imageUrl    String?
-  videoUrl    String?
-  isPublished Boolean  @default(true)
-  
-  updatedById Int?
-  updatedBy   User?    @relation("KBEditor", fields: [updatedById], references: [id])
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+
 
 // === [NEW] EMAIL TEMPLATE MODEL ===
 model EmailTemplate {
@@ -272,4 +249,20 @@ model EmailTemplate {
   isEnabled   Boolean  @default(true)
   variables   String?  // JSON string of available vars e.g. ["ticketId", "title"]
   updatedAt   DateTime @updatedAt
+}
+
+// === [NEW] QUICK FIX / INV MODEL ===
+model QuickFix {
+  id        Int      @id @default(autoincrement())
+  title     String
+  description String @db.Text
+  image     String?  // URL of illustration
+  category  String?  // [NEW] Category filter e.g. "ACCOUNT&LOGIN", "COMPUTER", "PROJECTOR"
+  views     Int      @default(0)
+  
+  createdBy   String? // "admin" or Name
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

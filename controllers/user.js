@@ -33,6 +33,19 @@ exports.listUsers = async (req, res) => {
   }
 };
 
+exports.listITStaff = async (req, res) => {
+  try {
+    const itUsers = await prisma.user.findMany({
+      where: { role: 'it_support', enabled: true },
+      select: { id: true, name: true }
+    });
+    res.json(itUsers);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 //เปลี่ยนสถานะผู้ใช้ (Enabled/Disabled)
 exports.changeStatus = async (req, res) => {
   try {
@@ -88,7 +101,7 @@ exports.updateProfileImage = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { email, phoneNumber, department, name, username } = req.body;
+    const { email, phoneNumber, department, name, username, isEmailEnabled, notificationEmail } = req.body;
 
     // Validate if email is already taken by another user
     if (email) {
@@ -116,15 +129,21 @@ exports.updateProfile = async (req, res) => {
       }
     }
 
+    const updateData = {
+      email,
+      phoneNumber,
+      department,
+      name,
+      username
+    };
+
+    // Only update if provided (handle boolean/null correctly)
+    if (typeof isEmailEnabled !== 'undefined') updateData.isEmailEnabled = isEmailEnabled;
+    if (typeof notificationEmail !== 'undefined') updateData.notificationEmail = notificationEmail;
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
-      data: {
-        email,
-        phoneNumber,
-        department,
-        name,
-        username
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -133,7 +152,9 @@ exports.updateProfile = async (req, res) => {
         role: true,
         department: true,
         phoneNumber: true,
-        picture: true
+        picture: true,
+        isEmailEnabled: true,
+        notificationEmail: true
       }
     });
 

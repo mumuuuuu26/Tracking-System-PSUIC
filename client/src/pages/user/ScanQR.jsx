@@ -50,7 +50,7 @@ const ScanQR = () => {
       const res = await axios.get(`/api/equipment/qr/${qrCode}`);
       const equipmentData = res.data;
 
-      toast.success("พบข้อมูลอุปกรณ์");
+      toast.success("Equipment found");
 
       // 2. ส่งข้อมูลไปยังหน้า CreateTicket ผ่าน state
       navigate("/user/create-ticket", {
@@ -65,7 +65,7 @@ const ScanQR = () => {
       });
     } catch (err) {
       console.error(err);
-      toast.error("ไม่พบข้อมูลอุปกรณ์ หรือ QR Code ไม่ถูกต้อง");
+      toast.error("Equipment not found or invalid QR Code");
       // ถ้าไม่พบ ให้เริ่มสแกนใหม่โดยรีเฟรชหน้า หรือเปลี่ยนโหมด
       setManualMode(false);
     } finally {
@@ -77,7 +77,7 @@ const ScanQR = () => {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
         <Loader2 className="animate-spin mb-4" size={48} />
-        <p className="animate-pulse">กำลังดึงข้อมูลอุปกรณ์...</p>
+        <p className="animate-pulse">Fetching equipment data...</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ const ScanQR = () => {
           </button>
         </div>
         <p className="text-center text-white/70 text-sm mt-4">
-          วางสติกเกอร์ QR Code ให้อยู่ในกรอบเพื่อเริ่มแจ้งซ่อม
+          Place the QR Code sticker within the frame to start reporting.
         </p>
       </div>
 
@@ -136,12 +136,12 @@ const ScanQR = () => {
           <div className="w-full max-w-sm animate-in zoom-in-95 duration-200">
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8">
               <h2 className="text-white text-lg font-semibold mb-4 text-center">
-                กรอกรหัสอุปกรณ์
+                Enter Equipment Code
               </h2>
               <input
                 type="text"
                 autoFocus
-                placeholder="เช่น EQUIP-001"
+                placeholder="e.g., EQUIP-001"
                 className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-center text-xl uppercase"
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && e.target.value) {
@@ -153,7 +153,7 @@ const ScanQR = () => {
                 onClick={() => setManualMode(false)}
                 className="w-full mt-6 text-blue-400 font-medium py-2"
               >
-                สลับไปใช้กล้องสแกน
+                Switch to Camera Scanner
               </button>
             </div>
           </div>
@@ -167,13 +167,13 @@ const ScanQR = () => {
             onClick={() => setManualMode(!manualMode)}
             className="flex-1 bg-white/10 backdrop-blur text-white py-4 rounded-2xl font-bold border border-white/10 hover:bg-white/20 transition-all"
           >
-            {manualMode ? "เปิดกล้อง" : "กรอกรหัสเอง"}
+            {manualMode ? "Open Camera" : "Enter Manual Code"}
           </button>
           <button
             onClick={() => navigate("/user/create-ticket")}
             className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-900/40 hover:bg-blue-500 transition-all"
           >
-            แจ้งซ่อมทั่วไป
+            General Report
           </button>
         </div>
       </div>
@@ -196,7 +196,7 @@ const ScanQR = () => {
           animation: scan-line 2s linear infinite;
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 
