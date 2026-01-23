@@ -74,12 +74,13 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, disabled = f
                                 return (
                                     <div
                                         key={index}
-                                        onClick={() => handleSelect(opt)}
+                                        onClick={() => !opt.disabled && handleSelect(opt)}
                                         className={`
-                      px-4 py-3 rounded-lg cursor-pointer flex items-center justify-between group transition-colors
-                      ${isSelected
+                      px-4 py-3 rounded-lg flex items-center justify-between group transition-colors
+                      ${opt.disabled ? "opacity-50 cursor-not-allowed bg-gray-50" : "cursor-pointer"}
+                      ${isSelected && !opt.disabled
                                                 ? "bg-blue-50 text-blue-700 font-medium"
-                                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                : !opt.disabled ? "text-gray-700 hover:bg-gray-50 hover:text-gray-900" : "text-gray-400"
                                             }
                     `}
                                     >

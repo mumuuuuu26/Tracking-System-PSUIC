@@ -7,12 +7,12 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import ExportButtons from '../../../components/admin/ExportButtons';
 import html2canvas from 'html2canvas';
-// Font import removed to fix build error
 
 const SatisfactionReport = () => {
     const { token } = useAuthStore();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isExporting, setIsExporting] = useState(false);
     const [error, setError] = useState(null);
 
     const loadData = React.useCallback(async () => {
@@ -65,37 +65,45 @@ const SatisfactionReport = () => {
 
     const exportPDF = async () => {
         try {
-            setLoading(true);
-
-            // Temporarily make it visible for capture (if it was hidden) or just clone it? 
+            setIsExporting(true);
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            let pageIndex = 1;
-            let element = document.getElementById(`pdf-page-${pageIndex}`);
+            // Calculate exact pages needed based on data
+            const totalItems = data.allFeedback?.length || 0;
+            const itemsPerPageFirst = 7;
+            const itemsPerPageSub = 12;
+            // Always at least 1 page if we have data, otherwise 0
+            const totalPages = totalItems > 0 ? 1 + Math.ceil(Math.max(totalItems - itemsPerPageFirst, 0) / itemsPerPageSub) : 0;
 
-            while (element) {
-                if (pageIndex > 1) {
-                    pdf.addPage();
+            console.log(`Exporting PDF: ${totalItems} items, ${totalPages} pages expected.`);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const element = document.getElementById(`pdf-page-${i}`);
+                if (!element) {
+                    console.error(`CRITICAL: PDF Page ${i} element not found in DOM.`);
+                    alert(`Error: Page ${i} of ${totalPages} could not be generated. Please try again.`);
+                    continue;
                 }
 
-                const canvas = await html2canvas(element, { scale: 3, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
+                if (i > 1) pdf.addPage();
 
-                // Add image filling the full A4 page (since the div is sized to A4)
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-                pageIndex++;
-                element = document.getElementById(`pdf-page-${pageIndex}`);
+                try {
+                    const canvas = await html2canvas(element, { scale: 3, useCORS: true, logging: false });
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                } catch (canvasErr) {
+                    console.error(`Error capturing page ${i}:`, canvasErr);
+                }
             }
 
-            pdf.save(`satisfaction_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            pdf.save(`satisfaction_report_${new Date().toISOString().split('T')[0]}_${Date.now()}.pdf`);
         } catch (err) {
             console.error("PDF Export failed:", err);
-            // toast.error("PDF Export failed");
+            alert("Export failed: " + err.message);
         } finally {
-            setLoading(false);
+            setIsExporting(false);
         }
     };
 
@@ -129,10 +137,9 @@ const SatisfactionReport = () => {
         <div className="space-y-6 animate-fade-in">
             <div id="satisfaction-report-content" className="space-y-6 p-4 bg-white rounded-2xl">
                 {/* Summary Cards */}
-                {/* Summary Cards */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white p-6 rounded-lg text-center border border-gray-200 shadow-sm relative overflow-hidden">
-                        <h3 className="text-gray-600 font-bold text-lg mb-2">Total Respondants</h3>
+                        <h3 className="text-gray-600 font-bold text-lg mb-2">Total Respondents (v2.2 / {data.allFeedback?.length || 0})</h3>
                         <p className="text-4xl font-bold text-blue-600">{data.totalRated}</p>
                         <div className="absolute top-0 left-0 w-full h-1 bg-blue-600"></div>
                     </div>
@@ -211,27 +218,22 @@ const SatisfactionReport = () => {
                 </div>
             </div>
 
-            {/* Hidden PDF Export Content - PAGINATED */}
+            {/* Hidden PDF Export Content - Permanently Rendered Off-Screen */}
             <div className="absolute -left-[9999px] top-0 font-['Sarabun'] text-black">
                 {/* Page 1: Header, Summary, and First Batch */}
                 <div id="pdf-page-1" className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between">
                     <div>
                         {/* Header Section */}
                         <div className="relative mb-8">
-                            {/* Logo Centered */}
                             <div className="flex justify-center mb-4">
                                 <img src="/img/psu_emblem.png" alt="PSU Emblem" className="h-24 w-auto object-contain grayscale" />
                             </div>
-
-                            {/* Text Centered */}
                             <div className="text-center space-y-1">
                                 <h1 className="text-xl font-bold text-black uppercase">Prince of Songkla University</h1>
                                 <h2 className="text-lg font-medium text-black">International College</h2>
                                 <h3 className="text-2xl font-bold mt-4 text-black uppercase">Satisfaction Assessment Report</h3>
                                 <p className="text-lg font-medium text-black">Academic Year {new Date().getFullYear()}</p>
                             </div>
-
-                            {/* Document Info (Top Right) */}
                             <div className="absolute top-0 right-0 text-right text-xs text-black">
                                 <p>Doc ID: PSUIC-SAT-{new Date().getFullYear()}-01</p>
                                 <p>Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -269,21 +271,25 @@ const SatisfactionReport = () => {
                             <table className="w-full border-collapse border border-black text-sm text-black">
                                 <thead className="bg-gray-100">
                                     <tr>
-                                        <th className="border border-black p-2 text-center w-12 text-black">No.</th>
-                                        <th className="border border-black p-2 text-left w-48 text-black">Evaluator Name</th>
-                                        <th className="border border-black p-2 text-center w-20 text-black">Score</th>
+                                        <th className="border border-black p-2 text-center w-10 text-black">No.</th>
+                                        <th className="border border-black p-2 text-left w-32 text-black">Evaluator Name</th>
+                                        <th className="border border-black p-2 text-left w-40 text-black">Service/Issue</th>
+                                        <th className="border border-black p-2 text-left w-32 text-black">IT Support</th>
+                                        <th className="border border-black p-2 text-center w-16 text-black">Score</th>
                                         <th className="border border-black p-2 text-left text-black">Comments</th>
-                                        <th className="border border-black p-2 text-center w-28 text-black">Date</th>
+                                        <th className="border border-black p-2 text-center w-24 text-black">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {/* Reduced to 10 items to prevent page cut-off */}
-                                    {(data.allFeedback || []).slice(0, 10).map((item, index) => (
+                                    {/* Page 1: Limit to 7 items */}
+                                    {(data.allFeedback || []).slice(0, 7).map((item, index) => (
                                         <tr key={index}>
                                             <td className="border border-black p-2 text-center text-black">{index + 1}</td>
                                             <td className="border border-black p-2 text-black">{item.createdBy?.name || 'Anonymous'}</td>
+                                            <td className="border border-black p-2 text-black font-semibold">{item.title || "-"}</td>
+                                            <td className="border border-black p-2 text-black">{item.assignedTo?.name || "Unassigned"}</td>
                                             <td className="border border-black p-2 text-center font-bold text-black">{item.rating}</td>
-                                            <td className="border border-black p-2 text-black italic">{item.userFeedback || "-"}</td>
+                                            <td className="border border-black p-2 text-black italic text-xs">{item.userFeedback || "-"}</td>
                                             <td className="border border-black p-2 text-center text-black">
                                                 {new Date(item.createdAt).toLocaleDateString('en-GB')}
                                             </td>
@@ -297,11 +303,11 @@ const SatisfactionReport = () => {
                     <div className="text-right text-sm text-black">Page 1</div>
                 </div>
 
-                {/* Subsequent Pages */}
-                {(data.allFeedback || []).length > 10 && Array.from({ length: Math.ceil(((data.allFeedback || []).length - 10) / 20) }).map((_, pageIndex) => (
-                    <div key={pageIndex} id={`pdf-page-${pageIndex + 2}`} className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between mt-10">
+                {/* Subsequent Pages - 12 items per page */}
+                {(data.allFeedback || []).length > 7 && Array.from({ length: Math.ceil(Math.max((data.allFeedback || []).length - 7, 0) / 12) }).map((_, pageIndex) => (
+                    <div key={pageIndex} id={`pdf-page-${pageIndex + 2}`} className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between">
                         <div>
-                            {/* Header Continuation */}
+                            {/* Simplified Header for Subsequent Pages */}
                             <div className="flex justify-between items-center border-b border-black pb-2 mb-6">
                                 <span className="font-bold text-black">Detailed Assessment (Continued)</span>
                                 <span className="text-sm text-black">{new Date().toLocaleDateString('en-GB')}</span>
@@ -310,20 +316,24 @@ const SatisfactionReport = () => {
                             <table className="w-full border-collapse border border-black text-sm text-black">
                                 <thead className="bg-gray-100">
                                     <tr>
-                                        <th className="border border-black p-2 text-center w-12 text-black">No.</th>
-                                        <th className="border border-black p-2 text-left w-48 text-black">Evaluator Name</th>
-                                        <th className="border border-black p-2 text-center w-20 text-black">Score</th>
+                                        <th className="border border-black p-2 text-center w-10 text-black">No.</th>
+                                        <th className="border border-black p-2 text-left w-32 text-black">Evaluator Name</th>
+                                        <th className="border border-black p-2 text-left w-40 text-black">Service/Issue</th>
+                                        <th className="border border-black p-2 text-left w-32 text-black">IT Support</th>
+                                        <th className="border border-black p-2 text-center w-16 text-black">Score</th>
                                         <th className="border border-black p-2 text-left text-black">Comments</th>
-                                        <th className="border border-black p-2 text-center w-28 text-black">Date</th>
+                                        <th className="border border-black p-2 text-center w-24 text-black">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {(data.allFeedback || []).slice(10 + (pageIndex * 20), 10 + ((pageIndex + 1) * 20)).map((item, index) => (
+                                    {(data.allFeedback || []).slice(7 + (pageIndex * 12), 7 + ((pageIndex + 1) * 12)).map((item, index) => (
                                         <tr key={index}>
-                                            <td className="border border-black p-2 text-center text-black">{10 + index + (pageIndex * 20) + 1}</td>
+                                            <td className="border border-black p-2 text-center text-black">{7 + index + (pageIndex * 12) + 1}</td>
                                             <td className="border border-black p-2 text-black">{item.createdBy?.name || 'Anonymous'}</td>
+                                            <td className="border border-black p-2 text-black font-semibold">{item.title || "-"}</td>
+                                            <td className="border border-black p-2 text-black">{item.assignedTo?.name || "Unassigned"}</td>
                                             <td className="border border-black p-2 text-center font-bold text-black">{item.rating}</td>
-                                            <td className="border border-black p-2 text-black italic">{item.userFeedback || "-"}</td>
+                                            <td className="border border-black p-2 text-black italic text-xs">{item.userFeedback || "-"}</td>
                                             <td className="border border-black p-2 text-center text-black">
                                                 {new Date(item.createdAt).toLocaleDateString('en-GB')}
                                             </td>
@@ -334,7 +344,7 @@ const SatisfactionReport = () => {
                         </div>
 
                         {/* Signature on Last Page */}
-                        {pageIndex === Math.ceil(((data.allFeedback || []).length - 10) / 20) - 1 && (
+                        {pageIndex === Math.ceil(Math.max((data.allFeedback || []).length - 7, 0) / 12) - 1 && (
                             <div className="mt-8 flex justify-end">
                                 <div className="text-center w-64">
                                     <div className="border-b border-black mb-2 h-8"></div>
@@ -349,7 +359,12 @@ const SatisfactionReport = () => {
                 ))}
             </div>
 
-            <ExportButtons onExportPDF={exportPDF} onExportExcel={exportExcel} />
+            <ExportButtons
+                onExportPDF={exportPDF}
+                onExportExcel={exportExcel}
+                disabled={isExporting}
+                loadingPDF={isExporting}
+            />
         </div>
     );
 };

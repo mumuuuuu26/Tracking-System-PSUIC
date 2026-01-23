@@ -17,8 +17,6 @@ exports.create = async (req, res) => {
       time  // [NEW] HH:mm
     } = req.body;
 
-    console.log("📝 Creating new ticket...");
-
     let assignedToId = null;
     let appointmentStatus = "pending";
     let scheduledDate = null;
@@ -122,7 +120,7 @@ exports.create = async (req, res) => {
       },
     });
 
-    console.log("✅ Ticket created:", newTicket.id);
+
 
     // ... (Email notification logic remains same, but might need to notify Assigned IT specifically if booked)
 
@@ -219,8 +217,6 @@ exports.update = async (req, res) => {
       userFeedback,
       categoryId,
     } = req.body;
-
-    console.log(`📝 Updating ticket #${id} - Status: ${status}`);
 
     // [New] Data Integrity Check
     const checkTicket = await prisma.ticket.findUnique({
@@ -408,42 +404,57 @@ exports.read = async (req, res) => {
 };
 
 // Get ALL tickets (Admin/IT)
+// Get ALL tickets (Admin/IT) with Pagination & Search
 exports.listAll = async (req, res) => {
   try {
-    const tickets = await prisma.ticket.findMany({
-      include: {
-        room: true,
-        equipment: true,
-        category: true,
-        createdBy: true,
-        assignedTo: true
-      },
-      orderBy: { createdAt: 'desc' }
+    const { page = 1, limit = 10, search, status } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Build Where Clause
+    const where = {};
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search } }, // Case-insensitive by default in some Prisma versions/DBs, distinct mode elsewhere
+        // Note: Prisma default for MySQL is case-insensitive for text fields usually.
+        // For ID (int) we need to convert search to int if possible or skip.
+        ...(Number(search) ? [{ id: Number(search) }] : []),
+        { createdBy: { name: { contains: search } } },
+        { createdBy: { email: { contains: search } } },
+        { assignedTo: { name: { contains: search } } },
+        { assignedTo: { email: { contains: search } } }
+      ];
+    }
+
+    // Execute Queries in Transaction (or parallel)
+    const [tickets, total] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          room: true,
+          equipment: true,
+          category: true,
+          createdBy: true,
+          assignedTo: true
+        },
+        orderBy: { createdAt: 'desc' } // Newest First
+      }),
+      prisma.ticket.count({ where })
+    ]);
+
+    res.json({
+      data: tickets,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / take)
     });
-
-    // Custom Sort: Pending > In Progress > Scheduled > Fixed > Rejected
-    const statusOrder = {
-      'pending': 1,
-      'in_progress': 2,
-      'scheduled': 3,
-      'fixed': 4,
-      'closed': 4,
-      'rejected': 5
-    };
-
-    const sortedTickets = tickets.sort((a, b) => {
-      const orderA = statusOrder[a.status] || 99;
-      const orderB = statusOrder[b.status] || 99;
-
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-
-      // Secondary sort: Newest First (Descending)
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-    res.json(sortedTickets);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server Error" });

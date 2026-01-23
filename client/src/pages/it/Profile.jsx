@@ -42,9 +42,9 @@ const ITProfile = () => {
 
     useEffect(() => {
         fetchProfile();
-    }, []);
+    }, [fetchProfile]);
 
-    const fetchProfile = async () => {
+    const fetchProfile = React.useCallback(async () => {
         try {
             const res = await currentUser(token);
             setProfile(res.data);
@@ -54,7 +54,7 @@ const ITProfile = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
     const handleImageChange = async (e) => {
         const file = e.target.files[0];

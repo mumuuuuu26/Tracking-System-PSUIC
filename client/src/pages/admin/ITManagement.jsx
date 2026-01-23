@@ -87,8 +87,15 @@ const ITManagement = () => {
     const handleAssignClick = async (member) => {
         setAssignStaff(member);
         try {
-            const res = await listAllTickets(token);
-            const pending = res.data.filter(t => t.status === "pending" && !t.assignedToId);
+            // Fetch only pending tickets locally for assignment (limit 100 should be enough for "pending")
+            const res = await listAllTickets(token, { status: 'pending', limit: 100 });
+            // API returns { data: tickets, total, ... }
+            // Filter unassigned just in case, though usually pending means unassigned or assigned but not accepted? 
+            // In this logic, we want unassigned ones. Backend status=pending doesn't guarantee unassigned if logic is loose, 
+            // but let's filter unassigned client side or trust the list.
+            // Original code: res.data.filter(t => t.status === "pending" && !t.assignedToId)
+
+            const pending = res.data.data.filter(t => !t.assignedToId);
             setPendingTickets(pending);
             setIsAssignModalOpen(true);
         } catch (err) {

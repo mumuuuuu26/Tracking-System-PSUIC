@@ -33,7 +33,7 @@ const TicketDetail = () => {
 
     useEffect(() => {
         loadTicket();
-    }, [id, token]);
+    }, [loadTicket]);
 
     useEffect(() => {
         if (ticket) {
@@ -51,7 +51,7 @@ const TicketDetail = () => {
         }
     }, [ticket]);
 
-    const loadTicket = async () => {
+    const loadTicket = React.useCallback(async () => {
         try {
             setLoading(true);
             const res = await getTicket(token, id);
@@ -66,7 +66,7 @@ const TicketDetail = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, id]);
 
     const handleProofUpload = (e) => {
         const file = e.target.files[0];

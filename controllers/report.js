@@ -210,6 +210,7 @@ exports.getSatisfactionStats = async (req, res) => {
                 rating: true,
                 userFeedback: true,
                 createdAt: true,
+                title: true, // Add title for "Service/Issue" column
                 assignedTo: { select: { name: true } },
                 createdBy: { select: { name: true } }
             },

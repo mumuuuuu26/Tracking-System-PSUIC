@@ -50,20 +50,7 @@ const ITDashboard = () => {
   const [rejectNote, setRejectNote] = useState("");
   const [isRejectDropdownOpen, setIsRejectDropdownOpen] = useState(false);
 
-  // Load monthly events when month changes
-  useEffect(() => {
-    if (token) {
-      loadMonthlyEvents();
-    }
-  }, [token, loadMonthlyEvents]);
-
-  // Load specific date schedule when selectedDate changes
-  useEffect(() => {
-    if (token) {
-      loadDailySchedule();
-    }
-  }, [token, loadDailySchedule]);
-
+  // Load monthly events
   const loadMonthlyEvents = React.useCallback(async () => {
     try {
       const start = currentMonth.startOf('month').format('YYYY-MM-DD');
@@ -75,6 +62,7 @@ const ITDashboard = () => {
     }
   }, [token, currentMonth]);
 
+  // Load daily schedule
   const loadDailySchedule = React.useCallback(async () => {
     try {
       const dateStr = selectedDate.format('YYYY-MM-DD');
@@ -138,19 +126,13 @@ const ITDashboard = () => {
         getMyTasks(token)
       ]);
 
-      // Load initial schedule for TODAY and Monthly Events
-      // Note: loadDailySchedule and loadMonthlyEvents might depend on updated state if not careful,
-      // but here they depend on selectedDate/currentMonth which are state.
-      // We can call them directly here or rely on their useEffects?
-      // If we call them here, we might be duplicate calling if deps change.
-      // However, loadDashboardData is mainly for the 'tickets' and 'stats'.
-      // Let's just load tickets here.
+      console.log('Dashboard Data Loaded:', { ticketsRes });
 
-      // Actually original code called them. Let's keep calling them but they are now callbacks.
       await loadDailySchedule();
       await loadMonthlyEvents();
 
-      const allTickets = ticketsRes.data;
+      // Ensure array
+      const allTickets = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
 
       const pendingCount = allTickets.filter(t => t.status === "pending").length;
       const inProgressCount = allTickets.filter(t => ["in_progress", "scheduled"].includes(t.status)).length;
@@ -172,6 +154,20 @@ const ITDashboard = () => {
       setLoading(false);
     }
   }, [token, loadDailySchedule, loadMonthlyEvents]);
+
+  // Load monthly events when month changes
+  useEffect(() => {
+    if (token) {
+      loadMonthlyEvents();
+    }
+  }, [token, loadMonthlyEvents]);
+
+  // Load specific date schedule when selectedDate changes
+  useEffect(() => {
+    if (token) {
+      loadDailySchedule();
+    }
+  }, [token, loadDailySchedule]);
 
   useEffect(() => {
     if (token) {

@@ -1,8 +1,9 @@
 import axios from 'axios'
 
-export const listAllTickets = async (token) => {
+export const listAllTickets = async (token, params = {}) => {
     return await axios.get('/api/ticket/all', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params // { page, limit, search, status }
     })
 }
 

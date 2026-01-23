@@ -16,9 +16,9 @@ const TicketDetail = () => {
 
   useEffect(() => {
     fetchTicket();
-  }, [id]);
+  }, [fetchTicket]);
 
-  const fetchTicket = async () => {
+  const fetchTicket = React.useCallback(async () => {
     try {
       setLoading(true);
       const res = await getTicket(token, id);
@@ -29,7 +29,7 @@ const TicketDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, id]);
 
   if (loading) {
     return (

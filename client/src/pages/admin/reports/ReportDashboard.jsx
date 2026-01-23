@@ -39,7 +39,7 @@ const ReportDashboard = () => {
                                     className={`
                                     flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap
                                     ${activeTab === tab.id
-                                            ? 'bg-gray-900 text-white shadow-md'
+                                            ? 'bg-[#193C6C] text-white shadow-md shadow-blue-900/20'
                                             : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
                                         }
                                 `}

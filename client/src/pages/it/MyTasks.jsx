@@ -63,7 +63,7 @@ const MyTasks = () => {
     loadSchedule();
   }, [loadTasks, loadSchedule]);
 
-  /* eslint-disable no-unused-vars */
+
   // eslint-disable-next-line no-unused-vars
   const handleAcceptTicket = async (ticket) => {
     setSelectedTicket(ticket);

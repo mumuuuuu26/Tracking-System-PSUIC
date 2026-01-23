@@ -104,7 +104,7 @@ const UserManagement = () => {
                     key={tab}
                     onClick={() => setFilter(tab)}
                     className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${isActive
-                      ? "bg-gray-900 text-white shadow-md"
+                      ? "bg-[#193C6C] text-white shadow-md shadow-blue-900/20"
                       : "bg-white text-gray-500 border border-gray-200 hover:bg-gray-50"
                       }`}
                   >

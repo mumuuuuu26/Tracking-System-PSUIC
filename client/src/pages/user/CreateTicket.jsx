@@ -19,9 +19,7 @@ import { getITAvailability } from "../../api/appointment";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import isBetween from "dayjs/plugin/isBetween";
 
-dayjs.extend(isBetween);
 
 const CreateTicket = () => {
   const location = useLocation();

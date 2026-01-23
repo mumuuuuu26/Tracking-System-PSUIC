@@ -1,269 +1,272 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Search, MapPin, User, Clock, Filter } from "lucide-react";
+import { Search, MapPin, User, Clock, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getAllTickets } from "../../api/ticket";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 
 const Tickets = () => {
     const { token } = useAuthStore();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Server-side Pagination State
     const [tickets, setTickets] = useState([]);
-    const [filteredTickets, setFilteredTickets] = useState([]);
-    const [activeFilter, setActiveFilter] = useState("All");
-    const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalTickets, setTotalTickets] = useState(0);
+
+    // Filters
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || "");
+    const [activeFilter, setActiveFilter] = useState(searchParams.get('status') || "all");
+    const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
+    // Debounce Search
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchTerm]);
+
+    // Reset page on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch, activeFilter]);
 
     const loadTickets = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await getAllTickets(token);
-            setTickets(res.data);
-            setFilteredTickets(res.data);
+            const params = {
+                page: currentPage,
+                limit: 12, // Grid 3x4
+                search: debouncedSearch,
+                status: activeFilter === "All" || activeFilter === "all" ? undefined : activeFilter.toLowerCase().replace(" ", "_")
+            };
+
+            // Update URL params
+            const newParams = {};
+            if (debouncedSearch) newParams.search = debouncedSearch;
+            if (activeFilter !== "All" && activeFilter !== "all") newParams.status = activeFilter;
+            setSearchParams(newParams, { replace: true });
+
+            const res = await getAllTickets(token, params);
+
+            // Handle new response structure { data, total, page, totalPages }
+            if (res.data.data) {
+                setTickets(res.data.data);
+                setTotalTickets(res.data.total);
+                setTotalPages(res.data.totalPages);
+            } else {
+                setTickets([]);
+            }
         } catch (err) {
             console.log(err);
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [token, currentPage, debouncedSearch, activeFilter, setSearchParams]);
 
     useEffect(() => {
         loadTickets();
     }, [loadTickets]);
 
-    const filterTickets = useCallback(() => {
-        let filtered = [...tickets];
-
-        // Filter by status
-        if (activeFilter !== "All") {
-            filtered = filtered.filter((t) => {
-                if (activeFilter === "Completed") return t.status === "fixed";
-                if (activeFilter === "In Progress") return t.status === "in_progress";
-                if (activeFilter === "Pending") return t.status === "pending";
-                if (activeFilter === "Rejected") return t.status === "rejected";
-                return true;
-            });
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        // Filter by search term
-        if (searchTerm) {
-            filtered = filtered.filter(
-                (t) =>
-                    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    String(t.id).includes(searchTerm) ||
-                    t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    t.createdBy?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-
-        // Sort by Work Process (Pending > In Progress > Scheduled > Fixed > Rejected)
-        const statusWeight = {
-            'pending': 1,
-            'in_progress': 2,
-            'scheduled': 3,
-            'fixed': 4,
-            'closed': 4,
-            'rejected': 5
-        };
-
-        filtered.sort((a, b) => {
-            const weightA = statusWeight[a.status] || 99;
-            const weightB = statusWeight[b.status] || 99;
-
-            if (weightA !== weightB) {
-                return weightA - weightB; // Lower weight (earlier stage) first
-            }
-            // Secondary sort: Oldest First (First Come First Served) within same status
-            return new Date(a.createdAt) - new Date(b.createdAt);
-        });
-
-        setFilteredTickets(filtered);
-    }, [tickets, activeFilter, searchTerm]);
-
-    useEffect(() => {
-        filterTickets();
-    }, [filterTickets]);
+    };
 
     const getStatusColor = (status) => {
         switch (status) {
-            case "pending":
-                return "border-l-amber-400 border-gray-100";
-            case "in_progress":
-                return "border-l-blue-400 border-gray-100";
+            case "pending": return "border-l-amber-500 bg-amber-50/10";
+            case "in_progress": return "border-l-blue-500 bg-blue-50/10";
             case "fixed":
-            case "closed":
-                return "border-l-green-400 border-gray-100";
-            case "rejected":
-                return "border-l-red-400 border-gray-100";
-            default:
-                return "border-l-gray-400 border-gray-100";
+            case "closed": return "border-l-green-500 bg-green-50/10";
+            case "rejected": return "border-l-red-500 bg-red-50/10";
+            default: return "border-l-gray-300";
         }
     };
 
-    const getUrgencyBadge = (urgency) => {
-        switch (urgency) {
-            case "High":
-            case "Critical":
-                return "bg-red-50 text-red-600 border border-red-100";
-            case "Medium":
-                return "bg-amber-50 text-amber-600 border border-amber-100";
-            case "Low":
-                return "bg-green-50 text-green-600 border border-green-100";
-            default:
-                return "bg-gray-50 text-gray-600 border border-gray-100";
-        }
+    const getStatusBadge = (status) => {
+        const styles = {
+            pending: "bg-amber-100 text-amber-700 ring-amber-600/20",
+            in_progress: "bg-blue-100 text-blue-700 ring-blue-600/20",
+            fixed: "bg-green-100 text-green-700 ring-green-600/20",
+            closed: "bg-green-100 text-green-700 ring-green-600/20",
+            rejected: "bg-red-100 text-red-700 ring-red-600/20"
+        };
+        return styles[status] || "bg-gray-100 text-gray-700 ring-gray-600/20";
     };
 
-    // Helper for Status Dot
-    const getStatusDotColor = (status) => {
-        switch (status) {
-            case "pending": return "bg-amber-500";
-            case "in_progress": return "bg-blue-500";
-            case "fixed":
-            case "closed": return "bg-green-500";
-            case "rejected": return "bg-red-500";
-            default: return "bg-gray-400";
-        }
+    const urgencyColors = {
+        Low: "text-green-600 bg-green-50 border-green-100",
+        Medium: "text-amber-600 bg-amber-50 border-amber-100",
+        High: "text-orange-600 bg-orange-50 border-orange-100",
+        Critical: "text-red-600 bg-red-50 border-red-100"
     };
-
-    const filters = ["All", "Pending", "In Progress", "Completed", "Rejected"];
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-20 animate-in fade-in duration-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-24">
             {/* Header Section */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-10 bg-opacity-80 backdrop-blur-md">
-                <div className="max-w-6xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">All Tickets</h1>
-                            <p className="text-gray-500 mt-1">Manage all support tickets from users</p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Search by ID, title, user, or keyword..."
-                                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-700"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                            {filters.map((filter) => (
-                                <button
-                                    key={filter}
-                                    onClick={() => setActiveFilter(filter)}
-                                    className={`px-5 py-3 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${activeFilter === filter
-                                        ? "bg-blue-600 text-white shadow-md"
-                                        : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                                        }`}
-                                >
-                                    {filter}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Support Tickets</h1>
+                    <p className="text-gray-500 mt-1">Manage and track IT support requests</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 shadow-sm">
+                        Total Tickets: <span className="text-gray-900 font-bold ml-1">{totalTickets}</span>
+                    </span>
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="max-w-6xl mx-auto px-4">
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-48 bg-white rounded-xl shadow-sm animate-pulse border border-gray-100"></div>)}
+            {/* Filters & Search - Modern Style */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm sticky top-0 z-10">
+                <div className="md:col-span-5 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                        type="text"
+                        placeholder="Search tickets by ID, title, requester..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                    />
+                </div>
+
+                <div className="md:col-span-7 flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+                    <Filter className="text-gray-400 w-5 h-5 flex-shrink-0" />
+                    {["All", "Pending", "In Progress", "Fixed", "Rejected"].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setActiveFilter(status)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${(activeFilter === status ||
+                                (activeFilter === "all" && status === "All") ||
+                                (activeFilter === "fixed" && status === "Fixed") ||
+                                (activeFilter === "in_progress" && status === "In Progress") ||
+                                (activeFilter === status.toLowerCase()))
+                                ? "bg-[#193C6C] text-white shadow-md shadow-blue-900/20"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                }`}
+                        >
+                            {status}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Ticket Grid */}
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="bg-white rounded-xl h-64 animate-pulse shadow-sm border border-gray-100"></div>
+                    ))}
+                </div>
+            ) : tickets.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Search className="text-gray-400 w-8 h-8" />
                     </div>
-                ) : filteredTickets.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100 max-w-lg mx-auto">
-                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Search className="w-10 h-10 text-slate-300" />
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">No tickets found</h3>
-                        <p className="text-gray-500 max-w-xs mx-auto">
-                            {searchTerm || activeFilter !== "All" ? "No matches for your search filters." : "There are no tickets in the system."}
-                        </p>
-                    </div>
-                ) : (
+                    <h3 className="text-lg font-medium text-gray-900">No tickets found</h3>
+                    <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>
+                </div>
+            ) : (
+                <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredTickets.map((ticket) => (
+                        {tickets.map((ticket) => (
                             <div
                                 key={ticket.id}
                                 onClick={() => navigate(`/it/ticket/${ticket.id}`)}
-                                className={`
-                                    bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
-                                    ${getStatusColor(ticket.status)}
-                                `}
+                                className={`group bg-white rounded-xl border-l-[3px] border-t border-r border-b border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden ${getStatusColor(ticket.status)}`}
                             >
-                                {/* Header: ID & Priority & Time */}
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[#193C6C] font-bold text-sm">
-                                            #TK-{String(ticket.id).padStart(4, "0")}
-                                        </span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${getUrgencyBadge(ticket.urgency)}`}>
-                                            {ticket.urgency}
-                                        </span>
-                                    </div>
-                                    <span className="text-gray-400 text-xs font-medium">
-                                        {dayjs(ticket.createdAt).fromNow(true).replace(" days", "d").replace(" months", "mo")} ago
-                                    </span>
-                                </div>
-
-                                {/* Title */}
-                                <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2 min-h-[56px]">
-                                    {ticket.title}
-                                </h3>
-
-                                {/* Location & User */}
-                                <div className="flex flex-col gap-1 text-xs text-gray-500 mb-6 font-medium">
-                                    {ticket.room && (
-                                        <p className="flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                                            {ticket.room.name}
-                                        </p>
-                                    )}
-                                    <p className="flex items-center gap-1.5">
-                                        <User size={12} className="text-gray-400" /> Reported by: {ticket.createdBy?.name || ticket.createdBy?.username}
-                                    </p>
-                                </div>
-
-                                {/* Footer: Status & Assigned To */}
-                                <div className="flex justify-between items-end border-t border-gray-50 pt-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${getStatusDotColor(ticket.status)}`}></div>
-                                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-                                            {ticket.status.replace("_", " ")}
-                                        </span>
-                                    </div>
-
-                                    {ticket.assignedTo ? (
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[10px] text-gray-400 mb-0.5">Assigned to</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-xs font-medium text-gray-600">
-                                                    {ticket.assignedTo.name?.split(" ")[0]}
-                                                </span>
-                                                <img
-                                                    src={ticket.assignedTo.picture || `https://ui-avatars.com/api/?name=${ticket.assignedTo.name}&background=random`}
-                                                    alt="Agent"
-                                                    className="w-6 h-6 rounded-full object-cover ring-2 ring-white"
-                                                />
-                                            </div>
+                                <div className="p-5 space-y-4">
+                                    {/* Header */}
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono text-sm font-bold text-gray-500">
+                                                #{String(ticket.id).padStart(4, "0")}
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${urgencyColors[ticket.urgency] || urgencyColors.Low}`}>
+                                                {ticket.urgency}
+                                            </span>
                                         </div>
-                                    ) : (
-                                        <span className="text-xs text-gray-300 italic">Unassigned</span>
-                                    )}
+                                        <span className="text-xs font-medium text-gray-400 flex items-center gap-1">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            {dayjs(ticket.createdAt).fromNow(true)} ago
+                                        </span>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                            {ticket.title}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 line-clamp-2">
+                                            {ticket.description}
+                                        </p>
+                                    </div>
+
+                                    {/* Meta Info */}
+                                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        {ticket.room && (
+                                            <div className="flex items-center gap-1.5">
+                                                <MapPin className="w-3.5 h-3.5" />
+                                                <span>{ticket.room.roomNumber}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-1.5 pl-4 border-l border-gray-200">
+                                            <User className="w-3.5 h-3.5" />
+                                            <span className="truncate max-w-[100px]">
+                                                {ticket.createdBy?.name || ticket.createdBy?.username}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ring-1 ring-inset ${getStatusBadge(ticket.status)}`}>
+                                        {ticket.status.replace("_", " ")}
+                                    </span>
+                                    <span className="text-xs font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        View Details →
+                                    </span>
                                 </div>
                             </div>
                         ))}
                     </div>
-                )}
-            </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-4 mt-8">
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                <ChevronLeft size={20} className="text-gray-600" />
+                            </button>
+
+                            <span className="text-sm font-medium text-gray-600">
+                                Page {currentPage} of {totalPages}
+                            </span>
+
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                <ChevronRight size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };

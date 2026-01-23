@@ -35,6 +35,15 @@ const RoomManagement = () => {
         loadRooms();
     }, [loadRooms]);
 
+    useEffect(() => {
+        const lowerTerm = searchTerm.toLowerCase();
+        setFilteredRooms(rooms.filter(room =>
+            room.roomNumber.toLowerCase().includes(lowerTerm) ||
+            room.building.toLowerCase().includes(lowerTerm) ||
+            room.floor.toString().includes(lowerTerm)
+        ));
+    }, [searchTerm, rooms]);
+
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };

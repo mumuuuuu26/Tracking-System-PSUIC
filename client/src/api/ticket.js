@@ -32,8 +32,9 @@ export const submitFeedback = async (token, id, data) => {
     });
 };
 
-export const getAllTickets = async (token) => {
+export const getAllTickets = async (token, params = {}) => {
     return await axios.get(`${import.meta.env.VITE_API_URL}/ticket/all`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params
     })
 }
