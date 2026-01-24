@@ -126,7 +126,7 @@ const ITDashboard = () => {
         getMyTasks(token)
       ]);
 
-      console.log('Dashboard Data Loaded:', { ticketsRes });
+
 
       await loadDailySchedule();
       await loadMonthlyEvents();

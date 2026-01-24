@@ -30,9 +30,11 @@ import UserManagement from "../pages/admin/UserManagement";
 import ITManagement from "../pages/admin/ITManagement";
 import RoomManagement from "../pages/admin/RoomManagement";
 import CategoryManagement from "../pages/admin/CategoryManagement";
+import EquipmentManagement from "../pages/admin/EquipmentManagement";
 import ReportDashboard from "../pages/admin/reports/ReportDashboard";
 import AdminProfile from "../pages/admin/Profile";
 import AdminTicketDetail from "../pages/admin/TicketDetail";
+import Permission from "../pages/admin/Permission";
 
 
 // IT
@@ -86,9 +88,11 @@ const AppRoutes = () => {
         <Route path="manage-it" element={<ITManagement />} />
         <Route path="manage-rooms" element={<RoomManagement />} />
         <Route path="manage-categories" element={<CategoryManagement />} />
+        <Route path="manage-equipment" element={<EquipmentManagement />} />
         <Route path="reports" element={<ReportDashboard />} />
         <Route path="profile" element={<AdminProfile />} />
         <Route path="ticket/:id" element={<AdminTicketDetail />} />
+        <Route path="permission" element={<Permission />} />
 
       </Route>
 

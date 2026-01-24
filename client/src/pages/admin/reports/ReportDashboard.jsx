@@ -4,11 +4,13 @@ import AnnualReport from './AnnualReport';
 import EquipmentAnalysis from './EquipmentAnalysis';
 import ITPerformance from './ITPerformance';
 import SatisfactionReport from './SatisfactionReport';
-import { BarChart, PieChart, Activity, Server, Heart, Calendar } from 'lucide-react';
+import { BarChart, PieChart, Activity, Server, Heart, Calendar, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import ErrorBoundary from '../../../components/common/ErrorBoundary';
 
 const ReportDashboard = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('monthly');
     const [month, setMonth] = useState(dayjs().month() + 1);
     const [year, setYear] = useState(dayjs().year());
@@ -22,25 +24,34 @@ const ReportDashboard = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-20">
+        <div className="min-h-screen bg-gray-50 pb-20 font-sans">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">System Reports</h1>
-                    <p className="text-gray-500 text-sm mb-6">View system performance, equipment analysis, and user satisfaction reports</p>
+            {/* Header */}
+            {/* Header */}
+            <div className="bg-[#193C6C] px-6 pt-8 pb-6 shadow-md">
+                <div className="flex items-center gap-4 text-white mb-2">
+                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold">System Reports</h1>
+                </div>
+            </div>
 
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        {/* Scrollable Tabs */}
-                        <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1 w-full md:w-auto">
+            <div className="max-w-7xl mx-auto px-4 pt-6 mb-6">
+                <p className="text-gray-500 text-sm mb-6">View system performance, equipment analysis, and user satisfaction reports</p>
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+                    {/* Scrollable Tabs */}
+                    <div className="w-full lg:w-auto overflow-x-auto pb-1 -mx-4 lg:mx-0 px-4 lg:px-0">
+                        <div className="flex gap-2 min-w-max">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`
-                                    flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap
+                                    flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border
                                     ${activeTab === tab.id
-                                            ? 'bg-[#193C6C] text-white shadow-md shadow-blue-900/20'
-                                            : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                                            ? 'bg-[#193C6C] text-white border-[#193C6C] shadow-md shadow-blue-900/20'
+                                            : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
                                         }
                                 `}
                                 >
@@ -49,41 +60,52 @@ const ReportDashboard = () => {
                                 </button>
                             ))}
                         </div>
+                    </div>
 
-                        {/* Filters (Only for Monthly Report for now, or adaptable) */}
-                        {activeTab === 'monthly' && (
-                            <div className="flex items-center gap-2 bg-gray-50 px-1 py-1 rounded-xl border border-gray-100 p-1">
-                                <div className="flex items-center gap-2 px-3 py-1.5 border-r border-gray-200">
-                                    <Calendar size={16} className="text-gray-400" />
-                                    <select
-                                        value={month}
-                                        onChange={e => setMonth(Number(e.target.value))}
-                                        className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer py-1"
-                                    >
-                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                            <option key={m} value={m}>Month {m}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="px-3 py-1.5">
-                                    <select
-                                        value={year}
-                                        onChange={e => setYear(Number(e.target.value))}
-                                        className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer py-1"
-                                    >
-                                        {Array.from({ length: 3 }, (_, i) => 2024 + i).map(y => (
-                                            <option key={y} value={y}>{y}</option>
-                                        ))}
-                                    </select>
+                    {/* Filters (Only for Monthly Report for now) */}
+                    {activeTab === 'monthly' && (
+                        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
+                            <div className="relative group">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <select
+                                    value={month}
+                                    onChange={e => setMonth(Number(e.target.value))}
+                                    className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl pl-10 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer min-w-[140px]"
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                        <option key={m} value={m}>Month {m}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
                                 </div>
                             </div>
-                        )}
-                    </div>
+
+                            <div className="relative group">
+                                <select
+                                    value={year}
+                                    onChange={e => setYear(Number(e.target.value))}
+                                    className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                                >
+                                    {Array.from({ length: 3 }, (_, i) => 2024 + i).map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Content Area */}
-            <div id="report-content" className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white/50 min-h-[500px]">
+            <div id="report-content" className="max-w-7xl mx-auto px-4 lg:px-6 py-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <ErrorBoundary>
                     {activeTab === 'monthly' && <MonthlyReport month={month} year={year} />}
                     {activeTab === 'annual' && <AnnualReport />}

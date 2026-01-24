@@ -98,79 +98,78 @@ const MonthlyReport = ({ month, year }) => {
                     </button>
                 </div>
             ) : data ? (
-                <div id="monthly-report-content" className="space-y-6 p-4 bg-white rounded-3xl">
+                <div id="monthly-report-content" className="space-y-4 p-4 bg-white rounded-3xl">
                     {/* Summary Cards */}
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-blue-50 text-blue-900 rounded-lg">
-                                    <Ticket size={24} />
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="p-1.5 bg-blue-50 text-blue-900 rounded-lg">
+                                    <Ticket size={20} />
                                 </div>
-                                <span className="font-semibold text-gray-700">Total Tickets</span>
+                                <span className="font-semibold text-gray-700 text-sm">Total Tickets</span>
                             </div>
-                            <p className="text-4xl font-bold text-blue-900 mt-2">{totalTickets}</p>
+                            <p className="text-3xl font-bold text-blue-900 mt-1">{totalTickets}</p>
                             <div className="absolute right-0 top-0 h-full w-1 bg-blue-900"></div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-blue-50 text-blue-700 rounded-lg">
-                                    <CheckCircle size={24} />
+                        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
+                                    <CheckCircle size={20} />
                                 </div>
-                                <span className="font-semibold text-gray-700">Resolved</span>
+                                <span className="font-semibold text-gray-700 text-sm">Resolved</span>
                             </div>
-                            <p className="text-4xl font-bold text-blue-700 mt-2">{resolvedTickets}</p>
+                            <p className="text-3xl font-bold text-blue-700 mt-1">{resolvedTickets}</p>
                             <div className="absolute right-0 top-0 h-full w-1 bg-blue-700"></div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                                    <Clock size={24} />
+                        <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg">
+                                    <Clock size={20} />
                                 </div>
-                                <span className="font-semibold text-gray-700">Pending</span>
+                                <span className="font-semibold text-gray-700 text-sm">Pending</span>
                             </div>
-                            <p className="text-4xl font-bold text-blue-500 mt-2">{pendingTickets}</p>
+                            <p className="text-3xl font-bold text-blue-500 mt-1">{pendingTickets}</p>
                             <div className="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
                         </div>
                     </div>
 
                     {/* Chart */}
-                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="font-bold text-xl text-gray-800">Daily Breakdown</h3>
-                            <div className="flex gap-4 text-sm text-gray-500">
+                    <div className="bg-white p-4 md:p-6 rounded-3xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-lg text-gray-800">Daily Breakdown</h3>
+                            <div className="flex gap-4 text-xs text-gray-500">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-full bg-[#193C6C]"></span> Resolved
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#193C6C]"></span> Resolved
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-full bg-[#3B82F6]"></span> Pending
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span> Pending
                                 </div>
                             </div>
                         </div>
-                        <div className="h-[400px]">
+                        <div className="h-[220px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={reportData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <BarChart data={reportData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                     <XAxis
                                         dataKey="day"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                                        tick={{ fill: '#6B7280', fontSize: 11 }}
                                         dy={10}
                                     />
                                     <YAxis
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: '#6B7280', fontSize: 12 }}
+                                        tick={{ fill: '#6B7280', fontSize: 11 }}
                                     />
                                     <Tooltip
                                         cursor={{ fill: '#F3F4F6' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="fixed" fill="#193C6C" radius={[4, 4, 0, 0]} barSize={20} name="Resolved" />
-                                    <Bar dataKey="pending" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={20} name="Pending" />
+                                    <Bar dataKey="fixed" fill="#193C6C" radius={[3, 3, 0, 0]} barSize={16} name="Resolved" />
+                                    <Bar dataKey="pending" fill="#3B82F6" radius={[3, 3, 0, 0]} barSize={16} name="Pending" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

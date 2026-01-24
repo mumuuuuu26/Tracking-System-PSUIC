@@ -11,14 +11,21 @@ exports.getDashboardStats = async (req, res) => {
         prisma.equipment.count(),
       ]);
 
+    // Calculate Resolution Rate
+    const totalFixed = await prisma.ticket.count({
+      where: { status: "fixed" },
+    });
+    const resolutionRate = ticketCount > 0 ? Math.round((totalFixed / ticketCount) * 100) : 0;
+
     res.json({
       ticketCount,
       itStaffCount,
       roomCount,
       equipmentCount,
+      resolutionRate, // [NEW]
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error: Get Stats Failed" });
   }
 };
@@ -43,6 +50,23 @@ exports.getITStaff = async (req, res) => {
     // Check their current workload to determine status
     const staffWithStatus = await Promise.all(
       staff.map(async (user) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Check availability (On Leave)
+        const availability = await prisma.iTAvailability.findFirst({
+          where: {
+            userId: user.id,
+            date: {
+              gte: today,
+              lt: tomorrow
+            },
+            status: "leave" // Assuming 'leave' is the value stored
+          }
+        });
+
         // Count active tickets assigned to this user
         const activeTickets = await prisma.ticket.count({
           where: {
@@ -51,9 +75,13 @@ exports.getITStaff = async (req, res) => {
           },
         });
 
-        // Simple status logic: If working on a ticket -> Busy, else Available
-        // In future could add "On Leave" check from another table
-        const status = activeTickets > 0 ? "Busy" : "Available";
+        // Status Priority: On Leave > Busy > Available
+        let status = "Available";
+        if (availability) {
+          status = "On Leave";
+        } else if (activeTickets > 0) {
+          status = "Busy";
+        }
 
         // Get the latest ticket they are working on if busy
         let currentTicket = null;
@@ -61,12 +89,13 @@ exports.getITStaff = async (req, res) => {
           currentTicket = await prisma.ticket.findFirst({
             where: {
               assignedToId: user.id,
-              status: "in_progress",
+              status: { in: ["in_progress"] },
             },
             select: { id: true, title: true },
           });
         }
 
+        // Return user with calculated status
         return {
           ...user,
           status,
@@ -77,7 +106,7 @@ exports.getITStaff = async (req, res) => {
 
     res.json(staffWithStatus);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error: Get IT Staff Failed" });
   }
 };
@@ -118,7 +147,7 @@ exports.getITStaffStats = async (req, res) => {
 
     res.json({ active, onLeave });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

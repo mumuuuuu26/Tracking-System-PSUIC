@@ -20,7 +20,7 @@ const QuickFix = () => {
             setData(res.data);
             // Initial filter will happen via useEffect
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     }, []);
 
@@ -61,7 +61,7 @@ const QuickFix = () => {
             try {
                 await readQuickFix(id);
             } catch (err) {
-                console.log(err);
+                console.error(err);
             }
         }
     };

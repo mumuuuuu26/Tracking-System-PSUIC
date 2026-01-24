@@ -13,7 +13,7 @@ dayjs.extend(relativeTime)
 const App = () => {
     useEffect(() => {
         socket.on('connect', () => {
-            console.log('Socket Connected:', socket.id);
+
         });
 
         socket.on('server:new-ticket', (data) => {

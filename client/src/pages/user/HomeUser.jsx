@@ -44,7 +44,7 @@ const HomeUser = () => {
 
       setStats({ pending, inProgress, completed, allTickets: tickets });
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   }, [token]);
 

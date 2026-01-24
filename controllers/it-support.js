@@ -64,7 +64,7 @@ exports.getStats = async (req, res) => {
       urgent,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -110,7 +110,7 @@ exports.getMyTasks = async (req, res) => {
 
     res.json(tasks);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -148,7 +148,7 @@ exports.getTodayAppointments = async (req, res) => {
 
     res.json(appointments);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -200,7 +200,7 @@ exports.acceptJob = async (req, res) => {
 
     res.json(updatedTicket);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -232,7 +232,7 @@ exports.rejectTicket = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -271,7 +271,7 @@ exports.saveDraft = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -324,7 +324,7 @@ exports.closeJob = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -366,7 +366,7 @@ exports.rescheduleAppointment = async (req, res) => {
 
     res.json(appointment);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -403,7 +403,7 @@ exports.getSchedule = async (req, res) => {
 
     res.json(schedule);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -439,7 +439,7 @@ exports.getHistory = async (req, res) => {
 
     res.json(history);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

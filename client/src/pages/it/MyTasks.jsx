@@ -45,7 +45,7 @@ const MyTasks = () => {
         inProgress: res.data.filter((t) => t.status === "in_progress").length,
       }));
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   }, [token]);
 
@@ -54,7 +54,7 @@ const MyTasks = () => {
       const res = await getSchedule(token);
       setStats((prev) => ({ ...prev, todaySchedule: res.data }));
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   }, [token]);
 

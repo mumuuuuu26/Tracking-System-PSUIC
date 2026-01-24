@@ -42,6 +42,15 @@ export const changeRole = async (token, value) => {
     })
 }
 
+// Create User (Admin Invite) - [NEW]
+export const createUser = async (token, form) => {
+    return await axios.post('/api/users', form, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    })
+}
+
 export const updateUser = async (token, id, form) => {
     return await axios.put('/api/users/' + id, form, {
         headers: { Authorization: `Bearer ${token}` }

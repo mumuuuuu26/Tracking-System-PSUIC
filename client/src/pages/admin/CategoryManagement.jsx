@@ -24,7 +24,7 @@ const CategoryManagement = () => {
             setCategories(res.data);
             setFilteredCategories(res.data);
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error("Failed to load categories");
         }
     }, [token]);
@@ -72,7 +72,7 @@ const CategoryManagement = () => {
             setIsModalOpen(false);
             loadCategories();
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error(isEditMode ? "Failed to update category" : "Failed to create category");
         }
     };
@@ -84,7 +84,7 @@ const CategoryManagement = () => {
                 toast.success("Category deleted successfully");
                 loadCategories();
             } catch (err) {
-                console.log(err);
+                console.error(err);
                 toast.error("Failed to delete category");
             }
         }

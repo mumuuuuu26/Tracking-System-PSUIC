@@ -34,7 +34,7 @@ const MyTickets = () => {
       calculateStats(res.data);
       setFilteredTickets(res.data);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     } finally {
       setLoading(false);
     }

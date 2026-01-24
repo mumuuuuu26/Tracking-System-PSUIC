@@ -10,7 +10,7 @@ exports.create = async (req, res) => {
     });
     res.json(category);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -23,7 +23,7 @@ exports.list = async (req, res) => {
     });
     res.json(categories);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -38,7 +38,7 @@ exports.update = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -52,7 +52,7 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: "Category deleted successfully" });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

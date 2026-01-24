@@ -1,6 +1,5 @@
 // controllers/ticket.js (ส่วนที่ต้องแก้ไข)
 const prisma = require("../config/prisma");
-const transporter = require("../config/nodemailer");
 const { saveImage } = require("../utils/uploadImage");
 
 exports.create = async (req, res) => {
@@ -371,7 +370,7 @@ exports.list = async (req, res) => {
 
     res.json(sortedTickets);
   } catch (err) {
-    console.log(err);
+    console.error("❌ List Tickets Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -398,7 +397,7 @@ exports.read = async (req, res) => {
     });
     res.json(ticket);
   } catch (err) {
-    console.log(err);
+    console.error("❌ Read Ticket Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -456,7 +455,7 @@ exports.listAll = async (req, res) => {
       totalPages: Math.ceil(total / take)
     });
   } catch (err) {
-    console.log(err);
+    console.error("❌ List All Tickets Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -491,7 +490,7 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
-    console.log(err);
+    console.error("❌ Remove Ticket Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -510,7 +509,7 @@ exports.listByEquipment = async (req, res) => {
     });
     res.json(tickets);
   } catch (err) {
-    console.log(err);
+    console.error("❌ List By Equipment Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -595,7 +594,7 @@ exports.submitFeedback = async (req, res) => {
 
     res.json(updatedTicket);
   } catch (err) {
-    console.log(err);
+    console.error("❌ Submit Feedback Error:", err);
     res.status(500).json({ message: "Server Error: Feedback Submission Failed" });
   }
 };

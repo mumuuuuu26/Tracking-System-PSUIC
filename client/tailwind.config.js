@@ -5,17 +5,17 @@ export default {
     extend: {
       colors: {
         blue: {
-          50: '#f0f5fa',
-          100: '#e1ebf5',
-          200: '#c3d8eb',
-          300: '#94badc',
-          400: '#5c96ca',
-          500: '#3575b6',
+          50: '#F4F7FB',
+          100: '#E4EBF4',
+          200: '#C6D6EA',
+          300: '#99B9DD',
+          400: '#6495CD',
+          500: '#3D76BA',
           600: '#193C6C', // PSUIC Deep Blue (Primary)
-          700: '#1e3a64',
-          800: '#1d3254',
-          900: '#1b2b45',
-          950: '#111b2d',
+          700: '#15325A',
+          800: '#132948',
+          900: '#12233C',
+          950: '#0B1525',
         },
         gold: {
           500: '#D4AF37', // Standard Gold for accents

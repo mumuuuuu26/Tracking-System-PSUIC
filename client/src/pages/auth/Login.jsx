@@ -43,7 +43,7 @@ const Login = () => {
       roleRedirect(res.data.payload.role);
       toast.success("Welcome back");
     } catch (err) {
-      console.log(err);
+      console.error(err);
       toast.error(err.response?.data?.message || "Login Failed");
     }
   };

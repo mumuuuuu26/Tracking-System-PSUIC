@@ -54,7 +54,7 @@ exports.getMonthlyStats = async (req, res) => {
         });
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -98,7 +98,7 @@ exports.getAnnualStats = async (req, res) => {
         res.json(statsByMonth);
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -139,7 +139,7 @@ exports.getEquipmentStats = async (req, res) => {
         res.json(enriched);
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -195,11 +195,10 @@ exports.getITPerformance = async (req, res) => {
 
         res.json(result);
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
-// 5. Satisfaction Stats
 // 5. Satisfaction Stats
 exports.getSatisfactionStats = async (req, res) => {
     try {
@@ -243,7 +242,7 @@ exports.getSatisfactionStats = async (req, res) => {
         });
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };

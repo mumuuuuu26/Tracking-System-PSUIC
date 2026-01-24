@@ -51,7 +51,7 @@ const QuickFixManagement = () => {
             const res = await listQuickFix();
             setData(res.data);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 
@@ -79,7 +79,7 @@ const QuickFixManagement = () => {
             setEditId(null);
             loadData();
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error("Action failed");
         }
     };
@@ -111,7 +111,7 @@ const QuickFixManagement = () => {
                     toast.success("Deleted successfully");
                     loadData();
                 } catch (err) {
-                    console.log(err);
+                    console.error(err);
                     toast.error("Delete Failed");
                 }
             }

@@ -5,7 +5,7 @@ import useAuthStore from '../../store/auth-store'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { toast } from 'react-toastify'
-import { Search, MapPin, User, Clock, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, MapPin, User, Clock, Trash2, Eye, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react'
 
 dayjs.extend(relativeTime);
 
@@ -68,7 +68,7 @@ const AllTickets = () => {
                 setTickets([])
             }
         } catch (err) {
-            console.log(err)
+            console.error(err)
             toast.error('Failed to load tickets')
         } finally {
             setLoading(false)
@@ -134,45 +134,48 @@ const AllTickets = () => {
     return (
         <div className="min-h-screen bg-slate-50/50 pb-20">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Ticket Management</h1>
-                            <p className="text-gray-500 text-sm mt-1">Manage all support tickets in one place</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-bold border border-blue-100">
-                                Total: {totalTickets}
-                            </div>
-                        </div>
-                    </div>
+            {/* Header */}
+            <div className="bg-[#193C6C] px-6 pt-12 pb-6 shadow-md sticky top-0 z-20">
+                <div className="flex items-center gap-4 text-white mb-2">
+                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold">Ticket Management</h1>
+                </div>
+            </div>
 
-                    <div className="flex flex-col md:flex-row gap-3">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search tickets by title, ID, or user..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                            {['all', 'pending', 'in_progress', 'fixed', 'rejected'].map((status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => setFilterStatus(status)}
-                                    className={`px-4 py-2.5 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${filterStatus === status
-                                        ? 'bg-[#193C6C] text-white shadow-md shadow-blue-900/20'
-                                        : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    {status.replace('_', ' ')}
-                                </button>
-                            ))}
-                        </div>
+            <div className="max-w-7xl mx-auto px-4 pt-6 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <p className="text-gray-500 text-sm">Manage all support tickets in one place</p>
+                    <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-bold border border-blue-100">
+                        Total: {totalTickets}
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search tickets by title, ID, or user..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                        {['all', 'pending', 'in_progress', 'fixed', 'rejected'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${filterStatus === status
+                                    ? 'bg-[#193C6C] text-white shadow-md shadow-blue-900/20'
+                                    : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {status.replace('_', ' ')}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>

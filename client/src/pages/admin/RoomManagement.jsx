@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, MapPin, MoreVertical, Plus, Edit, Trash2, X, Image } from "lucide-react";
+import { Search, MapPin, MoreVertical, Plus, Edit, Trash2, X, Image, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 
 const RoomManagement = () => {
     const { token } = useAuthStore();
+    const navigate = useNavigate();
     const [rooms, setRooms] = useState([]);
     const [filteredRooms, setFilteredRooms] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -26,7 +28,7 @@ const RoomManagement = () => {
             setRooms(res.data);
             setFilteredRooms(res.data);
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error("Failed to load rooms");
         }
     }, [token]);
@@ -79,7 +81,7 @@ const RoomManagement = () => {
             setIsModalOpen(false);
             loadRooms();
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error(isEditMode ? "Failed to update room" : "Failed to create room");
         }
     };
@@ -91,7 +93,7 @@ const RoomManagement = () => {
                 toast.success("Room deleted successfully");
                 loadRooms();
             } catch (err) {
-                console.log(err);
+                console.error(err);
                 toast.error("Failed to delete room");
             }
         }
@@ -100,30 +102,35 @@ const RoomManagement = () => {
     return (
         <div className="min-h-screen bg-slate-50/50 pb-20">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Room Management</h1>
-                    <p className="text-gray-500 text-sm mb-6">Manage room information and layouts</p>
+            {/* Header */}
+            <div className="bg-[#193C6C] px-6 pt-12 pb-6 shadow-md sticky top-0 z-20">
+                <div className="flex items-center gap-4 text-white mb-2">
+                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold">Room Management</h1>
+                </div>
+            </div>
 
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Search room..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-transparent focus:bg-white"
-                            />
-                        </div>
-                        <button
-                            onClick={openCreateModal}
-                            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-                        >
-                            <Plus size={20} />
-                            Add Room
-                        </button>
+            <div className="max-w-7xl mx-auto px-4 pt-6 mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search room..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-gray-200 shadow-sm"
+                        />
                     </div>
+                    <button
+                        onClick={openCreateModal}
+                        className="bg-[#193C6C] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#15325b] transition-colors shadow-sm"
+                    >
+                        <Plus size={20} />
+                        Add Room
+                    </button>
                 </div>
             </div>
 

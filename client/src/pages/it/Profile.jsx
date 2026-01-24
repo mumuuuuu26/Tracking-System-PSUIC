@@ -40,10 +40,6 @@ const ITProfile = () => {
     const [isEditingDept, setIsEditingDept] = useState(false);
     const [deptInput, setDeptInput] = useState("");
 
-    useEffect(() => {
-        fetchProfile();
-    }, [fetchProfile]);
-
     const fetchProfile = React.useCallback(async () => {
         try {
             const res = await currentUser(token);
@@ -55,6 +51,10 @@ const ITProfile = () => {
             setLoading(false);
         }
     }, [token]);
+
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
 
     const handleImageChange = async (e) => {
         const file = e.target.files[0];

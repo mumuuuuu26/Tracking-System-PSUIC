@@ -2,7 +2,7 @@ const express = require("express");
 require("dotenv").config();
 const app = express();
 const morgan = require("morgan");
-const cors = require("cors"); //อนุญาตให้ server กับ clien ติดต่อกันได้่
+const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const categoryRoutes = require("./routes/category");
@@ -19,7 +19,7 @@ const adminRoutes = require("./routes/admin");
 
 const personalTaskRoutes = require("./routes/personalTask");
 
-//middleware
+// middleware
 app.use(morgan("dev"));
 app.use(express.json({ limit: "20mb" }));
 app.use(cors());
@@ -43,8 +43,7 @@ app.use("/api", adminRoutes);
 
 app.use("/api", personalTaskRoutes);
 app.use("/api", require("./routes/quickFix"));
-
-
+app.use("/api", require("./routes/permission"));
 
 // Cron Jobs
 const initReminders = require("./cron/reminders");
@@ -55,19 +54,18 @@ const http = require("http");
 const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:5173", // Update with your client URL
-        methods: ["GET", "POST", "PUT", "DELETE"],
-    },
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
 });
 
 // Middleware to attach io to req
 app.use((req, res, next) => {
-    req.io = io;
-    next();
+  req.io = io;
+  next();
 });
 
-//Step 2 Start Server
+// Start Server
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
-

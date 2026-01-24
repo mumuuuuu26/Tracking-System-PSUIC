@@ -30,10 +30,6 @@ const Profile = () => {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
   const fetchProfile = React.useCallback(async () => {
     try {
       const res = await currentUser(token);
@@ -44,6 +40,10 @@ const Profile = () => {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];

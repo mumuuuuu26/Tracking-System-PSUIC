@@ -77,7 +77,7 @@ const SatisfactionReport = () => {
             // Always at least 1 page if we have data, otherwise 0
             const totalPages = totalItems > 0 ? 1 + Math.ceil(Math.max(totalItems - itemsPerPageFirst, 0) / itemsPerPageSub) : 0;
 
-            console.log(`Exporting PDF: ${totalItems} items, ${totalPages} pages expected.`);
+            // console.log(`Exporting PDF: ${totalItems} items, ${totalPages} pages expected.`);
 
             for (let i = 1; i <= totalPages; i++) {
                 const element = document.getElementById(`pdf-page-${i}`);

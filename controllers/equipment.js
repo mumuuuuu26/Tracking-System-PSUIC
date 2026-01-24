@@ -35,7 +35,7 @@ exports.create = async (req, res) => {
       qrCodeImage,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -54,7 +54,7 @@ exports.list = async (req, res) => {
     });
     res.json(equipments);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -88,7 +88,7 @@ exports.getByQRCode = async (req, res) => {
 
     res.json(equipment);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -153,7 +153,7 @@ exports.getById = async (req, res) => {
 
     res.json(enhancedEquipment);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -165,6 +165,7 @@ exports.generateQR = async (req, res) => {
 
     const equipment = await prisma.equipment.findUnique({
       where: { id: parseInt(id) },
+      include: { room: true },
     });
 
     if (!equipment || !equipment.qrCode) {
@@ -174,12 +175,11 @@ exports.generateQR = async (req, res) => {
     const qrCodeImage = await QRCode.toDataURL(equipment.qrCode);
 
     res.json({
-      equipmentName: equipment.name,
-      qrCodeString: equipment.qrCode,
       qrCodeImage,
+      equipment,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -203,7 +203,7 @@ exports.update = async (req, res) => {
 
     res.json(equipment);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -232,7 +232,7 @@ exports.remove = async (req, res) => {
 
     res.json({ message: "Equipment deleted successfully" });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

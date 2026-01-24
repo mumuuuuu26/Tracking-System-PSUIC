@@ -138,7 +138,7 @@ exports.createAppointment = async (req, res) => {
         res.json(appointment);
 
     } catch (err) {
-        console.log(err);
+    console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -182,7 +182,7 @@ exports.requestReschedule = async (req, res) => {
         res.json(updated);
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -200,9 +200,15 @@ exports.respondReschedule = async (req, res) => {
 
         if (action === 'accept') {
             // Confirm Move
-            // 1. Update Google Calendar (Logic omitted for brevity, but should happen here)
-            // const { updateGoogleEvent } = require("./googleCalendar");
-            // await updateGoogleEvent(...)
+            // 1. Update Google Calendar
+            if (appointment.googleEventId && appointment.newDate) {
+                 await updateGoogleEvent(appointment.googleEventId, {
+                     summary: `Repair Appointment: ${appointment.ticket.title}`,
+                     description: `Rescheduled Appointment`,
+                     start: appointment.newDate,
+                     end: new Date(appointment.newDate.getTime() + 60 * 60 * 1000)
+                 });
+            }
 
             // 2. Update DB
             await prisma.appointment.update({
@@ -259,7 +265,7 @@ exports.respondReschedule = async (req, res) => {
         }
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -292,7 +298,7 @@ exports.getAvailableSlots = async (req, res) => {
 
         res.json({ busyHours: busyTimes });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 }
@@ -371,7 +377,7 @@ exports.getITAvailability = async (req, res) => {
         res.json(events);
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };

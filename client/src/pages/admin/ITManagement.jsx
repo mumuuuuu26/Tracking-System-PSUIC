@@ -1,55 +1,35 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, Calendar, Edit2, UserCheck, UserX, Clock, X, Phone, Briefcase, Trash2, CheckCircle, AlertCircle, Shield, History } from "lucide-react";
-import { Link } from "react-router-dom";
-import { getITStaff, getITStaffStats, listAllTickets, updateTicketStatus } from "../../api/admin";
-import { updateUser, removeUser } from "../../api/user";
+import { Search, Calendar, Edit2, UserPlus, Clock, X, CheckCircle, ArrowLeft, Mail, Briefcase, Trash2, Ticket } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { getITStaff } from "../../api/admin"; // removed listAllTickets unused refernece if not needed for this UI
+import { updateUser, removeUser, createUser } from "../../api/user"; // Added createUser
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const ITManagement = () => {
     const { token } = useAuthStore();
+    const navigate = useNavigate();
     const [staff, setStaff] = useState([]);
-    const [stats, setStats] = useState({ active: 0, onLeave: 0, busy: 0, available: 0 });
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [activeTab, setActiveTab] = useState("All");
 
-    // Edit Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentStaffId, setCurrentStaffId] = useState(null);
-    const [formData, setFormData] = useState({
-        name: "",
-        department: "IT Support",
-        phoneNumber: "",
-        role: "it_support"
-    });
+    // Modal States
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
-    // Assign Modal State
-    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-    const [assignStaff, setAssignStaff] = useState(null);
-    const [pendingTickets, setPendingTickets] = useState([]);
-    const [selectedTicketId, setSelectedTicketId] = useState("");
+    // Form States
+    const [currentMember, setCurrentMember] = useState(null);
+    const [inviteForm, setInviteForm] = useState({ email: "", role: "it_support" });
+    const [editForm, setEditForm] = useState({ name: "", department: "", phoneNumber: "" });
 
     const loadData = useCallback(async () => {
         try {
-            const [staffRes, statsRes] = await Promise.all([
-                getITStaff(token),
-                getITStaffStats(token)
-            ]);
+            const staffRes = await getITStaff(token);
             setStaff(staffRes.data);
-
-            // Calculate stats manually if API doesn't return full details
-            const active = staffRes.data.length;
-            const busy = staffRes.data.filter(s => s.status === 'Busy').length;
-            const available = staffRes.data.filter(s => s.status === 'Available').length;
-
-            setStats({
-                active,
-                onLeave: statsRes.data.onLeave || 0,
-                busy,
-                available
-            });
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error("Failed to load staff data");
         } finally {
             setLoading(false);
@@ -60,381 +40,288 @@ const ITManagement = () => {
         loadData();
     }, [loadData]);
 
-    const handleEditClick = (member) => {
-        setCurrentStaffId(member.id);
-        setFormData({
-            name: member.name || "",
-            department: member.department || "IT Support",
-            phoneNumber: member.phoneNumber || "",
-            role: "it_support"
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleDeleteClick = async (id) => {
-        if (window.confirm("Are you sure you want to PERMANENTLY delete this staff member?")) {
-            try {
-                await removeUser(token, id);
-                toast.success("Staff deleted successfully");
-                loadData();
-            } catch (err) {
-                console.log(err);
-                toast.error("Failed to delete staff");
-            }
-        }
-    };
-
-    const handleAssignClick = async (member) => {
-        setAssignStaff(member);
-        try {
-            // Fetch only pending tickets locally for assignment (limit 100 should be enough for "pending")
-            const res = await listAllTickets(token, { status: 'pending', limit: 100 });
-            // API returns { data: tickets, total, ... }
-            // Filter unassigned just in case, though usually pending means unassigned or assigned but not accepted? 
-            // In this logic, we want unassigned ones. Backend status=pending doesn't guarantee unassigned if logic is loose, 
-            // but let's filter unassigned client side or trust the list.
-            // Original code: res.data.filter(t => t.status === "pending" && !t.assignedToId)
-
-            const pending = res.data.data.filter(t => !t.assignedToId);
-            setPendingTickets(pending);
-            setIsAssignModalOpen(true);
-        } catch (err) {
-            console.log(err);
-            toast.error("Failed to load tickets");
-        }
-    };
-
-    const handleAssignSubmit = async (e) => {
+    const handleInviteSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedTicketId) return toast.error("Please select a ticket");
-
         try {
-            await updateTicketStatus(token, selectedTicketId, {
-                assignedToId: assignStaff.id,
-                status: "in_progress"
-            });
-            toast.success(`Ticket assigned to ${assignStaff.name} `);
-            setIsAssignModalOpen(false);
+            await createUser(token, { ...inviteForm, password: "password123" }); // Default password
+            toast.success("User invited successfully");
+            setIsInviteModalOpen(false);
+            setInviteForm({ email: "", role: "it_support" });
             loadData();
         } catch (err) {
-            console.log(err);
-            toast.error("Failed to assign ticket");
+            toast.error(err.response?.data?.message || "Failed to invite user");
         }
     };
 
-    const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = async (e) => {
+    const handleEditSubmit = async (e) => {
         e.preventDefault();
         try {
-            await updateUser(token, currentStaffId, formData);
+            await updateUser(token, currentMember.id, editForm);
             toast.success("Staff updated successfully");
-            setIsModalOpen(false);
+            setIsEditModalOpen(false);
             loadData();
         } catch (err) {
-            console.log(err);
+            console.error(err);
             toast.error("Failed to update staff");
         }
     };
 
-    const filteredStaff = staff.filter(member =>
-    (member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const handleDelete = async (id) => {
+        Swal.fire({
+            title: "Delete Staff",
+            text: "Are you sure you want to delete this staff member?",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            cancelButtonText: "Cancel",
+            customClass: {
+                popup: "rounded-3xl p-6 md:p-8",
+                title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
+                htmlContainer: "text-gray-500 text-base",
+                confirmButton: "bg-red-500 hover:bg-red-600 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
+                cancelButton: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
+                actions: "gap-4 w-full px-4 mt-4"
+            },
+            buttonsStyling: false
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await removeUser(token, id);
+                    toast.success("Staff deleted");
+                    loadData();
+                } catch (err) {
+                    console.error(err);
+                    toast.error("Delete failed");
+                }
+            }
+        });
+    };
+
+    const openEditModal = (member) => {
+        setCurrentMember(member);
+        setEditForm({
+            name: member.name || "",
+            department: member.department || "",
+            phoneNumber: member.phoneNumber || ""
+        });
+        setIsEditModalOpen(true);
+    };
+
+    // Filter Logic
+    const filteredStaff = staff.filter(member => {
+        const matchesSearch = (member.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+            (member.email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+
+        let matchesTab = true;
+        if (activeTab === "Available") matchesTab = member.status === "Available" || member.status === "Busy";
+        if (activeTab === "On leave") matchesTab = member.status === "On Leave";
+
+        return matchesSearch && matchesTab;
+    });
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-20">
+        <div className="min-h-screen bg-gray-50 font-sans pb-20">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 pt-8 pb-6 px-4 mb-8 sticky top-0 z-20 bg-opacity-90 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">IT Staff Management</h1>
-                            <p className="text-gray-500 text-sm mt-1">Manage support team, assignments, and availability</p>
-                        </div>
-                        <div className="flex gap-4">
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md">
-                                    <UserCheck size={16} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none">Total</span>
-                                    <span className="text-sm font-bold text-gray-800 leading-none mt-1">{stats.active}</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="p-1.5 bg-green-50 text-green-600 rounded-md">
-                                    <CheckCircle size={16} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none">Free</span>
-                                    <span className="text-sm font-bold text-gray-800 leading-none mt-1">{stats.available}</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="p-1.5 bg-blue-50 text-[#193C6C] rounded-md">
-                                    <Briefcase size={16} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none">Busy</span>
-                                    <span className="text-sm font-bold text-gray-800 leading-none mt-1">{stats.busy}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="relative max-w-lg">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search staff by name or email..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            <div className="bg-[#193C6C] px-6 pt-12 pb-6 shadow-md sticky top-0 z-20">
+                <div className="flex items-center gap-4 text-white mb-2">
+                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-xl font-bold">IT Management</h1>
                 </div>
             </div>
 
-            {/* Staff Grid */}
-            <div className="max-w-7xl mx-auto px-4">
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3].map(i => <div key={i} className="h-48 bg-white rounded-2xl animate-pulse"></div>)}
+            <div className="px-4 sm:px-6 py-6 max-w-5xl mx-auto space-y-6">
+                {/* Search Bar */}
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Searching by name or email..."
+                        className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm text-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                </div>
+
+                {/* Tabs & Invite Button */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide w-full sm:w-auto">
+                        {["All", "Available", "On leave"].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold whitespace-nowrap border transition-all ${activeTab === tab
+                                    ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                                    : "bg-white text-gray-400 border-gray-200 hover:bg-gray-50"
+                                    }`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
                     </div>
-                ) : filteredStaff.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-gray-100">
-                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <UserCheck className="text-gray-300" size={32} />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900">No staff found</h3>
-                        <p className="text-gray-400 text-sm">Try adjusting your search</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    {/* Invite Button */}
+                    <button
+                        onClick={() => setIsInviteModalOpen(true)}
+                        className="bg-[#193C6C] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-[#15325b] shadow-sm w-full sm:w-auto justify-center"
+                    >
+                        <UserPlus size={18} /> Invite User
+                    </button>
+                </div>
+
+                {/* Staff List */}
+                <div className="space-y-4">
+                    <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                        Total Users <span className="text-gray-400 ml-1">({filteredStaff.length})</span>
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {filteredStaff.map((member) => (
-                            <div key={member.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
-                                <div className={`absolute top-0 left-0 w-1 h-full ${member.status === 'Available' ? 'bg-emerald-500' : 'bg-[#193C6C]'}`}></div>
+                            <div key={member.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative group hover:shadow-md transition-all">
+                                {/* Status Chip */}
+                                <div className={`absolute top-5 right-5 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 ${member.status === 'Available' ? "bg-green-100 text-green-600" :
+                                    member.status === 'On Leave' ? "bg-amber-100 text-amber-600" :
+                                        member.status === 'Busy' ? "bg-blue-100 text-blue-600" :
+                                            "bg-gray-100 text-gray-500"
+                                    }`}>
+                                    <div className={`w-2 h-2 rounded-full ${member.status === 'Available' ? "bg-green-500" :
+                                        member.status === 'On Leave' ? "bg-amber-500" :
+                                            member.status === 'Busy' ? "bg-blue-500" :
+                                                "bg-gray-400"
+                                        }`}></div>
+                                    {member.status === 'Busy' ? 'Working' : member.status || "Unknown"}
+                                </div>
 
-                                <div className="flex justify-between items-start mb-4 pl-3">
-                                    <div className="flex gap-4">
-                                        <div className="relative">
-                                            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-gray-500 overflow-hidden border-2 border-white shadow-sm">
-                                                {member.picture ? (
-                                                    <img src={member.picture} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    member.name?.[0] || 'S'
-                                                )}
-                                            </div>
-                                            <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${member.status === 'Available' ? 'bg-emerald-500' : 'bg-[#193C6C]'
-                                                }`}>
-                                                {member.status === 'Available' ? <CheckCircle size={10} className="text-white" /> : <Clock size={10} className="text-white" />}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-800 text-lg leading-tight">{member.name || "No Name"}</h3>
-                                            <p className="text-xs text-gray-500 mb-1">{member.email}</p>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-md uppercase tracking-wide">
-                                                    {member.department || "IT Support"}
-                                                </span>
-                                            </div>
-                                        </div>
+                                <div className="flex items-center gap-4 mb-4">
+                                    {/* Avatar */}
+                                    <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                                        {member.picture ? (
+                                            <img src={member.picture} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <img src={`https://ui-avatars.com/api/?name=${member.name}&background=random`} alt="" className="w-full h-full object-cover" />
+                                        )}
                                     </div>
-
-                                    <div className="flex flex-col gap-1">
-                                        <button
-                                            onClick={() => handleEditClick(member)}
-                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                            title="Edit Profile"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <Link
-                                            to={`/admin/tickets?search=${member.name}`}
-                                            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all flex items-center justify-center"
-                                            title="View History / All Tickets"
-                                        >
-                                            <History size={16} />
-                                        </Link>
-                                        <button
-                                            onClick={() => handleDeleteClick(member.id)}
-                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 text-lg">{member.name || "No Name"}</h3>
+                                        <p className="text-blue-600 text-sm font-bold">{member.department || "IT Support"}</p>
                                     </div>
                                 </div>
 
-                                <div className="pl-3 mt-4 pt-4 border-t border-gray-100">
-                                    {member.status === 'Busy' && member.currentTicket ? (
-                                        <div className="bg-white rounded-xl p-3 border border-blue-200 shadow-sm relative overflow-hidden group-hover:border-blue-300 transition-colors">
-                                            <div className="absolute left-0 top-0 w-1 h-full bg-[#193C6C]"></div>
-                                            <div className="flex items-center gap-2 mb-2 text-[#193C6C] pl-2">
-                                                <Clock size={14} />
-                                                <span className="text-xs font-bold uppercase">Working on</span>
-                                            </div>
-                                            <p className="text-sm font-bold text-gray-800 line-clamp-1 mb-2 pl-2">#{member.currentTicket.id} {member.currentTicket.title}</p>
+                                {/* Active Task (If Busy) */}
+                                {member.status === 'Busy' && member.currentTicket && (
+                                    <div className="mb-4 bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-start gap-3">
+                                        <div className="bg-blue-100 p-2 rounded-lg text-blue-600 shrink-0">
+                                            <Ticket size={16} />
                                         </div>
-                                    ) : (
-                                        <div className="bg-white rounded-xl p-3 border border-emerald-200 shadow-sm relative overflow-hidden group-hover:border-emerald-300 transition-colors">
-                                            <div className="absolute left-0 top-0 w-1 h-full bg-emerald-400"></div>
-                                            <div className="flex items-center gap-2 mb-2 text-emerald-600 pl-2">
-                                                <CheckCircle size={14} />
-                                                <span className="text-xs font-bold uppercase">Available</span>
-                                            </div>
-                                            <p className="text-sm text-gray-500 mb-3 pl-2">Ready for task</p>
-                                            <button
-                                                onClick={() => handleAssignClick(member)}
-                                                className="w-full py-2 bg-white text-emerald-600 border border-emerald-200 text-xs font-bold rounded-lg hover:bg-emerald-50 transition-all"
-                                            >
-                                                + Assign Task
-                                            </button>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">Currently Working On</p>
+                                            <p className="text-sm text-gray-700 font-bold truncate">{member.currentTicket.title}</p>
+                                            <Link to={`/admin/ticket/${member.currentTicket.id}`} className="text-xs text-slate-400 hover:text-blue-600 transition-colors mt-0.5 inline-block">
+                                                Ticket #{member.currentTicket.id}
+                                            </Link>
                                         </div>
-                                    )}
+                                    </div>
+                                )}
+
+                                {/* Actions */}
+                                <div className="grid grid-cols-[1fr,auto,auto] gap-2">
+                                    <button className="flex items-center justify-center gap-2 border border-gray-100 rounded-xl py-2 text-sm font-bold text-gray-700 hover:bg-gray-50">
+                                        <Calendar size={16} /> View Schedule
+                                    </button>
+                                    <button
+                                        onClick={() => openEditModal(member)}
+                                        className="w-10 flex items-center justify-center bg-gray-100 rounded-xl text-gray-600 hover:bg-gray-200"
+                                    >
+                                        <Edit2 size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(member.id)}
+                                        className="w-10 flex items-center justify-center bg-red-50 rounded-xl text-red-500 hover:bg-red-100"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
-                )}
+
+                    {filteredStaff.length === 0 && !loading && (
+                        <div className="text-center py-10 text-gray-400">
+                            <p>No staff found.</p>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Edit Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-                    <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            {/* Invite Modal */}
+            {isInviteModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900">Edit Staff Profile</h2>
-                                <p className="text-gray-500 text-xs">Update information for this staff member</p>
-                            </div>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                            >
-                                <X size={18} />
-                            </button>
+                            <h2 className="text-lg font-bold">Invite New User</h2>
+                            <button onClick={() => setIsInviteModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                         </div>
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleInviteSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Full Name</label>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
                                 <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
+                                    type="email"
+                                    required
+                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                    placeholder="user@psu.ac.th"
+                                    value={inviteForm.email}
+                                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
                                 />
                             </div>
-
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Department</label>
-                                <input
-                                    type="text"
-                                    name="department"
-                                    value={formData.department}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
-                                />
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Role</label>
+                                <div className="relative">
+                                    <select
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 bg-white"
+                                        value={inviteForm.role}
+                                        onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                                    >
+                                        <option value="user">User</option>
+                                        <option value="it_support">IT Support</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
                             </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Phone Number</label>
-                                <input
-                                    type="text"
-                                    name="phoneNumber"
-                                    value={formData.phoneNumber}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium"
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-                            >
-                                Save Changes
+                            <button type="submit" className="w-full bg-[#193C6C] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#15325b] flex items-center justify-center gap-2">
+                                <Mail size={16} /> Send Invitation
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Assign Task Modal */}
-            {isAssignModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-                    <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            {/* Edit Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900">Assign Task</h2>
-                                <p className="text-gray-500 text-xs">Select a pending ticket for <span className="font-bold text-blue-600">{assignStaff?.name}</span></p>
-                            </div>
-                            <button
-                                onClick={() => setIsAssignModalOpen(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                            >
-                                <X size={18} />
-                            </button>
+                            <h2 className="text-lg font-bold">Edit Staff</h2>
+                            <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                         </div>
-
-                        {pendingTickets.length === 0 ? (
-                            <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
-                                    <CheckCircle className="text-green-500" size={24} />
-                                </div>
-                                <p className="text-gray-900 font-bold text-sm">All caught up!</p>
-                                <p className="text-gray-400 text-xs">No pending tickets available to assign.</p>
+                        <form onSubmit={handleEditSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Name</label>
+                                <input type="text" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
                             </div>
-                        ) : (
-                            <form onSubmit={handleAssignSubmit}>
-                                <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar mb-4">
-                                    {pendingTickets.map(ticket => (
-                                        <label key={ticket.id} className={`flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all ${selectedTicketId == ticket.id
-                                            ? 'bg-blue-50 border-blue-500 shadow-sm ring-1 ring-blue-500'
-                                            : 'bg-white border-gray-100 hover:bg-gray-50 hover:border-gray-200'
-                                            }`}>
-                                            <input
-                                                type="radio"
-                                                name="ticket"
-                                                value={ticket.id}
-                                                onChange={(e) => setSelectedTicketId(e.target.value)}
-                                                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="font-bold text-gray-800 text-sm truncate">#{ticket.id} {ticket.title}</span>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${ticket.urgency === 'High' ? 'bg-red-100 text-red-700' :
-                                                        ticket.urgency === 'Medium' ? 'bg-orange-100 text-orange-700' :
-                                                            'bg-green-100 text-green-700'
-                                                        }`}>
-                                                        {ticket.urgency || "Normal"}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mb-2 line-clamp-2">{ticket.description}</p>
-                                                <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium">
-                                                    <span className="flex items-center gap-1"><Briefcase size={10} /> {ticket.room?.roomNumber || "No Room"}</span>
-                                                    <span className="flex items-center gap-1"><Clock size={10} /> {new Date(ticket.createdAt).toLocaleDateString()}</span>
-                                                </div>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={!selectedTicketId}
-                                >
-                                    Assign Selected Ticket
-                                </button>
-                            </form>
-                        )}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
+                                <input type="text" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm" value={editForm.department} onChange={e => setEditForm({ ...editForm, department: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Phone</label>
+                                <input type="text" className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm" value={editForm.phoneNumber} onChange={e => setEditForm({ ...editForm, phoneNumber: e.target.value })} />
+                            </div>
+                            <button type="submit" className="w-full bg-[#193C6C] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#15325b]">Save Changes</button>
+                        </form>
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

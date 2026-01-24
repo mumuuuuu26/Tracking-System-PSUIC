@@ -1,4 +1,4 @@
-
+const prisma = require("../config/prisma");
 // Get completed tickets for history
 exports.getHistory = async (req, res) => {
     try {
@@ -30,7 +30,7 @@ exports.getHistory = async (req, res) => {
 
         res.json(history);
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };

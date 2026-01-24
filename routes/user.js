@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { authCheck, adminCheck } = require("../middlewares/authCheck");
 
-const { listUsers, changeStatus, changeRole, updateProfileImage, updateProfile, updateUser, removeUser, listITStaff } = require("../controllers/user");
+const { listUsers, changeStatus, changeRole, updateProfileImage, updateProfile, updateUser, removeUser, listITStaff, createUser } = require("../controllers/user");
 
 
 // @ENDPOINT http://localhost:5001/api/users
@@ -23,6 +23,7 @@ router.post("/users/update-profile", authCheck, updateProfile);
 
 
 // @ENDPOINT http://localhost:5001/api/users/:id
+router.post("/users", authCheck, adminCheck, createUser); // [NEW] Invite/Create User
 router.put("/users/:id", authCheck, adminCheck, updateUser);
 router.delete("/users/:id", authCheck, adminCheck, removeUser);
 

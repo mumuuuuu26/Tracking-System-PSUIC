@@ -22,7 +22,7 @@ const WaitingForFeedback = () => {
             const waiting = res.data.filter(t => t.status === 'fixed' && t.rating === null);
             setTickets(waiting);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         } finally {
             setLoading(false);
         }

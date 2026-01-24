@@ -19,7 +19,7 @@ exports.createTask = async (req, res) => {
 
         res.json(newTask);
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -49,7 +49,7 @@ exports.getTasks = async (req, res) => {
 
         res.json(tasks);
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -81,7 +81,7 @@ exports.updateTask = async (req, res) => {
 
         res.json(updated);
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -102,7 +102,7 @@ exports.deleteTask = async (req, res) => {
 
         res.json({ message: "Task deleted" });
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };

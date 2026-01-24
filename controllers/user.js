@@ -1,4 +1,40 @@
 const prisma = require("../config/prisma");
+const bcrypt = require("bcryptjs");
+
+// Create User (Invite)
+exports.createUser = async (req, res) => {
+    try {
+        const { email, role, password, name } = req.body;
+
+        // Check if user exists
+        const existingUser = await prisma.user.findFirst({
+            where: { email }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ message: "Email already exists" });
+        }
+
+        // Hash password (default: 123456 if not provided)
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(password || "123456", salt);
+
+        const newUser = await prisma.user.create({
+            data: {
+                email,
+                password: hashPassword,
+                role: role || 'user',
+                name: name || undefined,
+                enabled: true
+            }
+        });
+
+        res.json(newUser);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
 
 //ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin ดู)
 exports.listUsers = async (req, res) => {
@@ -28,7 +64,7 @@ exports.listUsers = async (req, res) => {
     });
     res.json(users);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -41,7 +77,7 @@ exports.listITStaff = async (req, res) => {
     });
     res.json(itUsers);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -56,7 +92,7 @@ exports.changeStatus = async (req, res) => {
     });
     res.json(user);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -77,7 +113,7 @@ exports.changeRole = async (req, res) => {
     });
     res.json(user);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -94,7 +130,7 @@ exports.updateProfileImage = async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Upload failed" });
   }
 };
@@ -160,7 +196,7 @@ exports.updateProfile = async (req, res) => {
 
     res.json(updatedUser);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Update Profile Failed" });
   }
 };
@@ -182,7 +218,7 @@ exports.updateUser = async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Update Failed" });
   }
 
@@ -216,17 +252,22 @@ exports.removeUser = async (req, res) => {
       where: { userId: userId }
     });
 
+    // [NEW] 4.1 Delete Personal Tasks
+    await prisma.personalTask.deleteMany({
+      where: { userId: userId }
+    });
+
     // 5. Nullify Activity Logs (Keep history but remove link to user)
     await prisma.activityLog.updateMany({
       where: { updatedById: userId },
       data: { updatedById: null }
     });
 
-    // 6. Nullify Knowledge Base edits
-    await prisma.knowledgeBase.updateMany({
-      where: { updatedById: userId },
-      data: { updatedById: null }
-    });
+    // 6. Nullify Knowledge Base edits (REMOVED - Model does not exist)
+    // await prisma.knowledgeBase.updateMany({
+    //   where: { updatedById: userId },
+    //   data: { updatedById: null }
+    // });
 
     // 7. Delete Tickets CREATED by this user
     // Prisma schema has onDelete: Cascade for Ticket->Image, Ticket->ActivityLog, Ticket->Appointment
@@ -243,7 +284,7 @@ exports.removeUser = async (req, res) => {
     res.json({ message: "User and all associated data permanently deleted" });
 
   } catch (err) {
-    console.log("Delete error:", err);
+    console.error("Delete error:", err);
     res.status(500).json({ message: "Delete Failed", error: err.message });
   }
 };
