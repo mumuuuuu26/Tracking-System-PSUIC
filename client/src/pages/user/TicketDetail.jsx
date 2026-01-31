@@ -135,12 +135,33 @@ const TicketDetail = () => {
             { label: "Description", value: ticket?.description || "none" },
             { label: "Floor", value: ticket?.room?.floor || "-" },
             { label: "Room", value: ticket?.room?.roomNumber || "-" },
-            { label: "Priority", value: ticket?.urgency || "Normal" },
+            {
+              label: "Priority",
+              value: (
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${ticket?.urgency === "Critical" || ticket?.urgency === "High"
+                      ? "bg-red-100 text-red-600"
+                      : ticket?.urgency === "Medium"
+                        ? "bg-orange-100 text-orange-600"
+                        : ticket?.urgency === "Low"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-gray-100 text-gray-600"
+                    }`}
+                >
+                  {ticket?.urgency || "Normal"}
+                </span>
+              ),
+              isBadge: true
+            },
             { label: "Time", value: formatDate(ticket?.createdAt, { hour: '2-digit', minute: '2-digit', hour12: true }) } // e.g. 26-12-2025, 10:30 AM
           ].map((item, idx) => (
-            <div key={idx} className="flex justify-between items-start">
+            <div key={idx} className="flex justify-between items-center">
               <span className="text-gray-600 font-medium text-[15px]">{item.label}</span>
-              <span className={`text-right font-bold text-[15px] ${item.color || "text-gray-900"}`}>{item.value}</span>
+              {item.isBadge ? (
+                item.value
+              ) : (
+                <span className={`text-right font-bold text-[15px] ${item.color || "text-gray-900"}`}>{item.value}</span>
+              )}
             </div>
           ))}
         </div>

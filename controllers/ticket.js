@@ -336,15 +336,13 @@ exports.listAll = async (req, res) => {
     // Build Where Clause
     const where = {};
 
-    if (status && status !== 'all') {
+    if (status && status !== 'all' && status !== 'All') {
       where.status = status;
     }
 
     if (search) {
       where.OR = [
-        { title: { contains: search } }, // Case-insensitive by default in some Prisma versions/DBs, distinct mode elsewhere
-        // Note: Prisma default for MySQL is case-insensitive for text fields usually.
-        // For ID (int) we need to convert search to int if possible or skip.
+        { title: { contains: search } },
         ...(Number(search) ? [{ id: Number(search) }] : []),
         { createdBy: { name: { contains: search } } },
         { createdBy: { email: { contains: search } } },
@@ -353,26 +351,61 @@ exports.listAll = async (req, res) => {
       ];
     }
 
-    // Execute Queries in Transaction (or parallel)
-    const [tickets, total] = await Promise.all([
-      prisma.ticket.findMany({
-        where,
-        skip,
-        take,
-        include: {
-          room: true,
-          equipment: true,
-          category: true,
-          createdBy: true,
-          assignedTo: true
-        },
-        orderBy: { createdAt: 'desc' } // Newest First
-      }),
-      prisma.ticket.count({ where })
-    ]);
+    // 1. Fetch ALL matching tickets (without pagination first)
+    // Note: If dataset is huge (e.g. >10k), this needs optimization. 
+    // For now, consistent sorting is priority.
+    const tickets = await prisma.ticket.findMany({
+      where,
+      include: {
+        room: true,
+        equipment: true,
+        category: true,
+        createdBy: true,
+        assignedTo: true
+      }
+    });
+
+    const total = tickets.length;
+
+    // 2. Define Sort Weights
+    const statusOrder = {
+      'not_start': 1,
+      'in_progress': 2,
+      'completed': 3,
+      'closed': 4
+    };
+
+    const urgencyOrder = {
+      'Critical': 1,
+      'High': 2,
+      'Medium': 3,
+      'Low': 4,
+      'Normal': 5
+    };
+
+    // 3. Custom Sort
+    tickets.sort((a, b) => {
+      // 1. Status Priority
+      const statusA = statusOrder[a.status] || 99;
+      const statusB = statusOrder[b.status] || 99;
+      if (statusA !== statusB) return statusA - statusB;
+
+      // 2. Urgency Priority
+      const urgencyA = urgencyOrder[a.urgency] || 99;
+      const urgencyB = urgencyOrder[b.urgency] || 99;
+      if (urgencyA !== urgencyB) return urgencyA - urgencyB;
+
+      // 3. Date (Newest First)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    // 4. Manual Pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedTickets = tickets.slice(startIndex, endIndex);
 
     res.json({
-      data: tickets,
+      data: paginatedTickets,
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / take)

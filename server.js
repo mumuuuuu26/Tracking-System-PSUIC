@@ -17,6 +17,8 @@ const reportRoutes = require("./routes/report");
 const adminRoutes = require("./routes/admin");
 
 const personalTaskRoutes = require("./routes/personalTask");
+const quickFixRoutes = require("./routes/quickFix");
+const permissionRoutes = require("./routes/permission");
 
 // middleware
 app.use(morgan("dev"));
@@ -40,8 +42,8 @@ app.use("/api", reportRoutes);
 app.use("/api", adminRoutes);
 
 app.use("/api", personalTaskRoutes);
-app.use("/api", require("./routes/quickFix"));
-app.use("/api", require("./routes/permission"));
+app.use("/api", quickFixRoutes);
+app.use("/api", permissionRoutes);
 
 
 

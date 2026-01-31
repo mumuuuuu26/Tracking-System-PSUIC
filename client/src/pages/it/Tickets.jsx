@@ -84,29 +84,33 @@ const Tickets = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case "not_start": return "border-l-amber-500 bg-amber-50/10";
+            case "not_start": return "border-l-gray-400 bg-gray-50/10";
             case "in_progress": return "border-l-blue-500 bg-blue-50/10";
             case "completed":
-            case "closed": return "border-l-green-500 bg-green-50/10";
+            case "closed": return "border-l-gray-300 bg-gray-50/10";
             default: return "border-l-gray-300";
         }
     };
 
-    const getStatusBadge = (status) => {
-        const styles = {
-            not_start: "bg-amber-100 text-amber-700 ring-amber-600/20",
-            in_progress: "bg-blue-100 text-blue-700 ring-blue-600/20",
-            completed: "bg-green-100 text-green-700 ring-green-600/20",
-            closed: "bg-green-100 text-green-700 ring-green-600/20"
-        };
-        return styles[status] || "bg-gray-100 text-gray-700 ring-gray-600/20";
-    };
 
     const urgencyColors = {
-        Low: "text-green-600 bg-green-50 border-green-100",
-        Medium: "text-amber-600 bg-amber-50 border-amber-100",
-        High: "text-orange-600 bg-orange-50 border-orange-100",
-        Critical: "text-red-600 bg-red-50 border-red-100"
+        Low: "bg-green-100 text-green-600",
+        Medium: "bg-orange-100 text-orange-600",
+        High: "bg-red-100 text-red-600",
+        Critical: "bg-red-100 text-red-600"
+    };
+
+    // Helper for consistency with variable names used in replacement chunk
+    const urngencyColors = urgencyColors;
+    const urgnencyColors = urgencyColors;
+
+    const getStatusDotColor = (status) => {
+        switch (status) {
+            case "not_start": return "bg-gray-400";
+            case "in_progress": return "bg-blue-500";
+            case "completed": return "bg-green-500";
+            default: return "bg-gray-400";
+        }
     };
 
     return (
@@ -125,34 +129,39 @@ const Tickets = () => {
             </div>
 
             {/* Filters & Search - Modern Style */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm sticky top-0 z-10">
-                <div className="md:col-span-5 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            {/* Filters & Search - User Style Match */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                {/* Search - Left Aligned & Bigger */}
+                <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
-                        placeholder="Search tickets by ID, title, requester..."
+                        placeholder="Search tickets by ID, title, or requester..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-sm md:text-base"
                     />
                 </div>
 
-                <div className="md:col-span-7 flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-                    <Filter className="text-gray-400 w-5 h-5 flex-shrink-0" />
-                    {["All", "Not Start", "In Progress", "Completed"].map((status) => (
+                {/* Filter Tabs - Right Aligned (or flowed) */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {["All", "Not Start", "In Progress", "Completed"].map((filter) => (
                         <button
-                            key={status}
-                            onClick={() => setActiveFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${(activeFilter === status ||
-                                (activeFilter === "all" && status === "All") ||
-                                (activeFilter === "completed" && status === "Completed") ||
-                                (activeFilter === "in_progress" && status === "In Progress") ||
-                                (activeFilter === "not_start" && status === "Not Start"))
-                                ? "bg-[#193C6C] text-white shadow-md shadow-blue-900/20"
-                                : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                }`}
+                            key={filter}
+                            onClick={() => setActiveFilter(filter)}
+                            className={`
+                                px-6 py-2.5 rounded-xl text-sm font-bold border transition-all whitespace-nowrap flex-shrink-0
+                                ${(activeFilter === filter ||
+                                    (activeFilter === "all" && filter === "All") ||
+                                    (activeFilter === "completed" && filter === "Completed") ||
+                                    (activeFilter === "in_progress" && filter === "In Progress") ||
+                                    (activeFilter === "not_start" && filter === "Not Start"))
+                                    ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"
+                                }
+                            `}
                         >
-                            {status}
+                            {filter}
                         </button>
                     ))}
                 </div>
@@ -180,60 +189,77 @@ const Tickets = () => {
                             <div
                                 key={ticket.id}
                                 onClick={() => navigate(`/it/ticket/${ticket.id}`)}
-                                className={`group bg-white rounded-xl border-l-[3px] border-t border-r border-b border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden ${getStatusColor(ticket.status)}`}
+                                className={`
+                                    bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
+                                    ${getStatusColor(ticket.status)}
+                                    ${(ticket.status === 'completed' || ticket.status === 'closed') ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}
+                                `}
                             >
-                                <div className="p-5 space-y-4">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono text-sm font-bold text-gray-500">
-                                                #{String(ticket.id).padStart(4, "0")}
-                                            </span>
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${urgencyColors[ticket.urgency] || urgencyColors.Low}`}>
-                                                {ticket.urgency}
-                                            </span>
-                                        </div>
-                                        <span className="text-xs font-medium text-gray-400 flex items-center gap-1">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            {dayjs(ticket.createdAt).fromNow(true)} ago
+                                {/* Header: ID & Priority & Time */}
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[#193C6C] font-bold text-sm">
+                                            #TK-{String(ticket.id).padStart(4, "0")}
+                                        </span>
+                                        <span
+                                            className={`text-[10px] font-bold px-2 py-0.5 rounded ${urngencyColors[ticket.urgency] || urgnencyColors.Low}`}
+                                        >
+                                            {ticket.urgency}
+                                        </span>
+                                    </div>
+                                    <span className="text-gray-400 text-xs font-medium">
+                                        {dayjs(ticket.createdAt)
+                                            .fromNow(true)
+                                            .replace(" days", "d")
+                                            .replace(" months", "mo")}{" "}
+                                        ago
+                                    </span>
+                                </div>
+
+                                {/* Title */}
+                                <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2 min-h-[56px]">
+                                    {ticket.title}
+                                </h3>
+
+                                {/* Location */}
+                                <p className="text-gray-500 text-xs mb-6 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                    {ticket.room
+                                        ? `Floor ${ticket.room.floor}, ${ticket.room.roomNumber}`
+                                        : "Location N/A"}
+                                </p>
+
+                                {/* Footer: Status & User (Requester) */}
+                                <div className="flex justify-between items-end border-t border-gray-50 pt-4">
+                                    {/* Status */}
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className={`w-2 h-2 rounded-full ${getStatusDotColor(ticket.status)}`}
+                                        ></div>
+                                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                                            {ticket.status.replace("_", " ")}
                                         </span>
                                     </div>
 
-                                    {/* Content */}
-                                    <div>
-                                        <h3 className="text-base font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                                            {ticket.title}
-                                        </h3>
-                                        <p className="text-sm text-gray-500 line-clamp-2">
-                                            {ticket.description}
-                                        </p>
-                                    </div>
-
-                                    {/* Meta Info */}
-                                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                                        {ticket.room && (
-                                            <div className="flex items-center gap-1.5">
-                                                <MapPin className="w-3.5 h-3.5" />
-                                                <span>{ticket.room.roomNumber}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-1.5 pl-4 border-l border-gray-200">
-                                            <User className="w-3.5 h-3.5" />
-                                            <span className="truncate max-w-[100px]">
-                                                {ticket.createdBy?.name || ticket.createdBy?.username}
+                                    {/* Requester Info (Instead of Assignee for IT view) */}
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] text-gray-400 mb-0.5">
+                                            Requested by
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-xs font-medium text-gray-600">
+                                                {ticket.createdBy?.name?.split(" ")[0] || ticket.createdBy?.username}
                                             </span>
+                                            <img
+                                                src={
+                                                    ticket.createdBy?.picture ||
+                                                    `https://ui-avatars.com/api/?name=${ticket.createdBy?.name || ticket.createdBy?.username}&background=random`
+                                                }
+                                                alt="Requester"
+                                                className="w-6 h-6 rounded-full object-cover ring-2 ring-white"
+                                            />
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Footer */}
-                                <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ring-1 ring-inset ${getStatusBadge(ticket.status)}`}>
-                                        {ticket.status.replace("_", " ")}
-                                    </span>
-                                    <span className="text-xs font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        View Details →
-                                    </span>
                                 </div>
                             </div>
                         ))}

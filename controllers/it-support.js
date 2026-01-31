@@ -415,7 +415,7 @@ exports.getPublicSchedule = async (req, res) => {
         end: t.updatedAt,
         type: 'ticket',
         staff: t.assignedTo?.name,
-        details: isIT ? t.title : "Fixing Issue", // Details for list view
+        details: t.title, // Show real title
         description: isIT ? t.description : undefined
       })),
       ...personalTasks.map(t => ({
@@ -425,7 +425,7 @@ exports.getPublicSchedule = async (req, res) => {
         end: t.endTime,
         type: 'personal',
         staff: t.user?.name,
-        details: isIT ? t.title : "Internal Task",
+        details: t.title, // Show real title
         description: isIT ? t.description : undefined
       }))
     ];

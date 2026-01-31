@@ -82,18 +82,6 @@ export const getHistory = async (token) => {
     });
 };
 
-// Email Settings
-export const getEmailTemplates = async (token) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/email-templates`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-};
-
-export const updateEmailTemplate = async (token, id, data) => {
-    return await axios.put(`${import.meta.env.VITE_API_URL}/it/email-templates/${id}`, data, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-};
 
 // Get public schedule
 export const getPublicSchedule = async (token) => {

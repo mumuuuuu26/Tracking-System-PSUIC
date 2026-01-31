@@ -1,6 +1,6 @@
 import React from "react";
-import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Home, Calendar, Clock, User, Menu, X, LogOut, LayoutDashboard, Wrench, Bell, FileText, BookOpen, Briefcase, Settings } from "lucide-react";
+import { Outlet, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
+import { Home, Calendar, Clock, User, Menu, X, LogOut, LayoutDashboard, Wrench, Bell, FileText, BookOpen, Briefcase } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
@@ -115,7 +115,7 @@ const LayoutIT = () => {
 
             {/* New Tools */}
 
-            <NavLink href="/it/email-settings" icon={<Settings size={22} />} label="Email" active={isActive("/it/email-settings")} />
+
 
             <NavLink href="/it/profile" icon={<User size={22} />} label="Profile" active={isActive("/it/profile")} />
           </div>
@@ -127,8 +127,8 @@ const LayoutIT = () => {
 
 // Helper Component for Nav Links
 const NavLink = ({ href, icon, label, active }) => (
-  <a
-    href={href}
+  <Link
+    to={href}
     className={`flex-1 flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${active
       ? "text-blue-600"
       : "text-gray-400 hover:text-gray-600"
@@ -140,7 +140,7 @@ const NavLink = ({ href, icon, label, active }) => (
     <span className={`text-[9px] font-medium mt-1 truncate w-full text-center ${active ? "opacity-100 font-bold" : "opacity-70"}`}>
       {label}
     </span>
-  </a>
+  </Link>
 )
 
 export default LayoutIT;

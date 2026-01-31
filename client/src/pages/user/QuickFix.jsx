@@ -92,11 +92,11 @@ const QuickFix = () => {
                             <input
                                 type="text"
                                 placeholder="Search for problems..."
-                                className="w-full py-4 pl-12 pr-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-200 backdrop-blur-sm focus:outline-none focus:bg-white/20 transition-all"
+                                className="w-full py-4 pl-12 pr-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 backdrop-blur-sm focus:outline-none focus:bg-white/20 transition-all"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
-                            <Search className="absolute left-4 top-4 text-blue-200" />
+                            <Search className="absolute left-4 top-4 text-white/30" />
                         </div>
 
                         {/* Filter Button */}

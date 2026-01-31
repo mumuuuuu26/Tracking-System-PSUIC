@@ -255,11 +255,11 @@ const TicketDetail = () => {
 
     const getUrgencyBadge = (urgency) => {
         switch (urgency) {
-            case "Critical": return "bg-red-100 text-red-600 border border-red-200";
-            case "High": return "bg-orange-100 text-orange-600 border border-orange-200";
-            case "Medium": return "bg-yellow-100 text-yellow-600 border border-yellow-200";
-            case "Low": return "bg-blue-100 text-blue-600 border border-blue-200";
-            default: return "bg-green-100 text-green-600 border border-green-200";
+            case "Critical": return "bg-red-100 text-red-600";
+            case "High": return "bg-red-100 text-red-600";
+            case "Medium": return "bg-orange-100 text-orange-600";
+            case "Low": return "bg-green-100 text-green-600";
+            default: return "bg-green-100 text-green-600";
         }
     };
 
@@ -323,7 +323,7 @@ const TicketDetail = () => {
                                 <p className="text-gray-400 text-sm capitalize">{ticket.createdBy?.role || "User"}</p>
                             </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getUrgencyBadge(ticket.urgency)}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase ${getUrgencyBadge(ticket.urgency)}`}>
                             {ticket.urgency}
                         </span>
                     </div>

@@ -123,13 +123,13 @@ const MyTickets = () => {
     switch (urgency) {
       case "High":
       case "Critical":
-        return "bg-red-50 text-red-600 border border-red-100";
+        return "bg-red-100 text-red-600";
       case "Medium":
-        return "bg-amber-50 text-amber-600 border border-amber-100";
+        return "bg-orange-100 text-orange-600";
       case "Low":
-        return "bg-green-50 text-green-600 border border-green-100";
+        return "bg-green-100 text-green-600";
       default:
-        return "bg-gray-50 text-gray-600 border border-gray-100";
+        return "bg-gray-100 text-gray-600";
     }
   };
 
@@ -137,7 +137,7 @@ const MyTickets = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "not_start":
-        return "bg-amber-500";
+        return "bg-gray-400";
       case "in_progress":
         return "bg-blue-500";
       case "completed":
@@ -278,12 +278,12 @@ const MyTickets = () => {
                 className={`
                             bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
                             ${ticket.status === "not_start"
-                    ? "border-l-amber-400 border-gray-100"
+                    ? "border-l-gray-400 border-gray-100"
                     : ticket.status === "in_progress"
                       ? "border-l-blue-400 border-gray-100"
                       : ticket.status === "completed" ||
                         ticket.status === "closed"
-                        ? "border-l-green-400 border-gray-100"
+                        ? "border-l-gray-300 border-gray-100 opacity-60 grayscale hover:opacity-100 hover:grayscale-0"
                         : "border-l-gray-400 border-gray-100"
                   }
                         `}
@@ -295,7 +295,7 @@ const MyTickets = () => {
                       #TK-{String(ticket.id).padStart(4, "0")}
                     </span>
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${getPriorityBadge(
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${getPriorityBadge(
                         ticket.urgency
                       )}`}
                     >

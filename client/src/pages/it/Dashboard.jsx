@@ -207,18 +207,7 @@ const ITDashboard = () => {
     }
   };
 
-  const getCategoryColor = (categoryName) => {
-    // Pink circle for Hardware (Projector etc), Yellow/Orange for Software?
-    // Mockup shows: Pink circle for "Projector" (Hardware). Yellow circle for "Projector" (Hardware) too?
-    // Wait, second card is Projector too but yellow icon.
-    // Let's iterate colors based on id or name hash? Or check category.
-    // Assuming Hardware = Pink, Software/Wifi = Blue, etc.
-    // Let's stick to a simple mapping or random for now if category not explicit.
-    if (categoryName === "Hardware") return "bg-pink-200 text-pink-600";
-    if (categoryName === "Network") return "bg-blue-200 text-blue-600";
-    if (categoryName === "Software") return "bg-purple-200 text-purple-600";
-    return "bg-yellow-200 text-yellow-600";
-  };
+
 
   // Filter "New Tickets" -> Pending status
   // Sort by Priority (Critical > High > Medium > Low) THEN by Arrival (Oldest First)
@@ -261,9 +250,9 @@ const ITDashboard = () => {
           <button onClick={() => navigate('/it/schedule')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Calendar Widget */}
-          <div className="md:w-1/2">
+          <div>
             <CalendarGrid
               currentDate={currentMonth}
               setCurrentDate={setCurrentMonth}
@@ -275,62 +264,67 @@ const ITDashboard = () => {
           </div>
 
           {/* List for Selected Day */}
-          <div className="md:flex-1 space-y-4">
-            <h4 className="text-gray-600 font-bold text-sm">Tasks for {selectedDate.format('DD MMM')}</h4>
-            {scheduleItems.length > 0 ? (
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                {scheduleItems.map((item) => {
-                  if (item.type === 'request') {
-                    const ticket = item.data;
-                    return (
-                      <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-amber-100 ring-1 ring-amber-50 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-amber-50 text-amber-600">
-                            <Clock size={20} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{ticket.title}</h4>
-                              <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase">Request</span>
+          <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 min-h-[350px] flex flex-col">
+            <div className="mb-4 px-2">
+              <h4 className="font-bold text-gray-700 text-base">Tasks for {selectedDate.format('DD MMM')}</h4>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+              {scheduleItems.length > 0 ? (
+                <div className="space-y-3">
+                  {scheduleItems.map((item) => {
+                    if (item.type === 'request') {
+                      const ticket = item.data;
+                      return (
+                        <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-amber-100 ring-1 ring-amber-50 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-amber-50 text-amber-600">
+                              <Clock size={20} />
                             </div>
-                            <div className="flex items-center gap-2 text-gray-500 text-xs mt-0.5">
-                              <Calendar size={12} />
-                              <span>{item.time.format('HH:mm')}</span>
-                              <span className="text-gray-300">|</span>
-                              <span>{ticket.room?.roomNumber || "N/A"}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{ticket.title}</h4>
+                                <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase">Request</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-500 text-xs mt-0.5">
+                                <Calendar size={12} />
+                                <span>{item.time.format('HH:mm')}</span>
+                                <span className="text-gray-300">|</span>
+                                <span>{ticket.room?.roomNumber || "N/A"}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  } else {
-                    const task = item.data;
-                    return (
-                      <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
-                        <div className={`absolute left-0 top-0 bottom-0 w-1.5`} style={{ backgroundColor: task.color || '#193C6C' }}></div>
-                        <div className="flex items-center gap-3 pl-2">
-                          <div className="w-12 h-12 rounded-xl shrink-0 flex flex-col items-center justify-center bg-gray-50 text-gray-600">
-                            {task.startTime ? (
-                              <span className="text-xs font-bold">{dayjs(task.startTime).format('HH:mm')}</span>
-                            ) : (
-                              <span className="text-[10px] font-bold uppercase">All Day</span>
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{task.title}</h4>
-                            <p className="text-xs text-gray-500 line-clamp-1">{task.description}</p>
+                      );
+                    } else {
+                      const task = item.data;
+                      return (
+                        <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
+                          <div className={`absolute left-0 top-0 bottom-0 w-1.5`} style={{ backgroundColor: task.color || '#193C6C' }}></div>
+                          <div className="flex items-center gap-3 pl-2">
+                            <div className="w-12 h-12 rounded-xl shrink-0 flex flex-col items-center justify-center bg-gray-50 text-gray-600">
+                              {task.startTime ? (
+                                <span className="text-xs font-bold">{dayjs(task.startTime).format('HH:mm')}</span>
+                              ) : (
+                                <span className="text-xs font-bold uppercase">All Day</span>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{task.title}</h4>
+                              <p className="text-xs text-gray-500 line-clamp-1">{task.description}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  }
-                })}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl p-6 text-center shadow-sm h-full flex flex-col justify-center">
-                <p className="text-gray-400 text-sm">No tasks for this day</p>
-              </div>
-            )}
+                      );
+                    }
+                  })}
+                </div>
+              ) : (
+                <div className="h-full flex flex-col justify-center items-center text-center">
+                  <p className="text-gray-400 text-sm">No tasks for this day</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -352,34 +346,35 @@ const ITDashboard = () => {
             <div key={ticket.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getCategoryColor(ticket.category?.name)}`}>
-                    {/* Show First Letter or Icon */}
-                    <span className="text-xl font-bold opacity-80">{ticket.category?.name?.[0] || 'T'}</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1">{ticket.title}</h4>
-                    <p className="text-sm text-gray-500">
-                      Floor {ticket.room?.floor} , Room {ticket.room?.roomNumber} - {ticket.category?.name}
+
+                  <div className="pt-1">
+                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1.5">{ticket.title}</h4>
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                      <span className="font-medium text-gray-700">Floor {ticket.room?.floor}</span>, Room {ticket.room?.roomNumber}
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${getUrgencyColor(ticket.urgency)}`}>
+                <div className="flex items-center gap-3">
+                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider ${getUrgencyColor(ticket.urgency)}`}>
                     {getUrgencyBadge(ticket.urgency)}
                   </span>
                   <button
                     onClick={() => navigate(`/it/ticket/${ticket.id}`)}
                     className="flex items-center gap-1 text-gray-400 hover:text-blue-600 transition-colors text-xs font-medium"
                   >
-                    <Eye size={14} />
+                    <Eye size={16} />
                     View
                   </button>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-xs text-gray-400 mb-4 px-1">
-                <span>{ticket.createdBy?.name || "Unknown User"}</span>
-                <span>{dayjs(ticket.createdAt).fromNow(true)} ago</span>
+              <div className="flex justify-between items-center text-xs text-gray-400 mb-5 px-1 mt-2">
+                <span className="font-medium">{ticket.createdBy?.name || "Unknown User"}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-gray-300 font-normal">{dayjs(ticket.createdAt).format("D MMM YYYY")}</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                  <span>{dayjs(ticket.createdAt).fromNow(true)} ago</span>
+                </span>
               </div>
 
               <div className="flex gap-3">
@@ -394,7 +389,7 @@ const ITDashboard = () => {
                     setSelectedTicket(ticket);
                     setShowRejectModal(true);
                   }}
-                  className="bg-white text-red-500 border border-red-200 font-semibold py-2.5 px-6 rounded-xl hover:bg-red-50 transition-colors"
+                  className="flex-1 bg-red-50 text-red-600 font-semibold py-2.5 rounded-xl hover:bg-red-100 transition-colors"
                 >
                   Reject
                 </button>

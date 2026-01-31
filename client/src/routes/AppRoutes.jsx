@@ -47,7 +47,7 @@ import History from "../pages/it/History";
 import Tickets from "../pages/it/Tickets";
 import ITTicketDetail from "../pages/it/TicketDetail";
 
-import EmailSettings from "../pages/it/EmailSettings";
+
 
 import QuickFixManagement from "../pages/admin/QuickFixManagement";
 import ITScheduleInternal from "../pages/it/Schedule"; // [NEW] Renamed to avoid Import Conflict? No, user route is ITSchedule
@@ -112,7 +112,7 @@ const AppRoutes = () => {
         <Route path="schedule" element={<ITScheduleInternal />} /> {/* [NEW] */}
 
 
-        <Route path="email-settings" element={<EmailSettings />} />
+
 
 
       </Route>

@@ -12,7 +12,10 @@ import {
     X,
     Phone,
     Briefcase,
-    Settings
+    Settings,
+    Save,
+    AlertCircle,
+    ChevronRight
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { currentUser } from "../../api/auth";
@@ -40,10 +43,16 @@ const ITProfile = () => {
     const [isEditingDept, setIsEditingDept] = useState(false);
     const [deptInput, setDeptInput] = useState("");
 
+    // Email Preference States
+    const [myEmailEnabled, setMyEmailEnabled] = useState(true);
+    const [myNotifyEmail, setMyNotifyEmail] = useState("");
+
     const fetchProfile = React.useCallback(async () => {
         try {
             const res = await currentUser(token);
             setProfile(res.data);
+            setMyEmailEnabled(res.data.isEmailEnabled !== false);
+            setMyNotifyEmail(res.data.notificationEmail || res.data.email || "");
         } catch (err) {
             console.error(err);
             toast.error("Failed to load profile");
@@ -51,6 +60,7 @@ const ITProfile = () => {
             setLoading(false);
         }
     }, [token]);
+
 
     useEffect(() => {
         fetchProfile();
@@ -94,6 +104,20 @@ const ITProfile = () => {
             toast.error(err.response?.data?.message || `Failed to update ${field}`);
         }
     };
+
+    const handleSavePreference = async () => {
+        try {
+            await updateProfile(token, {
+                isEmailEnabled: myEmailEnabled,
+                notificationEmail: myNotifyEmail
+            });
+            await checkUser();
+            toast.success("Preferences saved successfully");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save preferences");
+        }
+    }
 
 
     const handleLogout = () => {
@@ -211,6 +235,58 @@ const ITProfile = () => {
                 <p className="text-gray-500 text-sm mb-3">{profile.email}</p>
                 <div className="bg-blue-50 text-blue-600 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
                     {profile.role || "IT SUPPORT"}
+                </div>
+            </div>
+
+            {/* Notification Preferences (Merged) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                            <Settings size={20} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 text-lg">Notifications & Settings</h3>
+                            <p className="text-xs text-gray-500">Manage how you receive alerts and system templates</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {/* Personal Prefs */}
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="font-bold text-gray-700 text-sm">Receive Email Notifications</span>
+                            <button
+                                onClick={() => setMyEmailEnabled(!myEmailEnabled)}
+                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 relative ${myEmailEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                            >
+                                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${myEmailEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
+
+                        {myEmailEnabled && (
+                            <div className="flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <input
+                                    type="email"
+                                    value={myNotifyEmail}
+                                    onChange={(e) => setMyNotifyEmail(e.target.value)}
+                                    className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                    placeholder="Enter your email..."
+                                />
+                                <button
+                                    onClick={handleSavePreference}
+                                    className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow-md shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2 text-sm"
+                                >
+                                    <Save size={16} /> Save
+                                </button>
+                            </div>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">
+                            {myEmailEnabled ? "Notification emails will be sent to this address." : "You won't receive any email notifications."}
+                        </p>
+                    </div>
+
                 </div>
             </div>
 

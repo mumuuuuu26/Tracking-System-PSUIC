@@ -5,9 +5,24 @@ const { google } = require('googleapis');
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
 const getAuthClient = () => {
+    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    if (privateKey) {
+        // Strip leading/trailing quotes (single or double) if present
+        privateKey = privateKey.replace(/^["']|["']$/g, '');
+        
+        // Handle escaped newlines or real newlines
+        // If it was a JSON string content, it might have \n chars. 
+        // If it was a multiline string, it has real newlines.
+        // We replace literal \n with real newlines just in case.
+        privateKey = privateKey.replace(/\\n/g, '\n'); 
+        
+        // Remove carriage returns to be safe
+        privateKey = privateKey.replace(/\r/g, '');
+    }
+
     const credentials = {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        private_key: privateKey,
         project_id: process.env.GOOGLE_PROJECT_ID,
     };
 
@@ -124,7 +139,7 @@ exports.listGoogleEvents = async (timeMin, timeMax) => {
         const auth = getAuthClient();
         if (!auth) {
             // Mock data if no credentials
-            console.log('Mocking Google Calendar Events');
+
             return [
                 {
                     id: 'mock-1',
@@ -139,7 +154,7 @@ exports.listGoogleEvents = async (timeMin, timeMax) => {
         const calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
         const calendar = google.calendar({ version: 'v3', auth });
         
-        console.log(`Fetching events from calendar: ${calendarId}`);
+        // Fetching events from calendar
         
         const res = await calendar.events.list({
             calendarId: calendarId,

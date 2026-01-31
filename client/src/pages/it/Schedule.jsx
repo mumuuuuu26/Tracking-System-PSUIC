@@ -20,7 +20,7 @@ const Schedule = () => {
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
 
-    const loadSchedule = async () => {
+    const loadSchedule = React.useCallback(async () => {
         try {
             setLoading(true);
             const res = await getPublicSchedule(token);
@@ -31,13 +31,13 @@ const Schedule = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
 
     useEffect(() => {
         if (token) {
             loadSchedule();
         }
-    }, [token]);
+    }, [token, loadSchedule]);
 
     const handleSync = async () => {
         try {

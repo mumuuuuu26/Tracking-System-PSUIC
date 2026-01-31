@@ -32,9 +32,5 @@ router.put("/it/reject/:id", authCheck, itCheck, rejectJob);
 router.put("/it/close/:id", authCheck, itCheck, closeJob);
 router.put("/it/draft/:id", authCheck, itCheck, saveDraft); // [NEW] Draft mode
 
-// Email Settings (Accessible by IT & Admin)
-const { list: getEmailTemplates, update: updateEmailTemplate } = require('../controllers/emailSettings');
-router.get("/it/email-templates", authCheck, itCheck, getEmailTemplates);
-router.put("/it/email-templates/:id", authCheck, itCheck, updateEmailTemplate);
 
 module.exports = router;

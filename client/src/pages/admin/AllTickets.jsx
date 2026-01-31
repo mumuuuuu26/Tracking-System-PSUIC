@@ -111,10 +111,10 @@ const AllTickets = () => {
     const getUrgencyBadge = (urgency) => {
         switch (urgency) {
             case "High":
-            case "Critical": return "bg-red-50 text-red-600 border border-red-100";
-            case "Medium": return "bg-amber-50 text-amber-600 border border-amber-100";
-            case "Low": return "bg-green-50 text-green-600 border border-green-100";
-            default: return "bg-gray-50 text-gray-600 border border-gray-100";
+            case "Critical": return "bg-red-100 text-red-600";
+            case "Medium": return "bg-orange-100 text-orange-600";
+            case "Low": return "bg-green-100 text-green-600";
+            default: return "bg-gray-100 text-gray-600";
         }
     };
 
@@ -208,7 +208,7 @@ const AllTickets = () => {
                                             <span className="text-[#193C6C] font-bold text-sm">
                                                 #TK-{String(ticket.id).padStart(4, "0")}
                                             </span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${getUrgencyBadge(ticket.urgency)}`}>
+                                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${getUrgencyBadge(ticket.urgency)}`}>
                                                 {ticket.urgency}
                                             </span>
                                         </div>
