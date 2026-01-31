@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Bell,
-  Calendar,
-  Clock,
-  ChevronRight,
-  MoreHorizontal,
-  CheckCircle,
-  ChevronDown,
-  Check,
   Eye,
 
 } from "lucide-react";
@@ -20,19 +12,13 @@ import {
   acceptJob,
   rejectJob
 } from "../../api/it";
-import { getPersonalTasks } from "../../api/personalTask";
 
-import CalendarGrid from "../../components/CalendarGrid";
 
 const ITDashboard = () => {
   const navigate = useNavigate();
   const { token } = useAuthStore();
 
   const [tickets, setTickets] = useState([]);
-  const [scheduleItems, setScheduleItems] = useState([]); // Selected Date items
-  const [monthlyEvents, setMonthlyEvents] = useState([]); // For calendar dots
-  const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [currentMonth, setCurrentMonth] = useState(dayjs());
 
   const [stats, setStats] = useState({
     pending: 0,
@@ -50,66 +36,6 @@ const ITDashboard = () => {
 
 
 
-  // Load daily schedule
-  const loadDailySchedule = React.useCallback(async () => {
-    try {
-      const dateStr = selectedDate.format('YYYY-MM-DD');
-      const [personalTasksRes] = await Promise.all([
-        getPersonalTasks(token, { date: dateStr })
-      ]);
-
-      const requestedAppts = tickets
-        .filter(t => {
-          // Check if ticket has a requested date in description
-          const match = t.description?.match(/\[Requested Appointment: (\d{4}-\d{2}-\d{2}) at (\d{2}:\d{2})\]/);
-          if (match) {
-            const reqDate = match[1];
-            return reqDate === dateStr;
-          }
-          return false;
-        })
-        .map(t => {
-          const match = t.description?.match(/\[Requested Appointment: (\d{4}-\d{2}-\d{2}) at (\d{2}:\d{2})\]/);
-          const timeStr = match ? match[2] : "00:00";
-          // Create a datetime object for sorting
-          const dateTime = dayjs(`${dateStr}T${timeStr}`);
-
-          return {
-            type: 'request',
-            time: dateTime,
-            data: t,
-            id: `req-${t.id}`
-          };
-        });
-
-      const combinedSchedule = [
-        ...(personalTasksRes.data || []).map(task => ({
-          type: 'personal',
-          time: task.startTime ? dayjs(task.startTime) : dayjs(task.date).startOf('day'),
-          data: task,
-          id: `task-${task.id}`
-        })),
-        ...requestedAppts
-      ].sort((a, b) => a.time.diff(b.time));
-
-      setScheduleItems(combinedSchedule);
-
-    } catch (err) {
-      console.error(err);
-    }
-  }, [token, selectedDate, tickets]);
-
-
-  const loadMonthlyEvents = React.useCallback(async () => {
-    try {
-      // TODO: Implement proper monthly event fetching
-      // For now, we'll leave it empty or map existing tickets if needed.
-      // This placeholder resolves the undefined error.
-      setMonthlyEvents([]);
-    } catch (err) {
-      console.error("Failed to load monthly events:", err);
-    }
-  }, []);
   const loadDashboardData = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -118,10 +44,6 @@ const ITDashboard = () => {
         getMyTasks(token)
       ]);
 
-
-
-      await loadDailySchedule();
-      await loadMonthlyEvents();
 
       // Ensure array
       const allTickets = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
@@ -144,16 +66,9 @@ const ITDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, loadDailySchedule, loadMonthlyEvents]);
+  }, [token]);
 
 
-
-  // Load specific date schedule when selectedDate changes
-  useEffect(() => {
-    if (token) {
-      loadDailySchedule();
-    }
-  }, [token, loadDailySchedule]);
 
   useEffect(() => {
     if (token) {
@@ -240,92 +155,6 @@ const ITDashboard = () => {
           <StatItem count={stats.inProgress} label="In progress" />
           <StatItem count={stats.completed} label="Completed" />
 
-        </div>
-      </div>
-
-      {/* My Schedule Section */}
-      <div className="max-w-4xl mx-auto px-6 mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg text-gray-800">My Schedule</h3>
-          <button onClick={() => navigate('/it/schedule')} className="text-blue-600 text-sm font-medium hover:underline">See all</button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Calendar Widget */}
-          <div>
-            <CalendarGrid
-              currentDate={currentMonth}
-              setCurrentDate={setCurrentMonth}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              events={monthlyEvents}
-              onDateSelect={(day) => setSelectedDate(day)}
-            />
-          </div>
-
-          {/* List for Selected Day */}
-          <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 min-h-[350px] flex flex-col">
-            <div className="mb-4 px-2">
-              <h4 className="font-bold text-gray-700 text-base">Tasks for {selectedDate.format('DD MMM')}</h4>
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
-              {scheduleItems.length > 0 ? (
-                <div className="space-y-3">
-                  {scheduleItems.map((item) => {
-                    if (item.type === 'request') {
-                      const ticket = item.data;
-                      return (
-                        <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-amber-100 ring-1 ring-amber-50 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-amber-50 text-amber-600">
-                              <Clock size={20} />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{ticket.title}</h4>
-                                <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase">Request</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-gray-500 text-xs mt-0.5">
-                                <Calendar size={12} />
-                                <span>{item.time.format('HH:mm')}</span>
-                                <span className="text-gray-300">|</span>
-                                <span>{ticket.room?.roomNumber || "N/A"}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    } else {
-                      const task = item.data;
-                      return (
-                        <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
-                          <div className={`absolute left-0 top-0 bottom-0 w-1.5`} style={{ backgroundColor: task.color || '#193C6C' }}></div>
-                          <div className="flex items-center gap-3 pl-2">
-                            <div className="w-12 h-12 rounded-xl shrink-0 flex flex-col items-center justify-center bg-gray-50 text-gray-600">
-                              {task.startTime ? (
-                                <span className="text-xs font-bold">{dayjs(task.startTime).format('HH:mm')}</span>
-                              ) : (
-                                <span className="text-xs font-bold uppercase">All Day</span>
-                              )}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{task.title}</h4>
-                              <p className="text-xs text-gray-500 line-clamp-1">{task.description}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                  })}
-                </div>
-              ) : (
-                <div className="h-full flex flex-col justify-center items-center text-center">
-                  <p className="text-gray-400 text-sm">No tasks for this day</p>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 

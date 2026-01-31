@@ -69,7 +69,7 @@ const Schedule = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-8 font-sans text-gray-900">
             {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-10 pb-20 rounded-b-[2.5rem] shadow-lg sticky top-0 z-10">
+            <div className="bg-[#193C6C] px-6 pt-10 pb-20 rounded-b-[2.5rem] shadow-lg relative z-0">
                 <div className="max-w-md md:max-w-2xl mx-auto flex items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
@@ -83,7 +83,7 @@ const Schedule = () => {
                 </div>
             </div>
 
-            <div className="max-w-md md:max-w-2xl mx-auto px-6 -mt-12 relative z-20 space-y-6">
+            <div className="max-w-md md:max-w-2xl mx-auto px-6 -mt-12 relative z-10 space-y-6">
 
                 {/* Calendar */}
                 <CalendarGrid
