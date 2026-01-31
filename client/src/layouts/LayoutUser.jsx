@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Home, Plus, Clock, User, Menu, X, LogOut, ScanLine, Ticket, Calendar, MessageSquare } from "lucide-react";
+import { Home, Plus, Clock, User, Menu, X, LogOut, ScanLine, Ticket, Calendar, MessageSquare, Book } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
@@ -155,7 +155,7 @@ const LayoutUser = ({ children }) => {
               </button>
             </div>
 
-
+            <NavLink href="/user/quick-fix" icon={<Book size={24} />} label="Quick Fix" active={isActive("/user/quick-fix")} />
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
 
           </div>

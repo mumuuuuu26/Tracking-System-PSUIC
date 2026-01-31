@@ -2,20 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  QrCode,
-  FileText,
-  Calendar,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  ScanLine,
-  Ticket,
-  MessageSquare,
-  Smile,
   Bell,
-  BookOpen,
-  MapPin,
-  HelpCircle,
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
@@ -55,47 +42,40 @@ const HomeUser = () => {
 
   const services = [
     {
-      icon: <ScanLine />,
+      image: "/icons/qr-code.png",
       title: "Scan QR",
-      bgColor: "bg-[#E8F5E9]", // Light Green
-      iconColor: "text-[#2E7D32]", // Green
+      bgColor: "bg-[#E6EEF8]",
       isNew: false,
       action: () => navigate("/user/scan-qr"),
     },
     {
-      icon: <Ticket />,
+      image: "/icons/create-ticket.png",
       title: "Create Ticket",
-      bgColor: "bg-[#E3F2FD]", // Light Blue
-      iconColor: "text-[#1565C0]", // Blue
+      bgColor: "bg-[#E6EEF8]",
       action: () => navigate("/user/create-ticket"),
     },
-
     {
-      icon: <MapPin />,
+      image: "/icons/file-3d.png",
       title: "All Tickets",
-      bgColor: "bg-[#FFEBEE]", // Light Red
-      iconColor: "text-[#C62828]", // Red
+      bgColor: "bg-[#E6EEF8]",
       action: () => navigate("/user/my-tickets"),
     },
     {
-      icon: <HelpCircle />,
+      image: "/icons/quick-fix.png",
       title: "Quick Fix",
-      bgColor: "bg-[#EDE7F6]", // Deep Purple scale
-      iconColor: "text-[#673AB7]", // Deep Purple
+      bgColor: "bg-[#E6EEF8]",
       action: () => navigate("/user/quick-fix"),
     },
     {
-      icon: <Smile />,
+      image: "/icons/satisfaction.png",
       title: "Satisfaction",
-      bgColor: "bg-[#FFFDE7]", // Light Yellow
-      iconColor: "text-[#FBC02D]", // Yellow
+      bgColor: "bg-[#E6EEF8]",
       action: () => navigate("/user/feedback"),
     },
     {
-      icon: <Calendar />,
+      image: "/icons/schedule.png",
       title: "IT Schedule",
-      bgColor: "bg-[#E0F7FA]", // Cyan 50
-      iconColor: "text-[#006064]", // Cyan 900
+      bgColor: "bg-[#E6EEF8]",
       action: () => navigate("/user/it-schedule"),
     },
   ];
@@ -165,8 +145,11 @@ const HomeUser = () => {
               <div
                 className={`w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-[1.2rem] md:rounded-[1.5rem] flex items-center justify-center ${service.bgColor} shadow-sm group-hover:scale-105 transition-transform duration-300 relative`}
               >
-                {/* Clone element to increase size on desktop and apply specific color */}
-                {React.cloneElement(service.icon, { className: `w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 ${service.iconColor}` })}
+                <img
+                  src={service.image}
+                  alt={service.title}
+                  className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 object-contain drop-shadow-sm"
+                />
 
                 {service.isNew && (
                   <span className="absolute top-0 right-0 bg-green-500 text-white text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm transform translate-x-1 -translate-y-1">
