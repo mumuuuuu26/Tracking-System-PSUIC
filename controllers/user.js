@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const bcrypt = require("bcryptjs");
+const { saveImage } = require("../utils/uploadImage");
 
 // Create User (Invite)
 exports.createUser = async (req, res) => {
@@ -122,10 +123,17 @@ exports.updateProfileImage = async (req, res) => {
   try {
     const { image } = req.body;
 
-    // Save image directly to database (Base64)
+    // Use utils/uploadImage to save file to disk
+    const imageUrl = saveImage(image);
+
+    if (!imageUrl) {
+         return res.status(400).json({ message: "Invalid image data" });
+    }
+
+    // Save strictly the URL path to database
     const user = await prisma.user.update({
       where: { id: req.user.id },
-      data: { picture: image },
+      data: { picture: imageUrl },
     });
 
     res.json(user);
@@ -236,23 +244,12 @@ exports.removeUser = async (req, res) => {
       data: { assignedToId: null, status: 'pending' }
     });
 
-    // 2. Delete all Appointments where this user is the IT Support
-    // (Tickets will lose their appointment linkage, but remain in system)
-    await prisma.appointment.deleteMany({
-      where: { itSupportId: userId }
-    });
-
     // 3. Delete all Notifications belonging to this user
     await prisma.notification.deleteMany({
       where: { userId: userId }
     });
 
-    // 4. Delete IT Availability records
-    await prisma.iTAvailability.deleteMany({
-      where: { userId: userId }
-    });
-
-    // [NEW] 4.1 Delete Personal Tasks
+    // 4. Delete Personal Tasks
     await prisma.personalTask.deleteMany({
       where: { userId: userId }
     });
@@ -263,11 +260,6 @@ exports.removeUser = async (req, res) => {
       data: { updatedById: null }
     });
 
-    // 6. Nullify Knowledge Base edits (REMOVED - Model does not exist)
-    // await prisma.knowledgeBase.updateMany({
-    //   where: { updatedById: userId },
-    //   data: { updatedById: null }
-    // });
 
     // 7. Delete Tickets CREATED by this user
     // Prisma schema has onDelete: Cascade for Ticket->Image, Ticket->ActivityLog, Ticket->Appointment

@@ -105,12 +105,7 @@ const LayoutUser = ({ children }) => {
                 label="My Tickets"
                 active={isActive("/user/my-tickets")}
               />
-              <MobileNavLink
-                href="/user/appointments"
-                icon={<Calendar size={20} />}
-                label="Appointments"
-                active={isActive("/user/appointments")}
-              />
+
               <MobileNavLink
                 href="/user/profile"
                 icon={<User size={20} />}
@@ -160,7 +155,7 @@ const LayoutUser = ({ children }) => {
               </button>
             </div>
 
-            <NavLink href="/user/appointments" icon={<Calendar size={24} />} label="Appointment" active={isActive("/user/appointments")} />
+
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
 
           </div>

@@ -14,10 +14,6 @@ const TicketDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchTicket();
-  }, [fetchTicket]);
-
   const fetchTicket = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -30,6 +26,10 @@ const TicketDetail = () => {
       setLoading(false);
     }
   }, [token, id]);
+
+  useEffect(() => {
+    fetchTicket();
+  }, [fetchTicket]);
 
   if (loading) {
     return (
@@ -85,16 +85,16 @@ const TicketDetail = () => {
       },
       {
         id: 'accepted',
-        label: ticket?.description?.includes("[Requested Appointment") ? 'Confirmed' : 'Accepted',
-        date: ticket?.status !== 'pending' ? ticket?.updatedAt : null, // Approximate
-        completed: ticket?.status !== 'pending' && ticket?.status !== 'rejected',
+        label: 'Accepted',
+        date: ticket?.status !== 'not_start' ? ticket?.updatedAt : null, // Approximate
+        completed: ticket?.status !== 'not_start',
         icon: <Clock className="w-6 h-6 text-white" />
       },
       {
         id: 'completed',
         label: 'Completed',
-        date: ticket?.status === 'fixed' ? ticket?.updatedAt : null,
-        completed: ticket?.status === 'fixed',
+        date: ticket?.status === 'completed' ? ticket?.updatedAt : null,
+        completed: ticket?.status === 'completed',
         icon: <CheckCircle className="w-6 h-6 text-white" />
       }
     ];
@@ -119,7 +119,7 @@ const TicketDetail = () => {
             <ChevronDown className="rotate-90" size={28} />
           </button>
           <h1 className="text-white text-xl md:text-2xl font-bold flex-1 text-center pr-10">
-            {ticket?.description?.includes("[Requested Appointment") ? "Appointment Details" : "Ticket Details"}
+            Ticket Details
           </h1>
         </div>
       </div>
@@ -184,10 +184,10 @@ const TicketDetail = () => {
                         {formatDate(step.date, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </p>
                     )}
-                    {step.id === 'accepted' && ticket?.status === 'pending' && (
+                    {step.id === 'accepted' && ticket?.status === 'not_start' && (
                       <span className="inline-block bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full mt-2">Waiting</span>
                     )}
-                    {step.id === 'completed' && ticket?.status !== 'fixed' && (
+                    {step.id === 'completed' && ticket?.status !== 'completed' && (
                       <p className="text-xs text-gray-400 mt-1">Pending resolution</p>
                     )}
                   </div>

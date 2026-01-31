@@ -14,11 +14,11 @@ import { createTicket } from "../../api/ticket";
 import { listRooms } from "../../api/room";
 // ... imports
 import { listCategories } from "../../api/category";
-import { listITStaff } from "../../api/user";
-import { getITAvailability } from "../../api/appointment";
+
+
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
-import dayjs from "dayjs";
+
 
 
 const CreateTicket = () => {
@@ -32,22 +32,18 @@ const CreateTicket = () => {
   const [dbCategories, setDbCategories] = useState([]);
   const [floors, setFloors] = useState([]);
 
-  // Availability State
-  const [itCount, setItCount] = useState(0);
-  const [bookedSlots, setBookedSlots] = useState([]); // Array of busy "09:00" strings
+
 
   // Custom "Appointment" Form State
   const [form, setForm] = useState({
     equipmentId: prefilledData?.equipmentId || "",
     categoryId: "", // Selected "Equipment" category
     description: "",
-    date: "",
-    time: "",
     floor: prefilledData?.floorName || "",
     room: prefilledData?.roomNumber || "",
     roomId: prefilledData?.roomId || "",
     urgency: "Low",
-    remindMe: false, // UI only
+
     images: [],
   });
 
@@ -72,60 +68,11 @@ const CreateTicket = () => {
     }
   }, [token]);
 
-  const loadITCapacity = useCallback(async () => {
-    try {
-      const res = await listITStaff(token);
-      setItCount(res.data.length);
-    } catch (err) {
-      console.error("Error loading IT staff:", err);
-    }
-  }, [token]);
-
   useEffect(() => {
     loadData();
-    loadITCapacity();
-  }, [loadData, loadITCapacity]);
+  }, [loadData]);
 
-  const checkAvailability = useCallback(async (dateStr) => {
-    try {
-      const res = await getITAvailability(token, dateStr, dateStr);
-      const events = res.data; // [{ type, date, endTime, ... }]
 
-      // Calculate busy slots
-      // We check for each hour 09:00 to 17:00
-      const busyTimes = [];
-
-      for (let i = 9; i <= 17; i++) {
-        const hourStr = `${i.toString().padStart(2, "0")}:00`;
-        // Create a time object for this slot
-        const slotStart = dayjs(`${dateStr}T${hourStr}`);
-        const slotEnd = slotStart.add(1, 'hour'); // Assume 1 hour slots for booking resolution
-
-        // Count how many ITs are busy during this slot
-        const eventsInSlot = events.filter(e => {
-          const eStart = dayjs(e.date);
-          const eEnd = dayjs(e.endTime);
-          // Overlap check: (StartA < EndB) and (EndA > StartB)
-          return eStart.isBefore(slotEnd) && eEnd.isAfter(slotStart);
-        });
-
-        if (eventsInSlot.length >= itCount) {
-          busyTimes.push(hourStr);
-        }
-      }
-      setBookedSlots(busyTimes);
-
-    } catch (err) {
-      console.error("Error checking availability:", err);
-    }
-  }, [token, itCount]);
-
-  // Fetch Availability when Date changes
-  useEffect(() => {
-    if (form.date && itCount > 0) {
-      checkAvailability(form.date);
-    }
-  }, [form.date, itCount, checkAvailability]);
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -151,12 +98,10 @@ const CreateTicket = () => {
     if (
       !form.categoryId ||
       !form.description ||
-      !form.roomId ||
-      !form.date ||
-      !form.time
+      !form.roomId
     ) {
       toast.error(
-        "Please fill in all required fields (Equipment, Date, Time, Room, Description)"
+        "Please fill in all required fields (Equipment, Room, Description)"
       );
       return;
     }
@@ -172,14 +117,11 @@ const CreateTicket = () => {
         categoryId: parseInt(form.categoryId),
         roomId: parseInt(form.roomId),
         equipmentId: form.equipmentId ? parseInt(form.equipmentId) : null,
-        images: form.images,
-        // [NEW] Send Date/Time for Auto-Booking
-        date: form.date,
-        time: form.time
+        images: form.images
       };
 
       await createTicket(token, payload);
-      toast.success("Appointment Requested Successfully!");
+      toast.success("Ticket Created Successfully!");
       navigate("/user/my-tickets"); // Or Appointments page?
     } catch (err) {
       console.error(err);
@@ -192,17 +134,7 @@ const CreateTicket = () => {
     return cat ? cat.name : "General";
   };
 
-  // Helper for time options (09:00 - 17:00)
-  const timeOptions = [];
-  for (let i = 9; i <= 17; i++) {
-    const timeStr = `${i.toString().padStart(2, "0")}:00`;
-    const isBooked = bookedSlots.includes(timeStr);
-    timeOptions.push({
-      id: timeStr,
-      name: isBooked ? `${timeStr} (Full)` : timeStr,
-      disabled: isBooked
-    });
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-20">
@@ -249,32 +181,7 @@ const CreateTicket = () => {
         </div>
 
         {/* Date & Time Row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-gray-500 text-sm font-bold ml-1">Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none text-gray-700 text-sm"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                min={new Date().toISOString().split("T")[0]}
-              />
-              {/* <CalendarIcon className="absolute right-3 top-3 text-gray-400 pointer-events-none" size={18}/> */}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-gray-500 text-sm font-bold ml-1">Time</label>
-            <div className="relative">
-              <CustomSelect
-                options={timeOptions}
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                placeholder="Select Time"
-              />
-            </div>
-          </div>
-        </div>
+
 
         {/* Floor & Room Row */}
         <div className="grid grid-cols-2 gap-4">
@@ -311,20 +218,7 @@ const CreateTicket = () => {
           </div>
         </div>
 
-        {/* Remind Me Toggle */}
-        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200">
-          <span className="text-gray-700 font-bold text-sm">Remind me</span>
-          <button
-            onClick={() => setForm({ ...form, remindMe: !form.remindMe })}
-            className={`w-12 h-6 rounded-full transition-colors relative ${form.remindMe ? "bg-blue-500" : "bg-gray-300"
-              }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full shadow-sm absolute top-0.5 transition-all ${form.remindMe ? "left-6" : "left-0.5"
-                }`}
-            ></div>
-          </button>
-        </div>
+
 
         {/* Priority */}
         <div className="space-y-2">

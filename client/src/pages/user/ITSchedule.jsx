@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ChevronLeft, Clock, User, RefreshCw, Plus } from "lucide-react";
+import { Calendar, ChevronLeft, Clock, User } from "lucide-react";
 import dayjs from "dayjs";
 import useAuthStore from "../../store/auth-store";
-import { getPublicSchedule, syncGoogleCalendar } from "../../api/it";
-// Reuse CalendarGrid
+import { getPublicSchedule } from "../../api/it";
+// Reuse CalendarGrid for consistency
 import CalendarGrid from "../../components/CalendarGrid";
-import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 
-const Schedule = () => {
+const ITSchedule = () => {
     const navigate = useNavigate();
     const { token } = useAuthStore();
 
@@ -18,47 +16,30 @@ const Schedule = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState(false);
-
-    const loadSchedule = async () => {
-        try {
-            setLoading(true);
-            const res = await getPublicSchedule(token);
-            setSchedule(res.data);
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load schedule");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
+        const loadSchedule = async () => {
+            try {
+                const res = await getPublicSchedule(token);
+                setSchedule(res.data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (token) {
             loadSchedule();
         }
     }, [token]);
-
-    const handleSync = async () => {
-        try {
-            setSyncing(true);
-            const res = await syncGoogleCalendar(token);
-            toast.success(res.data.message || "Synced successfully");
-            loadSchedule();
-        } catch (err) {
-            console.error(err);
-            toast.error("Sync failed");
-        } finally {
-            setSyncing(false);
-        }
-    };
 
     // Helpers
     // Map schedule to events for calendar dots
     const eventsForCalendar = schedule.map(item => ({
         date: item.start,
         type: item.type,
-        color: item.type === 'ticket' ? '#EF4444' : '#3B82F6'
+        color: item.type === 'ticket' ? '#EF4444' : '#3B82F6' // Red for fix, Blue for internal
     }));
 
     // Filter items for selected day
@@ -78,7 +59,7 @@ const Schedule = () => {
                         <ChevronLeft size={28} />
                     </button>
                     <h1 className="text-white text-2xl font-bold flex-1 text-center pr-8">
-                        My Schedule
+                        IT Schedule
                     </h1>
                 </div>
             </div>
@@ -95,28 +76,11 @@ const Schedule = () => {
                     onDateSelect={setSelectedDate}
                 />
 
-                {/* Actions */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4">
-                    <button
-                        onClick={handleSync}
-                        disabled={syncing}
-                        className="flex-1 bg-blue-50 text-blue-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 transition disabled:opacity-50"
-                    >
-                        <RefreshCw size={20} className={syncing ? "animate-spin" : ""} />
-                        {syncing ? "Syncing..." : "Sync Google Calendar"}
-                    </button>
-                    {/* Add Task Button (Placeholder for manual add if needed later) */}
-                    {/* <button className="flex-1 bg-gray-50 text-gray-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition">
-                        <Plus size={20} />
-                        Add Task
-                    </button> */}
-                </div>
-
                 {/* Daily List */}
                 <div className="space-y-4">
                     <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                         <Calendar className="text-blue-600" size={20} />
-                        Tasks for {selectedDate.format('DD MMM YYYY')}
+                        Overview for {selectedDate.format('DD MMM YYYY')}
                     </h3>
 
                     {loading ? (
@@ -135,23 +99,27 @@ const Schedule = () => {
                                             {dayjs(item.start).format('HH:mm')}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description || item.title}</p>
-                                    <div className="flex items-center gap-2 mt-2">
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {/* Status Badge */}
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${item.type === 'ticket' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                                             }`}>
-                                            {item.type === 'ticket' ? 'Ticket' : 'Personal/Google'}
+                                            {item.type === 'ticket' ? 'Busy' : 'Task'}
                                         </span>
+                                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                                            <User size={12} />
+                                            <span>{item.staff || "IT Staff"}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ))
                     ) : (
                         <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
-                            <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <Calendar size={32} />
                             </div>
                             <p className="text-gray-900 font-bold">No tasks scheduled</p>
-                            <p className="text-sm text-gray-500">Enjoy your free time!</p>
+                            <p className="text-sm text-gray-500">IT Support is likely available.</p>
                         </div>
                     )}
                 </div>
@@ -161,4 +129,4 @@ const Schedule = () => {
     );
 };
 
-export default Schedule;
+export default ITSchedule;

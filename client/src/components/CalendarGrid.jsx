@@ -39,7 +39,7 @@ const CalendarGrid = ({
                     <div
                         key={i}
                         className={`w-1 h-1 rounded-full`}
-                        style={{ backgroundColor: e.color || (e.type === 'appointment' ? '#3B82F6' : '#10B981') }}
+                        style={{ backgroundColor: e.color || '#10B981' }}
                     />
                 ))}
             </div>

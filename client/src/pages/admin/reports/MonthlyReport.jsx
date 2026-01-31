@@ -128,7 +128,7 @@ const MonthlyReport = ({ month, year }) => {
                                 <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg">
                                     <Clock size={20} />
                                 </div>
-                                <span className="font-semibold text-gray-700 text-sm">Pending</span>
+                                <span className="font-semibold text-gray-700 text-sm">Unresolved</span>
                             </div>
                             <p className="text-3xl font-bold text-blue-500 mt-1">{pendingTickets}</p>
                             <div className="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
@@ -144,7 +144,7 @@ const MonthlyReport = ({ month, year }) => {
                                     <span className="w-2.5 h-2.5 rounded-full bg-[#193C6C]"></span> Resolved
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span> Pending
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span> Unresolved
                                 </div>
                             </div>
                         </div>
@@ -168,8 +168,8 @@ const MonthlyReport = ({ month, year }) => {
                                         cursor={{ fill: '#F3F4F6' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
-                                    <Bar dataKey="fixed" fill="#193C6C" radius={[3, 3, 0, 0]} barSize={16} name="Resolved" />
-                                    <Bar dataKey="pending" fill="#3B82F6" radius={[3, 3, 0, 0]} barSize={16} name="Pending" />
+                                    <Bar dataKey="completed" fill="#193C6C" radius={[3, 3, 0, 0]} barSize={16} name="Resolved" />
+                                    <Bar dataKey="pending" fill="#3B82F6" radius={[3, 3, 0, 0]} barSize={16} name="Unresolved" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -229,10 +229,10 @@ const MonthlyReport = ({ month, year }) => {
                                         </tr>
                                         <tr>
                                             <td className="border border-black p-2 bg-gray-100 font-bold text-black">Resolved</td>
-                                            <td className="border border-black p-2 text-center font-bold text-black">{reportData.reduce((acc, curr) => acc + (curr.fixed || 0), 0)} Items</td>
+                                            <td className="border border-black p-2 text-center font-bold text-black">{reportData.reduce((acc, curr) => acc + (curr.completed || 0), 0)} Items</td>
                                         </tr>
                                         <tr>
-                                            <td className="border border-black p-2 bg-gray-100 font-bold text-black">Pending</td>
+                                            <td className="border border-black p-2 bg-gray-100 font-bold text-black">Unresolved</td>
                                             <td className="border border-black p-2 text-center font-bold text-black">{reportData.reduce((acc, curr) => acc + (curr.pending || 0), 0)} Items</td>
                                         </tr>
                                     </tbody>
@@ -248,7 +248,7 @@ const MonthlyReport = ({ month, year }) => {
                                             <th className="border border-black p-2 text-center w-24 text-black">Date</th>
                                             <th className="border border-black p-2 text-center text-black">Total</th>
                                             <th className="border border-black p-2 text-center text-black">Resolved</th>
-                                            <th className="border border-black p-2 text-center text-black">Pending</th>
+                                            <th className="border border-black p-2 text-center text-black">Unresolved</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -257,7 +257,7 @@ const MonthlyReport = ({ month, year }) => {
                                             <tr key={index}>
                                                 <td className="border border-black p-2 text-center font-bold text-black">{item.day}</td>
                                                 <td className="border border-black p-2 text-center font-medium text-black">{(item.fixed || 0) + (item.pending || 0)}</td>
-                                                <td className="border border-black p-2 text-center font-medium text-black">{item.fixed}</td>
+                                                <td className="border border-black p-2 text-center font-medium text-black">{item.completed}</td>
                                                 <td className="border border-black p-2 text-center font-medium text-black">{item.pending}</td>
                                             </tr>
                                         ))}
@@ -285,7 +285,7 @@ const MonthlyReport = ({ month, year }) => {
                                             <th className="border border-black p-2 text-center w-24 text-black">Date</th>
                                             <th className="border border-black p-2 text-center text-black">Total</th>
                                             <th className="border border-black p-2 text-center text-black">Resolved</th>
-                                            <th className="border border-black p-2 text-center text-black">Pending</th>
+                                            <th className="border border-black p-2 text-center text-black">Unresolved</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -293,7 +293,7 @@ const MonthlyReport = ({ month, year }) => {
                                             <tr key={index}>
                                                 <td className="border border-black p-2 text-center font-bold text-black">{item.day}</td>
                                                 <td className="border border-black p-2 text-center font-medium text-black">{(item.fixed || 0) + (item.pending || 0)}</td>
-                                                <td className="border border-black p-2 text-center font-medium text-black">{item.fixed}</td>
+                                                <td className="border border-black p-2 text-center font-medium text-black">{item.completed}</td>
                                                 <td className="border border-black p-2 text-center font-medium text-black">{item.pending}</td>
                                             </tr>
                                         ))}

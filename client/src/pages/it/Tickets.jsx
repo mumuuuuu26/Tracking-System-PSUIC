@@ -84,22 +84,20 @@ const Tickets = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case "pending": return "border-l-amber-500 bg-amber-50/10";
+            case "not_start": return "border-l-amber-500 bg-amber-50/10";
             case "in_progress": return "border-l-blue-500 bg-blue-50/10";
-            case "fixed":
+            case "completed":
             case "closed": return "border-l-green-500 bg-green-50/10";
-            case "rejected": return "border-l-red-500 bg-red-50/10";
             default: return "border-l-gray-300";
         }
     };
 
     const getStatusBadge = (status) => {
         const styles = {
-            pending: "bg-amber-100 text-amber-700 ring-amber-600/20",
+            not_start: "bg-amber-100 text-amber-700 ring-amber-600/20",
             in_progress: "bg-blue-100 text-blue-700 ring-blue-600/20",
-            fixed: "bg-green-100 text-green-700 ring-green-600/20",
-            closed: "bg-green-100 text-green-700 ring-green-600/20",
-            rejected: "bg-red-100 text-red-700 ring-red-600/20"
+            completed: "bg-green-100 text-green-700 ring-green-600/20",
+            closed: "bg-green-100 text-green-700 ring-green-600/20"
         };
         return styles[status] || "bg-gray-100 text-gray-700 ring-gray-600/20";
     };
@@ -141,15 +139,15 @@ const Tickets = () => {
 
                 <div className="md:col-span-7 flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
                     <Filter className="text-gray-400 w-5 h-5 flex-shrink-0" />
-                    {["All", "Pending", "In Progress", "Fixed", "Rejected"].map((status) => (
+                    {["All", "Not Start", "In Progress", "Completed"].map((status) => (
                         <button
                             key={status}
                             onClick={() => setActiveFilter(status)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${(activeFilter === status ||
                                 (activeFilter === "all" && status === "All") ||
-                                (activeFilter === "fixed" && status === "Fixed") ||
+                                (activeFilter === "completed" && status === "Completed") ||
                                 (activeFilter === "in_progress" && status === "In Progress") ||
-                                (activeFilter === status.toLowerCase()))
+                                (activeFilter === "not_start" && status === "Not Start"))
                                 ? "bg-[#193C6C] text-white shadow-md shadow-blue-900/20"
                                 : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                 }`}

@@ -47,7 +47,7 @@ const AllTickets = () => {
                 page: currentPage,
                 limit: 12, // Grid 3 cols -> 12 is nice
                 search: debouncedSearch,
-                status: filterStatus
+                status: filterStatus === 'all' ? undefined : filterStatus
             }
 
             // Allow bookmarking searches
@@ -101,11 +101,9 @@ const AllTickets = () => {
     // Styles Helpers
     const getStatusColor = (status) => {
         switch (status) {
-            case "pending": return "border-l-amber-400 border-gray-100";
+            case "not_start": return "border-l-amber-400 border-gray-100";
             case "in_progress": return "border-l-blue-400 border-gray-100";
-            case "fixed":
-            case "closed": return "border-l-green-400 border-gray-100";
-            case "rejected": return "border-l-red-400 border-gray-100";
+            case "completed": return "border-l-green-400 border-gray-100";
             default: return "border-l-gray-400 border-gray-100";
         }
     };
@@ -122,11 +120,9 @@ const AllTickets = () => {
 
     const getStatusDotColor = (status) => {
         switch (status) {
-            case "pending": return "bg-amber-500";
+            case "not_start": return "bg-amber-500";
             case "in_progress": return "bg-blue-500";
-            case "fixed":
-            case "closed": return "bg-green-500";
-            case "rejected": return "bg-red-500";
+            case "completed": return "bg-green-500";
             default: return "bg-gray-400";
         }
     };
@@ -164,7 +160,7 @@ const AllTickets = () => {
                         />
                     </div>
                     <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-                        {['all', 'pending', 'in_progress', 'fixed', 'rejected'].map((status) => (
+                        {['all', 'not_start', 'in_progress', 'completed'].map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}

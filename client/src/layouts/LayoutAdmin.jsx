@@ -11,7 +11,9 @@ import {
     LogOut,
     User,
     BarChart,
+
     BookOpen,
+    Briefcase,
 } from "lucide-react";
 
 import useAuthStore from "../store/auth-store";
@@ -140,12 +142,7 @@ const LayoutAdmin = () => {
                                 label="Dashboard"
                                 active={isActive("/admin")}
                             />
-                            <MobileNavLink
-                                href="/admin/tickets"
-                                icon={<Ticket size={20} />}
-                                label="All Tickets"
-                                active={isActive("/admin/tickets")}
-                            />
+
                             <MobileNavLink
                                 href="/admin/manage-users"
                                 icon={<Users size={20} />}
@@ -169,6 +166,12 @@ const LayoutAdmin = () => {
                                 icon={<BarChart size={20} />}
                                 label="Reports"
                                 active={isActive("/admin/reports")}
+                            />
+                            <MobileNavLink
+                                href="/admin/quick-fix"
+                                icon={<Briefcase size={20} />}
+                                label="Quick Fix"
+                                active={isActive("/admin/quick-fix")}
                             />
 
                             <hr className="my-4 border-gray-100" />
@@ -204,12 +207,7 @@ const LayoutAdmin = () => {
                             label="Home"
                             active={isActive("/admin")}
                         />
-                        <NavLink
-                            href="/admin/tickets"
-                            icon={<Ticket size={24} />}
-                            label="Tickets"
-                            active={isActive("/admin/tickets")}
-                        />
+
                         <NavLink
                             href="/admin/manage-users"
                             icon={<Users size={24} />}
@@ -233,6 +231,12 @@ const LayoutAdmin = () => {
                             icon={<User size={24} />}
                             label="Profile"
                             active={isActive("/admin/profile")}
+                        />
+                        <NavLink
+                            href="/admin/quick-fix"
+                            icon={<Briefcase size={24} />}
+                            label="Quick Fix"
+                            active={isActive("/admin/quick-fix")}
                         />
                     </div>
                 </nav>

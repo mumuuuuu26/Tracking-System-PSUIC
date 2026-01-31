@@ -13,7 +13,7 @@ exports.getDashboardStats = async (req, res) => {
 
     // Calculate Resolution Rate
     const totalFixed = await prisma.ticket.count({
-      where: { status: "fixed" },
+      where: { status: "completed" },
     });
     const resolutionRate = ticketCount > 0 ? Math.round((totalFixed / ticketCount) * 100) : 0;
 

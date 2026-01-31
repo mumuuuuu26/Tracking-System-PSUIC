@@ -50,11 +50,11 @@ const EquipmentDetail = () => {
 
   const getTicketStatusIcon = (status) => {
     switch (status) {
-      case "Fixed":
+      case "completed":
         return <CheckCircle className="text-green-500" size={16} />;
       case "in_progress":
         return <Clock className="text-blue-500" size={16} />;
-      case "pending":
+      case "not_start":
         return <AlertCircle className="text-yellow-500" size={16} />;
       default:
         return <AlertCircle className="text-gray-500" size={16} />;

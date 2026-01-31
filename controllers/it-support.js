@@ -1,7 +1,43 @@
 const prisma = require("../config/prisma");
 const { saveImage } = require("../utils/uploadImage");
+const { listGoogleEvents } = require("./googleCalendar");
 
 // Get dashboard statistics
+exports.previewJob = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const ticket = await prisma.ticket.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                room: true,
+                equipment: true,
+                category: true,
+                createdBy: {
+                    select: {
+                        id: true,
+                        name: true,
+                        username: true,
+                        email: true,
+                        phoneNumber: true,
+                        picture: true,
+                        role: true
+                    }
+                },
+                images: true
+            }
+        });
+
+        if (!ticket) {
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+
+        res.json(ticket);
+    } catch (err) {
+        console.error("❌ Preview Job Error:", err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 exports.getStats = async (req, res) => {
   try {
     const today = new Date();
@@ -16,9 +52,9 @@ exports.getStats = async (req, res) => {
           where: {
             OR: [
               { assignedToId: req.user.id },
-              { assignedToId: null, status: "pending" },
+              { assignedToId: null, status: "not_start" },
             ],
-            status: "pending",
+            status: "not_start",
           },
         }),
 
@@ -32,7 +68,7 @@ exports.getStats = async (req, res) => {
         prisma.ticket.count({
           where: {
             assignedToId: req.user.id,
-            status: "fixed",
+            status: "completed",
             updatedAt: { gte: today, lt: tomorrow },
           },
         }),
@@ -48,7 +84,7 @@ exports.getStats = async (req, res) => {
           where: {
             OR: [{ assignedToId: req.user.id }, { assignedToId: null }],
             urgency: { in: ["High", "Critical"] },
-            status: { not: "fixed" },
+            status: { not: "completed" },
           },
         }),
       ]);
@@ -57,7 +93,7 @@ exports.getStats = async (req, res) => {
       pending,
       inProgress,
       completed: await prisma.ticket.count({
-        where: { assignedToId: req.user.id, status: "fixed" },
+        where: { assignedToId: req.user.id, status: "completed" },
       }),
       todayComplete,
       todayTotal,
@@ -78,9 +114,8 @@ exports.getMyTasks = async (req, res) => {
           { assignedToId: req.user.id },
           {
             assignedToId: null,
-            status: "pending",
+            status: "not_start",
           },
-          { status: "rejected" },
         ],
       },
       include: {
@@ -95,6 +130,7 @@ exports.getMyTasks = async (req, res) => {
             email: true,
             phoneNumber: true,
             picture: true,
+            role: true, // Included for detail view
           },
         },
         images: {
@@ -115,43 +151,7 @@ exports.getMyTasks = async (req, res) => {
   }
 };
 
-// Get today's appointments
-exports.getTodayAppointments = async (req, res) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        itSupportId: req.user.id,
-        scheduledAt: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      include: {
-        ticket: {
-          include: {
-            room: true,
-            equipment: true,
-            category: true,
-            createdBy: {
-              select: { name: true, username: true, phoneNumber: true },
-            },
-          },
-        },
-      },
-      orderBy: { scheduledAt: "asc" },
-    });
-
-    res.json(appointments);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server Error" });
-  }
-};
 
 // Accept job with auto-assignment
 exports.acceptJob = async (req, res) => {
@@ -205,37 +205,39 @@ exports.acceptJob = async (req, res) => {
   }
 };
 
-// Reject ticket with reason
-exports.rejectTicket = async (req, res) => {
+// Reject job (Mark as completed with Reject log)
+exports.rejectJob = async (req, res) => {
   try {
     const { id } = req.params;
-    const { reason, notes } = req.body;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Reason is required for rejection" });
+    }
 
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
-        status: "rejected",
-        rejectedReason: `${reason}: ${notes}`,
-        rejectedAt: new Date(),
+        status: "completed", // Closest equivalent to 'Rejected' in 3-state system
+        note: `REJECTED: ${reason}`, // Save rejection reason in note for visibility
         logs: {
           create: {
             action: "Reject",
-            detail: `Rejected by ${req.user.name}: ${reason}`,
+            detail: `Rejected by ${req.user.name || req.user.email}: ${reason}`,
             updatedById: req.user.id,
           },
         },
-      },
-      include: {
-        createdBy: true,
       },
     });
 
     res.json(ticket);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Reject Job Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+
 
 // Save Draft (Checklist & Notes)
 exports.saveDraft = async (req, res) => {
@@ -300,7 +302,7 @@ exports.closeJob = async (req, res) => {
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
-        status: "fixed",
+        status: "completed",
         note: note, // Ensure note is saved to the main field too
         checklist: checklist ? JSON.stringify(checklist) : undefined,
         logs: {
@@ -329,91 +331,14 @@ exports.closeJob = async (req, res) => {
   }
 };
 
-// Reschedule appointment
-exports.rescheduleAppointment = async (req, res) => {
-  try {
-    const { ticketId, scheduledAt, note } = req.body;
 
-    const appointment = await prisma.appointment.upsert({
-      where: { ticketId: parseInt(ticketId) },
-      update: {
-        scheduledAt: new Date(scheduledAt),
-        note,
-      },
-      create: {
-        ticketId: parseInt(ticketId),
-        itSupportId: req.user.id,
-        scheduledAt: new Date(scheduledAt),
-        note,
-      },
-    });
-
-    // Update ticket status
-    await prisma.ticket.update({
-      where: { id: parseInt(ticketId) },
-      data: {
-        status: "scheduled",
-        assignedToId: req.user.id,
-        logs: {
-          create: {
-            action: "Schedule",
-            detail: `Scheduled for ${new Date(scheduledAt).toLocaleString()}`,
-            updatedById: req.user.id,
-          },
-        },
-      },
-    });
-
-    res.json(appointment);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server Error" });
-  }
-};
-
-exports.getSchedule = async (req, res) => {
-  try {
-    const { date } = req.query;
-    const targetDate = date ? new Date(date) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
-    const nextDay = new Date(targetDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    const schedule = await prisma.appointment.findMany({
-      where: {
-        itSupportId: req.user.id,
-        scheduledAt: {
-          gte: targetDate,
-          lt: nextDay
-        }
-      },
-      include: {
-        ticket: {
-          include: {
-            room: true,
-            equipment: true,
-            createdBy: {
-              select: { name: true, username: true, phoneNumber: true }
-            }
-          }
-        }
-      },
-      orderBy: { scheduledAt: 'asc' }
-    });
-
-    res.json(schedule);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server Error" });
-  }
-};
 
 // Get completed tickets for history
 exports.getHistory = async (req, res) => {
   try {
     const history = await prisma.ticket.findMany({
       where: {
-        status: "fixed"
+        status: "completed"
       },
       include: {
         room: true,
@@ -427,6 +352,7 @@ exports.getHistory = async (req, res) => {
             email: true,
             phoneNumber: true,
             picture: true,
+            role: true,
           },
         },
         logs: {
@@ -443,4 +369,118 @@ exports.getHistory = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+// Get public schedule (IT availability)
+exports.getPublicSchedule = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    const isIT = req.user.role === 'it_support' || req.user.role === 'admin';
+
+    // Fetch active tickets (accepted/in_progress) that block time
+    const activeTickets = await prisma.ticket.findMany({
+      where: {
+        status: { in: ["in_progress"] },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedTo: {
+          select: { name: true, id: true }
+        }
+      }
+    });
+
+    // Fetch Personal Tasks of IT Staff
+    const personalTasks = await prisma.personalTask.findMany({
+      where: {
+        date: { gte: today }, // Future tasks
+        isCompleted: false
+      },
+      include: {
+        user: { select: { name: true, id: true } }
+      }
+    });
+
+    // Format for frontend
+    const schedule = [
+      ...activeTickets.map(t => ({
+        id: `ticket-${t.id}`,
+        title: isIT ? `[Ticket] ${t.title}` : `Busy: ${t.assignedTo?.name || "IT Staff"}`,
+        start: t.createdAt,
+        end: t.updatedAt,
+        type: 'ticket',
+        staff: t.assignedTo?.name,
+        details: isIT ? t.title : "Fixing Issue", // Details for list view
+        description: isIT ? t.description : undefined
+      })),
+      ...personalTasks.map(t => ({
+        id: `task-${t.id}`,
+        title: isIT ? `[Task] ${t.title}` : `Busy: ${t.user?.name || "IT Staff"}`,
+        start: t.startTime || t.date,
+        end: t.endTime,
+        type: 'personal',
+        staff: t.user?.name,
+        details: isIT ? t.title : "Internal Task",
+        description: isIT ? t.description : undefined
+      }))
+    ];
+
+    res.json(schedule);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+exports.syncGoogleCalendar = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        // Sync next 30 days
+        const start = new Date();
+        const end = new Date();
+        end.setDate(end.getDate() + 30);
+
+        const events = await listGoogleEvents(start, end);
+        let count = 0;
+
+        for (const event of events) {
+            const startDate = new Date(event.start.dateTime || event.start.date);
+            const endDate = new Date(event.end.dateTime || event.end.date);
+
+            // Check duplicate
+            const exists = await prisma.personalTask.findFirst({
+                where: {
+                    userId: userId,
+                    title: event.summary || 'No Title',
+                    startTime: startDate
+                }
+            });
+
+            if (!exists) {
+                await prisma.personalTask.create({
+                    data: {
+                        userId: userId,
+                        title: event.summary || 'No Title',
+                        description: `Imported from Google Calendar\n${event.description || ''}`,
+                        date: startDate,
+                        startTime: startDate,
+                        endTime: endDate,
+                        color: '#4285F4',
+                        isCompleted: false
+                    }
+                });
+                count++;
+            }
+        }
+
+        res.json({ message: `Synced ${count} events from Google Calendar`, count });
+    } catch (err) {
+        console.error("Sync Error:", err);
+        res.status(500).json({ message: "Sync Failed" });
+    }
+};

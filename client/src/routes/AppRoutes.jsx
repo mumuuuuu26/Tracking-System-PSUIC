@@ -18,14 +18,14 @@ import HomeUser from "../pages/user/HomeUser";
 import MyTickets from "../pages/user/MyTickets";
 import CreateTicket from "../pages/user/CreateTicket";
 import Profile from "../pages/user/Profile";
-import UserAppointments from "../pages/user/Appointments";
+import ITSchedule from "../pages/user/ITSchedule"; // [NEW]
+
 import Feedback from "../pages/user/Feedback";
 import WaitingForFeedback from "../pages/user/WaitingForFeedback";
 import QuickFix from "../pages/user/QuickFix";
 
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
-import AllTickets from "../pages/admin/AllTickets";
 import UserManagement from "../pages/admin/UserManagement";
 import ITManagement from "../pages/admin/ITManagement";
 import RoomManagement from "../pages/admin/RoomManagement";
@@ -39,7 +39,7 @@ import Permission from "../pages/admin/Permission";
 
 // IT
 import ITDashboard from "../pages/it/Dashboard";
-import Schedule from "../pages/it/Schedule";
+
 import Notifications from "../pages/it/Notifications";
 import ITProfile from "../pages/it/Profile";
 import History from "../pages/it/History";
@@ -48,8 +48,9 @@ import Tickets from "../pages/it/Tickets";
 import ITTicketDetail from "../pages/it/TicketDetail";
 
 import EmailSettings from "../pages/it/EmailSettings";
-import RescheduleBooking from "../pages/it/RescheduleBooking";
-import QuickFixManagement from "../pages/it/QuickFixManagement";
+
+import QuickFixManagement from "../pages/admin/QuickFixManagement";
+import ITScheduleInternal from "../pages/it/Schedule"; // [NEW] Renamed to avoid Import Conflict? No, user route is ITSchedule
 
 
 
@@ -69,12 +70,13 @@ const AppRoutes = () => {
         <Route index element={<HomeUser />} />
         <Route path="my-tickets" element={<MyTickets />} />
         <Route path="create-ticket" element={<CreateTicket />} />
-        <Route path="appointments" element={<UserAppointments />} />
+
         <Route path="scan-qr" element={<ScanQR />} />
         <Route path="equipment/:id" element={<EquipmentDetail />} />
         <Route path="ticket/:id" element={<TicketDetail />} />
 
         <Route path="profile" element={<Profile />} />
+        <Route path="it-schedule" element={<ITSchedule />} /> {/* [NEW] */}
         <Route path="feedback" element={<WaitingForFeedback />} />
         <Route path="feedback/:ticketId" element={<Feedback />} />
         <Route path="quick-fix" element={<QuickFix />} />
@@ -83,7 +85,7 @@ const AppRoutes = () => {
       {/* Admin Routes */}
       <Route path="admin" element={<LayoutAdmin />}>
         <Route index element={<Dashboard />} />
-        <Route path="tickets" element={<AllTickets />} />
+
         <Route path="manage-users" element={<UserManagement />} />
         <Route path="manage-it" element={<ITManagement />} />
         <Route path="manage-rooms" element={<RoomManagement />} />
@@ -93,23 +95,25 @@ const AppRoutes = () => {
         <Route path="profile" element={<AdminProfile />} />
         <Route path="ticket/:id" element={<AdminTicketDetail />} />
         <Route path="permission" element={<Permission />} />
+        <Route path="quick-fix" element={<QuickFixManagement />} />
 
       </Route>
 
       {/* IT Support Routes */}
       <Route path="it" element={<LayoutIT />}>
         <Route index element={<ITDashboard />} />
-        <Route path="schedule" element={<Schedule />} />
+
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<ITProfile />} />
         <Route path="history" element={<History />} />
 
         <Route path="tickets" element={<Tickets />} />
         <Route path="ticket/:id" element={<ITTicketDetail />} />
-        <Route path="ticket/:id/reschedule" element={<RescheduleBooking />} />
+        <Route path="schedule" element={<ITScheduleInternal />} /> {/* [NEW] */}
+
 
         <Route path="email-settings" element={<EmailSettings />} />
-        <Route path="quick-fix" element={<QuickFixManagement />} />
+
 
       </Route>
 

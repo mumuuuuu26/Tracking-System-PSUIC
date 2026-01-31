@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock, Plus, Trash2, Save, PenTool, ChevronDown } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getTicket } from "../../api/ticket";
-import { acceptJob, closeJob, rejectTicket, saveDraft } from "../../api/it";
+import { acceptJob, closeJob, saveDraft, previewJob, rejectJob } from "../../api/it";
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -27,13 +27,52 @@ const TicketDetail = () => {
 
     // Checklist State
     const [checklistItems, setChecklistItems] = useState([]); // [{id: 1, text: "Check Power", checked: false}]
+
+    // Reject Modal State
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectReason, setRejectReason] = useState("");
     const [newChecklistInput, setNewChecklistInput] = useState("");
 
     // Reschedule Modal State REMOVED
 
+    const loadTicket = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await getTicket(token, id);
+            setTicket(res.data);
+            // Pre-fill existing note if available and status is completed (handled in useEffect above partially, but let's keep logic cleaner there)
+            if (res.data.status === 'completed') {
+                setItNote(res.data.note || "");
+            }
+        } catch (err) {
+            console.error("Failed to load ticket:", err);
+            toast.error("Failed to load ticket details");
+        } finally {
+            setLoading(false);
+        }
+    }, [token, id]);
+
+    const loadPreview = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await previewJob(token, id);
+            setTicket(res.data);
+        } catch (err) {
+            console.error("Failed to load ticket preview:", err);
+            // Fallback to getTicket if preview fails or for compatibility, but intended for unaccepted jobs
+            loadTicket();
+        } finally {
+            setLoading(false);
+        }
+    }, [token, id, loadTicket]);
+
     useEffect(() => {
-        loadTicket();
-    }, [loadTicket]);
+        // We can try loadPreview first? Or just loadTicket. 
+        // User asked for "create as api for view". 
+        // We will attempt to use previewJob. Ideally we should know if we are in "preview mode".
+        // Use previewJob. accessible for IT.
+        loadPreview();
+    }, [loadPreview]);
 
     useEffect(() => {
         if (ticket) {
@@ -51,22 +90,7 @@ const TicketDetail = () => {
         }
     }, [ticket]);
 
-    const loadTicket = React.useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await getTicket(token, id);
-            setTicket(res.data);
-            // Pre-fill existing note if available and status is fixed/rejected (handled in useEffect above partially, but let's keep logic cleaner there)
-            if (res.data.status === 'fixed' || res.data.status === 'rejected') {
-                setItNote(res.data.note || (res.data.rejectedReason ? res.data.rejectedReason.split(':')[1]?.trim() : "") || "");
-            }
-        } catch (err) {
-            console.error("Failed to load ticket:", err);
-            toast.error("Failed to load ticket details");
-        } finally {
-            setLoading(false);
-        }
-    }, [token, id]);
+
 
     const handleProofUpload = (e) => {
         const file = e.target.files[0];
@@ -94,7 +118,7 @@ const TicketDetail = () => {
     };
 
     const toggleChecklistItem = (itemId) => {
-        if (ticket.status === 'fixed') return; // Read-only if fixed
+        if (ticket.status === 'completed') return; // Read-only if completed
         setChecklistItems(checklistItems.map(item =>
             item.id === itemId ? { ...item, checked: !item.checked } : item
         ));
@@ -118,28 +142,46 @@ const TicketDetail = () => {
         }
     };
 
+    const handleReject = async () => {
+        if (!rejectReason.trim()) return toast.warning("Please provide a reason");
+        try {
+            await rejectJob(token, id, rejectReason);
+            toast.success("Ticket rejected successfully");
+            setShowRejectModal(false);
+
+            // Navigate back to dashboard or reload? Preview mode implies we probably go back to list as it's done.
+            // But let's follow accept pattern (stay or reload). Actually reject = closed/completed.
+            // Let's go back to dashboard to avoid confusion or reload to show updated state (which is probably restricted access now).
+            // Dashboard is safer.
+            navigate('/it');
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to reject ticket");
+        }
+    };
+
     const handleUpdateStatus = async () => {
         if (!ticket) return;
+
+        // 1. Special Handler for Accept Button Click (If ticket is not_start, the ONLY action is Accept)
+        if (ticket.status === 'not_start') {
+            try {
+                await acceptJob(token, id);
+                toast.success("Job accepted successfully!");
+                // Reload with standard loadTicket to get full edit capabilities
+                loadTicket();
+            } catch (err) {
+                console.error(err);
+                toast.error(err.response?.data?.message || "Failed to accept job");
+            }
+            return;
+        }
 
         if (selectedStatus === ticket.status) {
             return toast.info("No status change detected.");
         }
 
-        // 1. Pending -> In Progress (Accept)
-        if (selectedStatus === 'in_progress') {
-            try {
-                await acceptJob(token, id);
-                toast.success("Job accepted successfully!");
-                loadTicket();
-            } catch (err) {
-                console.error(err);
-                toast.error("Failed to accept job");
-            }
-            return;
-        }
-
-        // 2. -> Completed (Fixed)
-        if (selectedStatus === 'fixed') {
+        // 2. -> Completed
+        if (selectedStatus === 'completed') {
             if (!itNote.trim()) return toast.warning("Please add some internal notes of diagnosis.");
 
             // Check if all checklist items are checked (Optional warning)
@@ -157,7 +199,7 @@ const TicketDetail = () => {
 
             Swal.fire({
                 title: "Complete Job?",
-                text: "Are you sure you want to mark this ticket as fixed?",
+                text: "Are you sure you want to mark this ticket as completed?",
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonColor: "#2563eb",
@@ -182,40 +224,11 @@ const TicketDetail = () => {
             return;
         }
 
-        // 3. -> Rejected
-        if (selectedStatus === 'rejected') {
-            Swal.fire({
-                title: "Reject Ticket",
-                text: "Please provide a reason for rejection:",
-                input: "text",
-                inputPlaceholder: "Reason...",
-                showCancelButton: true,
-                confirmButtonColor: "#ef4444",
-                confirmButtonText: "Reject",
-                preConfirm: (reason) => {
-                    if (!reason) {
-                        Swal.showValidationMessage('Reason is required');
-                    }
-                    return reason;
-                }
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        await rejectTicket(token, id, { note: result.value });
-                        toast.success("Ticket rejected");
-                        loadTicket();
-                    } catch (err) {
-                        console.error(err);
-                        toast.error("Failed to reject ticket");
-                    }
-                }
-            });
-            return;
-        }
 
-        // 4. Fallback / Pending
-        if (selectedStatus === 'pending') {
-            toast.warning("Cannot move ticket back to Pending manually.");
+
+        // 4. Fallback / Not Start
+        if (selectedStatus === 'not_start') {
+            toast.warning("Cannot move ticket back to Not Start manually.");
             setSelectedStatus(ticket.status); // Revert selection
         }
     };
@@ -235,9 +248,9 @@ const TicketDetail = () => {
     );
 
     const steps = [
-        { label: "OPEN", status: "pending", active: true },
-        { label: "WORKING", status: "in_progress", active: ["in_progress", "fixed", "rejected"].includes(ticket.status) },
-        { label: "DONE", status: "fixed", active: ["fixed", "rejected"].includes(ticket.status) }
+        { label: "NOT START", status: "not_start", active: true },
+        { label: "IN PROGRESS", status: "in_progress", active: ["in_progress", "completed"].includes(ticket.status) },
+        { label: "COMPLETED", status: "completed", active: ["completed"].includes(ticket.status) }
     ];
 
     const getUrgencyBadge = (urgency) => {
@@ -253,10 +266,9 @@ const TicketDetail = () => {
     // Helper for Select Indicator Color
     const getSelectStatusColor = (status) => {
         switch (status) {
-            case 'pending': return 'bg-emerald-400';
+            case 'not_start': return 'bg-emerald-400';
             case 'in_progress': return 'bg-yellow-400';
-            case 'fixed': return 'bg-blue-500';
-            case 'rejected': return 'bg-red-500';
+            case 'completed': return 'bg-blue-500';
             default: return 'bg-gray-400';
         }
     };
@@ -280,7 +292,7 @@ const TicketDetail = () => {
                 <div className="flex items-center justify-between px-8 mt-6 mb-8 relative">
                     <div className="absolute top-3 left-12 right-12 h-1 bg-gray-200 -z-10"></div>
                     <div className={`absolute top-3 left-12 right-12 h-1 bg-blue-700 transition-all duration-500 -z-10`} style={{
-                        width: ticket.status === 'fixed' || ticket.status === 'rejected' ? '80%' : ticket.status === 'in_progress' ? '50%' : '0%'
+                        width: ticket.status === 'completed' ? '80%' : ticket.status === 'in_progress' ? '50%' : '0%'
                     }}></div>
 
                     {steps.map((step, idx) => (
@@ -359,7 +371,7 @@ const TicketDetail = () => {
                 </div>
 
                 {/* Checklist & IT Notes Section */}
-                <div className={`${(ticket.status === 'pending' && selectedStatus !== 'fixed') || selectedStatus === 'rejected' ? 'hidden' : ''} transition-opacity`}>
+                <div className={`${(ticket.status === 'not_start' && selectedStatus !== 'completed') ? 'hidden' : ''} transition-opacity`}>
 
                     {/* Checklist */}
                     <h3 className="font-bold text-gray-900 mb-3 uppercase text-sm tracking-wide flex items-center justify-between">
@@ -373,14 +385,14 @@ const TicketDetail = () => {
                                     <button
                                         onClick={() => toggleChecklistItem(item.id)}
                                         className={`transition-colors flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center ${item.checked ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300 hover:border-blue-400'}`}
-                                        disabled={ticket.status === 'fixed'}
+                                        disabled={ticket.status === 'completed'}
                                     >
                                         {item.checked && <Check size={14} className="text-white" strokeWidth={3} />}
                                     </button>
                                     <span className={`flex-1 text-sm font-medium transition-all ${item.checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
                                         {item.text}
                                     </span>
-                                    {ticket.status !== 'fixed' && (
+                                    {ticket.status !== 'completed' && (
                                         <button
                                             onClick={() => removeChecklistItem(item.id)}
                                             className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1"
@@ -395,7 +407,7 @@ const TicketDetail = () => {
                             )}
                         </div>
 
-                        {ticket.status !== 'fixed' && (
+                        {ticket.status !== 'completed' && (
                             <div className="flex gap-2">
                                 <input
                                     type="text"
@@ -418,17 +430,17 @@ const TicketDetail = () => {
                     <h3 className="font-bold text-gray-900 mb-3 uppercase text-sm tracking-wide">IT Notes & Proof</h3>
                     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
 
-                        {(selectedStatus === 'fixed' || ticket.status === 'in_progress') && selectedStatus !== 'rejected' ? (
+                        {(selectedStatus === 'completed' || ticket.status === 'in_progress') ? (
                             <>
                                 <textarea
                                     className="w-full bg-gray-50 border-0 rounded-xl p-4 text-sm text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-100 outline-none resize-none h-32 mb-4"
                                     placeholder="Describe the solution or diagnosis..."
                                     value={itNote}
                                     onChange={(e) => setItNote(e.target.value)}
-                                    disabled={ticket.status === 'fixed'}
+                                    disabled={ticket.status === 'completed'}
                                 ></textarea>
 
-                                {ticket.status !== 'fixed' && (
+                                {ticket.status !== 'completed' && (
                                     <div className="flex flex-col gap-4">
                                         <label className="block w-full bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer transition-colors">
                                             {proofImage ? (
@@ -458,12 +470,12 @@ const TicketDetail = () => {
                             </>
                         ) : null}
 
-                        {/* Display existing notes if fixed/rejected */}
-                        {(ticket.status === 'fixed' || ticket.status === 'rejected') && (
+                        {/* Display existing notes if completed */}
+                        {(ticket.status === 'completed') && (
                             <div className="space-y-3">
-                                <div className={`p-4 rounded-xl border text-sm ${ticket.status === 'fixed' ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
-                                    <span className="font-bold block mb-1">{ticket.status === 'fixed' ? 'Diagnosis / Notes:' : 'Rejection Reason:'}</span>
-                                    {ticket.note || (ticket.rejectedReason ? ticket.rejectedReason.split(':')[1] : null) || "No notes provided."}
+                                <div className={`p-4 rounded-xl border text-sm ${ticket.status === 'completed' ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                                    <span className="font-bold block mb-1">Diagnosis / Notes:</span>
+                                    {ticket.note || "No notes provided."}
                                 </div>
                                 {ticket.proof && (
                                     <div className="rounded-xl overflow-hidden border border-gray-100 mt-2">
@@ -474,13 +486,38 @@ const TicketDetail = () => {
                             </div>
                         )}
 
-                        {(ticket.status === 'pending' && selectedStatus === 'pending') && (
+                        {(ticket.status === 'not_start' && selectedStatus === 'not_start') && (
                             <p className="text-sm text-gray-400 italic text-center py-4">Accept the job to add notes.</p>
                         )}
                     </div>
                 </div>
 
-                {/* Status Dropdoen & Update */}
+                {/* Show Accept Button ONLY if Not Start (Preview Mode) */}
+                {ticket.status === 'not_start' && (
+                    <div className="mt-6 flex flex-col items-center">
+                        <div className="flex gap-4 w-full max-w-sm justify-center">
+                            <button
+                                onClick={handleUpdateStatus}
+                                className="flex-1 bg-blue-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-blue-200 hover:bg-blue-700 transition text-base"
+                            >
+                                Accept
+                            </button>
+                            <button
+                                onClick={() => setShowRejectModal(true)}
+                                className="flex-1 bg-white text-red-500 border border-red-200 font-bold py-2.5 rounded-xl hover:bg-red-50 transition text-base"
+                            >
+                                Reject
+                            </button>
+                        </div>
+                        <p className="text-center text-gray-400 text-xs mt-3">
+                            You are in <strong>Read-Only Preview Mode</strong>. Accept to start or Reject to declne.
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {/* Status Dropdoen & Update - HIDDEN if Not Start */}
+            {ticket.status !== 'not_start' && (
                 <div className="pb-8">
                     <h3 className="font-bold text-gray-900 mb-3 uppercase text-sm tracking-wide">Status</h3>
 
@@ -488,16 +525,15 @@ const TicketDetail = () => {
                         <div className="relative">
                             <button
                                 type="button"
-                                onClick={() => !(ticket.status === 'fixed' || ticket.status === 'rejected') && setIsStatusOpen(!isStatusOpen)}
-                                className={`w-full bg-white font-bold text-gray-700 py-4 pl-4 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 flex items-center justify-between transition-all ${ticket.status === 'fixed' || ticket.status === 'rejected' ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}`}
+                                onClick={() => !(ticket.status === 'completed') && setIsStatusOpen(!isStatusOpen)}
+                                className={`w-full bg-white font-bold text-gray-700 py-4 pl-4 pr-10 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 flex items-center justify-between transition-all ${ticket.status === 'completed' ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}`}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className={`w-3 h-3 rounded-full ${getSelectStatusColor(selectedStatus)}`}></div>
                                     <span>
-                                        {selectedStatus === 'pending' && "Pending"}
+                                        {selectedStatus === 'not_start' && "Not Start"}
                                         {selectedStatus === 'in_progress' && "In Progress"}
-                                        {selectedStatus === 'fixed' && "Completed"}
-                                        {selectedStatus === 'rejected' && "Rejected"}
+                                        {selectedStatus === 'completed' && "Completed"}
                                         {!selectedStatus && "Select Status"}
                                     </span>
                                 </div>
@@ -508,10 +544,9 @@ const TicketDetail = () => {
                                 <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                     <div className="p-2 flex flex-col gap-1">
                                         {[
-                                            { value: 'pending', label: 'Pending' },
+                                            { value: 'not_start', label: 'Not Start' },
                                             { value: 'in_progress', label: 'In Progress' },
-                                            { value: 'fixed', label: 'Completed' },
-                                            { value: 'rejected', label: 'Rejected' }
+                                            { value: 'completed', label: 'Completed' }
                                         ].map((option) => (
                                             <button
                                                 key={option.value}
@@ -533,7 +568,7 @@ const TicketDetail = () => {
                         </div>
                     </div>
 
-                    {!(ticket.status === 'fixed' || ticket.status === 'rejected') && (
+                    {!(ticket.status === 'completed') && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             <button onClick={() => navigate(-1)} className="col-span-1 bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-200 transition">
                                 Back
@@ -542,12 +577,12 @@ const TicketDetail = () => {
                                 onClick={handleUpdateStatus}
                                 className="col-span-2 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center justify-center gap-2"
                             >
-                                {selectedStatus === 'fixed' ? 'Complete Job' : 'Update Status'}
+                                {selectedStatus === 'completed' ? 'Complete Job' : 'Update Status'}
                             </button>
                         </div>
                     )}
 
-                    {(ticket.status === 'fixed' || ticket.status === 'rejected') && (
+                    {(ticket.status === 'completed') && (
                         <div className="mt-4">
                             <button onClick={() => navigate(-1)} className="w-full bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-200 transition">
                                 Back to Tickets
@@ -555,37 +590,45 @@ const TicketDetail = () => {
                         </div>
                     )}
                 </div>
+            )}
 
 
-                {/* Appointment Info & Reschedule */}
-                {ticket.appointment && (selectedStatus !== 'fixed' && selectedStatus !== 'rejected') && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 relative overflow-hidden mb-8">
-                        <div className="absolute right-0 top-0 w-24 h-24 bg-blue-100 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
 
-                        <div className="relative z-10 flex justify-between items-center">
-                            <div>
-                                <h3 className="font-bold text-blue-900 text-sm flex items-center gap-2">
-                                    <CalendarClock size={16} /> Current Appointment
-                                </h3>
-                                <p className="text-blue-800 font-bold text-lg mt-1">
-                                    {dayjs(ticket.appointment.scheduledAt).format('D MMM YYYY, HH:mm')}
-                                </p>
-                                {ticket.appointment.status === 'reschedule_requested' && (
-                                    <span className="inline-block mt-1 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                        Reschedule Requested
-                                    </span>
-                                )}
+            {/* Reject Modal */}
+            {
+                showRejectModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                        <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+                            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Reject Ticket?</h3>
+                            <p className="text-gray-500 text-center mb-4 text-sm">
+                                Please provide a reason for rejecting this ticket.
+                            </p>
+                            <textarea
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-red-100 outline-none mb-4"
+                                rows="3"
+                                placeholder="Reason for rejection..."
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                            ></textarea>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowRejectModal(false)}
+                                    className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleReject}
+                                    className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition"
+                                >
+                                    Reject
+                                </button>
                             </div>
-                            <button
-                                onClick={() => navigate(`/it/ticket/${id}/reschedule`)}
-                                className="bg-white text-blue-600 px-4 py-2 rounded-xl font-bold text-sm shadow-sm hover:bg-blue-50 transition-colors border border-blue-100"
-                            >
-                                Reschedule
-                            </button>
                         </div>
                     </div>
-                )}
-            </div>
+                )
+            }
+
         </div >
     );
 };

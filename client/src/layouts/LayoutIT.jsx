@@ -108,11 +108,13 @@ const LayoutIT = () => {
         <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-2 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
           <div className="flex items-end justify-between w-full max-w-lg mx-auto relative">
             <NavLink href="/it" icon={<Home size={22} />} label="Home" active={isActive("/it")} />
-            <NavLink href="/it/schedule" icon={<Calendar size={22} />} label="Appointment" active={isActive("/it/schedule")} />
+
             <NavLink href="/it/tickets" icon={<FileText size={22} />} label="Ticket" active={isActive("/it/tickets") || isActive("/it/history")} />
 
+            <NavLink href="/it/schedule" icon={<Calendar size={22} />} label="Schedule" active={isActive("/it/schedule")} />
+
             {/* New Tools */}
-            <NavLink href="/it/quick-fix" icon={<Briefcase size={22} />} label="Quick Fix" active={isActive("/it/quick-fix")} />
+
             <NavLink href="/it/email-settings" icon={<Settings size={22} />} label="Email" active={isActive("/it/email-settings")} />
 
             <NavLink href="/it/profile" icon={<User size={22} />} label="Profile" active={isActive("/it/profile")} />

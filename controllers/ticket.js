@@ -11,70 +11,8 @@ exports.create = async (req, res) => {
       roomId,
       equipmentId,
       images,
-      categoryId,
-      date, // [NEW] YYYY-MM-DD
-      time  // [NEW] HH:mm
+      categoryId
     } = req.body;
-
-    let assignedToId = null;
-    let appointmentStatus = "pending";
-    let scheduledDate = null;
-
-    // === [NEW] Auto-Booking Logic ===
-    if (date && time) {
-      const startDateTime = new Date(`${date}T${time}:00`);
-      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 Hour
-
-      // 1. Find ALL IT Support staff
-      const itStaff = await prisma.user.findMany({
-        where: { role: 'it_support', enabled: true },
-        select: { id: true }
-      });
-
-      // 2. Find Available IT
-      for (const it of itStaff) {
-        // Check appointments
-        const busyAppt = await prisma.appointment.findFirst({
-          where: {
-            itSupportId: it.id,
-            status: { not: 'cancelled' },
-            scheduledAt: {
-              gte: startDateTime,
-              lt: endDateTime
-            }
-          }
-        });
-
-        if (busyAppt) continue;
-
-        // Check personal tasks
-        const busyTask = await prisma.personalTask.findFirst({
-          where: {
-            userId: it.id,
-            // Simple check for overlap
-            startTime: { lt: endDateTime },
-            endTime: { gt: startDateTime }
-          }
-        });
-
-        if (busyTask) continue;
-
-        // Found one!
-        assignedToId = it.id;
-        break;
-      }
-
-      if (assignedToId) {
-        appointmentStatus = "scheduled";
-        scheduledDate = startDateTime;
-      } else {
-        // If user requested a time but NO IT is available
-        // Should we fail or just create pending?
-        // User said "If IT not free, cannot choose". Validation should have blocked it frontend.
-        // But double check backend.
-        return res.status(400).json({ message: "Selected time slot is no longer available." });
-      }
-    }
 
     const newTicket = await prisma.ticket.create({
       data: {
@@ -85,8 +23,7 @@ exports.create = async (req, res) => {
         roomId: parseInt(roomId),
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         categoryId: categoryId ? parseInt(categoryId) : null,
-        status: appointmentStatus,
-        assignedToId: assignedToId, // Assigned if booked
+        status: "not_start",
         images: images && images.length > 0 ? {
           create: images.map(img => {
             const imageUrl = saveImage(img);
@@ -98,15 +35,6 @@ exports.create = async (req, res) => {
               public_id: "local"
             };
           }).filter(img => img.url !== null)
-        } : undefined,
-        // Create Appointment if Scheduled
-        appointment: scheduledDate ? {
-          create: {
-            itSupportId: assignedToId,
-            scheduledAt: scheduledDate,
-            status: 'scheduled',
-            note: 'Auto-booked via Create Ticket'
-          }
         } : undefined
       },
       include: {
@@ -114,8 +42,7 @@ exports.create = async (req, res) => {
         equipment: true,
         category: true,
         createdBy: true,
-        images: true,
-        appointment: true // Return appointment info
+        images: true
       },
     });
 
@@ -230,9 +157,9 @@ exports.update = async (req, res) => {
     if (
       req.user.role !== "admin" &&
       req.user.role !== "it_support" &&
-      checkTicket.status !== "pending" &&
-      // อนุญาตให้แก้ไข rating/feedback ได้ตอน fixed
-      status !== "fixed" && // User ไม่ได้เป็นคนเปลี่ยน status เป็น fixed แต่ถ้า user ส่ง rating มา status น่าจะยังเป็น fixed หรือ user อาจจะไม่ได้ส่ง status มา
+      checkTicket.status !== "not_start" &&
+      // อนุญาตให้แก้ไข rating/feedback ได้ตอน completed
+      status !== "completed" && // User ไม่ได้เป็นคนเปลี่ยน status เป็น completed แต่ถ้า user ส่ง rating มา status น่าจะยังเป็น completed หรือ user อาจจะไม่ได้ส่ง status มา
       !rating && !userFeedback // ถ้าไม่ใช่การให้ rating/feedback
     ) {
       // แต่เดี๋ยวก่อน... userFeedback เรียก endpoint submitFeedback แยก หรือ update?
@@ -269,9 +196,9 @@ exports.update = async (req, res) => {
           updateData.responseTime = diffMins;
         }
 
-        // Calculate Resolution Time (Moving to fixed)
-        // Note: This updates every time it's marked fixed, capturing the total time until resolution.
-        if (status === 'fixed') {
+        // Calculate Resolution Time (Moving to completed)
+        // Note: This updates every time it's marked completed, capturing the total time until resolution.
+        if (status === 'completed') {
           updateData.resolutionTime = diffMins;
         }
       }
@@ -289,7 +216,7 @@ exports.update = async (req, res) => {
     });
 
     // ส่ง Email แจ้ง User เมื่อ ticket แก้ไขเสร็จ
-    if (status === "fixed" && updatedTicket.createdBy?.email) {
+    if (status === "completed" && updatedTicket.createdBy?.email) {
       const { sendEmailNotification } = require("../utils/sendEmailHelper");
       await sendEmailNotification(
         "ticket_resolved_user",
@@ -310,9 +237,9 @@ exports.update = async (req, res) => {
         data: {
           userId: updatedTicket.createdById,
           ticketId: updatedTicket.id,
-          title: status === "fixed" ? "Ticket Resolved!" : "Ticket Updated",
+          title: status === "completed" ? "Ticket Resolved!" : "Ticket Updated",
           message:
-            status === "fixed"
+            status === "completed"
               ? `Your ticket "${updatedTicket.title}" has been resolved. Please rate our service.`
               : `Your ticket "${updatedTicket.title}" status is now ${status}.`,
           type: "ticket_update",
@@ -341,19 +268,16 @@ exports.list = async (req, res) => {
         equipment: true,
         category: true,
         assignedTo: true,
-        appointment: true
+
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    // Custom Sort: Pending > In Progress > Scheduled > Fixed > Rejected
+    // Custom Sort: Not Start > In Progress > Completed
     const statusOrder = {
-      'pending': 1,
+      'not_start': 1,
       'in_progress': 2,
-      'scheduled': 3,
-      'fixed': 4,
-      'closed': 4,
-      'rejected': 5
+      'completed': 3
     };
 
     const sortedTickets = tickets.sort((a, b) => {
@@ -391,7 +315,6 @@ exports.read = async (req, res) => {
           orderBy: { createdAt: 'desc' }
         },
         images: true,
-        appointment: true,
         notification: true
       }
     });
@@ -478,7 +401,7 @@ exports.remove = async (req, res) => {
     if (
       req.user.role !== "admin" &&
       req.user.role !== "it_support" &&
-      checkTicket.status !== "pending"
+      checkTicket.status !== "not_start"
     ) {
       return res.status(403).json({
         message: "Access Denied: Cannot delete ticket that is being processed or completed."

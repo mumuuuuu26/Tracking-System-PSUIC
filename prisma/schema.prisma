@@ -40,8 +40,7 @@ model User {
   // Relations
   ticketsCreated  Ticket[]         @relation("TicketCreator")
   ticketsAssigned Ticket[]         @relation("TicketAssignee")
-  appointments    Appointment[]
-  availabilities  ITAvailability[]
+
   notifications   Notification[]   // [NEW]
   activityLogs    ActivityLog[]    @relation("LogCreator")
 
@@ -78,15 +77,11 @@ model Ticket {
   title       String
   description String @db.Text
   urgency     String @default("Normal")
-  status      String @default("Draft")
+  status      String @default("not_start")
   
   rating       Int?     // 0-100 (SUS Score)
   userFeedback String?  @db.Text
   susDetails   String?  @db.Text // JSON: [5, 1, 5, ...]
-  
-  // [NEW] Fields สำหรับ reject
-  rejectedReason String?   @db.Text  // เหตุผลที่ reject
-  rejectedAt     DateTime?          // เวลาที่ reject
   
   // [NEW] Notification tracking
   notifiedAt     DateTime?  // เวลาที่ส่ง notification
@@ -121,7 +116,7 @@ model Ticket {
 
   images       Image[]
   logs         ActivityLog[]
-  appointment  Appointment?
+
   notification Notification[]  // [NEW]
 }
 
@@ -136,7 +131,7 @@ model Notification {
   
   title     String
   message   String   @db.Text
-  type      String   // "ticket_update", "ticket_accepted", "ticket_rejected", "appointment"
+  type      String   // "ticket_update", "ticket_accepted", "ticket_rejected"
   read      Boolean  @default(false)
   readAt    DateTime?
   
@@ -192,38 +187,9 @@ model Equipment {
   tickets  Ticket[]
 }
 
-model ITAvailability {
-  id     Int  @id @default(autoincrement())
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
 
-  date      DateTime
-  status    String
-  title     String?
-  startTime DateTime?
-  endTime   DateTime?
-  createdAt DateTime  @default(now())
-}
 
-model Appointment {
-  id       Int    @id @default(autoincrement())
-  ticketId Int    @unique
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
-  itSupportId Int
-  itSupport   User @relation(fields: [itSupportId], references: [id])
-
-  scheduledAt   DateTime
-  note          String?  @db.Text
-  googleEventId String?
-
-  status        String   @default("scheduled") // scheduled, reschedule_requested, completed, cancelled
-  newDate       DateTime? // Proposed new date for reschedule
-  rescheduleReason String? @db.Text
-  rescheduleInitiator String? // 'IT' or 'User'
-
-  createdAt DateTime @default(now())
-}
 
 model Image {
   id         Int    @id @default(autoincrement())

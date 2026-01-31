@@ -9,18 +9,19 @@ import {
   CheckCircle,
   ChevronDown,
   Check,
+  Eye,
+
 } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import {
   getMyTasks,
-  getSchedule,
   acceptJob,
-  rejectTicket,
+  rejectJob
 } from "../../api/it";
 import { getPersonalTasks } from "../../api/personalTask";
-import { getITAvailability } from "../../api/appointment";
+
 import CalendarGrid from "../../components/CalendarGrid";
 
 const ITDashboard = () => {
@@ -37,37 +38,23 @@ const ITDashboard = () => {
     pending: 0,
     inProgress: 0,
     completed: 0,
-    rejected: 0,
   });
   const [, setLoading] = useState(true);
   const [showAllNew, setShowAllNew] = useState(false);
 
   // Modal States
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  // Removed custom modal state for instant action or consistent behavior
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [rejectNote, setRejectNote] = useState("");
-  const [isRejectDropdownOpen, setIsRejectDropdownOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
-  // Load monthly events
-  const loadMonthlyEvents = React.useCallback(async () => {
-    try {
-      const start = currentMonth.startOf('month').format('YYYY-MM-DD');
-      const end = currentMonth.endOf('month').format('YYYY-MM-DD');
-      const res = await getITAvailability(token, start, end);
-      setMonthlyEvents(res.data);
-    } catch (err) {
-      console.error("Failed to load monthly events", err);
-    }
-  }, [token, currentMonth]);
+
 
   // Load daily schedule
   const loadDailySchedule = React.useCallback(async () => {
     try {
       const dateStr = selectedDate.format('YYYY-MM-DD');
-      const [appointmentsRes, personalTasksRes] = await Promise.all([
-        getSchedule(token, dateStr),
+      const [personalTasksRes] = await Promise.all([
         getPersonalTasks(token, { date: dateStr })
       ]);
 
@@ -77,7 +64,7 @@ const ITDashboard = () => {
           const match = t.description?.match(/\[Requested Appointment: (\d{4}-\d{2}-\d{2}) at (\d{2}:\d{2})\]/);
           if (match) {
             const reqDate = match[1];
-            return reqDate === dateStr && !t.appointment; // Match date and ensure no formal appointment yet
+            return reqDate === dateStr;
           }
           return false;
         })
@@ -96,12 +83,6 @@ const ITDashboard = () => {
         });
 
       const combinedSchedule = [
-        ...(appointmentsRes.data || []).map(apt => ({
-          type: 'appointment',
-          time: dayjs(apt.scheduledAt),
-          data: apt,
-          id: `apt-${apt.id}`
-        })),
         ...(personalTasksRes.data || []).map(task => ({
           type: 'personal',
           time: task.startTime ? dayjs(task.startTime) : dayjs(task.date).startOf('day'),
@@ -118,6 +99,17 @@ const ITDashboard = () => {
     }
   }, [token, selectedDate, tickets]);
 
+
+  const loadMonthlyEvents = React.useCallback(async () => {
+    try {
+      // TODO: Implement proper monthly event fetching
+      // For now, we'll leave it empty or map existing tickets if needed.
+      // This placeholder resolves the undefined error.
+      setMonthlyEvents([]);
+    } catch (err) {
+      console.error("Failed to load monthly events:", err);
+    }
+  }, []);
   const loadDashboardData = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -134,16 +126,15 @@ const ITDashboard = () => {
       // Ensure array
       const allTickets = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
 
-      const pendingCount = allTickets.filter(t => t.status === "pending").length;
-      const inProgressCount = allTickets.filter(t => ["in_progress", "scheduled"].includes(t.status)).length;
-      const completedCount = allTickets.filter(t => ["fixed", "closed"].includes(t.status)).length;
-      const rejectedCount = allTickets.filter(t => t.status === "rejected").length;
+      const pendingCount = allTickets.filter(t => t.status === "not_start").length;
+      const inProgressCount = allTickets.filter(t => ["in_progress"].includes(t.status)).length;
+      const completedCount = allTickets.filter(t => ["completed"].includes(t.status)).length;
+
 
       setStats({
         pending: pendingCount,
         inProgress: inProgressCount,
         completed: completedCount,
-        rejected: rejectedCount
       });
 
       setTickets(allTickets);
@@ -155,12 +146,7 @@ const ITDashboard = () => {
     }
   }, [token, loadDailySchedule, loadMonthlyEvents]);
 
-  // Load monthly events when month changes
-  useEffect(() => {
-    if (token) {
-      loadMonthlyEvents();
-    }
-  }, [token, loadMonthlyEvents]);
+
 
   // Load specific date schedule when selectedDate changes
   useEffect(() => {
@@ -175,39 +161,32 @@ const ITDashboard = () => {
     }
   }, [token, loadDashboardData]);
 
-  const handleAccept = async () => {
+  const handleAccept = async (e, ticketId) => {
+    e.stopPropagation();
     try {
-      await acceptJob(token, selectedTicket.id);
+      await acceptJob(token, ticketId);
       toast.success("Ticket accepted successfully!");
-      setShowAcceptModal(false);
-      setSelectedTicket(null);
-      loadDashboardData();
+      navigate(`/it/ticket/${ticketId}`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to accept ticket");
     }
   };
 
   const handleReject = async () => {
-    if (!rejectReason) {
-      toast.error("Please select a reason");
-      return;
-    }
-
+    if (!rejectReason.trim()) return toast.warning("Please provide a reason");
     try {
-      await rejectTicket(token, selectedTicket.id, {
-        reason: rejectReason,
-        notes: rejectNote,
-      });
-
-      toast.success("Ticket rejected");
+      await rejectJob(token, selectedTicket.id, rejectReason);
+      toast.success("Ticket rejected successfully");
       setShowRejectModal(false);
       setRejectReason("");
-      setRejectNote("");
+      setSelectedTicket(null);
       loadDashboardData();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reject ticket");
     }
   };
+
+
 
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
@@ -245,7 +224,7 @@ const ITDashboard = () => {
   // Sort by Priority (Critical > High > Medium > Low) THEN by Arrival (Oldest First)
   const urgencyWeight = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
   const newTickets = tickets
-    .filter(t => t.status === "pending")
+    .filter(t => t.status === "not_start")
     .sort((a, b) => {
       const weightA = urgencyWeight[a.urgency] || 0;
       const weightB = urgencyWeight[b.urgency] || 0;
@@ -271,7 +250,7 @@ const ITDashboard = () => {
           <StatItem count={stats.pending} label="Booking" />
           <StatItem count={stats.inProgress} label="In progress" />
           <StatItem count={stats.completed} label="Completed" />
-          <StatItem count={stats.rejected} label="Reject" />
+
         </div>
       </div>
 
@@ -301,37 +280,7 @@ const ITDashboard = () => {
             {scheduleItems.length > 0 ? (
               <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {scheduleItems.map((item) => {
-                  if (item.type === 'appointment') {
-                    const appt = item.data;
-                    return (
-                      <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-gray-100 hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-blue-50 text-blue-600">
-                            <Calendar size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{appt.ticket?.title}</h4>
-                            <div className="flex items-center gap-2 text-gray-500 text-xs mt-0.5">
-                              <Clock size={12} />
-                              <span>{dayjs(appt.scheduledAt).format('HH:mm')}</span>
-                            </div>
-                            {appt.status === 'reschedule_requested' && (
-                              <div className="mt-1 flex flex-col items-start gap-1">
-                                <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                  Reschedule Requested
-                                </span>
-                                {appt.newDate && (
-                                  <span className="text-[10px] text-gray-400">
-                                    Proposed: {dayjs(appt.newDate).format('D MMM, HH:mm')}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } else if (item.type === 'request') {
+                  if (item.type === 'request') {
                     const ticket = item.data;
                     return (
                       <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between border border-amber-100 ring-1 ring-amber-50 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/it/ticket/${ticket.id}`)}>
@@ -414,9 +363,18 @@ const ITDashboard = () => {
                     </p>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${getUrgencyColor(ticket.urgency)}`}>
-                  {getUrgencyBadge(ticket.urgency)}
-                </span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${getUrgencyColor(ticket.urgency)}`}>
+                    {getUrgencyBadge(ticket.urgency)}
+                  </span>
+                  <button
+                    onClick={() => navigate(`/it/ticket/${ticket.id}`)}
+                    className="flex items-center gap-1 text-gray-400 hover:text-blue-600 transition-colors text-xs font-medium"
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                </div>
               </div>
 
               <div className="flex justify-between items-center text-xs text-gray-400 mb-4 px-1">
@@ -426,10 +384,7 @@ const ITDashboard = () => {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => {
-                    setSelectedTicket(ticket);
-                    setShowAcceptModal(true);
-                  }}
+                  onClick={(e) => handleAccept(e, ticket.id)}
                   className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
                 >
                   Accept
@@ -439,7 +394,7 @@ const ITDashboard = () => {
                     setSelectedTicket(ticket);
                     setShowRejectModal(true);
                   }}
-                  className="flex-1 bg-white border border-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="bg-white text-red-500 border border-red-200 font-semibold py-2.5 px-6 rounded-xl hover:bg-red-50 transition-colors"
                 >
                   Reject
                 </button>
@@ -455,97 +410,41 @@ const ITDashboard = () => {
 
 
 
-      {/* Modals are kept similar but unstyled or minimally styled for now */}
-      {/* Accept Modal */}
-      {showAcceptModal && selectedTicket && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Accept this ticket?</h3>
-            <p className="text-gray-500 text-center mb-8 text-sm">
-              Are you sure you want to accept this ticket now ?
-            </p>
-            <div className="space-y-3">
-              <button onClick={handleAccept} className="w-full bg-blue-600 text-white py-3.5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 hover:scale-[1.02] transition-transform">
-                Accept Now
-              </button>
-              <button
-                onClick={() => {
-                  setShowAcceptModal(false);
-                  navigate(`/it/ticket/${selectedTicket.id}/reschedule`);
-                }}
-                className="w-full bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-lg hover:bg-gray-200"
-              >
-                Reschedule
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Modals removed for instant action */}
       {/* Reject Modal */}
       {showRejectModal && selectedTicket && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-6 text-gray-800">Reject Ticket</h3>
-
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Reason</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsRejectDropdownOpen(!isRejectDropdownOpen)}
-                  className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-medium focus:ring-2 focus:ring-red-500 focus:outline-none flex justify-between items-center text-left"
-                >
-                  <span className={rejectReason ? "text-gray-900" : "text-gray-500"}>
-                    {rejectReason || "Select a reason..."}
-                  </span>
-                  <ChevronDown size={20} className={`text-gray-400 transition-transform duration-200 ${isRejectDropdownOpen ? "rotate-180" : ""}`} />
-                </button>
-
-                {isRejectDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-2 flex flex-col gap-1">
-                      {["Out of scope", "Duplicate", "Information missing", "Other"].map((reason) => (
-                        <button
-                          key={reason}
-                          type="button"
-                          onClick={() => {
-                            setRejectReason(reason);
-                            setIsRejectDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${rejectReason === reason ? "bg-red-50 text-red-700 font-bold" : "text-gray-600 hover:bg-gray-50"}`}
-                        >
-                          <span>{reason}</span>
-                          {rejectReason === reason && <Check size={16} className="text-red-500" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Note (Optional)</label>
-              <textarea
-                value={rejectNote}
-                onChange={(e) => setRejectNote(e.target.value)}
-                className="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-red-500 focus:outline-none h-24 resize-none"
-                placeholder="Add details..."
-              />
-            </div>
-
-            <div className="space-y-3">
-              <button onClick={handleReject} className="w-full bg-red-500 text-white py-3.5 rounded-2xl font-bold text-lg shadow-lg shadow-red-200 hover:bg-red-600">
-                Confirm Reject
-              </button>
-              <button onClick={() => setShowRejectModal(false)} className="w-full bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-lg hover:bg-gray-200">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Reject Ticket?</h3>
+            <p className="text-gray-500 text-center mb-4 text-sm">
+              Please provide a reason for rejecting this ticket.
+            </p>
+            <textarea
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-red-100 outline-none mb-4"
+              rows="3"
+              placeholder="Reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            ></textarea>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
+              >
                 Cancel
+              </button>
+              <button
+                onClick={handleReject}
+                className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition"
+              >
+                Reject
               </button>
             </div>
           </div>
         </div>
       )}
+
+
 
     </div>
   );

@@ -41,7 +41,7 @@ const MyTasks = () => {
         urgent: res.data.filter(
           (t) => t.urgency === "High" || t.urgency === "Critical"
         ).length,
-        pending: res.data.filter((t) => t.status === "pending").length,
+        pending: res.data.filter((t) => t.status === "not_start").length,
         inProgress: res.data.filter((t) => t.status === "in_progress").length,
       }));
     } catch (err) {
@@ -155,7 +155,7 @@ const MyTasks = () => {
               <Clock className="text-orange-500" size={20} />
             </div>
             <p className="text-lg font-bold text-gray-800">{stats.pending}</p>
-            <p className="text-xs text-gray-600">Pending</p>
+            <p className="text-xs text-gray-600">Not Start</p>
           </div>
 
           <div className="bg-blue-50 rounded-xl p-4 text-center">
@@ -178,7 +178,7 @@ const MyTasks = () => {
             onClick={() => setSelectedTab("new")}
             className="bg-green-50 rounded-xl p-4 flex flex-col items-center relative"
           >
-            {tasks.filter((t) => t.status === "pending").length > 0 && (
+            {tasks.filter((t) => t.status === "not_start").length > 0 && (
               <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
                 New
               </span>

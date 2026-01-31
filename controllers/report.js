@@ -33,14 +33,14 @@ exports.getMonthlyStats = async (req, res) => {
 
         // Initialize
         for (let i = 1; i <= daysInMonth; i++) {
-            statsByDay[i] = { day: i, total: 0, fixed: 0, pending: 0 };
+            statsByDay[i] = { day: i, total: 0, completed: 0, pending: 0 };
         }
 
         tickets.forEach(ticket => {
             const day = new Date(ticket.createdAt).getDate();
             if (statsByDay[day]) {
                 statsByDay[day].total++;
-                if (ticket.status === 'fixed') statsByDay[day].fixed++;
+                if (ticket.status === 'completed') statsByDay[day].completed++;
                 else statsByDay[day].pending++;
             }
         });
@@ -48,8 +48,8 @@ exports.getMonthlyStats = async (req, res) => {
         res.json({
             period: `${targetMonth + 1}/${targetYear}`,
             total: tickets.length,
-            solved: tickets.filter(t => t.status === 'fixed').length,
-            pending: tickets.filter(t => t.status !== 'fixed').length,
+            solved: tickets.filter(t => t.status === 'completed').length,
+            pending: tickets.filter(t => t.status !== 'completed').length,
             data: Object.values(statsByDay)
         });
 
@@ -83,7 +83,7 @@ exports.getAnnualStats = async (req, res) => {
                 name: new Date(targetYear, i).toLocaleString('en-US', { month: 'short' }),
                 month: i + 1,
                 total: 0,
-                fixed: 0,
+                completed: 0,
                 pending: 0
             });
         }
@@ -91,7 +91,7 @@ exports.getAnnualStats = async (req, res) => {
         tickets.forEach(ticket => {
             const m = new Date(ticket.createdAt).getMonth();
             statsByMonth[m].total++;
-            if (ticket.status === 'fixed') statsByMonth[m].fixed++;
+            if (ticket.status === 'completed') statsByMonth[m].completed++;
             else statsByMonth[m].pending++;
         });
 
@@ -168,13 +168,13 @@ exports.getITPerformance = async (req, res) => {
             const pending = await prisma.ticket.count({
                 where: {
                     assignedToId: u.id,
-                    status: { not: 'fixed' }
+                    status: { not: 'completed' }
                 }
             });
 
             // Calculate SLA Averages
             const closedTickets = await prisma.ticket.findMany({
-                where: { assignedToId: u.id, status: 'fixed' },
+                where: { assignedToId: u.id, status: 'completed' },
                 select: { responseTime: true, resolutionTime: true }
             });
 

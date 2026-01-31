@@ -47,9 +47,9 @@ const AdminTicketDetail = () => {
     );
 
     const steps = [
-        { label: "OPEN", status: "pending", active: true },
-        { label: "WORKING", status: "in_progress", active: ["in_progress", "fixed", "rejected"].includes(ticket.status) },
-        { label: "DONE", status: "fixed", active: ["fixed", "rejected"].includes(ticket.status) }
+        { label: "OPEN", status: "not_start", active: true },
+        { label: "WORKING", status: "in_progress", active: ["in_progress", "completed"].includes(ticket.status) },
+        { label: "DONE", status: "completed", active: ["completed"].includes(ticket.status) }
     ];
 
     const getUrgencyBadge = (urgency) => {
@@ -80,7 +80,7 @@ const AdminTicketDetail = () => {
                 <div className="flex items-center justify-between px-8 mt-6 mb-8 relative">
                     <div className="absolute top-3 left-12 right-12 h-1 bg-gray-200 -z-10"></div>
                     <div className={`absolute top-3 left-12 right-12 h-1 bg-blue-700 transition-all duration-500 -z-10`} style={{
-                        width: ticket.status === 'fixed' || ticket.status === 'rejected' ? '80%' : ticket.status === 'in_progress' ? '50%' : '0%'
+                        width: ticket.status === 'completed' ? '80%' : ticket.status === 'in_progress' ? '50%' : '0%'
                     }}></div>
 
                     {steps.map((step, idx) => (
@@ -162,10 +162,10 @@ const AdminTicketDetail = () => {
                 <div>
                     <h3 className="font-bold text-gray-900 mb-3 uppercase text-sm tracking-wide">Diagnosis & Resolution</h3>
                     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
-                        {ticket.status === 'pending' ? (
+                        {ticket.status === 'not_start' ? (
                             <div className="flex flex-col items-center justify-center py-6 text-center text-gray-400">
                                 <Clock size={32} className="mb-2 opacity-50" />
-                                <p className="text-sm font-medium">Pending IT Staff Action</p>
+                                <p className="text-sm font-medium">Waiting for IT Staff Action</p>
                                 <p className="text-xs">No diagnosis or notes available yet.</p>
                             </div>
                         ) : (
@@ -188,9 +188,9 @@ const AdminTicketDetail = () => {
                                 )}
 
                                 {ticket.note && (
-                                    <div className={`p-4 rounded-xl border text-sm ${ticket.status === 'rejected' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-gray-700'}`}>
+                                    <div className={`p-4 rounded-xl border text-sm bg-gray-50 border-gray-100 text-gray-700`}>
                                         <span className="font-bold block mb-1 uppercase text-xs tracking-wider">
-                                            {ticket.status === 'rejected' ? 'Rejection Reason:' : 'Technician Notes:'}
+                                            Technician Notes:
                                         </span>
                                         {ticket.note}
                                     </div>
@@ -203,7 +203,7 @@ const AdminTicketDetail = () => {
                                     </div>
                                 )}
 
-                                {!ticket.note && !ticket.proof && ticket.status !== 'pending' && (
+                                {!ticket.note && !ticket.proof && ticket.status !== 'not_start' && (
                                     <p className="text-sm text-gray-400 italic text-center">In Progress - No notes added yet.</p>
                                 )}
                             </>

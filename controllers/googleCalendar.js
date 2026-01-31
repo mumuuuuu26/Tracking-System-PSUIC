@@ -118,3 +118,40 @@ exports.deleteGoogleEvent = async (eventId) => {
         return false;
     }
 }
+
+exports.listGoogleEvents = async (timeMin, timeMax) => {
+    try {
+        const auth = getAuthClient();
+        if (!auth) {
+            // Mock data if no credentials
+            console.log('Mocking Google Calendar Events');
+            return [
+                {
+                    id: 'mock-1',
+                    summary: 'Mock Meeting',
+                    start: { dateTime: new Date().toISOString() },
+                    end: { dateTime: new Date(Date.now() + 3600000).toISOString() },
+                    description: "This is a mock event because Google Credentials are missing."
+                }
+            ];
+        }
+
+        const calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
+        const calendar = google.calendar({ version: 'v3', auth });
+        
+        console.log(`Fetching events from calendar: ${calendarId}`);
+        
+        const res = await calendar.events.list({
+            calendarId: calendarId,
+            timeMin: timeMin.toISOString(),
+            timeMax: timeMax.toISOString(),
+            singleEvents: true,
+            orderBy: 'startTime',
+        });
+
+        return res.data.items;
+    } catch (error) {
+        console.error('Error listing Google Calendar events:', error);
+        return [];
+    }
+};

@@ -9,7 +9,6 @@ const categoryRoutes = require("./routes/category");
 const equipmentRoutes = require("./routes/equipment");
 const roomRoutes = require("./routes/room");
 const ticketRoutes = require("./routes/ticket");
-const appointmentRoutes = require("./routes/appointment");
 
 const itRoutes = require("./routes/it-support");
 const notificationRoutes = require("./routes/notification");
@@ -33,7 +32,6 @@ app.use("/api", categoryRoutes);
 app.use("/api", equipmentRoutes);
 app.use("/api", roomRoutes);
 app.use("/api", ticketRoutes);
-app.use("/api", appointmentRoutes);
 
 app.use("/api", itRoutes);
 app.use("/api", notificationRoutes);
@@ -45,9 +43,7 @@ app.use("/api", personalTaskRoutes);
 app.use("/api", require("./routes/quickFix"));
 app.use("/api", require("./routes/permission"));
 
-// Cron Jobs
-const initReminders = require("./cron/reminders");
-initReminders();
+
 
 // Socket.io Setup
 const http = require("http");

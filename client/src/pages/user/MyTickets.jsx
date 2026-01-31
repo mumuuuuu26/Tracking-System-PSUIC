@@ -21,7 +21,7 @@ const MyTickets = () => {
 
   // Stats Counters
   const [stats, setStats] = useState({
-    pending: 0,
+    not_start: 0,
     inProgress: 0,
     completed: 0,
   });
@@ -45,36 +45,35 @@ const MyTickets = () => {
   }, [loadTickets]);
 
   const calculateStats = (ticketData) => {
-    let pending = 0;
+    let not_start = 0;
     let inProgress = 0;
     let completed = 0;
 
     ticketData.forEach((t) => {
-      // Pending
-      if (t.status === "pending") pending++;
+      // Not Start
+      if (t.status === "not_start") not_start++;
       // In Progress
-      else if (["in_progress", "scheduled", "accepted"].includes(t.status))
+      else if (["in_progress"].includes(t.status))
         inProgress++;
       // Completed
-      else if (["fixed", "closed"].includes(t.status)) completed++;
+      else if (["completed"].includes(t.status)) completed++;
     });
 
-    setStats({ pending, inProgress, completed });
+    setStats({ not_start, inProgress, completed });
   };
 
   const filterTickets = useCallback(() => {
     let filtered = [...tickets];
 
     // Filter by status (Tabs)
+    // Filter by status (Tabs)
     if (activeFilter !== "All") {
       filtered = filtered.filter((t) => {
         if (activeFilter === "Completed")
-          return ["fixed", "closed"].includes(t.status);
+          return ["completed"].includes(t.status);
         if (activeFilter === "In progress")
-          return ["in_progress", "accepted"].includes(t.status);
-        if (activeFilter === "Scheduled") return t.status === "scheduled";
-        if (activeFilter === "Pending") return t.status === "pending";
-        if (activeFilter === "Rejected") return t.status === "rejected";
+          return ["in_progress"].includes(t.status);
+        if (activeFilter === "Not Start") return t.status === "not_start";
         return true;
       });
     }
@@ -91,13 +90,10 @@ const MyTickets = () => {
 
     // Sort: Status Priority then Newest First
     const statusOrder = {
-      pending: 1,
+      not_start: 1,
       in_progress: 2,
       accepted: 2,
-      scheduled: 3,
-      fixed: 4,
-      closed: 4,
-      rejected: 5,
+      completed: 4,
     };
 
     filtered.sort((a, b) => {
@@ -140,21 +136,20 @@ const MyTickets = () => {
   // Status Dot Color
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending":
+      case "not_start":
         return "bg-amber-500";
       case "in_progress":
         return "bg-blue-500";
-      case "fixed":
+      case "completed":
         return "bg-green-500";
-      case "rejected":
-        return "bg-red-500";
       default:
         return "bg-gray-400";
     }
   };
 
   const getStatusText = (status) => {
-    if (status === "fixed") return "Completed";
+    if (status === "completed") return "Completed";
+    if (status === "not_start") return "Not Start";
     return status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
@@ -180,10 +175,10 @@ const MyTickets = () => {
         <div className="flex gap-4 justify-between">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col items-center justify-center text-center">
             <span className="text-[#193C6C] font-bold text-3xl">
-              {stats.pending}
+              {stats.not_start}
             </span>
             <span className="text-gray-400 text-sm font-medium mt-1">
-              Pending
+              Not Start
             </span>
           </div>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col items-center justify-center text-center">
@@ -234,11 +229,9 @@ const MyTickets = () => {
             <CustomSelect
               options={[
                 "All",
-                "Pending",
+                "Not Start",
                 "In progress",
-                "Scheduled",
                 "Completed",
-                "Rejected",
               ]}
               value={activeFilter}
               onChange={(e) => setActiveFilter(e.target.value)}
@@ -250,11 +243,9 @@ const MyTickets = () => {
           <div className="hidden md:flex md:gap-2 md:overflow-x-auto md:no-scrollbar md:pb-1">
             {[
               "All",
-              "Pending",
+              "Not Start",
               "In progress",
-              "Scheduled",
               "Completed",
-              "Rejected",
             ].map((filter) => (
               <button
                 key={filter}
@@ -286,11 +277,11 @@ const MyTickets = () => {
                 onClick={() => navigate(`/user/ticket/${ticket.id}`)}
                 className={`
                             bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
-                            ${ticket.status === "pending"
+                            ${ticket.status === "not_start"
                     ? "border-l-amber-400 border-gray-100"
                     : ticket.status === "in_progress"
                       ? "border-l-blue-400 border-gray-100"
-                      : ticket.status === "fixed" ||
+                      : ticket.status === "completed" ||
                         ticket.status === "closed"
                         ? "border-l-green-400 border-gray-100"
                         : "border-l-gray-400 border-gray-100"
