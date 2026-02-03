@@ -1,7 +1,7 @@
 // client/src/pages/user/TicketDetail.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ChevronDown } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ChevronDown, ArrowLeft } from "lucide-react";
 import { getTicket } from "../../api/ticket";
 import useAuthStore from "../../store/auth-store";
 
@@ -47,7 +47,7 @@ const TicketDetail = () => {
           onClick={() => navigate("/user/my-tickets")}
           className="text-blue-600 hover:underline"
         >
-          Back to My Tickets
+          Back to My History
         </button>
       </div>
     );
@@ -109,22 +109,20 @@ const TicketDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans text-gray-900">
-      {/* Deep Blue Header */}
-      <div className="bg-[#193C6C] px-6 pt-10 pb-10 rounded-b-[2rem] shadow-lg w-full mb-6">
-        <div className="max-w-md md:max-w-2xl mx-auto flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-white hover:bg-white/10 p-3 -ml-3 rounded-full transition-colors"
-          >
-            <ChevronDown className="rotate-90" size={28} />
-          </button>
-          <h1 className="text-white text-xl md:text-2xl font-bold flex-1 text-center pr-10">
-            Ticket Details
-          </h1>
-        </div>
+      {/* Standard Header */}
+      <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
+          Ticket Details
+        </span>
       </div>
 
-      <div className="max-w-md md:max-w-2xl mx-auto px-4 pb-6 space-y-6 animate-in fade-in duration-500">
+      <div className="max-w-md md:max-w-2xl mx-auto px-4 mt-6 pb-6 space-y-6 animate-in fade-in duration-500 relative z-10">
 
         {/* Ticket Info Card */}
         <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] p-6 space-y-4">
@@ -140,12 +138,12 @@ const TicketDetail = () => {
               value: (
                 <span
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold ${ticket?.urgency === "Critical" || ticket?.urgency === "High"
-                      ? "bg-red-100 text-red-600"
-                      : ticket?.urgency === "Medium"
-                        ? "bg-orange-100 text-orange-600"
-                        : ticket?.urgency === "Low"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-gray-100 text-gray-600"
+                    ? "bg-red-100 text-red-600"
+                    : ticket?.urgency === "Medium"
+                      ? "bg-orange-100 text-orange-600"
+                      : ticket?.urgency === "Low"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-600"
                     }`}
                 >
                   {ticket?.urgency || "Normal"}

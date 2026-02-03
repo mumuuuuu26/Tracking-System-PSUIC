@@ -1,28 +1,22 @@
-import React, { useState } from "react";
+import React from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
-    LayoutDashboard,
-    Ticket,
     Users,
     UserCog,
-    Building2,
-    Menu,
-    X,
-    LogOut,
-    User,
     BarChart,
-
-    BookOpen,
+    User,
     Briefcase,
+    CircleUser,
+    LayoutDashboard,
 } from "lucide-react";
 
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
 const LayoutAdmin = () => {
-    const { user, actionLogout } = useAuthStore();
+    const { user } = useAuthStore();
     const location = useLocation();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     const navigate = useNavigate();
 
     // Check if user is admin
@@ -32,32 +26,7 @@ const LayoutAdmin = () => {
 
     const isActive = (path) => location.pathname === path;
 
-    const handleLogout = () => {
-        Swal.fire({
-            title: "Log out",
-            text: "Are you sure you want to log out ?",
-            showCancelButton: true,
-            confirmButtonColor: "#2563eb",
-            cancelButtonColor: "#fff",
-            confirmButtonText: "Log out",
-            cancelButtonText: "Cancel",
-            customClass: {
-                popup: "rounded-3xl p-6 md:p-8",
-                title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
-                htmlContainer: "text-gray-500 text-base",
-                confirmButton: "bg-[#2563eb] hover:bg-blue-700 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
-                cancelButton: "bg-white hover:bg-gray-50 text-[#2563eb] border border-[#2563eb] min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
-                actions: "gap-4 w-full px-4 mt-4"
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                actionLogout();
-                setMobileMenuOpen(false);
-                navigate("/login");
-            }
-        });
-    };
+
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -71,17 +40,19 @@ const LayoutAdmin = () => {
                             className="h-10 w-auto object-contain"
                         />
                     </div>
-                    <button
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="p-2"
-                    >
-                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate("/admin/profile")}
+                            className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+                        >
+                            <CircleUser size={32} className="text-white/90" />
+                        </button>
+                    </div>
                 </div>
             </header>
 
             {/* Desktop Header (Visible on Desktop) */}
-            <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 sticky top-0 z-40 px-6 py-4 justify-between items-center text-white">
+            <header className="hidden md:flex bg-blue-600 shadow-lg shadow-blue-900/10 px-6 py-4 justify-between items-center text-white">
                 <div className="flex items-center gap-3">
                     <img
                         src="/img/psuic_logo.png"
@@ -97,100 +68,15 @@ const LayoutAdmin = () => {
                             {user?.role || "Admin"}
                         </p>
                     </div>
-                    <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 shadow-sm overflow-hidden backdrop-blur-sm">
-                        {user?.picture ? (
-                            <img
-                                src={user.picture}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <User size={20} className="text-white" />
-                        )}
-                    </div>
                     <button
-                        onClick={handleLogout}
-                        className="p-2 hover:bg-white/10 text-blue-100 hover:text-white rounded-lg transition-colors"
-                        title="Logout"
+                        onClick={() => navigate("/admin/profile")}
+                        className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
                     >
-                        <LogOut size={20} />
+                        <CircleUser size={32} className="text-white/90" />
                     </button>
+
                 </div>
             </header>
-
-            {/* Mobile Menu Overlay */}
-            {mobileMenuOpen && (
-                <div className="fixed inset-0 z-50 md:hidden">
-                    <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={() => setMobileMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-2xl transform transition-transform duration-300">
-                        <div className="p-6 border-b flex items-center justify-between">
-                            <span className="font-bold text-lg text-gray-800">Menu</span>
-                            <button
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="p-1 hover:bg-gray-100 rounded-full"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                        <nav className="p-4 space-y-2">
-                            <MobileNavLink
-                                href="/admin"
-                                icon={<LayoutDashboard size={20} />}
-                                label="Dashboard"
-                                active={isActive("/admin")}
-                            />
-
-                            <MobileNavLink
-                                href="/admin/manage-users"
-                                icon={<Users size={20} />}
-                                label="User Management"
-                                active={isActive("/admin/manage-users")}
-                            />
-                            <MobileNavLink
-                                href="/admin/manage-it"
-                                icon={<UserCog size={20} />}
-                                label="IT Staff"
-                                active={isActive("/admin/manage-it")}
-                            />
-                            <MobileNavLink
-                                href="/admin/manage-rooms"
-                                icon={<Building2 size={20} />}
-                                label="Room Management"
-                                active={isActive("/admin/manage-rooms")}
-                            />
-                            <MobileNavLink
-                                href="/admin/reports"
-                                icon={<BarChart size={20} />}
-                                label="Reports"
-                                active={isActive("/admin/reports")}
-                            />
-                            <MobileNavLink
-                                href="/admin/quick-fix"
-                                icon={<Briefcase size={20} />}
-                                label="Quick Fix"
-                                active={isActive("/admin/quick-fix")}
-                            />
-
-                            <hr className="my-4 border-gray-100" />
-                            <button
-                                onClick={handleLogout}
-                                className="w-full"
-                            >
-                                <MobileNavLink
-                                    href="#"
-                                    icon={<LogOut size={20} />}
-                                    label="Logout"
-                                    isLogout={true}
-                                    onClick={(e) => { e.preventDefault(); handleLogout(); }}
-                                />
-                            </button>
-                        </nav>
-                    </div>
-                </div>
-            )}
 
             {/* Main Content */}
             <main className="pb-32 md:pb-24">

@@ -3,10 +3,10 @@ require('dotenv').config();
 
 async function testSync() {
     console.log('--- Testing Google Calendar Sync ---');
-    console.log('Project ID:', process.env.GOOGLE_PROJECT_ID);
-    console.log('Client Email:', process.env.GOOGLE_CLIENT_EMAIL);
-    console.log('Calendar ID:', process.env.GOOGLE_CALENDAR_ID);
-    console.log('Private Key Length:', process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.length : 0);
+    // console.log('Project ID:', process.env.GOOGLE_PROJECT_ID);
+    // console.log('Client Email:', process.env.GOOGLE_CLIENT_EMAIL);
+    // console.log('Calendar ID:', process.env.GOOGLE_CALENDAR_ID);
+    // console.log('Private Key Length:', process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.length : 0);
 
     const start = new Date();
     const end = new Date();
@@ -20,12 +20,12 @@ async function testSync() {
         // We can't easily inspect internal vars of the module unless we export them or modify the module.
         // Let's modify the module to export the processed key or just inspect process.env here.
         
-        console.log('--- Key Inspection ---');
-        let pk = process.env.GOOGLE_PRIVATE_KEY || '';
-        console.log('Raw Env Length:', pk.length);
-        console.log('First 50 chars:', pk.slice(0, 50));
-        console.log('Contains literal \\n:', pk.includes('\\n'));
-        console.log('Contains real newline:', pk.includes('\n'));
+        // console.log('--- Key Inspection ---');
+        // let pk = process.env.GOOGLE_PRIVATE_KEY || '';
+        // console.log('Raw Env Length:', pk.length);
+        // console.log('First 50 chars:', pk.slice(0, 50));
+        // console.log('Contains literal \\n:', pk.includes('\\n'));
+        // console.log('Contains real newline:', pk.includes('\n'));
         
         const events = await listGoogleEvents(start, end);
         console.log(`Found ${events.length} events.`);

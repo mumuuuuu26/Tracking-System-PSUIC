@@ -38,3 +38,11 @@ export const getAllTickets = async (token, params = {}) => {
         params
     })
 }
+
+// Get Ticket History with Filters
+export const getTicketHistory = async (token, params = {}) => {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/ticket/history`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params
+    });
+}

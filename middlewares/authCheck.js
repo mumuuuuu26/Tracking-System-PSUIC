@@ -32,7 +32,7 @@ exports.authCheck = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Token Invalid" });
   }
 };
@@ -49,7 +49,7 @@ exports.adminCheck = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Error Admin access denied" });
   }
 };
@@ -70,7 +70,7 @@ exports.itCheck = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Error IT access denied" });
   }
 };

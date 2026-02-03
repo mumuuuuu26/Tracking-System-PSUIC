@@ -13,6 +13,7 @@ const {
   listAll,
   listByEquipment,
   submitFeedback,
+  history
 } = require("../controllers/ticket");
 
 // @ENDPOINT http://localhost:5001/api/ticket
@@ -25,6 +26,9 @@ router.get("/ticket", authCheck, list);
 
 //ดูใบแจ้งซ่อม "ทั้งหมด" (Admin + IT Support)
 router.get("/ticket/all", authCheck, itCheck, listAll);
+
+// ดูประวัติแจ้งซ่อม (History) พร้อม Filter Category
+router.get("/ticket/history", authCheck, history);
 
 //ดูรายละเอียด Ticket ตาม ID
 router.get("/ticket/:id", authCheck, read);

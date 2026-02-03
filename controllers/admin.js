@@ -50,22 +50,7 @@ exports.getITStaff = async (req, res) => {
     // Check their current workload to determine status
     const staffWithStatus = await Promise.all(
       staff.map(async (user) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // Check availability (On Leave)
-        const availability = await prisma.iTAvailability.findFirst({
-          where: {
-            userId: user.id,
-            date: {
-              gte: today,
-              lt: tomorrow
-            },
-            status: "leave" // Assuming 'leave' is the value stored
-          }
-        });
 
         // Count active tickets assigned to this user
         const activeTickets = await prisma.ticket.count({
@@ -77,9 +62,7 @@ exports.getITStaff = async (req, res) => {
 
         // Status Priority: On Leave > Busy > Available
         let status = "Available";
-        if (availability) {
-          status = "On Leave";
-        } else if (activeTickets > 0) {
+        if (activeTickets > 0) {
           status = "Busy";
         }
 
@@ -116,36 +99,18 @@ exports.getITStaffStats = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Check IT Staff on Leave
-    const onLeave = await prisma.user.count({
-      where: {
-        role: "it_support",
-        availabilities: {
-          some: {
-            date: { gte: today },
-            status: "leave"
-          }
-        }
-      }
-    });
+
 
     // Count Active IT Staff (Not on leave)
     const active = await prisma.user.count({
       where: {
         role: "it_support",
         enabled: true,
-        NOT: {
-          availabilities: {
-            some: {
-              date: { gte: today },
-              status: "leave"
-            }
-          }
-        }
+        // NOT: { availabilities: ... } // dependency removed
       }
     });
 
-    res.json({ active, onLeave });
+    res.json({ active });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server Error" });

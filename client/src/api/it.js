@@ -22,7 +22,7 @@ export const getMyTasks = async (token) => {
 
 // Accept job
 export const previewJob = async (token, id) => {
-    return await axios.get(`http://localhost:5001/api/it/job/${id}/preview`, {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/job/${id}/preview`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },

@@ -144,7 +144,7 @@ exports.update = async (req, res) => {
       categoryId,
     } = req.body;
 
-    // [New] Data Integrity Check
+    // Data Integrity Check
     const checkTicket = await prisma.ticket.findUnique({
       where: { id: parseInt(id) },
     });
@@ -162,9 +162,8 @@ exports.update = async (req, res) => {
       status !== "completed" && // User ไม่ได้เป็นคนเปลี่ยน status เป็น completed แต่ถ้า user ส่ง rating มา status น่าจะยังเป็น completed หรือ user อาจจะไม่ได้ส่ง status มา
       !rating && !userFeedback // ถ้าไม่ใช่การให้ rating/feedback
     ) {
-      // แต่เดี๋ยวก่อน... userFeedback เรียก endpoint submitFeedback แยก หรือ update?
-      // ดูที่ submitFeedback export แยกต่างหาก (exports.submitFeedback)
-      // ดังนั้น update ตรงนี้ user แทบไม่ได้ใช้ นอกจากแก้รายละเอียด?
+      // Note: User feedback usually goes through submitFeedback endpoint. 
+      // This block allows minor updates if conditions met.
 
       return res.status(403).json({
         message: "Access Denied: Cannot edit ticket that is being processed."
@@ -179,7 +178,7 @@ exports.update = async (req, res) => {
     if (userFeedback) updateData.userFeedback = userFeedback;
     if (categoryId) updateData.categoryId = parseInt(categoryId);
 
-    // [New] SLA Calculation Logic
+    // SLA Calculation Logic
     if (status) {
       const currentTicket = await prisma.ticket.findUnique({
         where: { id: parseInt(id) },
@@ -295,6 +294,65 @@ exports.list = async (req, res) => {
     res.json(sortedTickets);
   } catch (err) {
     console.error("❌ List Tickets Error:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Get user ticket history with category filter
+exports.history = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+    const userId = req.user.id;
+
+    const where = {
+      createdById: userId
+    };
+
+    // Robust filter handling
+    if (categoryId && categoryId !== 'all' && categoryId !== 'undefined' && categoryId !== 'null') {
+       const parsedCat = parseInt(categoryId);
+       if (!isNaN(parsedCat)) {
+           where.categoryId = parsedCat;
+       }
+    }
+
+    const allTickets = await prisma.ticket.findMany({
+      where,
+      include: {
+        category: true,
+        room: true,
+        equipment: true,
+        assignedTo: true,
+        createdBy: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    // Custom Sort: Not Start > In Progress > Completed  
+    const statusOrder = {
+      'not_start': 1,
+      'in_progress': 2,
+      'completed': 3
+    };
+
+    const sortedTickets = allTickets.sort((a, b) => {
+      const orderA = statusOrder[a.status] || 99;
+      const orderB = statusOrder[b.status] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // Secondary sort: Newest First
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    res.json(sortedTickets);
+  } catch (err) {
+    console.error("❌ History Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -421,7 +479,7 @@ exports.remove = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // [New] Data Integrity Check
+    // Data Integrity Check
     const checkTicket = await prisma.ticket.findUnique({
       where: { id: parseInt(id) },
     });

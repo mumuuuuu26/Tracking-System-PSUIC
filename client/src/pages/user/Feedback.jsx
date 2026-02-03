@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { submitFeedback, getTicket } from '../../api/ticket';
 import useAuthStore from '../../store/auth-store';
-import { ChevronLeft, CheckCircle2, Ticket, Send, ArrowRight, ChevronRight } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, Ticket, Send, ArrowRight, ChevronRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const Feedback = () => {
@@ -103,22 +103,21 @@ const Feedback = () => {
         <div className="min-h-screen bg-gray-50 pb-32 font-sans">
 
             {/* Header Section */}
-            <div className="bg-[#193C6C] pt-8 pb-32 px-6 rounded-b-[3rem] shadow-lg relative z-0">
-                <div className="max-w-5xl mx-auto flex items-center justify-between text-white mb-4">
-                    <button
-                        onClick={() => step === 2 ? handleBack() : navigate(-1)}
-                        className="flex items-center gap-2 hover:bg-white/10 p-2 rounded-xl transition-all"
-                    >
-                        <ChevronLeft size={24} />
-                        <span className="font-bold">Back</span>
-                    </button>
-                    <h1 className="text-2xl font-bold">Feedback</h1>
-                    <div className="w-20"></div> {/* Spacer */}
-                </div>
+            {/* Standard Header */}
+            <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
+                <button
+                    onClick={() => step === 2 ? handleBack() : navigate(-1)}
+                    className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                    <ArrowLeft size={24} />
+                </button>
+                <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
+                    Feedback
+                </span>
             </div>
 
             {/* Main Content Container */}
-            <div className="max-w-5xl mx-auto px-4 -mt-24 relative z-10 space-y-8">
+            <div className="max-w-5xl mx-auto lg:mx-0 px-4 mt-6 relative z-10 space-y-8">
 
                 {/* 1. Ticket Info Card */}
                 {ticket && (

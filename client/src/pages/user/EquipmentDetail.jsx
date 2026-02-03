@@ -72,18 +72,17 @@ const EquipmentDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button onClick={() => navigate("/user")} className="p-2 -ml-2">
-              <ArrowLeft className="text-gray-600" size={24} />
-            </button>
-            <h1 className="text-lg font-semibold">Equipment Details</h1>
-            <button className="p-2 -mr-2">
-              <Bell className="text-gray-600" size={24} />
-            </button>
-          </div>
-        </div>
+      {/* Standard Header */}
+      <div className="bg-[#193C6C] px-4 py-4 flex items-center shadow-sm sticky top-0 z-10 -mx-4 md:-mx-6 mb-6">
+        <button
+          onClick={() => navigate("/user")}
+          className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+          Equipment Details
+        </span>
       </div>
 
       {/* Equipment Info Card */}

@@ -8,6 +8,7 @@ import PSUCallback from "../pages/auth/PSUCallback";
 import ScanQR from "../pages/user/ScanQR";
 import TicketDetail from "../pages/user/TicketDetail";
 import EquipmentDetail from "../pages/user/EquipmentDetail";
+import ResponsiveDesignInfo from "../pages/knowledge/ResponsiveDesignInfo";
 
 // Auth
 import Login from "../pages/auth/Login";
@@ -15,10 +16,10 @@ import Register from "../pages/auth/Register";
 
 // User
 import HomeUser from "../pages/user/HomeUser";
-import MyTickets from "../pages/user/MyTickets";
 import CreateTicket from "../pages/user/CreateTicket";
+import UserHistory from "../pages/user/History";
 import Profile from "../pages/user/Profile";
-import ITSchedule from "../pages/user/ITSchedule"; // [NEW]
+import ITSchedule from "../pages/user/ITSchedule";
 
 import Feedback from "../pages/user/Feedback";
 import WaitingForFeedback from "../pages/user/WaitingForFeedback";
@@ -50,7 +51,7 @@ import ITTicketDetail from "../pages/it/TicketDetail";
 
 
 import QuickFixManagement from "../pages/admin/QuickFixManagement";
-import ITScheduleInternal from "../pages/it/Schedule"; // [NEW] Renamed to avoid Import Conflict? No, user route is ITSchedule
+import ITScheduleInternal from "../pages/it/Schedule";
 
 
 
@@ -64,19 +65,21 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<PSUCallback />} />
+      <Route path="/knowledge/responsive-design" element={<ResponsiveDesignInfo />} />
 
       {/* User Routes */}
       <Route path="user" element={<LayoutUser />}>
         <Route index element={<HomeUser />} />
-        <Route path="my-tickets" element={<MyTickets />} />
+
         <Route path="create-ticket" element={<CreateTicket />} />
+        <Route path="history" element={<UserHistory />} />
 
         <Route path="scan-qr" element={<ScanQR />} />
         <Route path="equipment/:id" element={<EquipmentDetail />} />
         <Route path="ticket/:id" element={<TicketDetail />} />
 
         <Route path="profile" element={<Profile />} />
-        <Route path="it-schedule" element={<ITSchedule />} /> {/* [NEW] */}
+        <Route path="it-schedule" element={<ITSchedule />} />
         <Route path="feedback" element={<WaitingForFeedback />} />
         <Route path="feedback/:ticketId" element={<Feedback />} />
         <Route path="quick-fix" element={<QuickFix />} />
@@ -109,7 +112,7 @@ const AppRoutes = () => {
 
         <Route path="tickets" element={<Tickets />} />
         <Route path="ticket/:id" element={<ITTicketDetail />} />
-        <Route path="schedule" element={<ITScheduleInternal />} /> {/* [NEW] */}
+        <Route path="schedule" element={<ITScheduleInternal />} />
 
 
 

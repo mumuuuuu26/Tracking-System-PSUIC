@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 require("dotenv").config();
 const app = express();
 const morgan = require("morgan");
@@ -16,15 +17,15 @@ const reportRoutes = require("./routes/report");
 
 const adminRoutes = require("./routes/admin");
 
-const personalTaskRoutes = require("./routes/personalTask");
+
 const quickFixRoutes = require("./routes/quickFix");
 const permissionRoutes = require("./routes/permission");
+
 
 // middleware
 app.use(morgan("dev"));
 app.use(express.json({ limit: "20mb" }));
 app.use(cors());
-const path = require("path");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
@@ -39,15 +40,10 @@ app.use("/api", itRoutes);
 app.use("/api", notificationRoutes);
 app.use("/api", reportRoutes);
 
-app.use("/api", adminRoutes);
 
-app.use("/api", personalTaskRoutes);
+app.use("/api", adminRoutes);
 app.use("/api", quickFixRoutes);
 app.use("/api", permissionRoutes);
-
-
-
-// Socket.io Setup
 const http = require("http");
 const { Server } = require("socket.io");
 const server = http.createServer(app);

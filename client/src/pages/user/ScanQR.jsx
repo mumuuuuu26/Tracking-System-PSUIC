@@ -84,7 +84,7 @@ const ScanQR = () => {
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-6 bg-gradient-to-b from-black/90 to-transparent">
+      <div className="absolute top-0 left-0 right-0 z-20 p-6 bg-black/90 border-b border-white/10 mb-6">
         <div className="flex items-center justify-between text-white">
           <button
             onClick={() => navigate("/user")}

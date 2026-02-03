@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ChevronLeft, Clock, User } from "lucide-react";
+import { Calendar, ChevronLeft, Clock, User, ArrowLeft } from "lucide-react";
 import dayjs from "dayjs";
 import useAuthStore from "../../store/auth-store";
 import { getPublicSchedule } from "../../api/it";
@@ -49,22 +49,20 @@ const ITSchedule = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-8 font-sans text-gray-900">
-            {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-10 pb-20 rounded-b-[2.5rem] shadow-lg sticky top-0 z-10">
-                <div className="max-w-md md:max-w-2xl mx-auto flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
-                    >
-                        <ChevronLeft size={28} />
-                    </button>
-                    <h1 className="text-white text-2xl font-bold flex-1 text-center pr-8">
-                        IT Schedule
-                    </h1>
-                </div>
+            {/* Standard Header */}
+            <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+                >
+                    <ArrowLeft size={24} />
+                </button>
+                <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
+                    IT Schedule
+                </span>
             </div>
 
-            <div className="max-w-md md:max-w-2xl mx-auto px-6 -mt-12 relative z-20 space-y-6">
+            <div className="max-w-md md:max-w-2xl mx-auto lg:mx-0 px-6 mt-6 relative z-20 space-y-6">
 
                 {/* Calendar */}
                 <CalendarGrid

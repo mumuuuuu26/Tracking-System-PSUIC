@@ -35,7 +35,7 @@ const WaitingForFeedback = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20 animate-in fade-in duration-500 font-sans">
             {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-10 pb-8 rounded-b-[2rem] shadow-lg mb-6">
+            <div className="bg-[#193C6C] px-6 pt-2 pb-8 -mx-4 md:-mx-6 mb-6 shadow-md lg:hidden sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto flex items-center justify-center relative">
                     <button
                         onClick={() => navigate('/user')}

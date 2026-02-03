@@ -10,6 +10,7 @@ import {
   Check,
   X,
   ChevronLeft,
+  ArrowLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/auth-store";
@@ -143,19 +144,20 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans relative">
-      {/* Deep Blue Header */}
-      <div className="bg-[#193C6C] px-6 pt-10 pb-8 rounded-b-[2rem] shadow-lg mb-6 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
-          >
-            <ChevronLeft size={28} />
-          </button>
-        </div>
+      {/* Standard Header */}
+      <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
+          Profile
+        </span>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 space-y-6">
+      <div className="max-w-4xl mx-auto lg:mx-0 mt-6 px-6 space-y-6 relative z-10">
         {/* Header Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col items-center justify-center text-center">
           <div className="relative w-28 h-28 mb-4 group">
