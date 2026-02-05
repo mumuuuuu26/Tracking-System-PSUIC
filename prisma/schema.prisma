@@ -28,6 +28,7 @@ model User {
   // [NEW] Personal Notification Settings
   isEmailEnabled    Boolean @default(true)
   notificationEmail String? // Custom email for notifications (overrides account email)
+  googleCalendarId  String? // [NEW] Google Calendar ID for syncing (e.g. email)
   
   // [NEW] Performance metrics สำหรับ IT
   totalResolved Int    @default(0)  // จำนวน ticket ที่แก้ไขสำเร็จ

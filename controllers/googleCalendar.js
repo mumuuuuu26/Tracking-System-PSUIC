@@ -134,39 +134,48 @@ exports.deleteGoogleEvent = async (eventId) => {
     }
 }
 
-exports.listGoogleEvents = async (timeMin, timeMax) => {
+exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
     try {
         const auth = getAuthClient();
         if (!auth) {
-            // Mock data if no credentials
-
-            return [
-                {
-                    id: 'mock-1',
-                    summary: 'Mock Meeting',
-                    start: { dateTime: new Date().toISOString() },
-                    end: { dateTime: new Date(Date.now() + 3600000).toISOString() },
-                    description: "This is a mock event because Google Credentials are missing."
-                }
-            ];
+            console.warn("Google Calendar Auth Failed: Missing Credentials");
+            throw new Error("Missing Google API Credentials in Server Environment");
         }
 
-        const calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
+    const targetCalendarId = calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary';
+        console.log(`Attempting to fetch events for calendar: ${targetCalendarId}`);
+
         const calendar = google.calendar({ version: 'v3', auth });
         
-        // Fetching events from calendar
-        
-        const res = await calendar.events.list({
-            calendarId: calendarId,
-            timeMin: timeMin.toISOString(),
-            timeMax: timeMax.toISOString(),
-            singleEvents: true,
-            orderBy: 'startTime',
-        });
+        let allEvents = [];
+        let pageToken = null;
 
-        return res.data.items;
+        try {
+            do {
+                const res = await calendar.events.list({
+                    calendarId: targetCalendarId,
+                    timeMin: timeMin.toISOString(),
+                    timeMax: timeMax.toISOString(),
+                    singleEvents: true,
+                    orderBy: 'startTime',
+                    pageToken: pageToken,
+                    maxResults: 2500 // Max allowed by Google
+                });
+                
+                const items = res.data.items || [];
+                allEvents = allEvents.concat(items);
+                pageToken = res.data.nextPageToken;
+
+            } while (pageToken);
+
+            console.log(`Google API Success: Found ${allEvents.length} events total`);
+            return allEvents;
+        } catch (apiError) {
+            console.error('Google API Error Details:', apiError.message);
+            throw new Error(`Google API Failed: ${apiError.message}`);
+        }
     } catch (error) {
         console.error('Error listing Google Calendar events:', error);
-        return [];
+        throw error; // Propagate error to controller
     }
 };

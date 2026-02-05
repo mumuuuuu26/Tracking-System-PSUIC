@@ -121,6 +121,24 @@ const ITProfile = () => {
     }
 
 
+
+    const handleToggleEmail = async () => {
+        const newValue = !myEmailEnabled;
+        setMyEmailEnabled(newValue);
+        try {
+            await updateProfile(token, {
+                isEmailEnabled: newValue,
+                notificationEmail: myNotifyEmail
+            });
+            await checkUser();
+            toast.success(newValue ? "Notifications enabled" : "Notifications disabled");
+        } catch (err) {
+            console.error(err);
+            setMyEmailEnabled(!newValue); // Revert
+            toast.error("Failed to update preference");
+        }
+    };
+
     const handleLogout = () => {
         Swal.fire({
             title: "Log out",
@@ -277,7 +295,7 @@ const ITProfile = () => {
                             <div className="flex items-center justify-between mb-4">
                                 <span className="font-bold text-gray-700 text-sm">Receive Email Notifications</span>
                                 <button
-                                    onClick={() => setMyEmailEnabled(!myEmailEnabled)}
+                                    onClick={handleToggleEmail}
                                     className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 relative ${myEmailEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
                                 >
                                     <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${myEmailEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>

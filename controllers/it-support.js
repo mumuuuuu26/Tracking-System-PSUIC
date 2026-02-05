@@ -377,10 +377,19 @@ exports.getPublicSchedule = async (req, res) => {
 
     const isIT = req.user.role === 'it_support' || req.user.role === 'admin';
 
-    // Fetch active tickets (accepted/in_progress) that block time
+    // Fetch active tickets (accepted/in_progress) OR completed tickets from previous year
+    const startOfPrevYear = new Date(today.getFullYear() - 1, today.getMonth(), 1);
+    startOfPrevYear.setHours(0, 0, 0, 0);
+
     const activeTickets = await prisma.ticket.findMany({
       where: {
-        status: { in: ["in_progress"] },
+        OR: [
+          { status: { in: ["in_progress"] } },
+          { 
+            status: "completed",
+            updatedAt: { gte: startOfPrevYear }
+          }
+        ]
       },
       select: {
         id: true,
@@ -396,10 +405,10 @@ exports.getPublicSchedule = async (req, res) => {
     });
 
     // Fetch Personal Tasks of IT Staff
+    // Show ALL tasks (completed or not) from start of PREVIOUS YEAR
     const personalTasks = await prisma.personalTask.findMany({
       where: {
-        date: { gte: today }, // Future tasks
-        isCompleted: false
+        date: { gte: startOfPrevYear }
       },
       include: {
         user: { select: { name: true, id: true } }
@@ -440,47 +449,73 @@ exports.getPublicSchedule = async (req, res) => {
 exports.syncGoogleCalendar = async (req, res) => {
     try {
         const userId = req.user.id;
-        // Sync next 30 days
-        const start = new Date();
+        const googleCalendarId = req.user.googleCalendarId; // Use custom calendar ID
+
+        // Sync from 3 MONTHS AGO to ensure full context and overlap
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth() - 3, 1); 
+        start.setHours(0, 0, 0, 0);
+        
         const end = new Date();
-        end.setDate(end.getDate() + 30);
+        end.setDate(end.getDate() + 90); // 3 months lookahead
 
-        const events = await listGoogleEvents(start, end);
-        let count = 0;
+        // 1. Fetch events from Google
+        const events = await listGoogleEvents(start, end, googleCalendarId);
+        
+        // 2. Prepare data for bulk insertion
+        const tasksToCreate = events.map(event => {
+            const isFullDay = !!event.start.date;
+            
+            // Handle Start/End Times
+            let startDate, endDate;
+            if (isFullDay) {
+                // Full day events come as "YYYY-MM-DD"
+                // Parse them as local by appending T00:00:00 to avoid UTC shift issues if needed, 
+                // OR just trust the Date constructor if the server is in the right timezone.
+                // Best practice: Set to start of day in local time or preserve string if specific.
+                // For simplicity here:
+                startDate = new Date(event.start.date);
+                endDate = new Date(event.end.date); 
+            } else {
+                startDate = new Date(event.start.dateTime);
+                endDate = new Date(event.end.dateTime);
+            }
 
-        for (const event of events) {
-            const startDate = new Date(event.start.dateTime || event.start.date);
-            const endDate = new Date(event.end.dateTime || event.end.date);
+            return {
+                userId: userId,
+                title: event.summary || '(No Title)',
+                description: [
+                    `Imported from Google Calendar${googleCalendarId ? ` (${googleCalendarId})` : ''}`,
+                    event.location ? `📍 ${event.location}` : null,
+                    event.description || ''
+                ].filter(Boolean).join('\n'), // Join non-empty strings
+                
+                date: startDate,
+                startTime: startDate,
+                endTime: endDate,
+                color: isFullDay ? '#10B981' : '#4285F4', // Green for full-day (like holidays), Blue for timed
+                isCompleted: false
+            };
+        });
 
-            // Check duplicate
-            const exists = await prisma.personalTask.findFirst({
+        // 3. ATOMIC Transaction: Delete old range AND Insert new data
+        // This prevents race conditions causing duplicates
+        await prisma.$transaction([
+            prisma.personalTask.deleteMany({
                 where: {
                     userId: userId,
-                    title: event.summary || 'No Title',
-                    startTime: startDate
+                    date: { gte: start }
                 }
-            });
+            }),
+            prisma.personalTask.createMany({
+                data: tasksToCreate
+            })
+        ]);
 
-            if (!exists) {
-                await prisma.personalTask.create({
-                    data: {
-                        userId: userId,
-                        title: event.summary || 'No Title',
-                        description: `Imported from Google Calendar\n${event.description || ''}`,
-                        date: startDate,
-                        startTime: startDate,
-                        endTime: endDate,
-                        color: '#4285F4',
-                        isCompleted: false
-                    }
-                });
-                count++;
-            }
-        }
-
-        res.json({ message: `Synced ${count} events from Google Calendar`, count });
+        res.json({ message: `Synced ${tasksToCreate.length} events from Google Calendar${googleCalendarId ? ` (${googleCalendarId})` : ''}`, count: tasksToCreate.length });
     } catch (err) {
         console.error("Sync Error:", err);
-        res.status(500).json({ message: "Sync Failed" });
+        // Send specific error message to client
+        res.status(500).json({ message: err.message || "Sync Failed" });
     }
 };

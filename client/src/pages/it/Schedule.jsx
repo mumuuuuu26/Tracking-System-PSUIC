@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ChevronLeft, Clock, User, RefreshCw, Plus } from "lucide-react";
+import { Calendar, ChevronLeft, Clock, User } from "lucide-react";
 import dayjs from "dayjs";
 import useAuthStore from "../../store/auth-store";
 import { getPublicSchedule, syncGoogleCalendar } from "../../api/it";
+import { updateProfile } from "../../api/user";
+import { currentUser } from "../../api/auth";
 // Reuse CalendarGrid
 import CalendarGrid from "../../components/CalendarGrid";
 import { toast } from "react-toastify";
@@ -20,6 +22,12 @@ const Schedule = () => {
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
 
+    // Settings State
+    const [showSettings, setShowSettings] = useState(false);
+    const [calendarId, setCalendarId] = useState("");
+    const [savedCalendarId, setSavedCalendarId] = useState("");
+    const [serviceEmail, setServiceEmail] = useState("");
+
     const loadSchedule = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -33,23 +41,60 @@ const Schedule = () => {
         }
     }, [token]);
 
-    useEffect(() => {
-        if (token) {
-            loadSchedule();
+    const loadProfile = React.useCallback(async () => {
+        try {
+            const res = await currentUser(token);
+            if (res.data) {
+                setCalendarId(res.data.googleCalendarId || "");
+                setSavedCalendarId(res.data.googleCalendarId || "");
+                setServiceEmail(res.data.serviceAccountEmail || "");
+            }
+        } catch (err) {
+            console.error("Failed to load profile", err);
         }
-    }, [token, loadSchedule]);
+    }, [token]);
 
-    const handleSync = async () => {
+    const performSync = React.useCallback(async () => {
         try {
             setSyncing(true);
             const res = await syncGoogleCalendar(token);
-            toast.success(res.data.message || "Synced successfully");
+            // toast.success(res.data.message || "Synced successfully"); // Optional: Don't spam toast on auto-sync
+            // console.log("Auto-sync result:", res.data);
             loadSchedule();
         } catch (err) {
             console.error(err);
-            toast.error("Sync failed");
+            toast.error(err.response?.data?.message || "Sync failed");
         } finally {
             setSyncing(false);
+        }
+    }, [token, loadSchedule]);
+
+    useEffect(() => {
+        if (token) {
+            loadProfile();
+            loadSchedule();
+            // Auto-sync on mount
+            performSync();
+
+            // Real-time updates: Refresh schedule data every 60 seconds
+            const intervalId = setInterval(() => {
+                loadSchedule();
+            }, 60000);
+
+            return () => clearInterval(intervalId);
+        }
+    }, [token, loadSchedule, loadProfile, performSync]);
+
+    const handleSaveSettings = async () => {
+        try {
+            await updateProfile(token, { googleCalendarId: calendarId });
+            setSavedCalendarId(calendarId);
+            setShowSettings(false);
+            toast.success("Calendar ID saved. Syncing...");
+            performSync();
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save settings");
         }
     };
 
@@ -80,6 +125,13 @@ const Schedule = () => {
                     <h1 className="text-white text-2xl font-bold flex-1 text-center pr-8">
                         My Schedule
                     </h1>
+                    <button
+                        onClick={() => setShowSettings(true)}
+                        className="text-white hover:bg-white/10 p-2 rounded-full transition-colors relative"
+                    >
+                        <User size={24} />
+                        {savedCalendarId && <span className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full border border-[#193C6C]"></span>}
+                    </button>
                 </div>
             </div>
 
@@ -95,22 +147,7 @@ const Schedule = () => {
                     onDateSelect={setSelectedDate}
                 />
 
-                {/* Actions */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4">
-                    <button
-                        onClick={handleSync}
-                        disabled={syncing}
-                        className="flex-1 bg-blue-50 text-blue-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 transition disabled:opacity-50"
-                    >
-                        <RefreshCw size={20} className={syncing ? "animate-spin" : ""} />
-                        {syncing ? "Syncing..." : "Sync Google Calendar"}
-                    </button>
-                    {/* Add Task Button (Placeholder for manual add if needed later) */}
-                    {/* <button className="flex-1 bg-gray-50 text-gray-600 font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition">
-                        <Plus size={20} />
-                        Add Task
-                    </button> */}
-                </div>
+
 
                 {/* Daily List */}
                 <div className="space-y-4">
@@ -157,6 +194,67 @@ const Schedule = () => {
                 </div>
 
             </div>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-xl font-bold mb-4 text-center text-gray-800">Connection Setup</h3>
+
+                        {/* Step 1: Share Instruction */}
+                        <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-100">
+                            <h4 className="text-sm font-bold text-blue-800 mb-2">Step 1: Share Calendar</h4>
+                            <p className="text-xs text-blue-700 mb-2">
+                                Go to Google Calendar Settings {'>'} "Share with specific people" and add this email:
+                            </p>
+                            <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-blue-200">
+                                <code className="text-xs font-mono text-gray-600 flex-1 break-all">
+                                    {serviceEmail || "Loading email..."}
+                                </code>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(serviceEmail);
+                                        toast.success("Copied to clipboard!");
+                                    }}
+                                    className="text-blue-600 font-bold text-xs hover:bg-blue-50 px-2 py-1 rounded"
+                                >
+                                    COPY
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Step 2: Input ID */}
+                        <div className="mb-6">
+                            <h4 className="text-sm font-bold text-gray-700 mb-2">Step 2: Enter Calendar ID</h4>
+                            <input
+                                type="text"
+                                value={calendarId}
+                                onChange={(e) => setCalendarId(e.target.value)}
+                                placeholder="e.g. your.email@gmail.com"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                                Usually your email address (or finding in Calendar Settings).
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowSettings(false)}
+                                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveSettings}
+                                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
+                            >
+                                Save & Connect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

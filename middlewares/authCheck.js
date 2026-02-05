@@ -30,6 +30,7 @@ exports.authCheck = async (req, res, next) => {
       return res.status(400).json({ message: "This account cannot access" });
     }
 
+    req.user = user; // Attach full user data to request
     next();
   } catch (err) {
     console.error(err);

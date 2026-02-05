@@ -9,7 +9,7 @@ export const updateProfileImage = async (token, imageBase64) => {
 }
 
 export const updateProfile = async (token, value) => {
-    return await axios.post('/api/users/update-profile', value, {
+    return await axios.post(`${import.meta.env.VITE_API_URL}/users/update-profile`, value, {
         headers: {
             Authorization: `Bearer ${token}`
         }

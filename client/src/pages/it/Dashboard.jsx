@@ -161,11 +161,11 @@ const ITDashboard = () => {
               className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative group cursor-pointer hover:shadow-md transition-all duration-300"
             >
               <div className="flex justify-between items-start mb-2">
-                <h4 className="text-xl md:text-2xl font-bold text-[#193C6C] line-clamp-1 group-hover:text-blue-800 transition-colors">
+                <h4 className="text-xl md:text-2xl font-bold text-[#193C6C] group-hover:text-blue-800 transition-colors flex-1 pr-2 break-words">
                   {ticket.category?.name || "General"}
                 </h4>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <div className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-bold border ${ticket.status === 'completed' ? 'border-green-500 text-green-600 bg-green-50' :
                     ticket.status === 'in_progress' ? 'border-yellow-500 text-yellow-600 bg-yellow-50' :
                       'border-red-500 text-red-600 bg-red-50'
@@ -184,7 +184,7 @@ const ITDashboard = () => {
 
               {/* Content */}
               <div className="flex flex-col gap-1 mb-6">
-                <p className="text-base md:text-lg text-gray-800 font-bold line-clamp-1">
+                <p className="text-base md:text-lg text-gray-800 font-bold break-words">
                   {ticket.description || "No description provided"}
                 </p>
                 <p className="text-sm md:text-base text-gray-500">

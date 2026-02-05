@@ -5,6 +5,8 @@ import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { listCategories, createCategory } from "../../api/category";
+import { FolderPlus } from "lucide-react";
 
 const EquipmentManagement = () => {
   const { token } = useAuthStore();
@@ -21,7 +23,13 @@ const EquipmentManagement = () => {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedQR, setSelectedQR] = useState(null);
+
+  // Categories
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState("");
+
 
   // Form
   const [form, setForm] = useState({
@@ -64,10 +72,24 @@ const EquipmentManagement = () => {
     }
   }, [token]);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const res = await listCategories(token);
+      setCategories(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [token]);
+
   useEffect(() => {
     loadEquipments();
     loadRooms();
-  }, [loadEquipments, loadRooms]);
+    loadCategories();
+  }, [loadEquipments, loadRooms, loadCategories]);
+
+  // Combine default types with fetched categories
+  const allTypes = [...new Set([...equipmentTypes, ...categories.map((c) => c.name)])];
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -164,6 +186,23 @@ const EquipmentManagement = () => {
     return matchesSearch && matchesType;
   }) : [];
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategory.trim()) return;
+
+    try {
+      await createCategory(token, { name: newCategory });
+      toast.success("Category added successfully");
+      setNewCategory("");
+      setShowCategoryModal(false);
+      loadCategories(); // Refresh categories
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add category");
+    }
+  };
+
+
   const getTypeIcon = (type) => {
     switch (type) {
       case 'Computer': return <Monitor size={24} className="text-gray-500" />;
@@ -217,12 +256,19 @@ const EquipmentManagement = () => {
             {isTypeDropdownOpen && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <button onClick={() => { setSelectedType("All Types"); setIsTypeDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 text-gray-700">All Types</button>
-                {equipmentTypes.map(type => (
+                {allTypes.map(type => (
                   <button key={type} onClick={() => { setSelectedType(type); setIsTypeDropdownOpen(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 text-gray-700">{type}</button>
                 ))}
               </div>
             )}
           </div>
+
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="bg-white border border-gray-200 text-gray-700 px-4 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm whitespace-nowrap"
+          >
+            <FolderPlus size={18} /> Add Category
+          </button>
 
           {/* Add Button */}
           <button
@@ -296,7 +342,7 @@ const EquipmentManagement = () => {
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                 >
                   <option value="">Select Type</option>
-                  {equipmentTypes.map((type) => (
+                  {allTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
@@ -403,6 +449,46 @@ const EquipmentManagement = () => {
                 Print
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-bold mb-4 text-center text-gray-800">Add New Category</h2>
+            <form onSubmit={handleAddCategory} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
+                  Category Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 font-semibold text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-100 outline-none"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="e.g. Tablet"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-3 bg-[#193C6C] text-white rounded-xl font-bold hover:bg-[#15325b]"
+                >
+                  Add
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

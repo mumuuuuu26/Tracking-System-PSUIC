@@ -35,7 +35,7 @@ exports.register = async (req, res) => {
       },
     });
 
-    res.send("Register Success");
+    res.json({ message: "Register Success" });
   } catch (err) {
     console.error("Register Error:", err);
     res.status(500).json({ message: "Server Error" });
@@ -78,7 +78,8 @@ exports.login = async (req, res) => {
       name: user.name,
       picture: user.picture,
       isEmailEnabled: user.isEmailEnabled,
-      notificationEmail: user.notificationEmail
+      notificationEmail: user.notificationEmail,
+      googleCalendarId: user.googleCalendarId
     };
 
     // Generate Token
@@ -118,11 +119,16 @@ exports.currentUser = async (req, res) => {
         createdAt: true,
         updatedAt: true,
         isEmailEnabled: true,
-        notificationEmail: true
+        notificationEmail: true,
+        googleCalendarId: true
       },
     });
 
-    res.json(user);
+    // Return user data + service account email for calendar sharing instructions
+    res.json({
+      ...user,
+      serviceAccountEmail: process.env.GOOGLE_CLIENT_EMAIL
+    });
   } catch (err) {
     console.error("CurrentUser Error:", err);
     res.status(500).json({ message: "Server Error" });
