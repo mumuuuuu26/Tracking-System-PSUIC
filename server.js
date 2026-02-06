@@ -50,7 +50,11 @@ app.use(express.json({ limit: "20mb" }));
 // อนุญาตเฉพาะ Frontend ของเราเท่านั้น เพื่อความปลอดภัย
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",       // สำหรับ Dev ในเครื่อง
+      "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (ถ้ามี)
+      "http://10.135.2.243"          // สำหรับ User ทั่วไป (Production)
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, // ถ้ามีการใช้ Cookie/Session
   }),
@@ -123,7 +127,11 @@ const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",       // สำหรับ Dev ในเครื่อง
+      "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (ถ้ามี)
+      "http://10.135.2.243"          // สำหรับ User ทั่วไป (Production)
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
