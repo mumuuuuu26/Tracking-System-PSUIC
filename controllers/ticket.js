@@ -145,8 +145,11 @@ exports.update = async (req, res) => {
     } = req.body;
 
     // Data Integrity Check
-    const checkTicket = await prisma.ticket.findUnique({
-      where: { id: parseInt(id) },
+    const checkTicket = await prisma.ticket.findFirst({
+      where: { 
+        id: parseInt(id),
+        isDeleted: false 
+      },
     });
 
     if (!checkTicket) {
@@ -181,7 +184,7 @@ exports.update = async (req, res) => {
     // SLA Calculation Logic
     if (status) {
       const currentTicket = await prisma.ticket.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id) }, // No need to check isDeleted here again if checkTicket passed, but safer? checkTicket is already checked above.
         select: { createdAt: true, status: true, responseTime: true }
       });
 
@@ -261,7 +264,10 @@ exports.update = async (req, res) => {
 exports.list = async (req, res) => {
   try {
     const tickets = await prisma.ticket.findMany({
-      where: { createdById: req.user.id },
+      where: { 
+        createdById: req.user.id,
+        isDeleted: false 
+      },
       include: {
         room: true,
         equipment: true,
@@ -305,7 +311,8 @@ exports.history = async (req, res) => {
     const userId = req.user.id;
 
     const where = {
-      createdById: userId
+      createdById: userId,
+      isDeleted: false
     };
 
     // Robust filter handling
@@ -361,8 +368,11 @@ exports.history = async (req, res) => {
 exports.read = async (req, res) => {
   try {
     const { id } = req.params;
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: parseInt(id) },
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        id: parseInt(id),
+        isDeleted: false
+      },
       include: {
         room: true,
         equipment: true,
@@ -392,7 +402,9 @@ exports.listAll = async (req, res) => {
     const take = parseInt(limit);
 
     // Build Where Clause
-    const where = {};
+    const where = {
+      isDeleted: false
+    };
 
     if (status && status !== 'all' && status !== 'All') {
       where.status = status;
@@ -480,8 +492,11 @@ exports.remove = async (req, res) => {
     const { id } = req.params;
 
     // Data Integrity Check
-    const checkTicket = await prisma.ticket.findUnique({
-      where: { id: parseInt(id) },
+    const checkTicket = await prisma.ticket.findFirst({
+      where: {
+        id: parseInt(id),
+        isDeleted: false
+      },
     });
 
     if (!checkTicket) {
@@ -499,8 +514,13 @@ exports.remove = async (req, res) => {
       });
     }
 
-    await prisma.ticket.delete({
-      where: { id: parseInt(id) }
+    // Soft Delete
+    await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date()
+      }
     });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
@@ -514,7 +534,10 @@ exports.listByEquipment = async (req, res) => {
   try {
     const { id } = req.params;
     const tickets = await prisma.ticket.findMany({
-      where: { equipmentId: parseInt(id) },
+      where: { 
+        equipmentId: parseInt(id),
+        isDeleted: false
+      },
       include: {
         createdBy: true,
         category: true

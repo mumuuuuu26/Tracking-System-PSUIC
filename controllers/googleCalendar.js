@@ -143,8 +143,7 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
         }
 
     const targetCalendarId = calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary';
-        console.log(`Attempting to fetch events for calendar: ${targetCalendarId}`);
-
+        
         const calendar = google.calendar({ version: 'v3', auth });
         
         let allEvents = [];
@@ -168,7 +167,6 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
 
             } while (pageToken);
 
-            console.log(`Google API Success: Found ${allEvents.length} events total`);
             return allEvents;
         } catch (apiError) {
             console.error('Google API Error Details:', apiError.message);

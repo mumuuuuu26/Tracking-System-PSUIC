@@ -119,6 +119,10 @@ model Ticket {
   logs         ActivityLog[]
 
   notification Notification[]  // [NEW]
+  
+  // [NEW] Soft Delete
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime?
 }
 
 // === [NEW] NOTIFICATION MODEL ===

@@ -59,7 +59,6 @@ const Schedule = () => {
             setSyncing(true);
             const res = await syncGoogleCalendar(token);
             // toast.success(res.data.message || "Synced successfully"); // Optional: Don't spam toast on auto-sync
-            // console.log("Auto-sync result:", res.data);
             loadSchedule();
         } catch (err) {
             console.error(err);
@@ -69,21 +68,27 @@ const Schedule = () => {
         }
     }, [token, loadSchedule]);
 
+    // Initial Load & Polling
     useEffect(() => {
         if (token) {
             loadProfile();
             loadSchedule();
-            // Auto-sync on mount
-            performSync();
 
-            // Real-time updates: Refresh schedule data every 60 seconds
             const intervalId = setInterval(() => {
                 loadSchedule();
             }, 60000);
 
             return () => clearInterval(intervalId);
         }
-    }, [token, loadSchedule, loadProfile, performSync]);
+    }, [token]); // Removed functions from dependency array to prevent loops if they are unstable
+
+    // Auto-sync on mount only
+    useEffect(() => {
+        if (token) {
+            performSync();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token]); // Run once when token is available
 
     const handleSaveSettings = async () => {
         try {

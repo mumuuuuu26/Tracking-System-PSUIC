@@ -4,10 +4,11 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "lsof -ti :5001 | xargs kill -9 || true && NODE_OPTIONS='--max-http-header-size=200000' nodemon server",
+    "test": "jest",
+    "start": "node server.js",
     "client": "cd client && npm run dev",
-    "dev": "concurrently \"npm start\" \"npm run client\"",
+    "dev": "nodemon server.js",
+    "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
     "install-all": "npm install && cd client && npm install",
     "seed": "node prisma/seed-complete.js",
     "migrate": "npx prisma migrate dev",
@@ -22,18 +23,23 @@
     "axios": "^1.12.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.7.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dayjs": "^1.11.18",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "googleapis": "^169.0.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "nodemailer": "^7.0.12",
     "nodemon": "^3.1.10",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
-    "uuid": "^13.0.0"
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   },
   "prisma": {
     "dev": "nodemon server.js",
@@ -42,7 +48,13 @@
     "seed:all": "node prisma/seed.js && node prisma/seed-it.js"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "babel-jest": "^30.2.0",
     "concurrently": "^9.2.1",
-    "prisma": "^6.16.1"
+    "express-rate-limit": "^8.2.1",
+    "jest": "^30.2.0",
+    "prisma": "^6.16.1",
+    "supertest": "^7.2.2"
   }
 }

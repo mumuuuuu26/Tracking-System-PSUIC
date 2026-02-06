@@ -16,7 +16,7 @@ const {
   history
 } = require("../controllers/ticket");
 
-// @ENDPOINT http://localhost:5001/api/ticket
+// @ENDPOINT http://localhost:5002/api/ticket
 
 //สร้างใบแจ้งซ่อม
 router.post("/ticket", authCheck, create);

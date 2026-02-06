@@ -1,0 +1,544 @@
+2026-02-05 15:45:53: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:53:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:53:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:53:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:53:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:53:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:53:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:53:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:53:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:53:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:53:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:53:   code: 'EADDRINUSE',
+2026-02-05 15:45:53:   errno: -48,
+2026-02-05 15:45:53:   syscall: 'listen',
+2026-02-05 15:45:53:   address: '::',
+2026-02-05 15:45:53:   port: 5002
+2026-02-05 15:45:53: }
+2026-02-05 15:45:53: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:53:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:53:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:53:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:53:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:53:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:53:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:53:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:53:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:53:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:53:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:53:   code: 'EADDRINUSE',
+2026-02-05 15:45:53:   errno: -48,
+2026-02-05 15:45:53:   syscall: 'listen',
+2026-02-05 15:45:53:   address: '::',
+2026-02-05 15:45:53:   port: 5002
+2026-02-05 15:45:53: }
+2026-02-05 15:45:54: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:54:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:54:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:54:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:54:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:54:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:54:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:54:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:54:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:54:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:54:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:54:   code: 'EADDRINUSE',
+2026-02-05 15:45:54:   errno: -48,
+2026-02-05 15:45:54:   syscall: 'listen',
+2026-02-05 15:45:54:   address: '::',
+2026-02-05 15:45:54:   port: 5002
+2026-02-05 15:45:54: }
+2026-02-05 15:45:54: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:54:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:54:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:54:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:54:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:54:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:54:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:54:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:54:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:54:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:54:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:54:   code: 'EADDRINUSE',
+2026-02-05 15:45:54:   errno: -48,
+2026-02-05 15:45:54:   syscall: 'listen',
+2026-02-05 15:45:54:   address: '::',
+2026-02-05 15:45:54:   port: 5002
+2026-02-05 15:45:54: }
+2026-02-05 15:45:55: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:55:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:55:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:55:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:55:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:55:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:55:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:55:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:55:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:55:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:55:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:55:   code: 'EADDRINUSE',
+2026-02-05 15:45:55:   errno: -48,
+2026-02-05 15:45:55:   syscall: 'listen',
+2026-02-05 15:45:55:   address: '::',
+2026-02-05 15:45:55:   port: 5002
+2026-02-05 15:45:55: }
+2026-02-05 15:45:55: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:55:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:55:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:55:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:55:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:55:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:55:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:55:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:55:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:55:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:55:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:55:   code: 'EADDRINUSE',
+2026-02-05 15:45:55:   errno: -48,
+2026-02-05 15:45:55:   syscall: 'listen',
+2026-02-05 15:45:55:   address: '::',
+2026-02-05 15:45:55:   port: 5002
+2026-02-05 15:45:55: }
+2026-02-05 15:45:56: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:56:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:56:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:56:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:56:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:56:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:56:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:56:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:56:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:56:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:56:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:56:   code: 'EADDRINUSE',
+2026-02-05 15:45:56:   errno: -48,
+2026-02-05 15:45:56:   syscall: 'listen',
+2026-02-05 15:45:56:   address: '::',
+2026-02-05 15:45:56:   port: 5002
+2026-02-05 15:45:56: }
+2026-02-05 15:45:56: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:56:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:56:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:56:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:56:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:56:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:56:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:56:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:56:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:56:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:56:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:56:   code: 'EADDRINUSE',
+2026-02-05 15:45:56:   errno: -48,
+2026-02-05 15:45:56:   syscall: 'listen',
+2026-02-05 15:45:56:   address: '::',
+2026-02-05 15:45:56:   port: 5002
+2026-02-05 15:45:56: }
+2026-02-05 15:45:57: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:57:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:57:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:57:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:57:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:57:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:57:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:57:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:57:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:57:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:57:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:57:   code: 'EADDRINUSE',
+2026-02-05 15:45:57:   errno: -48,
+2026-02-05 15:45:57:   syscall: 'listen',
+2026-02-05 15:45:57:   address: '::',
+2026-02-05 15:45:57:   port: 5002
+2026-02-05 15:45:57: }
+2026-02-05 15:45:57: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:57:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:57:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:57:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:57:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:57:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:57:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:57:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:57:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:57:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:57:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:57:   code: 'EADDRINUSE',
+2026-02-05 15:45:57:   errno: -48,
+2026-02-05 15:45:57:   syscall: 'listen',
+2026-02-05 15:45:57:   address: '::',
+2026-02-05 15:45:57:   port: 5002
+2026-02-05 15:45:57: }
+2026-02-05 15:45:58: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:58:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:58:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:58:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:58:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:58:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:58:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:58:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:58:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:58:   code: 'EADDRINUSE',
+2026-02-05 15:45:58:   errno: -48,
+2026-02-05 15:45:58:   syscall: 'listen',
+2026-02-05 15:45:58:   address: '::',
+2026-02-05 15:45:58:   port: 5002
+2026-02-05 15:45:58: }
+2026-02-05 15:45:58: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:58:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:58:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:58:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:58:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:58:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:58:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:58:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:58:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:58:   code: 'EADDRINUSE',
+2026-02-05 15:45:58:   errno: -48,
+2026-02-05 15:45:58:   syscall: 'listen',
+2026-02-05 15:45:58:   address: '::',
+2026-02-05 15:45:58:   port: 5002
+2026-02-05 15:45:58: }
+2026-02-05 15:45:59: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:59:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:59:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:59:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:59:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:59:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:59:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:59:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:59:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:59:   code: 'EADDRINUSE',
+2026-02-05 15:45:59:   errno: -48,
+2026-02-05 15:45:59:   syscall: 'listen',
+2026-02-05 15:45:59:   address: '::',
+2026-02-05 15:45:59:   port: 5002
+2026-02-05 15:45:59: }
+2026-02-05 15:45:59: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:45:59:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:45:59:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:45:59:     at Server.listen (node:net:2102:7)
+2026-02-05 15:45:59:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:45:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:45:59:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:45:59:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:45:59:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:45:59:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:45:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:45:59:   code: 'EADDRINUSE',
+2026-02-05 15:45:59:   errno: -48,
+2026-02-05 15:45:59:   syscall: 'listen',
+2026-02-05 15:45:59:   address: '::',
+2026-02-05 15:45:59:   port: 5002
+2026-02-05 15:45:59: }
+2026-02-05 15:46:00: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:46:00:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:46:00:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:46:00:     at Server.listen (node:net:2102:7)
+2026-02-05 15:46:00:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:46:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:46:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:46:00:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:46:00:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:46:00:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:46:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:46:00:   code: 'EADDRINUSE',
+2026-02-05 15:46:00:   errno: -48,
+2026-02-05 15:46:00:   syscall: 'listen',
+2026-02-05 15:46:00:   address: '::',
+2026-02-05 15:46:00:   port: 5002
+2026-02-05 15:46:00: }
+2026-02-05 15:46:00: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 15:46:00:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 15:46:00:     at listenInCluster (node:net:1997:12)
+2026-02-05 15:46:00:     at Server.listen (node:net:2102:7)
+2026-02-05 15:46:00:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 15:46:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 15:46:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 15:46:00:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 15:46:00:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 15:46:00:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 15:46:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 15:46:00:   code: 'EADDRINUSE',
+2026-02-05 15:46:00:   errno: -48,
+2026-02-05 15:46:00:   syscall: 'listen',
+2026-02-05 15:46:00:   address: '::',
+2026-02-05 15:46:00:   port: 5002
+2026-02-05 15:46:00: }
+2026-02-05 16:00:57: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:00:57:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:00:57:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:00:57:     at Server.listen (node:net:2102:7)
+2026-02-05 16:00:57:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:00:57:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:00:57:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:00:57:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:00:57:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:00:57:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:00:57:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:00:57:   code: 'EADDRINUSE',
+2026-02-05 16:00:57:   errno: -48,
+2026-02-05 16:00:57:   syscall: 'listen',
+2026-02-05 16:00:57:   address: '::',
+2026-02-05 16:00:57:   port: 5002
+2026-02-05 16:00:57: }
+2026-02-05 16:00:58: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:00:58:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:00:58:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:00:58:     at Server.listen (node:net:2102:7)
+2026-02-05 16:00:58:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:00:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:00:58:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:00:58:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:00:58:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:00:58:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:00:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:00:58:   code: 'EADDRINUSE',
+2026-02-05 16:00:58:   errno: -48,
+2026-02-05 16:00:58:   syscall: 'listen',
+2026-02-05 16:00:58:   address: '::',
+2026-02-05 16:00:58:   port: 5002
+2026-02-05 16:00:58: }
+2026-02-05 16:00:58: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:00:58:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:00:58:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:00:58:     at Server.listen (node:net:2102:7)
+2026-02-05 16:00:58:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:00:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:00:58:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:00:58:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:00:58:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:00:58:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:00:58:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:00:58:   code: 'EADDRINUSE',
+2026-02-05 16:00:58:   errno: -48,
+2026-02-05 16:00:58:   syscall: 'listen',
+2026-02-05 16:00:58:   address: '::',
+2026-02-05 16:00:58:   port: 5002
+2026-02-05 16:00:58: }
+2026-02-05 16:00:59: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:00:59:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:00:59:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:00:59:     at Server.listen (node:net:2102:7)
+2026-02-05 16:00:59:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:00:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:00:59:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:00:59:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:00:59:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:00:59:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:00:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:00:59:   code: 'EADDRINUSE',
+2026-02-05 16:00:59:   errno: -48,
+2026-02-05 16:00:59:   syscall: 'listen',
+2026-02-05 16:00:59:   address: '::',
+2026-02-05 16:00:59:   port: 5002
+2026-02-05 16:00:59: }
+2026-02-05 16:00:59: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:00:59:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:00:59:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:00:59:     at Server.listen (node:net:2102:7)
+2026-02-05 16:00:59:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:00:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:00:59:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:00:59:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:00:59:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:00:59:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:00:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:00:59:   code: 'EADDRINUSE',
+2026-02-05 16:00:59:   errno: -48,
+2026-02-05 16:00:59:   syscall: 'listen',
+2026-02-05 16:00:59:   address: '::',
+2026-02-05 16:00:59:   port: 5002
+2026-02-05 16:00:59: }
+2026-02-05 16:00:59: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:00:59:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:00:59:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:00:59:     at Server.listen (node:net:2102:7)
+2026-02-05 16:00:59:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:00:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:00:59:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:00:59:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:00:59:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:00:59:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:00:59:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:00:59:   code: 'EADDRINUSE',
+2026-02-05 16:00:59:   errno: -48,
+2026-02-05 16:00:59:   syscall: 'listen',
+2026-02-05 16:00:59:   address: '::',
+2026-02-05 16:00:59:   port: 5002
+2026-02-05 16:00:59: }
+2026-02-05 16:01:00: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:00:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:00:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:00:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:00:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:00:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:00:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:00:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:00:   code: 'EADDRINUSE',
+2026-02-05 16:01:00:   errno: -48,
+2026-02-05 16:01:00:   syscall: 'listen',
+2026-02-05 16:01:00:   address: '::',
+2026-02-05 16:01:00:   port: 5002
+2026-02-05 16:01:00: }
+2026-02-05 16:01:00: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:00:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:00:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:00:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:00:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:00:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:00:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:00:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:00:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:00:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:00:   code: 'EADDRINUSE',
+2026-02-05 16:01:00:   errno: -48,
+2026-02-05 16:01:00:   syscall: 'listen',
+2026-02-05 16:01:00:   address: '::',
+2026-02-05 16:01:00:   port: 5002
+2026-02-05 16:01:00: }
+2026-02-05 16:01:01: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:01:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:01:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:01:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:01:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:01:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:01:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:01:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:01:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:01:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:01:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:01:   code: 'EADDRINUSE',
+2026-02-05 16:01:01:   errno: -48,
+2026-02-05 16:01:01:   syscall: 'listen',
+2026-02-05 16:01:01:   address: '::',
+2026-02-05 16:01:01:   port: 5002
+2026-02-05 16:01:01: }
+2026-02-05 16:01:01: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:01:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:01:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:01:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:01:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:01:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:01:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:01:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:01:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:01:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:01:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:01:   code: 'EADDRINUSE',
+2026-02-05 16:01:01:   errno: -48,
+2026-02-05 16:01:01:   syscall: 'listen',
+2026-02-05 16:01:01:   address: '::',
+2026-02-05 16:01:01:   port: 5002
+2026-02-05 16:01:01: }
+2026-02-05 16:01:02: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:02:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:02:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:02:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:02:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:02:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:02:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:02:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:02:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:02:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:02:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:02:   code: 'EADDRINUSE',
+2026-02-05 16:01:02:   errno: -48,
+2026-02-05 16:01:02:   syscall: 'listen',
+2026-02-05 16:01:02:   address: '::',
+2026-02-05 16:01:02:   port: 5002
+2026-02-05 16:01:02: }
+2026-02-05 16:01:02: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:02:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:02:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:02:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:02:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:02:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:02:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:02:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:02:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:02:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:02:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:02:   code: 'EADDRINUSE',
+2026-02-05 16:01:02:   errno: -48,
+2026-02-05 16:01:02:   syscall: 'listen',
+2026-02-05 16:01:02:   address: '::',
+2026-02-05 16:01:02:   port: 5002
+2026-02-05 16:01:02: }
+2026-02-05 16:01:03: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:03:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:03:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:03:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:03:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:03:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:03:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:03:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:03:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:03:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:03:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:03:   code: 'EADDRINUSE',
+2026-02-05 16:01:03:   errno: -48,
+2026-02-05 16:01:03:   syscall: 'listen',
+2026-02-05 16:01:03:   address: '::',
+2026-02-05 16:01:03:   port: 5002
+2026-02-05 16:01:03: }
+2026-02-05 16:01:03: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:03:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:03:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:03:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:03:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:03:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:03:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:03:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:03:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:03:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:03:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:03:   code: 'EADDRINUSE',
+2026-02-05 16:01:03:   errno: -48,
+2026-02-05 16:01:03:   syscall: 'listen',
+2026-02-05 16:01:03:   address: '::',
+2026-02-05 16:01:03:   port: 5002
+2026-02-05 16:01:03: }
+2026-02-05 16:01:03: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:03:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:03:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:03:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:03:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:03:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:03:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:03:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:03:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:03:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:03:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:03:   code: 'EADDRINUSE',
+2026-02-05 16:01:03:   errno: -48,
+2026-02-05 16:01:03:   syscall: 'listen',
+2026-02-05 16:01:03:   address: '::',
+2026-02-05 16:01:03:   port: 5002
+2026-02-05 16:01:03: }
+2026-02-05 16:01:04: Error: listen EADDRINUSE: address already in use :::5002
+2026-02-05 16:01:04:     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+2026-02-05 16:01:04:     at listenInCluster (node:net:1997:12)
+2026-02-05 16:01:04:     at Server.listen (node:net:2102:7)
+2026-02-05 16:01:04:     at Object.<anonymous> (/Users/mumu/Desktop/server/server.js:104:10)
+2026-02-05 16:01:04:     at Module._compile (node:internal/modules/cjs/loader:1760:14)
+2026-02-05 16:01:04:     at Module._extensions..js (node:internal/modules/cjs/loader:1892:10)
+2026-02-05 16:01:04:     at Module.load (node:internal/modules/cjs/loader:1480:32)
+2026-02-05 16:01:04:     at Module._load (node:internal/modules/cjs/loader:1299:12)
+2026-02-05 16:01:04:     at Object.<anonymous> (/opt/homebrew/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+2026-02-05 16:01:04:     at Module._compile (node:internal/modules/cjs/loader:1760:14) {
+2026-02-05 16:01:04:   code: 'EADDRINUSE',
+2026-02-05 16:01:04:   errno: -48,
+2026-02-05 16:01:04:   syscall: 'listen',
+2026-02-05 16:01:04:   address: '::',
+2026-02-05 16:01:04:   port: 5002
+2026-02-05 16:01:04: }

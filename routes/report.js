@@ -10,19 +10,19 @@ const {
     getSatisfactionStats
 } = require("../controllers/report");
 
-// @ENDPOINT http://localhost:5001/api/reports/monthly
+// @ENDPOINT http://localhost:5002/api/reports/monthly
 router.get("/reports/monthly", authCheck, adminCheck, getMonthlyStats);
 
-// @ENDPOINT http://localhost:5001/api/reports/annual
+// @ENDPOINT http://localhost:5002/api/reports/annual
 router.get("/reports/annual", authCheck, adminCheck, getAnnualStats);
 
-// @ENDPOINT http://localhost:5001/api/reports/equipment
+// @ENDPOINT http://localhost:5002/api/reports/equipment
 router.get("/reports/equipment", authCheck, adminCheck, getEquipmentStats);
 
-// @ENDPOINT http://localhost:5001/api/reports/performance
+// @ENDPOINT http://localhost:5002/api/reports/performance
 router.get("/reports/performance", authCheck, adminCheck, getITPerformance);
 
-// @ENDPOINT http://localhost:5001/api/reports/satisfaction
+// @ENDPOINT http://localhost:5002/api/reports/satisfaction
 router.get("/reports/satisfaction", authCheck, adminCheck, getSatisfactionStats);
 
 module.exports = router;

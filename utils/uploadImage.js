@@ -32,7 +32,7 @@ exports.saveImage = (base64String) => {
         fs.writeFileSync(filepath, buffer);
 
         // Return relative URL
-        return `http://localhost:5001/uploads/${filename}`;
+        return `http://localhost:5002/uploads/${filename}`;
     } catch (err) {
         console.error("Image upload failed:", err);
         return null;
