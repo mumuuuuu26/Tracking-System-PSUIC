@@ -38,10 +38,10 @@ app.use(
 app.use(compression()); // บีบอัด Response ให้เล็กลง
 
 // 3. Logging (Dev = สั้นๆ, Prod = ละเอียด)
-if (process.env.NODE_ENV !== "test") {
-  const logFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
-  app.use(morgan(logFormat));
-}
+const { logger, stream } = require("./utils/logger");
+const logFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
+app.use(morgan(logFormat, { stream }));
+
 
 // 4. Body Parser
 app.use(express.json({ limit: "20mb" }));
@@ -165,13 +165,25 @@ if (process.env.NODE_ENV !== "test") {
       await prisma.$connect();
       console.log('✅ Database connected successfully');
       
+      // Initialize Scheduler
+      const { initScheduledJobs } = require("./utils/scheduler");
+      initScheduledJobs();
+
       server.listen(PORT, () => {
-        console.log(
+        logger.info(
           `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
         );
+      }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          logger.error(`❌ Error: Port ${PORT} is already in use!`);
+          logger.error(`   Please kill the process running on port ${PORT} or change the PORT in .env`);
+        } else {
+          logger.error('❌ Server failed to start:', err);
+        }
+        process.exit(1);
       });
     } catch (error) {
-      console.error('❌ Database connection failed:', error);
+      logger.error('❌ Database connection failed:', error);
       process.exit(1);
     }
   };

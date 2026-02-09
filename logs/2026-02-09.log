@@ -1,0 +1,108 @@
+2026-02-09 21:41:08 info: 🚀 Server running in development mode on port 5002
+2026-02-09 21:50:48 info: 📅 Backup scheduler initialized (Running daily at 3:00 AM)
+2026-02-09 21:52:03 info: Starting database backup for tracking_system...
+2026-02-09 21:52:03 info: Backup successful: db_backup_2026-02-09T14-52-03-415Z.sql
+2026-02-09 22:19:58 info: 📅 Backup scheduler initialized (Running daily at 3:00 AM)
+2026-02-09 22:20:22 info: 📅 Backup scheduler initialized (Running daily at 3:00 AM)
+2026-02-09 22:20:34 info: [0mPOST /api/current-user [32m200[0m 44.716 ms - 382[0m
+2026-02-09 22:20:34 info: [0mPOST /api/current-user [32m200[0m 14.785 ms - 382[0m
+2026-02-09 22:20:34 info: [0mGET /api/ticket [36m304[0m 13.433 ms - -[0m
+2026-02-09 22:20:34 info: [0mGET /api/ticket [36m304[0m 2.208 ms - -[0m
+2026-02-09 22:28:32 info: 📅 Backup scheduler initialized (Running daily at 3:00 AM)
+2026-02-09 22:28:32 info: 🚀 Server running in development mode on port 5002
+2026-02-09 22:28:49 info: [0mPOST /api/current-user [32m200[0m 8.979 ms - 382[0m
+2026-02-09 22:28:49 info: [0mPOST /api/current-user [32m200[0m 22.167 ms - 382[0m
+2026-02-09 22:28:49 info: [0mGET /api/ticket [36m304[0m 10.495 ms - -[0m
+2026-02-09 22:28:49 info: [0mGET /api/ticket [36m304[0m 3.203 ms - -[0m
+2026-02-09 22:29:08 info: [0mPOST /api/login [32m200[0m 90.838 ms - 371[0m
+2026-02-09 22:29:08 info: [0mPOST /api/current-user [32m200[0m 1.650 ms - 382[0m
+2026-02-09 22:29:08 info: [0mPOST /api/current-user [32m200[0m 1.557 ms - 382[0m
+2026-02-09 22:29:08 info: [0mGET /api/ticket [32m200[0m 1.932 ms - 676[0m
+2026-02-09 22:29:08 info: [0mGET /api/ticket [36m304[0m 1.707 ms - -[0m
+2026-02-09 22:29:10 info: [0mGET /api/ticket/3 [32m200[0m 12.024 ms - -[0m
+2026-02-09 22:29:10 info: [0mGET /api/ticket/3 [36m304[0m 5.733 ms - -[0m
+2026-02-09 22:29:10 info: [0mGET /uploads/872de3f6-003b-4282-b0e2-245daf835994.jpeg [32m200[0m 3.648 ms - 6926286[0m
+2026-02-09 22:29:12 info: [0mPOST /api/current-user [32m200[0m 3.830 ms - 382[0m
+2026-02-09 22:29:12 info: [0mGET /api/ticket [36m304[0m 3.393 ms - -[0m
+2026-02-09 22:29:12 info: [0mPOST /api/current-user [32m200[0m 2.512 ms - 382[0m
+2026-02-09 22:29:12 info: [0mGET /api/ticket [36m304[0m 2.851 ms - -[0m
+2026-02-09 22:29:13 info: [0mGET /api/category [32m200[0m 2.619 ms - 157[0m
+2026-02-09 22:29:13 info: [0mGET /api/ticket/history?categoryId=all [32m200[0m 4.960 ms - 702[0m
+2026-02-09 22:29:13 info: [0mGET /api/category [36m304[0m 2.482 ms - -[0m
+2026-02-09 22:29:13 info: [0mGET /api/ticket/history?categoryId=all [36m304[0m 3.674 ms - -[0m
+2026-02-09 22:29:15 info: [0mGET /api/category [36m304[0m 2.892 ms - -[0m
+2026-02-09 22:29:15 info: [0mGET /api/ticket/history?categoryId=4 [32m200[0m 5.961 ms - 2[0m
+2026-02-09 22:29:15 info: [0mGET /api/category [36m304[0m 2.171 ms - -[0m
+2026-02-09 22:29:15 info: [0mGET /api/ticket/history?categoryId=1 [32m200[0m 5.293 ms - 702[0m
+2026-02-09 22:29:16 info: [0mGET /api/category [36m304[0m 2.446 ms - -[0m
+2026-02-09 22:29:16 info: [0mGET /api/ticket/history?categoryId=6 [32m200[0m 4.995 ms - 2[0m
+2026-02-09 22:29:16 info: [0mGET /api/category [36m304[0m 2.424 ms - -[0m
+2026-02-09 22:29:16 info: [0mGET /api/ticket/history?categoryId=2 [32m200[0m 4.821 ms - 2[0m
+2026-02-09 22:29:16 info: [0mGET /api/category [36m304[0m 2.220 ms - -[0m
+2026-02-09 22:29:16 info: [0mGET /api/ticket/history?categoryId=5 [32m200[0m 4.585 ms - 2[0m
+2026-02-09 22:29:18 info: [0mGET /api/category [36m304[0m 2.431 ms - -[0m
+2026-02-09 22:29:18 info: [0mGET /api/ticket/history?categoryId=3 [32m200[0m 4.973 ms - 2[0m
+2026-02-09 22:29:19 info: [0mGET /api/category [36m304[0m 3.468 ms - -[0m
+2026-02-09 22:29:19 info: [0mGET /api/ticket/history?categoryId=6 [36m304[0m 3.017 ms - -[0m
+2026-02-09 22:29:20 info: [0mGET /api/category [36m304[0m 3.354 ms - -[0m
+2026-02-09 22:29:20 info: [0mGET /api/ticket/history?categoryId=1 [36m304[0m 3.713 ms - -[0m
+2026-02-09 22:29:20 info: [0mGET /api/category [36m304[0m 3.806 ms - -[0m
+2026-02-09 22:29:20 info: [0mGET /api/ticket/history?categoryId=4 [36m304[0m 3.290 ms - -[0m
+2026-02-09 22:29:21 info: [0mGET /api/category [36m304[0m 2.926 ms - -[0m
+2026-02-09 22:29:21 info: [0mGET /api/ticket/history?categoryId=all [36m304[0m 3.789 ms - -[0m
+2026-02-09 22:29:25 info: [0mPOST /api/current-user [32m200[0m 2.596 ms - 382[0m
+2026-02-09 22:29:25 info: [0mPOST /api/current-user [32m200[0m 2.363 ms - 382[0m
+2026-02-09 22:29:39 info: [0mPOST /api/login [33m400[0m 83.662 ms - 30[0m
+2026-02-09 22:29:44 info: [0mPOST /api/login [32m200[0m 84.106 ms - 371[0m
+2026-02-09 22:29:44 info: [0mPOST /api/current-user [32m200[0m 1.638 ms - 382[0m
+2026-02-09 22:29:44 info: [0mPOST /api/current-user [32m200[0m 1.491 ms - 382[0m
+2026-02-09 22:29:44 info: [0mGET /api/ticket [36m304[0m 1.865 ms - -[0m
+2026-02-09 22:29:44 info: [0mGET /api/ticket [36m304[0m 1.441 ms - -[0m
+2026-02-09 22:49:48 info: [0mPOST /api/auth/current-user [33m404[0m 7.348 ms - 161[0m
+2026-02-09 22:49:48 info: [0mPOST /api/auth/current-user [33m404[0m 2.354 ms - 161[0m
+2026-02-09 22:49:48 info: [0mGET /api/ticket [36m304[0m 6.206 ms - -[0m
+2026-02-09 22:49:48 info: [0mGET /api/ticket [36m304[0m 22.020 ms - -[0m
+2026-02-09 22:54:59 info: 📅 Backup scheduler initialized (Running daily at 3:00 AM)
+2026-02-09 22:54:59 info: 🚀 Server running in development mode on port 5002
+2026-02-09 22:55:52 info: [0mPOST /api/login [32m200[0m 98.944 ms - 371[0m
+2026-02-09 22:55:52 info: [0mPOST /api/current-user [32m200[0m 3.711 ms - 382[0m
+2026-02-09 22:55:52 info: [0mPOST /api/current-user [32m200[0m 3.000 ms - 382[0m
+2026-02-09 22:55:52 info: [0mGET /api/ticket [36m304[0m 4.535 ms - -[0m
+2026-02-09 22:55:52 info: [0mGET /api/ticket [36m304[0m 3.090 ms - -[0m
+2026-02-09 22:55:53 info: [0mGET /api/ticket/3 [36m304[0m 8.250 ms - -[0m
+2026-02-09 22:55:53 info: [0mGET /api/ticket/3 [36m304[0m 7.659 ms - -[0m
+2026-02-09 22:55:53 info: [0mGET /uploads/872de3f6-003b-4282-b0e2-245daf835994.jpeg [36m304[0m 1.718 ms - -[0m
+2026-02-09 22:55:55 info: [0mGET /api/category [36m304[0m 3.198 ms - -[0m
+2026-02-09 22:55:55 info: [0mGET /api/category [36m304[0m 4.580 ms - -[0m
+2026-02-09 22:55:55 info: [0mGET /api/room [32m200[0m 6.173 ms - 415[0m
+2026-02-09 22:55:55 info: [0mGET /api/room [36m304[0m 2.699 ms - -[0m
+2026-02-09 22:55:57 info: [0mGET /api/category [36m304[0m 2.696 ms - -[0m
+2026-02-09 22:55:57 info: [0mGET /api/ticket/history?categoryId=all [36m304[0m 4.319 ms - -[0m
+2026-02-09 22:55:57 info: [0mGET /api/category [36m304[0m 2.051 ms - -[0m
+2026-02-09 22:55:57 info: [0mGET /api/ticket/history?categoryId=all [36m304[0m 2.559 ms - -[0m
+2026-02-09 22:55:59 info: [0mGET /api/category [36m304[0m 3.661 ms - -[0m
+2026-02-09 22:55:59 info: [0mGET /api/ticket/history?categoryId=1 [36m304[0m 4.308 ms - -[0m
+2026-02-09 22:56:00 info: [0mGET /api/category [36m304[0m 4.073 ms - -[0m
+2026-02-09 22:56:00 info: [0mGET /api/ticket/history?categoryId=6 [36m304[0m 3.486 ms - -[0m
+2026-02-09 22:56:00 info: [0mGET /api/category [36m304[0m 3.339 ms - -[0m
+2026-02-09 22:56:00 info: [0mGET /api/ticket/history?categoryId=2 [36m304[0m 3.047 ms - -[0m
+2026-02-09 22:56:01 info: [0mGET /api/category [36m304[0m 3.456 ms - -[0m
+2026-02-09 22:56:01 info: [0mGET /api/ticket/history?categoryId=5 [36m304[0m 2.816 ms - -[0m
+2026-02-09 22:56:01 info: [0mGET /api/category [36m304[0m 3.340 ms - -[0m
+2026-02-09 22:56:01 info: [0mGET /api/ticket/history?categoryId=3 [36m304[0m 2.950 ms - -[0m
+2026-02-09 22:56:01 info: [0mGET /api/category [36m304[0m 3.787 ms - -[0m
+2026-02-09 22:56:01 info: [0mGET /api/ticket/history?categoryId=2 [36m304[0m 3.112 ms - -[0m
+2026-02-09 22:56:02 info: [0mGET /api/category [36m304[0m 3.460 ms - -[0m
+2026-02-09 22:56:02 info: [0mGET /api/ticket/history?categoryId=6 [36m304[0m 2.930 ms - -[0m
+2026-02-09 22:56:02 info: [0mGET /api/category [36m304[0m 3.466 ms - -[0m
+2026-02-09 22:56:02 info: [0mGET /api/ticket/history?categoryId=1 [36m304[0m 5.295 ms - -[0m
+2026-02-09 22:56:03 info: [0mGET /api/category [36m304[0m 3.460 ms - -[0m
+2026-02-09 22:56:03 info: [0mGET /api/ticket/history?categoryId=4 [36m304[0m 3.161 ms - -[0m
+2026-02-09 22:56:03 info: [0mGET /api/category [36m304[0m 3.444 ms - -[0m
+2026-02-09 22:56:03 info: [0mGET /api/ticket/history?categoryId=all [36m304[0m 3.874 ms - -[0m
+2026-02-09 22:56:05 info: [0mPOST /api/current-user [32m200[0m 1.374 ms - 382[0m
+2026-02-09 22:56:05 info: [0mPOST /api/current-user [32m200[0m 1.011 ms - 382[0m
+2026-02-09 22:56:09 info: [0mPOST /api/current-user [32m200[0m 2.997 ms - 382[0m
+2026-02-09 22:56:09 info: [0mGET /api/ticket [36m304[0m 2.752 ms - -[0m
+2026-02-09 22:56:09 info: [0mPOST /api/current-user [32m200[0m 4.149 ms - 382[0m
+2026-02-09 22:56:09 info: [0mGET /api/ticket [36m304[0m 3.514 ms - -[0m

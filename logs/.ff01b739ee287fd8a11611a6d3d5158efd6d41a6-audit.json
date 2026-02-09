@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/Users/mumu/Desktop/server/logs/.ff01b739ee287fd8a11611a6d3d5158efd6d41a6-audit.json",
+    "files": [
+        {
+            "date": 1770648068188,
+            "name": "/Users/mumu/Desktop/server/logs/2026-02-09.log",
+            "hash": "f749d44b639b459357eb2972e0b165a4a58695d07ec63184e791744ecfbc0b9e"
+        }
+    ],
+    "hashType": "sha256"
+}

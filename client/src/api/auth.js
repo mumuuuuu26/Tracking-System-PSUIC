@@ -1,18 +1,18 @@
-import axios from 'axios'
+import api from '../utils/axios'
 
 // Register
 export const register = async (form) => {
-    return await axios.post('/api/register', form)
+    return await api.post('/register', form)
 }
 
 // Login
 export const login = async (form) => {
-    return await axios.post('/api/login', form)
+    return await api.post('/login', form)
 }
 
 // Get Current User
 export const currentUser = async (token) => {
-    return await axios.post('/api/current-user', {}, {
+    return await api.post('/current-user', {}, {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -21,9 +21,10 @@ export const currentUser = async (token) => {
 
 // Get Current Admin
 export const currentAdmin = async (token) => {
-    return await axios.post('/api/current-admin', {}, {
+    return await api.post('/current-admin', {}, {
         headers: {
             Authorization: `Bearer ${token}`
         }
     })
 }
+

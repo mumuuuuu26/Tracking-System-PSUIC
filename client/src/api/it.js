@@ -1,8 +1,8 @@
-import axios from "axios";
+import api from "../utils/axios";
 
 // Get dashboard statistics
 export const getStats = async (token) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/stats`, {
+    return await api.get('/it/stats', {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -11,7 +11,7 @@ export const getStats = async (token) => {
 
 // Get IT tasks
 export const getMyTasks = async (token) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/tasks`, {
+    return await api.get('/it/tasks', {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -22,7 +22,7 @@ export const getMyTasks = async (token) => {
 
 // Accept job
 export const previewJob = async (token, id) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/job/${id}/preview`, {
+    return await api.get(`/it/job/${id}/preview`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -30,8 +30,8 @@ export const previewJob = async (token, id) => {
 };
 
 export const acceptJob = async (token, id) => {
-    return await axios.put(
-        `${import.meta.env.VITE_API_URL}/it/accept/${id}`,
+    return await api.put(
+        `/it/accept/${id}`,
         {},
         {
             headers: {
@@ -42,8 +42,8 @@ export const acceptJob = async (token, id) => {
 };
 
 export const rejectJob = async (token, id, reason) => {
-    return await axios.put(
-        `${import.meta.env.VITE_API_URL}/it/reject/${id}`,
+    return await api.put(
+        `/it/reject/${id}`,
         { reason },
         {
             headers: { Authorization: `Bearer ${token}` },
@@ -55,7 +55,7 @@ export const rejectJob = async (token, id, reason) => {
 
 // Close job
 export const closeJob = async (token, id, data) => {
-    return await axios.put(`${import.meta.env.VITE_API_URL}/it/close/${id}`, data, {
+    return await api.put(`/it/close/${id}`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -64,7 +64,7 @@ export const closeJob = async (token, id, data) => {
 
 // Save Draft (Checklist & Notes)
 export const saveDraft = async (token, id, data) => {
-    return await axios.put(`${import.meta.env.VITE_API_URL}/it/draft/${id}`, data, {
+    return await api.put(`/it/draft/${id}`, data, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -75,7 +75,7 @@ export const saveDraft = async (token, id, data) => {
 
 // Get history
 export const getHistory = async (token) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/history`, {
+    return await api.get('/it/history', {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -85,7 +85,7 @@ export const getHistory = async (token) => {
 
 // Get public schedule
 export const getPublicSchedule = async (token) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/public-schedule`, {
+    return await api.get('/it/public-schedule', {
         headers: {
             Authorization: `Bearer ${token}`,
         },
@@ -93,13 +93,13 @@ export const getPublicSchedule = async (token) => {
 };
 
 export const syncGoogleCalendar = async (token) => {
-    return await axios.post(`${import.meta.env.VITE_API_URL}/it/google-sync`, {}, {
+    return await api.post('/it/google-sync', {}, {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
 
 export const testGoogleSync = async (token) => {
-    return await axios.get(`${import.meta.env.VITE_API_URL}/it/test-google-sync`, {
+    return await api.get('/it/test-google-sync', {
         headers: { Authorization: `Bearer ${token}` }
     });
 };

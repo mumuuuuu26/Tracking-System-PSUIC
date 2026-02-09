@@ -129,9 +129,13 @@ model Ticket {
   @@index([assignedToId])
   @@index([roomId])
   @@index([equipmentId])
+  @@index([categoryId]) // [NEW] optimize history filtering
+  @@index([urgency])    // [NEW] optimize urgent ticket counts
+  @@index([updatedAt])  // [NEW] optimize daily stats
   @@index([status])
   @@index([isDeleted])
   @@index([status, createdAt])
+  @@index([assignedToId, status]) // [NEW] optimize "My Active Tickets"
 }
 
 // === [NEW] NOTIFICATION MODEL ===

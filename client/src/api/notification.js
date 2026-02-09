@@ -1,7 +1,7 @@
-import axios from 'axios'
+import api from '../utils/axios'
 
 export const listNotifications = async (token) => {
-    return await axios.get('/api/notifications', {
+    return await api.get('/notifications', {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -9,7 +9,7 @@ export const listNotifications = async (token) => {
 }
 
 export const markRead = async (token, id) => {
-    return await axios.put(`/api/notification/${id}/read`, {}, {
+    return await api.put(`/notification/${id}/read`, {}, {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -17,7 +17,7 @@ export const markRead = async (token, id) => {
 }
 
 export const removeNotification = async (token, id) => {
-    return await axios.delete(`/api/notification/${id}`, {
+    return await api.delete(`/notification/${id}`, {
         headers: {
             Authorization: `Bearer ${token}`
         }
