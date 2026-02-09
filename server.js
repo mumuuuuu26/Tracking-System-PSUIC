@@ -53,7 +53,10 @@ app.use(
     origin: [
       "http://localhost:5173",       // สำหรับ Dev ในเครื่อง
       "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (ถ้ามี)
-      "http://10.135.2.243"          // สำหรับ User ทั่วไป (Production)
+      "http://10.135.2.243",         // สำหรับ User ทั่วไป (Production)
+      "http://10.128.164.16:5173",   // For Local Network Testing (Dev)
+      "http://10.128.164.16",        // For Local Network Testing (Prod Sim)
+      /https?:\/\/.*\.ngrok-free\.app/ // Allow all Ngrok subdomains
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, // ถ้ามีการใช้ Cookie/Session
@@ -146,7 +149,8 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "client/dist")));
 
 // 3. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
-app.get("*", (req, res) => {
+// 3. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
+app.get(/.*/, (req, res) => {
     // ป้องกันไม่ให้ไปแย่ง Route ของ API
     if (!req.originalUrl.startsWith('/api')) {
         res.sendFile(path.join(__dirname, "client/dist", "index.html"));
