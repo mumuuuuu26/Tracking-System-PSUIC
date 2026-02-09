@@ -141,6 +141,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// --- ส่วนที่เพิ่มเพื่อ Serve Frontend ---
+// 2. บอกให้ Server รู้จักโฟลเดอร์หน้าเว็บ (ที่ Build แล้ว)
+app.use(express.static(path.join(__dirname, "client/dist")));
+
+// 3. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
+app.get("*", (req, res) => {
+    // ป้องกันไม่ให้ไปแย่ง Route ของ API
+    if (!req.originalUrl.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, "client/dist", "index.html"));
+    } else {
+        // กรณีเป็น API ที่ไม่เจอให้ตอบ 404
+        res.status(404).json({ message: "API route not found" });
+    }
+});
+// --- จบส่วนที่เพิ่ม ---
+
 // --- Start Server & Graceful Shutdown ---
 const PORT = process.env.PORT || 5002;
 
