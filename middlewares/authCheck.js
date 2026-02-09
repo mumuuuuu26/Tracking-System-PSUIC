@@ -40,11 +40,8 @@ exports.authCheck = async (req, res, next) => {
 
 exports.adminCheck = async (req, res, next) => {
   try {
-    const { id } = req.user;
-    const adminUsers = await prisma.user.findUnique({
-      where: { id: id },
-    });
-    if (!adminUsers || adminUsers.role !== "admin") {
+    // Rely on authCheck to provide req.user
+    if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ message: "Access Denied: Admin Only" });
     }
 
@@ -57,13 +54,8 @@ exports.adminCheck = async (req, res, next) => {
 
 exports.itCheck = async (req, res, next) => {
   try {
-    const { id } = req.user;
-    const itUser = await prisma.user.findUnique({
-      where: { id: id },
-    });
-
     // อนุญาตให้ทั้ง it_support และ admin เข้าถึงส่วนนี้ได้
-    if (!itUser || (itUser.role !== "it_support" && itUser.role !== "admin")) {
+    if (!req.user || (req.user.role !== "it_support" && req.user.role !== "admin")) {
       return res
         .status(403)
         .json({ message: "Access Denied: IT Support Only" });

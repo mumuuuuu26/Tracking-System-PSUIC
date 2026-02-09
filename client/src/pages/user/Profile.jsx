@@ -19,6 +19,7 @@ import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const Profile = () => {
   const { token, checkUser, actionLogout } = useAuthStore();
@@ -164,9 +165,10 @@ const Profile = () => {
             <div className="w-full h-full rounded-full overflow-hidden border-4 border-blue-50">
               {profile.picture ? (
                 <img
-                  src={profile.picture}
+                  src={getImageUrl(profile.picture)}
                   alt="Profile"
                   className="w-full h-full object-cover"
+                  onError={(e) => { e.target.src = '/default-profile.png'; }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-4xl font-bold">

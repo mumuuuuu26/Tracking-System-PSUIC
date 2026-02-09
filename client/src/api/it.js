@@ -97,3 +97,9 @@ export const syncGoogleCalendar = async (token) => {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
+
+export const testGoogleSync = async (token) => {
+    return await axios.get(`${import.meta.env.VITE_API_URL}/it/test-google-sync`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+};

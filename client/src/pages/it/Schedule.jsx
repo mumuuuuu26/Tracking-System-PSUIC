@@ -20,7 +20,7 @@ const Schedule = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState(false);
+    const [syncing, setSyncing] = useState(false); // Fix: remove brackets to use state correctly
 
     // Settings State
     const [showSettings, setShowSettings] = useState(false);
@@ -46,7 +46,7 @@ const Schedule = () => {
             const res = await currentUser(token);
             if (res.data) {
                 setCalendarId(res.data.googleCalendarId || "");
-                setSavedCalendarId(res.data.googleCalendarId || "");
+                setSavedCalendarId(res.data.googleCalendarId || ""); // This triggers the useEffect below
                 setServiceEmail(res.data.serviceAccountEmail || "");
             }
         } catch (err) {
@@ -55,18 +55,23 @@ const Schedule = () => {
     }, [token]);
 
     const performSync = React.useCallback(async () => {
+        // Prevent sync if no ID is saved to avoid 400 errors
+        if (!savedCalendarId) return;
+
         try {
             setSyncing(true);
-            const res = await syncGoogleCalendar(token);
-            // toast.success(res.data.message || "Synced successfully"); // Optional: Don't spam toast on auto-sync
+            await syncGoogleCalendar(token);
             loadSchedule();
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.message || "Sync failed");
+            // Only show error if it's NOT a "missing ID" error (which we sort of guard against, but just in case)
+            if (err.response?.status !== 400) {
+                toast.error(err.response?.data?.message || "Sync failed");
+            }
         } finally {
             setSyncing(false);
         }
-    }, [token, loadSchedule]);
+    }, [token, loadSchedule, savedCalendarId]);
 
     // Initial Load & Polling
     useEffect(() => {
@@ -80,26 +85,46 @@ const Schedule = () => {
 
             return () => clearInterval(intervalId);
         }
-    }, [token]); // Removed functions from dependency array to prevent loops if they are unstable
+    }, [token, loadProfile, loadSchedule]);
 
-    // Auto-sync on mount only
+    // Auto-sync ONCE when savedCalendarId is available (e.g. on page reload)
     useEffect(() => {
-        if (token) {
+        if (token && savedCalendarId) {
             performSync();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token]); // Run once when token is available
+    }, [token, savedCalendarId]);
 
     const handleSaveSettings = async () => {
+        if (!calendarId) {
+            toast.warning("Please enter a Calendar ID");
+            return;
+        }
+
         try {
+            setSyncing(true);
+            // 1. Save Profile (Backend triggers async sync, but we want to wait for clear result)
             await updateProfile(token, { googleCalendarId: calendarId });
             setSavedCalendarId(calendarId);
+
+            // 2. Explicitly Sync to get event count for feedback
+            const res = await syncGoogleCalendar(token);
+
             setShowSettings(false);
-            toast.success("Calendar ID saved. Syncing...");
-            performSync();
+            toast.success(`Connected! Synced ${res.data.count} events.`);
+            loadSchedule();
         } catch (err) {
             console.error(err);
-            toast.error("Failed to save settings");
+            const msg = err.response?.data?.message || "Failed to save settings";
+            // Check if it's a sync error or save error
+            Swal.fire({
+                icon: "error",
+                title: "Connection Failed",
+                text: msg,
+                footer: "Check that you shared the calendar with the Service Email."
+            });
+        } finally {
+            setSyncing(false);
         }
     };
 
@@ -152,8 +177,6 @@ const Schedule = () => {
                     onDateSelect={setSelectedDate}
                 />
 
-
-
                 {/* Daily List */}
                 <div className="space-y-4">
                     <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
@@ -161,8 +184,10 @@ const Schedule = () => {
                         Tasks for {selectedDate.format('DD MMM YYYY')}
                     </h3>
 
-                    {loading ? (
-                        <div className="text-center py-10 text-gray-400">Loading schedule...</div>
+                    {loading || syncing ? (
+                        <div className="text-center py-10 text-gray-400 animate-pulse">
+                            {syncing ? "Syncing with Google Calendar..." : "Loading schedule..."}
+                        </div>
                     ) : selectedItems.length > 0 ? (
                         selectedItems.map((item, idx) => (
                             <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-start gap-4">
@@ -242,7 +267,6 @@ const Schedule = () => {
                                 Usually your email address (or finding in Calendar Settings).
                             </p>
                         </div>
-
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowSettings(false)}
@@ -252,9 +276,17 @@ const Schedule = () => {
                             </button>
                             <button
                                 onClick={handleSaveSettings}
-                                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
+                                disabled={syncing}
+                                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
                             >
-                                Save & Connect
+                                {syncing ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                                        Connecting...
+                                    </>
+                                ) : (
+                                    "Save & Connect"
+                                )}
                             </button>
                         </div>
                     </div>

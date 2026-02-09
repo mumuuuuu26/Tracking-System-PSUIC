@@ -144,6 +144,10 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
 
     const targetCalendarId = calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary';
         
+        if (!targetCalendarId || typeof targetCalendarId !== 'string' || !targetCalendarId.trim()) {
+            throw new Error("Invalid Calendar ID provided");
+        }
+        
         const calendar = google.calendar({ version: 'v3', auth });
         
         let allEvents = [];

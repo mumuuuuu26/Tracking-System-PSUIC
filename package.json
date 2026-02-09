@@ -43,7 +43,7 @@
   },
   "prisma": {
     "dev": "nodemon server.js",
-    "seed": "node prisma/seed.js",
+    "seed": "node prisma/seed-complete.js",
     "seed:it": "node prisma/seed-it.js",
     "seed:all": "node prisma/seed.js && node prisma/seed-it.js"
   },

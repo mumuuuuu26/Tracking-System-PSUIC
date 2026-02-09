@@ -52,10 +52,10 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",       // สำหรับ Dev ในเครื่อง
-      "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (ถ้ามี)
+      process.env.CLIENT_URL,        // จาก .env
+      process.env.FRONTEND_URL,      // จาก .env
+      "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (เผื่อไว้)
       "http://10.135.2.243",         // สำหรับ User ทั่วไป (Production)
-      "http://10.128.164.16:5173",   // For Local Network Testing (Dev)
-      "http://10.128.164.16",        // For Local Network Testing (Prod Sim)
       /https?:\/\/.*\.ngrok-free\.app/ // Allow all Ngrok subdomains
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -108,16 +108,9 @@ app.use("/api", permissionRoutes);
 // app.use("/api", healthRoutes); // Uncomment if exists
 
 // --- Global Error Handler ---
-const errorHandler = require("./middlewares/errorHandler"); // Ensure this file exists
-app.use((err, req, res, next) => {
-  // Fallback error handler if middleware file is missing issues
-  console.error(err.stack);
-  const status = err.statusCode || 500;
-  res.status(status).json({
-    message: err.message || "Internal Server Error",
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-  });
-});
+// --- Global Error Handler ---
+const errorHandler = require("./middlewares/errorHandler");
+app.use(errorHandler);
 
 // --- Swagger ---
 const swaggerUi = require("swagger-ui-express");
@@ -131,9 +124,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      "http://localhost:5173",       // สำหรับ Dev ในเครื่อง
-      "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (ถ้ามี)
-      "http://10.135.2.243"          // สำหรับ User ทั่วไป (Production)
+      "http://localhost:5173",
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+      "http://10.135.2.243:5173",
+      "http://10.135.2.243"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
@@ -144,7 +139,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- ส่วนที่เพิ่มเพื่อ Serve Frontend ---
 // 2. บอกให้ Server รู้จักโฟลเดอร์หน้าเว็บ (ที่ Build แล้ว)
 app.use(express.static(path.join(__dirname, "client/dist")));
 
@@ -159,17 +153,30 @@ app.get(/.*/, (req, res) => {
         res.status(404).json({ message: "API route not found" });
     }
 });
-// --- จบส่วนที่เพิ่ม ---
 
 // --- Start Server & Graceful Shutdown ---
 const PORT = process.env.PORT || 5002;
 
 if (process.env.NODE_ENV !== "test") {
-  server.listen(PORT, () => {
-    console.log(
-      `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
-    );
-  });
+  // Verify Database Connection & Start Server
+  const startServer = async () => {
+    try {
+      const prisma = require("./config/prisma");
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+      
+      server.listen(PORT, () => {
+        console.log(
+          `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
+        );
+      });
+    } catch (error) {
+      console.error('❌ Database connection failed:', error);
+      process.exit(1);
+    }
+  };
+
+  startServer();
 }
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server

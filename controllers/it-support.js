@@ -450,72 +450,62 @@ exports.syncGoogleCalendar = async (req, res) => {
     try {
         const userId = req.user.id;
         const googleCalendarId = req.user.googleCalendarId; // Use custom calendar ID
+        console.log(`[Sync] User ${userId} requesting sync for calendar: ${googleCalendarId}`);
 
-        // Sync from 3 MONTHS AGO to ensure full context and overlap
-        const today = new Date();
-        const start = new Date(today.getFullYear(), today.getMonth() - 3, 1); 
-        start.setHours(0, 0, 0, 0);
-        
-        const end = new Date();
-        end.setDate(end.getDate() + 90); // 3 months lookahead
+        if (!googleCalendarId) {
+            return res.status(400).json({ message: "No Google Calendar ID configured." });
+        }
 
-        // 1. Fetch events from Google
-        const events = await listGoogleEvents(start, end, googleCalendarId);
-        
-        // 2. Prepare data for bulk insertion
-        const tasksToCreate = events.map(event => {
-            const isFullDay = !!event.start.date;
-            
-            // Handle Start/End Times
-            let startDate, endDate;
-            if (isFullDay) {
-                // Full day events come as "YYYY-MM-DD"
-                // Parse them as local by appending T00:00:00 to avoid UTC shift issues if needed, 
-                // OR just trust the Date constructor if the server is in the right timezone.
-                // Best practice: Set to start of day in local time or preserve string if specific.
-                // For simplicity here:
-                startDate = new Date(event.start.date);
-                endDate = new Date(event.end.date); 
-            } else {
-                startDate = new Date(event.start.dateTime);
-                endDate = new Date(event.end.dateTime);
-            }
+        const { syncUserCalendar } = require("../utils/syncService");
+        const count = await syncUserCalendar(userId, googleCalendarId);
 
-            return {
-                userId: userId,
-                title: event.summary || '(No Title)',
-                description: [
-                    `Imported from Google Calendar${googleCalendarId ? ` (${googleCalendarId})` : ''}`,
-                    event.location ? `📍 ${event.location}` : null,
-                    event.description || ''
-                ].filter(Boolean).join('\n'), // Join non-empty strings
-                
-                date: startDate,
-                startTime: startDate,
-                endTime: endDate,
-                color: isFullDay ? '#10B981' : '#4285F4', // Green for full-day (like holidays), Blue for timed
-                isCompleted: false
-            };
-        });
-
-        // 3. ATOMIC Transaction: Delete old range AND Insert new data
-        // This prevents race conditions causing duplicates
-        await prisma.$transaction([
-            prisma.personalTask.deleteMany({
-                where: {
-                    userId: userId,
-                    date: { gte: start }
-                }
-            }),
-            prisma.personalTask.createMany({
-                data: tasksToCreate
-            })
-        ]);
-
-        res.json({ message: `Synced ${tasksToCreate.length} events from Google Calendar${googleCalendarId ? ` (${googleCalendarId})` : ''}`, count: tasksToCreate.length });
+        res.json({ message: `Synced ${count} events from Google Calendar`, count });
     } catch (err) {
-        console.error("Sync Error:", err);
+        console.error("Sync Error Detailed:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
         // Send specific error message to client
         res.status(500).json({ message: err.message || "Sync Failed" });
+    }
+};
+
+exports.testGoogleSync = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const googleCalendarId = req.user.googleCalendarId;
+        
+        if (!googleCalendarId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "No Google Calendar ID found. Please Enter and Save it first.",
+                user: req.user
+            });
+        }
+
+        console.log(`[TestSync] Full Sync Test for ${googleCalendarId}`);
+
+        // Call the REAL sync service to test the entire pipeline (Fetch -> Transform -> DB Save)
+        const { syncUserCalendar } = require("../utils/syncService");
+        
+        // This attempts to write to the DB
+        const count = await syncUserCalendar(userId, googleCalendarId);
+        
+        res.json({
+            success: true,
+            message: `Success! Synced ${count} events to database.`,
+            eventCount: count,
+            calendarId: googleCalendarId
+        });
+
+    } catch (err) {
+        console.error("Test Sync Failed:", err);
+        res.status(500).json({
+            success: false,
+            message: "Sync Failed during Database Save",
+            error: err.message,
+            stack: err.stack,
+            envCheck: {
+                hasProjectId: !!process.env.GOOGLE_PROJECT_ID,
+                hasClientEmail: !!process.env.GOOGLE_CLIENT_EMAIL
+            }
+        });
     }
 };

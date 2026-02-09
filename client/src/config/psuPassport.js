@@ -6,7 +6,7 @@ export const PSU_PASSPORT_CONFIG = {
   clientId: import.meta.env.VITE_PSU_CLIENT_ID || "YOUR_CLIENT_ID",
   redirectUri:
     import.meta.env.VITE_PSU_REDIRECT_URI ||
-    "http://localhost:5173/auth/callback",
+    `${window.location.origin}/auth/callback`,
   scope: "openid profile email",
 
   // สำหรับ development - mock authentication

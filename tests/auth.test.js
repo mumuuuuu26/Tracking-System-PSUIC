@@ -22,10 +22,16 @@ describe("Auth Endpoints", () => {
   });
 
   it("should login successfully", async () => {
+    const loginEmail = `login_test_${Date.now()}@example.com`;
+    const checkUser = await request(app).post("/api/register").send({
+      email: loginEmail,
+      password: "password123"
+    });
+    
     const res = await request(app)
       .post("/api/login")
       .send({
-        email: "test@example.com",
+        email: loginEmail,
         password: "password123"
       });
     expect(res.statusCode).toEqual(200);

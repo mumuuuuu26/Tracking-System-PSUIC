@@ -123,6 +123,15 @@ model Ticket {
   // [NEW] Soft Delete
   isDeleted  Boolean   @default(false)
   deletedAt  DateTime?
+
+  // Indexes for Performance
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([roomId])
+  @@index([equipmentId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([status, createdAt])
 }
 
 // === [NEW] NOTIFICATION MODEL ===

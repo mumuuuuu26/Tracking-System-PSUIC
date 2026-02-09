@@ -86,7 +86,7 @@ exports.create = async (req, res) => {
               equipment: newTicket.equipment?.name || "N/A",
               category: newTicket.category?.name || "N/A",
               reporter: newTicket.createdBy?.name || newTicket.createdBy?.email,
-              link: `http://localhost:5173/it/ticket/${newTicket.id}`
+              link: `${process.env.FRONTEND_URL}/it/ticket/${newTicket.id}`
             }
           );
         }
@@ -228,7 +228,7 @@ exports.update = async (req, res) => {
           title: updatedTicket.title,
           room: updatedTicket.room?.roomNumber || "N/A",
           resolver: updatedTicket.assignedTo?.name || "IT Team",
-          link: `http://localhost:5173/user/feedback/${updatedTicket.id}`
+          link: `${process.env.FRONTEND_URL}/user/feedback/${updatedTicket.id}`
         }
       );
     }
@@ -421,61 +421,33 @@ exports.listAll = async (req, res) => {
       ];
     }
 
-    // 1. Fetch ALL matching tickets (without pagination first)
-    // Note: If dataset is huge (e.g. >10k), this needs optimization. 
-    // For now, consistent sorting is priority.
-    const tickets = await prisma.ticket.findMany({
-      where,
-      include: {
-        room: true,
-        equipment: true,
-        category: true,
-        createdBy: true,
-        assignedTo: true
-      }
-    });
-
-    const total = tickets.length;
-
-    // 2. Define Sort Weights
-    const statusOrder = {
-      'not_start': 1,
-      'in_progress': 2,
-      'completed': 3,
-      'closed': 4
-    };
-
-    const urgencyOrder = {
-      'Critical': 1,
-      'High': 2,
-      'Medium': 3,
-      'Low': 4,
-      'Normal': 5
-    };
-
-    // 3. Custom Sort
-    tickets.sort((a, b) => {
-      // 1. Status Priority
-      const statusA = statusOrder[a.status] || 99;
-      const statusB = statusOrder[b.status] || 99;
-      if (statusA !== statusB) return statusA - statusB;
-
-      // 2. Urgency Priority
-      const urgencyA = urgencyOrder[a.urgency] || 99;
-      const urgencyB = urgencyOrder[b.urgency] || 99;
-      if (urgencyA !== urgencyB) return urgencyA - urgencyB;
-
-      // 3. Date (Newest First)
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-    // 4. Manual Pagination
-    const startIndex = (parseInt(page) - 1) * parseInt(limit);
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedTickets = tickets.slice(startIndex, endIndex);
+    // Use Transaction to get Data and Count in parallel
+    const [tickets, total] = await prisma.$transaction([
+      prisma.ticket.findMany({
+        where,
+        skip,
+        take,
+        include: {
+            room: true,
+            equipment: true,
+            category: true,
+            createdBy: true,
+            assignedTo: true
+        },
+        orderBy: [
+            // Status Sort: not_start(n) > in_progress(i) > completed(co) > closed(cl)
+            { status: 'desc' }, 
+            // Urgency Sort: Critical(c) > High(h) > Low(l) > Medium(m) > Normal(n)
+            { urgency: 'asc' }, 
+            // Date Sort: Newest First
+            { createdAt: 'desc' } 
+        ]
+      }),
+      prisma.ticket.count({ where })
+    ]);
 
     res.json({
-      data: paginatedTickets,
+      data: tickets,
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / take)

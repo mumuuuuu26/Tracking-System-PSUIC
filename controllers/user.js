@@ -185,7 +185,7 @@ exports.updateProfile = async (req, res) => {
     if (typeof isEmailEnabled !== 'undefined') updateData.isEmailEnabled = isEmailEnabled;
     if (typeof isEmailEnabled !== 'undefined') updateData.isEmailEnabled = isEmailEnabled;
     if (typeof notificationEmail !== 'undefined') updateData.notificationEmail = notificationEmail;
-    if (typeof googleCalendarId !== 'undefined') updateData.googleCalendarId = googleCalendarId;
+    if (typeof googleCalendarId !== 'undefined') updateData.googleCalendarId = googleCalendarId.trim();
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
@@ -204,6 +204,17 @@ exports.updateProfile = async (req, res) => {
         googleCalendarId: true
       }
     });
+
+    // [NEW] Auto-sync if googleCalendarId is updated/present
+    if (updatedUser.googleCalendarId) {
+      try {
+        const { syncUserCalendar } = require("../utils/syncService");
+        await syncUserCalendar(updatedUser.id, updatedUser.googleCalendarId);
+      } catch (syncErr) {
+        console.error("Auto-sync failed:", syncErr.message);
+        // We don't fail the request, just log it. The user will see the updated ID but maybe not events yet.
+      }
+    }
 
     res.json(updatedUser);
   } catch (err) {

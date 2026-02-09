@@ -27,6 +27,8 @@ async function testSync() {
         // console.log('Contains literal \\n:', pk.includes('\\n'));
         // console.log('Contains real newline:', pk.includes('\n'));
         
+        // const targetCalendarId = 'psuichelpdesk@gmail.com'; // From user screenshot
+        // console.log(`Attempting to sync from: ${targetCalendarId}`);
         const events = await listGoogleEvents(start, end);
         console.log(`Found ${events.length} events.`);
         if (events.length > 0) {

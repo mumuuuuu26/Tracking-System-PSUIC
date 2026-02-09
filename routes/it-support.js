@@ -14,7 +14,8 @@ const {
   getPublicSchedule, // [NEW]
   previewJob,
   rejectJob,
-  syncGoogleCalendar // [NEW]
+  syncGoogleCalendar, // [NEW]
+  testGoogleSync // [NEW] DIAGNOSTIC
 } = require("../controllers/it-support");
 
 // Dashboard data
@@ -24,6 +25,7 @@ router.get("/it/tasks", authCheck, itCheck, getMyTasks);
 router.get("/it/history", authCheck, itCheck, getHistory);
 router.get("/it/public-schedule", authCheck, getPublicSchedule); // [NEW] Public for Auth Users
 router.post("/it/google-sync", authCheck, itCheck, syncGoogleCalendar); // [NEW]
+router.get("/it/test-google-sync", authCheck, testGoogleSync); // [NEW] DIAGNOSTIC
 
 // Actions
 router.put("/it/accept/:id", authCheck, itCheck, acceptJob);

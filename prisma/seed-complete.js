@@ -7,12 +7,12 @@ async function main() {
     await prisma.notification.deleteMany();
     await prisma.activityLog.deleteMany();
     await prisma.image.deleteMany();
-    await prisma.appointment.deleteMany();
+    // await prisma.appointment.deleteMany(); // Removed from schema
     await prisma.ticket.deleteMany();
     await prisma.equipment.deleteMany();
     await prisma.room.deleteMany();
     await prisma.category.deleteMany();
-    await prisma.iTAvailability.deleteMany();
+    // await prisma.iTAvailability.deleteMany(); // Removed from schema
     await prisma.user.deleteMany();
 
     console.log("Seeding complete database...");
