@@ -1,7 +1,23 @@
 #!/bin/bash
 
 # Configuration
-SOURCE_DIR="../uploads"
+# Load .env variables if available
+if [ -f "../.env" ]; then
+  export $(grep -v '^#' ../.env | xargs)
+fi
+
+# Determine SOURCE_DIR
+if [ -n "$UPLOAD_DIR" ]; then
+  # Check if absolute path
+  if [[ "$UPLOAD_DIR" = /* ]]; then
+    SOURCE_DIR="$UPLOAD_DIR"
+  else
+    SOURCE_DIR="../$UPLOAD_DIR"
+  fi
+else
+  SOURCE_DIR="../uploads"
+fi
+
 BACKUP_DIR="../backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_NAME="uploads_backup_$TIMESTAMP.tar.gz"

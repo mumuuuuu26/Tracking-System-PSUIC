@@ -64,7 +64,19 @@ app.use(
 );
 
 // 6. Static Files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+const uploadDir = process.env.UPLOAD_DIR || "uploads";
+// Resolve path: if absolute, use as is; if relative, resolve from server root
+const absoluteUploadDir = path.isAbsolute(uploadDir)
+  ? uploadDir
+  : path.join(__dirname, uploadDir);
+
+// Ensure upload directory exists
+const fs = require("fs");
+if (!fs.existsSync(absoluteUploadDir)) {
+  fs.mkdirSync(absoluteUploadDir, { recursive: true });
+}
+
+app.use("/uploads", express.static(absoluteUploadDir));
 
 // --- Rate Limiting Strategy ---
 
@@ -163,7 +175,7 @@ if (process.env.NODE_ENV !== "test") {
     try {
       const prisma = require("./config/prisma");
       await prisma.$connect();
-      console.log('✅ Database connected successfully');
+      logger.info('✅ Database connected successfully');
       
       // Initialize Scheduler
       const { initScheduledJobs } = require("./utils/scheduler");
@@ -193,9 +205,9 @@ if (process.env.NODE_ENV !== "test") {
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server
 process.on("SIGTERM", () => {
-  console.log("SIGTERM signal received: closing HTTP server");
+  logger.info("SIGTERM signal received: closing HTTP server");
   server.close(() => {
-    console.log("HTTP server closed");
+    logger.info("HTTP server closed");
     // ปิด Database connection ตรงนี้ได้ (ถ้าใช้ Prisma: prisma.$disconnect())
     process.exit(0);
   });

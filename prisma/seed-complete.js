@@ -17,11 +17,45 @@ async function main() {
 
     console.log("Seeding complete database...");
 
-    // 1. Create Categories
+    // 1. Create Role Permissions (NEW)
+    const roles = ["admin", "it_support", "user"];
+    await Promise.all(roles.map(role => 
+        prisma.rolePermission.upsert({
+            where: { role },
+            update: {},
+            create: {
+                role,
+                viewTickets: true,
+                editTickets: role !== 'user',
+                assignIT: role === 'admin',
+                manageUsers: role === 'admin',
+                manageEquipment: role !== 'user'
+            }
+        })
+    ));
+
+    // 2. Create Email Templates (NEW)
+    await prisma.emailTemplate.upsert({
+        where: { name: 'new_ticket_it' },
+        update: {},
+        create: {
+            name: 'new_ticket_it',
+            subject: 'New Ticket Alert: {{title}}',
+            body: 'A new ticket has been created by ranges {{createdBy}}. Please check the dashboard.',
+            variables: JSON.stringify(['title', 'createdBy', 'ticketId']),
+            isEnabled: true
+        }
+    });
+
+    // 3. Create Categories
     const categories = await Promise.all([
         "Hardware", "Software", "Network", "Printer", "Account", "Other"
     ].map(name =>
-        prisma.category.create({ data: { name } })
+        prisma.category.upsert({ 
+            where: { name },
+            update: {},
+            create: { name } 
+        })
     ));
 
     // 2. Create Rooms
@@ -110,6 +144,16 @@ async function main() {
             categoryId: categories[3].id
         }
     ].map(data => prisma.ticket.create({ data })));
+
+    // 6. Create Quick Fixes (NEW)
+    await prisma.quickFix.create({
+        data: {
+            title: "Cannot Connect to Wi-Fi",
+            description: "1. Click Wi-Fi icon.\n2. Select PSU-WiFi.\n3. Login with PSU Passport.",
+            category: "Network",
+            createdBy: "admin"
+        }
+    });
 
     console.log("✅ Database seeded successfully!");
     console.log("Login credentials:");

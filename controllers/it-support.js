@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const { saveImage } = require("../utils/uploadImage");
 const { listGoogleEvents } = require("./googleCalendar");
+const { logger } = require("../utils/logger");
 
 // Get dashboard statistics
 exports.previewJob = async (req, res) => {
@@ -33,7 +34,7 @@ exports.previewJob = async (req, res) => {
 
         res.json(ticket);
     } catch (err) {
-        console.error("❌ Preview Job Error:", err);
+        logger.error("❌ Preview Job Error:", err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -100,7 +101,7 @@ exports.getStats = async (req, res) => {
       urgent,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -146,7 +147,7 @@ exports.getMyTasks = async (req, res) => {
 
     res.json(tasks);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -200,7 +201,7 @@ exports.acceptJob = async (req, res) => {
 
     res.json(updatedTicket);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -232,7 +233,7 @@ exports.rejectJob = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    console.error("❌ Reject Job Error:", err);
+    logger.error("❌ Reject Job Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -273,7 +274,7 @@ exports.saveDraft = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -326,7 +327,7 @@ exports.closeJob = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -365,7 +366,7 @@ exports.getHistory = async (req, res) => {
 
     res.json(history);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -441,7 +442,7 @@ exports.getPublicSchedule = async (req, res) => {
 
     res.json(schedule);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -461,7 +462,7 @@ exports.syncGoogleCalendar = async (req, res) => {
 
         res.json({ message: `Synced ${count} events from Google Calendar`, count });
     } catch (err) {
-        console.error("Sync Error Detailed:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+        logger.error("Sync Error Detailed:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
         // Send specific error message to client
         res.status(500).json({ message: err.message || "Sync Failed" });
     }
@@ -480,7 +481,7 @@ exports.testGoogleSync = async (req, res) => {
             });
         }
 
-        console.log(`[TestSync] Full Sync Test for ${googleCalendarId}`);
+        logger.info(`[TestSync] Full Sync Test for ${googleCalendarId}`);
 
         // Call the REAL sync service to test the entire pipeline (Fetch -> Transform -> DB Save)
         const { syncUserCalendar } = require("../utils/syncService");
@@ -496,7 +497,7 @@ exports.testGoogleSync = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Test Sync Failed:", err);
+        logger.error("Test Sync Failed:", err);
         res.status(500).json({
             success: false,
             message: "Sync Failed during Database Save",

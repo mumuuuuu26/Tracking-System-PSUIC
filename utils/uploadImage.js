@@ -7,7 +7,11 @@ exports.saveImage = (base64String) => {
 
     try {
         // Check if directory exists
-        const uploadDir = path.join(__dirname, '../uploads');
+        const uploadDirName = process.env.UPLOAD_DIR || 'uploads';
+        const uploadDir = path.isAbsolute(uploadDirName)
+            ? uploadDirName
+            : path.join(__dirname, '..', uploadDirName);
+
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
