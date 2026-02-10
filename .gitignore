@@ -37,3 +37,8 @@ Thumbs.db
 # Ignore uploads folder content but keep the folder itself
 uploads/*
 !uploads/.gitkeep
+
+# Playwright
+playwright-report/
+test-results/
+

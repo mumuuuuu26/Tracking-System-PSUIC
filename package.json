@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "jest",
+    "test": "cross-env NODE_ENV=test jest",
+    "test:e2e": "playwright test",
     "start": "node server.js",
     "client": "cd client && npm run dev",
     "dev": "nodemon server.js",
@@ -53,8 +54,10 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.0",
+    "@playwright/test": "^1.58.2",
     "babel-jest": "^30.2.0",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "express-rate-limit": "^8.2.1",
     "jest": "^30.2.0",
     "prisma": "^6.16.1",
