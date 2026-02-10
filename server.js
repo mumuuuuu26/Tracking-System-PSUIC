@@ -56,6 +56,8 @@ app.use(
       process.env.FRONTEND_URL,      // จาก .env
       "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (เผื่อไว้)
       "http://10.135.2.243",         // สำหรับ User ทั่วไป (Production)
+      "http://172.20.10.2:5173",     // For mobile testing
+      "http://172.20.10.2",          // For mobile testing
       /https?:\/\/.*\.ngrok-free\.app/ // Allow all Ngrok subdomains
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -141,7 +143,9 @@ const io = new Server(server, {
       process.env.CLIENT_URL,
       process.env.FRONTEND_URL,
       "http://10.135.2.243:5173",
-      "http://10.135.2.243"
+      "http://10.135.2.243",
+      "http://172.20.10.2:5173",
+      "http://172.20.10.2"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
@@ -182,7 +186,7 @@ if (process.env.NODE_ENV !== "test") {
       const { initScheduledJobs } = require("./utils/scheduler");
       initScheduledJobs();
 
-      server.listen(PORT, () => {
+      server.listen(PORT, '0.0.0.0', () => {
         logger.info(
           `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
         );
