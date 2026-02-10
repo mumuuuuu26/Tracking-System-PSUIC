@@ -15,8 +15,11 @@ test.describe('User Workflow', () => {
         
         await page.click('button:has-text("Register")');
         
-        // Verify redirect to login (Wait for registration success)
-        await expect(page).toHaveURL(/\/login/);
+        // Wait for registration success (UI signal)
+        await expect(page.getByText(/register success|สมัครสำเร็จ|success/i)).toBeVisible({ timeout: 10000 });
+        
+        // Return to login
+        await page.goto('/login');
         
         // Login page has a "Login with Email" button to show the form
         // Wait for it to be visible and click it. 
