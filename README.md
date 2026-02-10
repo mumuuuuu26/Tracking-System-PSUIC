@@ -76,6 +76,12 @@ pm2 start ecosystem.config.js
 **Log Files:**
 - Logs are written to the `./logs/` directory.
 
+## Test Strategy
+
+- **CI Pipeline**: Runs Unit and Integration tests (Jest) to ensure core logic and check for regressions.
+- **E2E Tests**: Playwright tests are available for local or manual execution. They are disabled in CI to prioritize build speed and stability.
+  - Run E2E: `npm run test:e2e`
+
 ## API Documentation
 
 Swagger UI is available at:
