@@ -60,12 +60,13 @@ test.describe('User Workflow', () => {
         await equipmentOption.click();
 
         // Select Floor
-        await page.getByText('Floor').click();
+        // Use more specific locator because label also has text "Floor"
+        await page.locator('span').filter({ hasText: /^Floor$/ }).click();
         const floorOption = page.locator('div.absolute.z-50').locator('div.cursor-pointer').first();
         await floorOption.click();
 
         // Select Room
-        await page.getByText('Room').click();
+        await page.locator('span').filter({ hasText: /^Room$/ }).click();
         const roomOption = page.locator('div.absolute.z-50').locator('div.cursor-pointer').first();
         await roomOption.click();
         

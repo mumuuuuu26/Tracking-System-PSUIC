@@ -8,6 +8,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { actionLogin, user } = useAuthStore();
   const [showManualLogin, setShowManualLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -38,6 +39,8 @@ const Login = () => {
 
   const hdlSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
+    setLoading(true);
     try {
       const res = await actionLogin(form);
       roleRedirect(res.data.payload.role);
@@ -45,6 +48,8 @@ const Login = () => {
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Login Failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,9 +142,10 @@ const Login = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg"
+                  disabled={loading}
+                  className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  Sign In
+                  {loading ? 'Signing In...' : 'Sign In'}
                 </button>
               </form>
             </div>
