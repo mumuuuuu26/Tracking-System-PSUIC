@@ -22,13 +22,16 @@ const Login = () => {
   };
 
   const roleRedirect = React.useCallback((role) => {
-    if (role === "admin") {
-      navigate("/admin");
-    } else if (role === "it_support") {
-      navigate("/it");
-    } else {
-      navigate("/user");
-    }
+    // Add a small delay to ensure state updates propagate
+    setTimeout(() => {
+      if (role === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (role === "it_support") {
+        navigate("/it", { replace: true });
+      } else {
+        navigate("/user", { replace: true });
+      }
+    }, 100);
   }, [navigate]);
 
   useEffect(() => {

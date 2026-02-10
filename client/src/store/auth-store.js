@@ -7,6 +7,13 @@ const useAuthStore = create(
         (set, get) => ({
             user: null,
             token: null,
+            hasHydrated: false,
+
+            setHasHydrated: (state) => {
+                set({
+                    hasHydrated: state
+                });
+            },
 
             actionLogin: async (form) => {
                 const res = await login(form)
@@ -36,7 +43,12 @@ const useAuthStore = create(
         }),
         {
             name: 'auth-store',
-            storage: createJSONStorage(() => localStorage)
+            storage: createJSONStorage(() => localStorage),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    state.setHasHydrated(true)
+                }
+            }
         }
     )
 )

@@ -7,10 +7,15 @@ import Swal from "sweetalert2";
 import SidebarUser from "../components/user/SidebarUser";
 
 const LayoutUser = ({ children }) => {
-  const { user } = useAuthStore();
+  const { user, hasHydrated } = useAuthStore();
   const location = useLocation();
 
   const navigate = useNavigate();
+
+  // Wait for hydration to finish before redirecting
+  if (!hasHydrated) {
+    return <div>Loading...</div>; // Or return null / spinner
+  }
 
   if (!user) {
     return <Navigate to="/login" />;
