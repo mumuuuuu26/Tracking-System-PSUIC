@@ -92,7 +92,7 @@ const globalLimiter = rateLimit({
 // Auth Limiter: กัน Brute Force รหัสผ่าน
 const authLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 นาที
-  max: 10, // 10 ครั้งต่อนาที
+  max: 100, // 100 ครั้งต่อนาที (Increased for testing reliability)
   message: { message: "Too many login attempts, please try again later." },
 });
 

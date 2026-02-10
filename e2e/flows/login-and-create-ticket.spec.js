@@ -19,15 +19,22 @@ test.describe('User Workflow', () => {
         await expect(page).toHaveURL(/\/login/);
         
         // Login page has a "Login with Email" button to show the form
+        // Wait for it to be visible and click it. 
+        // Note: Sometimes it might not be visible if manual login is already shown (unlikely on refresh), 
+        // but let's enforce the flow.
         const loginBtn = page.getByRole('button', { name: 'Login with Email' });
-        if (await loginBtn.isVisible()) {
-            await loginBtn.click();
-        }
-
-        await page.fill('input[name="email"]', uniqueEmail);
+        await loginBtn.waitFor({ state: 'visible' }); 
+        await loginBtn.click();
+        
+        // Wait for email input to be visible to ensure form is rendered
+        const emailInput = page.locator('input[name="email"]');
+        await emailInput.waitFor({ state: 'visible' });
+        await emailInput.fill(uniqueEmail);
         await page.fill('input[name="password"]', 'password123');
         await page.click('button[type="submit"]'); // Or 'Sign In' button
 
+        // Verify successful login via Toast or URL
+        await expect(page.getByText('Welcome back')).toBeVisible({ timeout: 10000 });
         
         // 3. Verify redirection to Dashboard (HomeUser)
         await expect(page).toHaveURL('/user', { timeout: 15000 }); 
