@@ -15,11 +15,8 @@ test.describe('User Workflow', () => {
         
         await page.click('button:has-text("Register")');
         
-        // Verify redirect to login or dashboard
-        // await expect(page).toHaveURL('/login'); 
-
-        // 2. Login (if not auto-logged in)
-        await page.goto('/login');
+        // Verify redirect to login (Wait for registration success)
+        await expect(page).toHaveURL(/\/login/);
         
         // Login page has a "Login with Email" button to show the form
         const loginBtn = page.getByRole('button', { name: 'Login with Email' });
