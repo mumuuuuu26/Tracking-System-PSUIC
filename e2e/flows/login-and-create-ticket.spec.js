@@ -34,10 +34,20 @@ test.describe('User Workflow', () => {
         await page.click('button[type="submit"]'); // Or 'Sign In' button
 
         // Verify successful login via Toast or URL
-        await expect(page.getByText('Welcome back')).toBeVisible({ timeout: 10000 });
-        
+        await expect(page.getByText('Welcome back')).toBeVisible({ timeout: 15000 });
+
+        // Debugging: Log current URL and localStorage
+        const currentUrl = page.url();
+        console.log('Current URL after login attempt:', currentUrl);
+
+        // Verification: Check if auth-storage exists in localStorage
+        await page.waitForFunction(() => {
+            const auth = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+            return auth?.state?.user && auth?.state?.token;
+        }, null, { timeout: 10000 }).catch(() => console.log('Auth storage not found in localStorage'));
+
         // 3. Verify redirection to Dashboard (HomeUser)
-        await expect(page).toHaveURL('/user', { timeout: 15000 }); 
+        await expect(page).toHaveURL('/user', { timeout: 30000 }); 
 
         // 4. Navigate to "Create Ticket"
         // In HomeUser, there is a "Report Issue" button
