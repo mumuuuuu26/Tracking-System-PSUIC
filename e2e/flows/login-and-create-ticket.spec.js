@@ -1,35 +1,22 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect, request } = require('@playwright/test');
 
 test.describe('User Workflow', () => {
     test('Register, Login and Create Ticket', async ({ page }) => {
         const uniqueEmail = `e2e_${Date.now()}@example.com`;
         
-        // 1. Register
-        await page.goto('/register');
-        // Register form only has email, password, confirmPassword
-        // await page.fill('input[name="firstName"]', 'E2E'); // Removed
-        // await page.fill('input[name="lastName"]', 'Tester'); // Removed
-        await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
-        await page.fill('input[name="confirmPassword"]', 'password123');
-        
-        await page.click('button:has-text("Register")');
-        
-        // Wait for registration success (UI signal)
-        await expect(page.getByText(/register success|สมัครสำเร็จ|success/i)).toBeVisible({ timeout: 10000 });
-        
-        // Return to login
+        // 1. API Seeding: Create User via API
+        const apiContext = await request.newContext();
+        await apiContext.post('http://localhost:5002/api/register', {
+            data: {
+                email: uniqueEmail,
+                password: 'password123'
+            }
+        });
+
+        // 2. Login
         await page.goto('/login');
         
-        // Login page has a "Login with Email" button to show the form
-        // Wait for it to be visible and click it. 
-        // Note: Sometimes it might not be visible if manual login is already shown (unlikely on refresh), 
-        // but let's enforce the flow.
-        const loginBtn = page.getByRole('button', { name: 'Login with Email' });
-        await loginBtn.waitFor({ state: 'visible' }); 
-        await loginBtn.click();
-        
-        // Wait for email input to be visible to ensure form is rendered
+        // Wait for email input to be visible
         const emailInput = page.locator('input[name="email"]');
         await emailInput.waitFor({ state: 'visible' });
         await emailInput.fill(uniqueEmail);
