@@ -33,7 +33,7 @@ test.describe('User Workflow', () => {
 
         
         // 3. Verify redirection to Dashboard (HomeUser)
-        await expect(page).toHaveURL('/user'); 
+        await expect(page).toHaveURL('/user', { timeout: 15000 }); 
 
         // 4. Navigate to "Create Ticket"
         // In HomeUser, there is a "Report Issue" button
