@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getImageUrl } from './imageUrl';
 
 describe('getImageUrl', () => {
-  const originalEnv = process.env;
+
 
   beforeEach(() => {
     vi.resetModules();

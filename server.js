@@ -83,7 +83,8 @@ app.use("/uploads", express.static(absoluteUploadDir));
 // Global Limiter: กันยิงรัวๆ ทั่วไป
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 นาที
-  max: 1000, // เพิ่มเป็น 1000-2000 เพื่อรองรับ user 100 คนใช้งานพร้อมกัน
+  windowMs: 15 * 60 * 1000, // 15 นาที
+  max: 3000, // เพิ่มเป็น 3000 เพื่อรองรับ user 100+ คนใช้งานพร้อมกัน (เฉลี่ย 1 request/3วิ ต่อ user)
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests, please try again later." },
@@ -200,7 +201,10 @@ if (process.env.NODE_ENV !== "test") {
     }
   };
 
-  startServer();
+  startServer().then(() => {
+    // Set server timeout to 30 seconds to avoid hanging requests during high load
+    server.setTimeout(30000);
+  });
 }
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server

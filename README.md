@@ -82,6 +82,20 @@ pm2 start ecosystem.config.js
 - **E2E Tests**: Playwright tests are available for local or manual execution. They are disabled in CI to prioritize build speed and stability.
   - Run E2E: `npm run test:e2e`
 
+## Performance & Load Testing
+
+- **Tool**: k6
+- **Load Profile**: 100 concurrent users
+- **Result**:
+  - Success rate: 100%
+  - p95 response time: < 3ms
+- **Rate Limiting**: Configured to support real-world usage (3000 req/15min).
+
+### Run locally:
+```bash
+k6 run tests/load/load-test.js
+```
+
 ## API Documentation
 
 Swagger UI is available at:

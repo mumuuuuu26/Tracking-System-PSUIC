@@ -451,7 +451,7 @@ exports.syncGoogleCalendar = async (req, res) => {
     try {
         const userId = req.user.id;
         const googleCalendarId = req.user.googleCalendarId; // Use custom calendar ID
-        console.log(`[Sync] User ${userId} requesting sync for calendar: ${googleCalendarId}`);
+        logger.info(`[Sync] User ${userId} requesting sync for calendar: ${googleCalendarId}`);
 
         if (!googleCalendarId) {
             return res.status(400).json({ message: "No Google Calendar ID configured." });
