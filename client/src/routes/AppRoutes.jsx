@@ -8,7 +8,7 @@ import PSUCallback from "../pages/auth/PSUCallback";
 import ScanQR from "../pages/user/ScanQR";
 import TicketDetail from "../pages/user/TicketDetail";
 import EquipmentDetail from "../pages/user/EquipmentDetail";
-import ResponsiveDesignInfo from "../pages/knowledge/ResponsiveDesignInfo";
+
 
 // Auth
 import Login from "../pages/auth/Login";
@@ -28,7 +28,6 @@ import QuickFix from "../pages/user/QuickFix";
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
 import UserManagement from "../pages/admin/UserManagement";
-import ITManagement from "../pages/admin/ITManagement";
 import RoomManagement from "../pages/admin/RoomManagement";
 import CategoryManagement from "../pages/admin/CategoryManagement";
 import EquipmentManagement from "../pages/admin/EquipmentManagement";
@@ -65,7 +64,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<PSUCallback />} />
-      <Route path="/knowledge/responsive-design" element={<ResponsiveDesignInfo />} />
+
 
       {/* User Routes */}
       <Route path="user" element={<LayoutUser />}>
@@ -90,7 +89,6 @@ const AppRoutes = () => {
         <Route index element={<Dashboard />} />
 
         <Route path="manage-users" element={<UserManagement />} />
-        <Route path="manage-it" element={<ITManagement />} />
         <Route path="manage-rooms" element={<RoomManagement />} />
         <Route path="manage-categories" element={<CategoryManagement />} />
         <Route path="manage-equipment" element={<EquipmentManagement />} />

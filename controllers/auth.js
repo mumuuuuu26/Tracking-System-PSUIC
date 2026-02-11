@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
@@ -133,7 +134,7 @@ exports.currentUser = async (req, res) => {
       serviceAccountEmail: process.env.GOOGLE_CLIENT_EMAIL
     });
   } catch (err) {
-    console.error("CurrentUser Error:", err);
+    logger.error("CurrentUser Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

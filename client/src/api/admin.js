@@ -25,15 +25,7 @@ export const getDashboardStats = async (token) => {
     })
 }
 
-export const getITStaff = async (token) => {
-    return await api.get('/admin/it-staff', {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-}
+// getITStaff removed
 
-export const getITStaffStats = async (token) => {
-    return await api.get('/admin/it-staff/stats', {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-}
+// getITStaffStats removed
 

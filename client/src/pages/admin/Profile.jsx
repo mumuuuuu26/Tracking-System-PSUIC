@@ -1,16 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-    User,
-    Mail,
-    Shield,
-    Calendar,
     Camera,
-    LogOut,
     Edit2,
     Check,
     X,
-    Phone,
-    Briefcase,
     ArrowLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -19,11 +12,12 @@ import { currentUser } from "../../api/auth";
 import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import Swal from "sweetalert2";
 import { getImageUrl } from "../../utils/imageUrl";
+import AdminWrapper from "../../components/admin/AdminWrapper";
+import AdminHeader from "../../components/admin/AdminHeader";
 
 const AdminProfile = () => {
-    const { token, checkUser, actionLogout } = useAuthStore();
+    const { token, checkUser } = useAuthStore();
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -32,14 +26,8 @@ const AdminProfile = () => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [nameInput, setNameInput] = useState("");
 
-    const [isEditingUsername, setIsEditingUsername] = useState(false);
-    const [usernameInput, setUsernameInput] = useState("");
-
     const [isEditingPhone, setIsEditingPhone] = useState(false);
     const [phoneInput, setPhoneInput] = useState("");
-
-    const [isEditingDept, setIsEditingDept] = useState(false);
-    const [deptInput, setDeptInput] = useState("");
 
     const fetchProfile = useCallback(async () => {
         try {
@@ -92,34 +80,8 @@ const AdminProfile = () => {
             closeEditFn(false);
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.message || `Failed to update ${field}`);
+            toast.error(err.response?.data?.message || `Failed to update ${field} `);
         }
-    };
-
-
-    const handleLogout = () => {
-        Swal.fire({
-            title: "Log out",
-            text: "Are you sure you want to log out ?",
-            showCancelButton: true,
-            confirmButtonColor: "#2563eb",
-            cancelButtonColor: "#fff",
-            confirmButtonText: "Log out",
-            cancelButtonText: "Cancel",
-            customClass: {
-                popup: "rounded-3xl p-6 md:p-8",
-                title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
-                htmlContainer: "text-gray-500 text-base",
-                confirmButton: "bg-[#2563eb] hover:bg-blue-700 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
-                cancelButton: "bg-white hover:bg-gray-50 text-[#2563eb] border border-[#2563eb] min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
-                actions: "gap-4 w-full px-4 mt-4"
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                actionLogout();
-            }
-        });
     };
 
     if (loading)
@@ -133,297 +95,199 @@ const AdminProfile = () => {
     const displayName = profile.name || (profile.email ? profile.email.split('@')[0] : "Admin");
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-            {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-12 pb-6 shadow-md sticky top-0 z-20">
-                <div className="max-w-4xl mx-auto flex items-center gap-4 text-white hover:text-gray-100 transition-colors">
-                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
-                        <ArrowLeft size={24} />
-                    </button>
-                    <h1 className="text-xl font-bold">My Profile</h1>
-                </div>
-            </div>
-
-            <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-
+        <AdminWrapper>
+            <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
                 {/* Header Card */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-28 h-28 mb-4 group">
-                        <div className="w-full h-full rounded-full overflow-hidden border-4 border-blue-50">
-                            {profile.picture ? (
-                                <img
-                                    src={getImageUrl(profile.picture)}
-                                    alt="Profile"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => { e.target.src = '/default-profile.png'; }}
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-blue-600 text-white text-4xl font-bold">
-                                    {displayName.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </div>
-                        <label
-                            htmlFor="profile-upload"
-                            className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors border-2 border-white shadow-sm"
-                        >
-                            <Camera size={16} />
-                        </label>
-                        <input
-                            id="profile-upload"
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                        />
-                    </div>
+                <AdminHeader
+                    title="My Profile"
+                    subtitle="Manage your account settings"
+                    onBack={() => navigate(-1)}
+                />
 
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                        {isEditingName ? (
-                            <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
-                                <input
-                                    type="text"
-                                    value={nameInput}
-                                    onChange={(e) => setNameInput(e.target.value)}
-                                    className="border-b-2 border-blue-500 text-xl font-bold text-gray-800 text-center focus:outline-none bg-transparent w-full min-w-[150px]"
-                                    autoFocus
-                                />
-                                <button
-                                    onClick={() => handleUpdateField('name', nameInput, null, setIsEditingName)}
-                                    className="p-1.5 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors"
-                                >
-                                    <Check size={16} strokeWidth={3} />
-                                </button>
-                                <button
-                                    onClick={() => setIsEditingName(false)}
-                                    className="p-1.5 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors"
-                                >
-                                    <X size={16} strokeWidth={3} />
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="group flex items-center gap-2">
-                                <h2 className="text-xl font-bold text-gray-900">
+                <div className="max-w-7xl mx-auto w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Left Column: Avatar & Identity */}
+                        <div className="lg:col-span-4">
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col items-center text-center h-full">
+                                <div className="relative w-40 h-40 mb-6 group">
+                                    <div className="w-full h-full rounded-full overflow-hidden border-4 border-white shadow-xl ring-4 ring-gray-50">
+                                        {profile.picture ? (
+                                            <img
+                                                src={getImageUrl(profile.picture)}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { e.target.src = '/default-profile.png'; }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-[#1e2e4a] text-white text-5xl font-bold">
+                                                {displayName.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <label
+                                        htmlFor="profile-upload"
+                                        className="absolute bottom-2 right-2 bg-[#1e2e4a] text-white p-3 rounded-full cursor-pointer hover:bg-[#15325b] transition-all border-4 border-white shadow-lg hover:scale-110 active:scale-95"
+                                    >
+                                        <Camera size={20} />
+                                    </label>
+                                    <input
+                                        id="profile-upload"
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                    />
+                                </div>
+
+                                <h2 className="text-2xl font-bold text-[#1e2e4a] mb-2 break-all">
                                     {displayName}
                                 </h2>
-                                <button
-                                    onClick={() => {
-                                        setNameInput(profile.name || displayName);
-                                        setIsEditingName(true);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
-                                >
-                                    <Edit2 size={14} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-gray-500 text-sm mb-3">{profile.email}</p>
-                    <div className="bg-blue-50 text-blue-600 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                        {profile.role || "ADMINISTRATOR"}
-                    </div>
-                </div>
+                                <p className="text-gray-500 font-medium mb-6">{profile.email}</p>
 
-                {/* Details Card */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="divide-y divide-gray-50">
-
-                        {/* Username */}
-                        <div className="p-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors group">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500">
-                                <User size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-400 font-medium mb-0.5">Username</p>
-                                    {!isEditingUsername && (
-                                        <button
-                                            onClick={() => {
-                                                setUsernameInput(profile.username || "");
-                                                setIsEditingUsername(true);
-                                            }}
-                                            className="opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 transition-all"
-                                        >
-                                            <Edit2 size={12} /> Edit
-                                        </button>
-                                    )}
+                                <div className="bg-blue-50 text-blue-600 px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider mb-8">
+                                    {profile.role || "ADMINISTRATOR"}
                                 </div>
 
-                                {isEditingUsername ? (
-                                    <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200 mt-1">
-                                        <input
-                                            type="text"
-                                            value={usernameInput}
-                                            onChange={(e) => setUsernameInput(e.target.value)}
-                                            className="border-b-2 border-blue-500 font-semibold text-gray-800 text-sm focus:outline-none bg-transparent w-full"
-                                            autoFocus
-                                        />
-                                        <button
-                                            onClick={() => handleUpdateField('username', usernameInput, null, setIsEditingUsername)}
-                                            className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100"
-                                        >
-                                            <Check size={14} strokeWidth={3} />
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditingUsername(false)}
-                                            className="p-1 bg-red-50 text-red-600 rounded-full hover:bg-red-100"
-                                        >
-                                            <X size={14} strokeWidth={3} />
-                                        </button>
+                                <div className="w-full border-t border-gray-100 pt-8 mt-auto">
+                                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Member Since</div>
+                                    <div className="font-medium text-gray-700">
+                                        {profile.createdAt
+                                            ? dayjs(profile.createdAt).format("MMMM D, YYYY")
+                                            : "N/A"}
                                     </div>
-                                ) : (
-                                    <p className="text-gray-900 font-semibold text-sm">{profile.username || "-"}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="p-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500">
-                                <Mail size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs text-gray-400 font-medium mb-0.5">Email Address</p>
-                                <p className="text-gray-900 font-semibold text-sm">{profile.email}</p>
-                            </div>
-                        </div>
-
-                        {/* Phone Number */}
-                        <div className="p-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors group">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500">
-                                <Phone size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-400 font-medium mb-0.5">Phone Number</p>
-                                    {!isEditingPhone && (
-                                        <button
-                                            onClick={() => {
-                                                setPhoneInput(profile.phoneNumber || "");
-                                                setIsEditingPhone(true);
-                                            }}
-                                            className="opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 transition-all"
-                                        >
-                                            <Edit2 size={12} /> Edit
-                                        </button>
-                                    )}
                                 </div>
-
-                                {isEditingPhone ? (
-                                    <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200 mt-1">
-                                        <input
-                                            type="text"
-                                            value={phoneInput}
-                                            onChange={(e) => setPhoneInput(e.target.value)}
-                                            className="border-b-2 border-blue-500 font-semibold text-gray-800 text-sm focus:outline-none bg-transparent w-full"
-                                            autoFocus
-                                        />
-                                        <button
-                                            onClick={() => handleUpdateField('phoneNumber', phoneInput, null, setIsEditingPhone)}
-                                            className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100"
-                                        >
-                                            <Check size={14} strokeWidth={3} />
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditingPhone(false)}
-                                            className="p-1 bg-red-50 text-red-600 rounded-full hover:bg-red-100"
-                                        >
-                                            <X size={14} strokeWidth={3} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-900 font-semibold text-sm">{profile.phoneNumber || "-"}</p>
-                                )}
                             </div>
                         </div>
 
-                        {/* Department */}
-                        <div className="p-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors group">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500">
-                                <Briefcase size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-xs text-gray-400 font-medium mb-0.5">Department</p>
-                                    {!isEditingDept && (
-                                        <button
-                                            onClick={() => {
-                                                setDeptInput(profile.department || "");
-                                                setIsEditingDept(true);
-                                            }}
-                                            className="opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 text-xs font-bold flex items-center gap-1 transition-all"
-                                        >
-                                            <Edit2 size={12} /> Edit
-                                        </button>
-                                    )}
+                        {/* Right Column: Details */}
+                        <div className="lg:col-span-8">
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 h-full">
+                                <h3 className="text-xl font-bold text-[#1e2e4a] mb-6 flex items-center gap-3">
+                                    Personal Information
+                                    <div className="h-px flex-1 bg-gray-100"></div>
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
+                                    {/* PSU ID (Username) - Readonly */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">PSU ID</label>
+                                        <div className="flex items-center gap-3 bg-gray-50/50 rounded-xl px-4 py-3.5 border border-gray-100 hover:border-gray-200 transition-colors">
+                                            <span className="text-gray-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                            </span>
+                                            <span className="text-gray-700 font-semibold">{profile.username || "-"}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Full Name - Editable */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Full Name</label>
+                                        {isEditingName ? (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={nameInput}
+                                                    onChange={(e) => setNameInput(e.target.value)}
+                                                    className="flex-1 bg-white border-2 border-blue-500 rounded-xl px-4 py-3 text-[#1e2e4a] font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => handleUpdateField('name', nameInput, null, setIsEditingName)}
+                                                    className="p-3.5 bg-[#1e2e4a] text-white rounded-xl hover:bg-[#15325b] transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                                                >
+                                                    <Check size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsEditingName(false)}
+                                                    className="p-3.5 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all active:scale-95"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-gray-50/50 rounded-xl px-4 py-3.5 border border-gray-100 group hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-gray-400 group-hover:text-blue-400 transition-colors">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                                    </span>
+                                                    <span className="text-[#1e2e4a] font-bold">{displayName}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setNameInput(profile.name || displayName);
+                                                        setIsEditingName(true);
+                                                    }}
+                                                    className="text-gray-300 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Email Address - Readonly */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Email Address</label>
+                                        <div className="flex items-center gap-3 bg-gray-50/50 rounded-xl px-4 py-3.5 border border-gray-100 hover:border-gray-200 transition-colors">
+                                            <span className="text-gray-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                                            </span>
+                                            <span className="text-gray-700 font-semibold">{profile.email}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Phone Number - Editable */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Phone Number</label>
+                                        {isEditingPhone ? (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={phoneInput}
+                                                    onChange={(e) => setPhoneInput(e.target.value)}
+                                                    className="flex-1 bg-white border-2 border-blue-500 rounded-xl px-4 py-3 text-[#1e2e4a] font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => handleUpdateField('phoneNumber', phoneInput, null, setIsEditingPhone)}
+                                                    className="p-3.5 bg-[#1e2e4a] text-white rounded-xl hover:bg-[#15325b] transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                                                >
+                                                    <Check size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsEditingPhone(false)}
+                                                    className="p-3.5 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all active:scale-95"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-gray-50/50 rounded-xl px-4 py-3.5 border border-gray-100 group hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-gray-400 group-hover:text-blue-400 transition-colors">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+                                                    </span>
+                                                    <span className="text-[#1e2e4a] font-bold">{profile.phoneNumber || "-"}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setPhoneInput(profile.phoneNumber || "");
+                                                        setIsEditingPhone(true);
+                                                    }}
+                                                    className="text-gray-300 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-
-                                {isEditingDept ? (
-                                    <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200 mt-1">
-                                        <input
-                                            type="text"
-                                            value={deptInput}
-                                            onChange={(e) => setDeptInput(e.target.value)}
-                                            className="border-b-2 border-blue-500 font-semibold text-gray-800 text-sm focus:outline-none bg-transparent w-full"
-                                            autoFocus
-                                        />
-                                        <button
-                                            onClick={() => handleUpdateField('department', deptInput, null, setIsEditingDept)}
-                                            className="p-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100"
-                                        >
-                                            <Check size={14} strokeWidth={3} />
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditingDept(false)}
-                                            className="p-1 bg-red-50 text-red-600 rounded-full hover:bg-red-100"
-                                        >
-                                            <X size={14} strokeWidth={3} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-900 font-semibold text-sm">{profile.department || "-"}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Role */}
-                        <div className="p-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500">
-                                <Shield size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs text-gray-400 font-medium mb-0.5">Role</p>
-                                <p className="text-gray-900 font-semibold text-sm uppercase">{profile.role || "ADMINISTRATOR"}</p>
-                            </div>
-                        </div>
-
-                        {/* Member Since */}
-                        <div className="p-4 flex items-center gap-4 hover:bg-gray-50/50 transition-colors">
-                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500">
-                                <Calendar size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs text-gray-400 font-medium mb-0.5">Member Since</p>
-                                <p className="text-gray-900 font-semibold text-sm">
-                                    {profile.createdAt
-                                        ? dayjs(profile.createdAt).format("MMMM D, YYYY")
-                                        : "N/A"}
-                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Logout Button */}
-                <button
-                    onClick={handleLogout}
-                    className="w-full bg-white text-red-500 font-bold p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 hover:bg-red-50 hover:border-red-100 transition-all"
-                >
-                    <LogOut size={20} />
-                    Log Out
-                </button>
             </div>
-        </div>
+        </AdminWrapper>
     );
 };
 

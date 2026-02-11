@@ -7,7 +7,7 @@ const { authCheck, adminCheck, itCheck } = require("../middlewares/authCheck");
 router.get("/quick-fix", list);
 router.get("/quick-fix/:id", read);
 
-// Admin / IT only
+// Admin 
 router.post("/quick-fix", authCheck, adminCheck, create);
 router.put("/quick-fix/:id", authCheck, adminCheck, update);
 router.delete("/quick-fix/:id", authCheck, adminCheck, remove);

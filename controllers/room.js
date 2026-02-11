@@ -1,5 +1,6 @@
 // controllers/room.js
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 
 // สร้างห้อง
 exports.create = async (req, res) => {
@@ -17,7 +18,7 @@ exports.create = async (req, res) => {
 
     res.json(room);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -36,7 +37,7 @@ exports.list = async (req, res) => {
 
     res.json(rooms);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -59,7 +60,7 @@ exports.update = async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -73,7 +74,7 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: "Room deleted successfully" });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

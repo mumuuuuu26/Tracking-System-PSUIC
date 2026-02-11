@@ -1,4 +1,6 @@
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
+
 
 // 1. Overview / Monthly Stats
 exports.getMonthlyStats = async (req, res) => {
@@ -33,7 +35,7 @@ exports.getMonthlyStats = async (req, res) => {
 
         // Initialize
         for (let i = 1; i <= daysInMonth; i++) {
-            statsByDay[i] = { day: i, total: 0, completed: 0, pending: 0 };
+            statsByDay[i] = { day: i, total: 0, not_started: 0, in_progress: 0, completed: 0 };
         }
 
         tickets.forEach(ticket => {
@@ -41,20 +43,32 @@ exports.getMonthlyStats = async (req, res) => {
             if (statsByDay[day]) {
                 statsByDay[day].total++;
                 if (ticket.status === 'completed') statsByDay[day].completed++;
-                else statsByDay[day].pending++;
+                else if (ticket.status === 'in_progress') statsByDay[day].in_progress++;
+                else statsByDay[day].not_started++; // 'not_start' or others
             }
         });
 
+        // Calculate Summary Stats
+        const total = tickets.length;
+        const completed = tickets.filter(t => t.status === 'completed').length;
+        const in_progress = tickets.filter(t => t.status === 'in_progress').length;
+        const not_started = tickets.filter(t => t.status !== 'completed' && t.status !== 'in_progress').length;
+        
+        // Resolution Rate
+        const resolutionRate = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+
         res.json({
             period: `${targetMonth + 1}/${targetYear}`,
-            total: tickets.length,
-            solved: tickets.filter(t => t.status === 'completed').length,
-            pending: tickets.filter(t => t.status !== 'completed').length,
+            total,
+            not_started,
+            in_progress,
+            completed,
+            resolutionRate,
             data: Object.values(statsByDay)
         });
 
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -98,7 +112,7 @@ exports.getAnnualStats = async (req, res) => {
         res.json(statsByMonth);
 
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -139,7 +153,7 @@ exports.getEquipmentStats = async (req, res) => {
         res.json(enriched);
 
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -195,7 +209,7 @@ exports.getITPerformance = async (req, res) => {
 
         res.json(result);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -242,7 +256,7 @@ exports.getSatisfactionStats = async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };

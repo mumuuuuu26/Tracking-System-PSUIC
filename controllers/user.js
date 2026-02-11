@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 const bcrypt = require("bcryptjs");
 const { saveImage } = require("../utils/uploadImage");
 
@@ -32,7 +33,7 @@ exports.createUser = async (req, res) => {
 
         res.json(newUser);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -65,7 +66,7 @@ exports.listUsers = async (req, res) => {
     });
     res.json(users);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -78,7 +79,7 @@ exports.listITStaff = async (req, res) => {
     });
     res.json(itUsers);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -93,7 +94,7 @@ exports.changeStatus = async (req, res) => {
     });
     res.json(user);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -114,7 +115,7 @@ exports.changeRole = async (req, res) => {
     });
     res.json(user);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -138,7 +139,7 @@ exports.updateProfileImage = async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Upload failed" });
   }
 };
@@ -211,14 +212,14 @@ exports.updateProfile = async (req, res) => {
         const { syncUserCalendar } = require("../utils/syncService");
         await syncUserCalendar(updatedUser.id, updatedUser.googleCalendarId);
       } catch (syncErr) {
-        console.error("Auto-sync failed:", syncErr.message);
+        logger.error("Auto-sync failed:", syncErr.message);
         // We don't fail the request, just log it. The user will see the updated ID but maybe not events yet.
       }
     }
 
     res.json(updatedUser);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Update Profile Failed" });
   }
 };
@@ -240,7 +241,7 @@ exports.updateUser = async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Update Failed" });
   }
 
@@ -290,7 +291,7 @@ exports.removeUser = async (req, res) => {
     res.json({ message: "User and all associated data permanently deleted" });
 
   } catch (err) {
-    console.error("Delete error:", err);
+    logger.error("Delete error:", err);
     res.status(500).json({ message: "Delete Failed", error: err.message });
   }
 };

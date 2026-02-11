@@ -1,28 +1,18 @@
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/auth-store'
-import Swal from 'sweetalert2'
+import { confirmLogout } from '../utils/sweetalert'
 
 const MainNav = () => {
     const { user, actionLogout } = useAuthStore()
     const navigate = useNavigate()
 
-    const handleLogout = () => {
-        Swal.fire({
-            title: 'Log out',
-            text: "Are you sure you want to log out ?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#2563eb',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Log out',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                actionLogout()
-                navigate('/')
-            }
-        })
+    const handleLogout = async () => {
+        const isConfirmed = await confirmLogout();
+        if (isConfirmed) {
+            actionLogout()
+            navigate('/')
+        }
     }
 
     return (

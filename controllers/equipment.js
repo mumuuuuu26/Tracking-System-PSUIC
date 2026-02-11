@@ -1,11 +1,15 @@
 // controllers/equipment.js
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 const QRCode = require("qrcode");
 
 // 1. สร้างอุปกรณ์พร้อม Generate QR Code
 exports.create = async (req, res) => {
   try {
-    const { name, type, serialNo, roomId } = req.body;
+    const { name, type, serialNo: inputSerialNo, roomId } = req.body;
+
+    // Auto-generate Serial Number if not provided
+    const serialNo = inputSerialNo || `SN-${Date.now()}`;
 
     // สร้าง Equipment ก่อนเพื่อเอา ID มาทำ QR
     const equipment = await prisma.equipment.create({
@@ -35,7 +39,7 @@ exports.create = async (req, res) => {
       qrCodeImage,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -54,7 +58,7 @@ exports.list = async (req, res) => {
     });
     res.json(equipments);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -88,7 +92,7 @@ exports.getByQRCode = async (req, res) => {
 
     res.json(equipment);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -153,7 +157,7 @@ exports.getById = async (req, res) => {
 
     res.json(enhancedEquipment);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -179,7 +183,7 @@ exports.generateQR = async (req, res) => {
       equipment,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -203,7 +207,7 @@ exports.update = async (req, res) => {
 
     res.json(equipment);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -232,7 +236,7 @@ exports.remove = async (req, res) => {
 
     res.json({ message: "Equipment deleted successfully" });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

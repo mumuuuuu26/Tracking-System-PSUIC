@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const transporter = require("../config/nodemailer");
+const { logger } = require("./logger");
 
 /**
  * Send email using a database template
@@ -10,7 +11,7 @@ const transporter = require("../config/nodemailer");
 exports.sendEmailNotification = async (templateName, recipientEmail, variables) => {
     try {
         if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-            console.warn("⚠️ Email config missing, skipping notification");
+            logger.warn("⚠️ Email config missing, skipping notification");
             return;
         }
 
@@ -20,12 +21,12 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
         });
 
         if (!template) {
-            console.warn(`⚠️ Template '${templateName}' not found in database.`);
+            logger.warn(`⚠️ Template '${templateName}' not found in database.`);
             return;
         }
 
         if (!template.isEnabled) {
-            console.log(`ℹ️ Notification '${templateName}' is disabled. Skipping.`);
+            logger.info(`ℹ️ Notification '${templateName}' is disabled. Skipping.`);
             return;
         }
 
@@ -45,7 +46,7 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
         const to = Array.isArray(recipientEmail) ? recipientEmail.join(", ") : recipientEmail;
 
         if (!to) {
-            console.warn("⚠️ No recipients defined for email.");
+            logger.warn("⚠️ No recipients defined for email.");
             return;
         }
 
@@ -57,9 +58,9 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Email Sent: '${templateName}' to ${to.length > 50 ? to.substring(0, 50) + '...' : to}`);
+        logger.info(`✅ Email Sent: '${templateName}' to ${to.length > 50 ? to.substring(0, 50) + '...' : to}`);
 
     } catch (err) {
-        console.error("❌ Email Helper Error:", err.message);
+        logger.error(`❌ Email Helper Error: ${err.message}`);
     }
 };

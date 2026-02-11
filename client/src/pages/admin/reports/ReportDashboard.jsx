@@ -4,10 +4,13 @@ import AnnualReport from './AnnualReport';
 import EquipmentAnalysis from './EquipmentAnalysis';
 import ITPerformance from './ITPerformance';
 import SatisfactionReport from './SatisfactionReport';
-import { BarChart, PieChart, Activity, Server, Heart, Calendar, ArrowLeft } from 'lucide-react';
+import { BarChart, PieChart, Activity, Server, Heart, ArrowLeft, Download, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import ErrorBoundary from '../../../components/common/ErrorBoundary';
+import AdminWrapper from "../../../components/admin/AdminWrapper";
+import AdminHeader from "../../../components/admin/AdminHeader";
+import AdminSelect from "../../../components/admin/AdminSelect";
 
 const ReportDashboard = () => {
     const navigate = useNavigate();
@@ -16,105 +19,96 @@ const ReportDashboard = () => {
     const [year, setYear] = useState(dayjs().year());
 
     const tabs = [
-        { id: 'monthly', label: 'Monthly Report', icon: <BarChart size={18} /> },
-        { id: 'annual', label: 'Annual Report', icon: <PieChart size={18} /> },
-        { id: 'equipment', label: 'Equipment Analysis', icon: <Server size={18} /> },
-        { id: 'performance', label: 'IT Performance', icon: <Activity size={18} /> },
-        { id: 'satisfaction', label: 'Satisfaction', icon: <Heart size={18} /> },
+        { id: 'monthly', label: 'Ticket Overview', icon: <Activity size={18} /> },
+        { id: 'performance', label: 'User Analysis', icon: <Activity size={18} /> },
+        { id: 'room', label: 'Floor & Room', icon: <Server size={18} /> },
+        { id: 'equipment', label: 'Equipment', icon: <Server size={18} /> },
+        // { id: 'annual', label: 'Annual Report', icon: <PieChart size={18} /> },
+        // { id: 'satisfaction', label: 'Satisfaction', icon: <Heart size={18} /> },
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-            {/* Header */}
-            {/* Header */}
-            {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-8 pb-6 shadow-md">
-                <div className="flex items-center gap-4 text-white mb-2">
-                    <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
-                        <ArrowLeft size={24} />
-                    </button>
-                    <h1 className="text-xl font-bold">System Reports</h1>
-                </div>
-            </div>
+        <AdminWrapper>
+            <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+                {/* Header Card */}
+                <AdminHeader
+                    title="System Reports"
+                    subtitle={`Analytics Overview • ${dayjs().format('MMMM D, YYYY')}`}
+                    onBack={() => navigate(-1)}
+                />
 
-            <div className="max-w-7xl mx-auto px-4 pt-6 mb-6">
-                <p className="text-gray-500 text-sm mb-6">View system performance, equipment analysis, and user satisfaction reports</p>
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-                    {/* Scrollable Tabs */}
-                    <div className="w-full lg:w-auto overflow-x-auto pb-1 -mx-4 lg:mx-0 px-4 lg:px-0">
-                        <div className="flex gap-2 min-w-max">
-                            {tabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`
-                                    flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border
-                                    ${activeTab === tab.id
-                                            ? 'bg-[#193C6C] text-white border-[#193C6C] shadow-md shadow-blue-900/20'
-                                            : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-                                        }
-                                `}
-                                >
-                                    {tab.icon}
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
+                {/* Filters & Tabs Row */}
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-3 mb-4">
+                    {/* Tabs */}
+                    <div className="flex bg-white p-1 rounded-lg shadow-sm border border-gray-100">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`
+                                        flex items-center gap-2 px-3 py-1.5 rounded-md font-bold text-xs transition-all
+                                        ${activeTab === tab.id
+                                        ? 'bg-[#1e2e4a] text-white shadow-md'
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                    }
+                                    `}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Filters (Only for Monthly Report for now) */}
+                    {/* Date Filters */}
                     {activeTab === 'monthly' && (
-                        <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-                            <div className="relative group">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                <select
-                                    value={month}
-                                    onChange={e => setMonth(Number(e.target.value))}
-                                    className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl pl-10 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer min-w-[140px]"
-                                >
-                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                        <option key={m} value={m}>Month {m}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </div>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <AdminSelect
+                                value={year}
+                                onChange={setYear}
+                                options={Array.from({ length: 3 }, (_, i) => 2024 + i)} // [2024, 2025, 2026]
+                                className="min-w-[90px]"
+                            />
 
-                            <div className="relative group">
-                                <select
-                                    value={year}
-                                    onChange={e => setYear(Number(e.target.value))}
-                                    className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
-                                >
-                                    {Array.from({ length: 3 }, (_, i) => 2024 + i).map(y => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </div>
-                            </div>
+                            <AdminSelect
+                                value={month}
+                                onChange={setMonth}
+                                options={Array.from({ length: 12 }, (_, i) => ({
+                                    value: i + 1,
+                                    label: dayjs().month(i).format('MMMM')
+                                }))}
+                                className="min-w-[140px]"
+                            />
+
+                            <button className="bg-[#1e2e4a] text-white p-2 rounded-lg shadow-sm hover:bg-[#15233b] transition-colors">
+                                <Download size={16} />
+                            </button>
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Content Area */}
-            <div id="report-content" className="max-w-7xl mx-auto px-4 lg:px-6 py-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <ErrorBoundary>
-                    {activeTab === 'monthly' && <MonthlyReport month={month} year={year} />}
-                    {activeTab === 'annual' && <AnnualReport />}
-                    {activeTab === 'equipment' && <EquipmentAnalysis />}
-                    {activeTab === 'performance' && <ITPerformance />}
-                    {activeTab === 'satisfaction' && <SatisfactionReport />}
-                </ErrorBoundary>
+                {/* Content Area */}
+                <div id="report-content" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <ErrorBoundary>
+                        {activeTab === 'monthly' && <MonthlyReport month={month} year={year} />}
+                        {activeTab === 'performance' && <ITPerformance />}
+                        {activeTab === 'room' && (
+                            <div className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[300px]">
+                                <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mb-3">
+                                    <Server size={24} />
+                                </div>
+                                <h3 className="text-lg font-bold text-[#1e2e4a] mb-1">Floor & Room Analysis</h3>
+                                <p className="text-gray-500 text-sm text-center max-w-md">
+                                    Detailed analysis of ticket distribution across different floors and rooms will be displayed here.
+                                </p>
+                            </div>
+                        )}
+                        {activeTab === 'equipment' && <EquipmentAnalysis />}
+                        {/* {activeTab === 'annual' && <AnnualReport />}
+                            {activeTab === 'satisfaction' && <SatisfactionReport />} */}
+                    </ErrorBoundary>
+                </div>
             </div>
-        </div >
+        </AdminWrapper >
     );
 };
 

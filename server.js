@@ -180,7 +180,7 @@ if (process.env.NODE_ENV !== "test") {
     try {
       const prisma = require("./config/prisma");
       await prisma.$connect();
-      logger.info('✅ Database connected successfully');
+      logger.info('Database connected successfully');
       
       // Initialize Scheduler
       const { initScheduledJobs } = require("./utils/scheduler");
@@ -188,11 +188,11 @@ if (process.env.NODE_ENV !== "test") {
 
       server.listen(5002, () => {
         logger.info(
-          `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port 5002`,
+          `Server running in ${process.env.NODE_ENV || "development"} mode on port 5002`,
         );
       });
     } catch (error) {
-      logger.error('❌ Database connection failed:', error);
+      logger.error('Database connection failed:', error);
       process.exit(1);
     }
   };

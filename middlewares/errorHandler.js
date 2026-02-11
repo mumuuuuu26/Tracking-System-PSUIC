@@ -1,10 +1,11 @@
 const { ZodError } = require("zod");
+const { logger } = require("../utils/logger");
 
 const errorHandler = (err, req, res, next) => {
   // Log the error for debugging (PM2 will capture this to error.log)
   // Skip logging in test environment to keep test output clean
   if (process.env.NODE_ENV !== 'test') {
-    console.error("❌ Global Error Handler:", err);
+    logger.error("❌ Global Error Handler:", err);
   }
 
   // Handle Zod Validation Errors

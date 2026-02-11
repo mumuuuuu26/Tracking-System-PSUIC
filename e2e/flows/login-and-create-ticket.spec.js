@@ -16,9 +16,13 @@ test.describe('User Workflow', () => {
         // 2. Login
         await page.goto('/login');
         
+        // Click "Login with Email" to show the email/password form
+        // The login page has multiple login methods, so we need to select email login first
+        await page.getByRole('button', { name: /Login with Email/i }).click();
+        
         // Wait for email input to be visible
         const emailInput = page.locator('input[name="email"]');
-        await emailInput.waitFor({ state: 'visible' });
+        await emailInput.waitFor({ state: 'visible', timeout: 10000 });
         await emailInput.fill(uniqueEmail);
         await page.fill('input[name="password"]', 'password123');
         await page.click('button[type="submit"]'); // Or 'Sign In' button

@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 
 exports.getHealth = async (req, res) => {
   try {
@@ -12,7 +13,7 @@ exports.getHealth = async (req, res) => {
       uptime: process.uptime()
     });
   } catch (error) {
-    console.error("Health Check Failed:", error);
+    logger.error("Health Check Failed:", error);
     res.status(500).json({
       status: "error",
       message: "Database connection failed",

@@ -1,8 +1,9 @@
 const prisma = require("../config/prisma");
 const { listGoogleEvents } = require("../controllers/googleCalendar");
+const { logger } = require("./logger");
 
 exports.syncUserCalendar = async (userId, googleCalendarId) => {
-    console.log(`[SyncService] Starting sync for User ${userId} with Calendar ID: ${googleCalendarId}`);
+    logger.info(`[SyncService] Starting sync for User ${userId} with Calendar ID: ${googleCalendarId}`);
 
     if (!googleCalendarId) {
         throw new Error("Google Calendar ID is missing");
@@ -63,6 +64,6 @@ exports.syncUserCalendar = async (userId, googleCalendarId) => {
         })
     ]);
 
-    console.log(`[SyncService] Successfully synced ${tasksToCreate.length} events.`);
+    logger.info(`[SyncService] Successfully synced ${tasksToCreate.length} events.`);
     return tasksToCreate.length;
 };

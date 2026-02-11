@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, Plus, Edit2, Trash2, ArrowLeft, Mail, Shield, User, GraduationCap, ChevronLeft, ChevronRight, X, Check } from "lucide-react";
-import { listUsers, changeStatus, removeUser, createUser, changeRole } from "../../api/user";
+import { Search, Plus, Edit2, Trash2, ArrowLeft, ChevronLeft, ChevronRight, X, Check, ChevronDown } from "lucide-react";
+import { listUsers, removeUser, createUser, changeRole } from "../../api/user";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import AdminWrapper from "../../components/admin/AdminWrapper";
+import AdminHeader from "../../components/admin/AdminHeader";
+import AdminSelect from "../../components/admin/AdminSelect";
 
 const UserManagement = () => {
   const { token } = useAuthStore();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  const [viewFilter, setViewFilter] = useState("All");
 
   // Add User State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,14 +36,8 @@ const UserManagement = () => {
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      let roleParam = "all";
-
-      // Map tabs to roles
-      if (activeTab === "User") roleParam = "user";
-      if (activeTab === "Staff") roleParam = "it_support";
-      if (activeTab === "Admin") roleParam = "admin";
-
-      const res = await listUsers(token, { role: roleParam });
+      // Fetch all users mostly
+      const res = await listUsers(token, { role: 'all' });
       setUsers(res.data);
     } catch (err) {
       console.error(err);
@@ -48,7 +45,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, activeTab]);
+  }, [token]);
 
   useEffect(() => {
     loadUsers();
@@ -60,30 +57,19 @@ const UserManagement = () => {
     setCurrentPage(1);
   }, [search]);
 
-  const handleStatusToggle = async (id, currentStatus) => {
-    try {
-      await changeStatus(token, { id, enabled: !currentStatus });
-      toast.success(currentStatus ? "User Disabled" : "User Enabled");
-      loadUsers();
-    } catch {
-      toast.error("Status Update Failed");
-    }
-  };
+
 
   const handleDelete = (id) => {
     Swal.fire({
       title: "Delete User",
-      text: "This action cannot be undone. All user data will be permanently removed.",
+      text: "This action cannot be undone.",
       showCancelButton: true,
       confirmButtonText: "Delete",
       cancelButtonText: "Cancel",
       customClass: {
-        popup: "rounded-3xl p-6 md:p-8",
-        title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
-        htmlContainer: "text-gray-500 text-base",
-        confirmButton: "bg-red-500 hover:bg-red-600 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
-        cancelButton: "bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
-        actions: "gap-4 w-full px-4 mt-4"
+        popup: "rounded-3xl p-6",
+        confirmButton: "bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-xl",
+        cancelButton: "bg-white border border-gray-200 text-gray-700 py-2 px-4 rounded-xl ml-2"
       },
       buttonsStyling: false
     }).then(async (result) => {
@@ -129,19 +115,18 @@ const UserManagement = () => {
     }
   };
 
-  // Filter Logic (Search + Tab Refinement if needed)
+  // Filter Logic
   const filteredUsers = users.filter((u) => {
-    // Search Filter
     const matchesSearch = (u.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.email || "").toLowerCase().includes(search.toLowerCase());
+      (u.email || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.username || "").toLowerCase().includes(search.toLowerCase());
 
-    // Extra Tab Logic (e.g. if Students and Lecturers share 'user' role but differ by some other field)
-    // For now, simple role mapping verified in loadUsers is primary.
-    // If we want "Lecturers" to show nothing for now (since we don't know how to distinguish):
-    // Extra Tab Logic
-    if (activeTab === "Lecturers" && u.role !== 'lecturer') return false; // Legacy check, can likely be removed if tab is gone
+    let matchesRole = true;
+    if (viewFilter === 'User') matchesRole = u.role === 'user';
+    if (viewFilter === 'IT Support') matchesRole = u.role === 'it_support';
+    if (viewFilter === 'Admin') matchesRole = u.role === 'admin';
 
-    return matchesSearch;
+    return matchesSearch && matchesRole;
   });
 
   // Pagination Logic
@@ -153,88 +138,72 @@ const UserManagement = () => {
 
   const getRoleLabel = (role) => {
     switch (role) {
-      case 'admin': return 'Admin';
-      case 'it_support': return 'Staff';
+      case 'admin': return 'System Admin';
+      case 'it_support': return 'IT Support';
       default: return 'User';
     }
   };
 
-  const getRoleColor = (role) => {
+  const getRoleBadgeStyle = (role) => {
     switch (role) {
-      case 'admin': return 'text-blue-900';
-      case 'it_support': return 'text-blue-700';
-      default: return 'text-blue-500';
+      case 'admin': return 'bg-blue-100 text-blue-700'; // System Admin
+      case 'it_support': return 'bg-purple-100 text-purple-700'; // IT Support
+      default: return 'bg-gray-100 text-gray-600'; // User
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans pb-20">
-      {/* Header */}
-      {/* Header */}
-      <div className="bg-[#193C6C] px-6 pt-12 pb-6 shadow-md sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto flex items-center gap-4 text-white hover:text-gray-100 transition-colors">
-          <button onClick={() => navigate(-1)} className="hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors">
-            <ArrowLeft size={24} />
-          </button>
-          <h1 className="text-xl font-bold">User Management</h1>
-        </div>
-      </div>
+    <AdminWrapper>
+      <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+        {/* Page Header */}
+        <AdminHeader
+          title="User Management"
+          subtitle="Manage student, staff and administrator accounts"
+          onBack={() => navigate(-1)}
+        />
 
-      <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6">
-        {/* Search Bar */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
-          <Search className="text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Searching by name or email..."
-            className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-gray-700 font-medium placeholder:text-gray-400 text-sm h-full"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        {/* Filters & Action Bar */}
+        <div className="bg-white p-2 pl-4 rounded-2xl shadow-sm mb-6 flex items-center gap-4 h-16 shrink-0">
+          <div className="flex-1 flex items-center gap-3">
+            <Search className="text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search by name, email or ID..."
+              className="flex-1 bg-transparent border-none focus:outline-none text-gray-700 placeholder:text-gray-400 text-sm h-full"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-        {/* Tabs */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {["All", "User", "Staff", "Admin"].map((tab) => (
+          <div className="flex items-center gap-3 border-l border-gray-100 pl-4 py-1">
+            <div className="relative">
+              <AdminSelect
+                value={viewFilter}
+                onChange={setViewFilter}
+                options={['All', 'User', 'IT Support', 'Admin']}
+                placeholder="View: All"
+                minWidth="min-w-[140px]"
+                className="z-20"
+              />
+            </div>
+
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-xl text-sm font-bold whitespace-nowrap border transition-all ${activeTab === tab
-                ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
-                : "bg-white text-gray-400 border-gray-200 hover:bg-gray-50"
-                }`}
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-[#1e2e4a] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#15233b] transition-colors mr-2"
             >
-              {tab}
+              <Plus size={16} /> Add User
             </button>
-          ))}
-        </div>
-
-        {/* Total Users Count & Add Button */}
-        <div className="flex justify-between items-center">
-          <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
-            Total Users <span className="text-gray-400 ml-1">({filteredUsers.length})</span>
-          </h2>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-[#193C6C] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-[#15325b] shadow-sm">
-            <Plus size={16} /> Add
-          </button>
+          </div>
         </div>
 
         {/* User Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {paginatedUsers.map((user) => (
-            <div key={user.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative group hover:shadow-md transition-all">
+        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedUsers.map((user) => (
+              <div key={user.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 flex items-start gap-4 hover:shadow-md transition-shadow">
 
-              {/* Status Badge */}
-              <span className={`absolute top-5 right-5 text-[10px] font-bold px-2 py-1 rounded-full ${user.enabled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
-                }`}>
-                {user.enabled ? "Active" : "Disabled"}
-              </span>
-
-              <div className="flex items-start gap-4">
                 {/* Avatar */}
-                <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100">
                   {user.picture ? (
                     <img src={user.picture} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -243,55 +212,56 @@ const UserManagement = () => {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 truncate">{user.name || user.username || "No Name"}</h3>
-                  <p className={`text-sm font-bold ${getRoleColor(user.role)} mb-0.5`}>
-                    {getRoleLabel(user.role)}
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-[#1e2e4a] text-sm truncate pr-2">{user.name}</h3>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* You can show/hide actions on hover or keep them visible. Screenshot shows pencil/trash lightly */}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setNewRole(user.role);
+                          setIsEditRoleModalOpen(true);
+                        }}
+                        className="text-gray-300 hover:text-blue-600 transition-colors"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="text-gray-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-400 text-xs mb-2 truncate">
+                    {/* Display Username (Student ID) for users, Email for others */}
+                    {user.role === 'user' ? (user.username || user.email) : user.email}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
+
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${getRoleBadgeStyle(user.role)}`}>
+                    {getRoleLabel(user.role)}
+                  </span>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-50">
-                <button
-                  onClick={() => handleStatusToggle(user.id, user.enabled)}
-                  className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                  title="Edit Status"
-                >
-                  <Edit2 size={18} />
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedUser(user);
-                    setNewRole(user.role);
-                    setIsEditRoleModalOpen(true);
-                  }}
-                  className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
-                  title="Change Role"
-                >
-                  <Shield size={18} />
-                </button>
-                <button
-                  onClick={() => handleDelete(user.id)}
-                  className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete User"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {filteredUsers.length === 0 && !loading && (
-            <div className="col-span-full text-center py-10 text-gray-400">
-              <p>No users found matching this filter.</p>
+          {paginatedUsers.length === 0 && !loading && (
+            <div className="text-center py-12 text-gray-400">
+              <p>No users found matching your search.</p>
             </div>
           )}
         </div>
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-8 pb-8">
+          <div className="flex justify-center items-center gap-2 mt-4 shrink-0">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -300,7 +270,7 @@ const UserManagement = () => {
               <ChevronLeft size={20} />
             </button>
 
-            <span className="text-sm font-bold text-gray-600">
+            <span className="text-xs font-bold text-gray-500">
               Page {currentPage} of {totalPages}
             </span>
 
@@ -314,152 +284,133 @@ const UserManagement = () => {
           </div>
         )}
 
-        {loading && (
-          <div className="col-span-full text-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#193C6C] mx-auto"></div>
+        {/* Modals (Keep existing structure but maybe minimal style tweaks) */}
+        {isAddModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-[#1e2e4a]">Add New User</h2>
+                <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <X size={24} />
+                </button>
+              </div>
+              <form onSubmit={handleAddUser} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a] text-sm"
+                    value={addUserForm.name}
+                    onChange={(e) => setAddUserForm({ ...addUserForm, name: e.target.value })}
+                    placeholder="e.g. Somchai Jai-dee"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Email / Username</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a] text-sm"
+                    value={addUserForm.email}
+                    onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
+                    placeholder="e.g. student@psu.ac.th"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Password</label>
+                  <input
+                    type="password"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a] text-sm"
+                    value={addUserForm.password}
+                    onChange={(e) => setAddUserForm({ ...addUserForm, password: e.target.value })}
+                    placeholder="Enter secure password"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Role</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['user', 'it_support', 'admin'].map((role) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setAddUserForm({ ...addUserForm, role })}
+                        className={`px-2 py-2 rounded-lg text-xs font-bold border transition-colors ${addUserForm.role === role
+                          ? 'bg-[#1e2e4a] text-white border-[#1e2e4a]'
+                          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                          }`}
+                      >
+                        {role === 'it_support' ? 'IT Support' : role === 'admin' ? 'System Admin' : 'User'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-[#1e2e4a] text-white py-3 rounded-xl font-bold hover:bg-[#15325b] transition-colors mt-2"
+                >
+                  Create User
+                </button>
+              </form>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Add User Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-[#193C6C]">Add New User</h2>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddUser} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#193C6C]/20 focus:border-[#193C6C]"
-                  value={addUserForm.name}
-                  onChange={(e) => setAddUserForm({ ...addUserForm, name: e.target.value })}
-                  placeholder="Enter full name"
-                />
+        {isEditRoleModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-[#1e2e4a]">Change Role</h2>
+                <button onClick={() => setIsEditRoleModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <X size={24} />
+                </button>
               </div>
+              <p className="text-gray-500 text-sm mb-6">Select a new role for <span className="font-bold text-[#1e2e4a]">{selectedUser?.name}</span></p>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#193C6C]/20 focus:border-[#193C6C]"
-                  value={addUserForm.email}
-                  onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
-                  placeholder="Enter email address"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  required
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#193C6C]/20 focus:border-[#193C6C]"
-                  value={addUserForm.password}
-                  onChange={(e) => setAddUserForm({ ...addUserForm, password: e.target.value })}
-                  placeholder="Enter password"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Role</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['user', 'it_support', 'admin'].map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => setAddUserForm({ ...addUserForm, role })}
-                      className={`px-3 py-2 rounded-xl text-sm font-bold border ${addUserForm.role === role
-                        ? 'bg-[#193C6C] text-white border-[#193C6C]'
-                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                        }`}
-                    >
-                      {role === 'it_support' ? 'Staff' : role.charAt(0).toUpperCase() + role.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#193C6C] text-white py-3 rounded-xl font-bold hover:bg-[#15325b] transition-colors mt-4 shadow-lg shadow-blue-900/10"
-              >
-                Create User
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Role Modal */}
-      {isEditRoleModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-xl">
-            <h2 className="text-xl font-bold text-[#193C6C] mb-2">Change User Role</h2>
-            <p className="text-gray-500 text-sm mb-6">Select a new role for <span className="font-bold text-gray-800">{selectedUser.name}</span></p>
-
-            <form onSubmit={handleEditRole} className="space-y-4">
-              <div className="space-y-2">
+              <form onSubmit={handleEditRole} className="space-y-3">
                 {['user', 'it_support', 'admin'].map((role) => (
                   <label
                     key={role}
-                    className={`flex items-center p-4 rounded-xl border cursor-pointer transition-all ${newRole === role
-                      ? 'border-[#193C6C] bg-blue-50/50 ring-1 ring-[#193C6C]'
+                    className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${newRole === role
+                      ? 'border-[#1e2e4a] bg-blue-50/50 ring-1 ring-[#1e2e4a]/10'
                       : 'border-gray-200 hover:bg-gray-50'
                       }`}
                   >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role}
-                      checked={newRole === role}
-                      onChange={(e) => setNewRole(e.target.value)}
-                      className="sr-only"
-                    />
-                    <div className="flex-1">
-                      <span className={`font-bold block ${role === 'admin' ? 'text-blue-900' :
-                        role === 'it_support' ? 'text-blue-700' : 'text-blue-600'
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="role"
+                        value={role}
+                        checked={newRole === role}
+                        onChange={(e) => setNewRole(e.target.value)}
+                        className="accent-[#1e2e4a]"
+                      />
+                      <span className={`font-bold text-sm ${role === 'admin' ? 'text-blue-900' :
+                        role === 'it_support' ? 'text-purple-700' : 'text-gray-700'
                         }`}>
-                        {role === 'it_support' ? 'IT Support (Staff)' : role.charAt(0).toUpperCase() + role.slice(1)}
+                        {role === 'it_support' ? 'IT Support' : role === 'admin' ? 'System Admin' : 'User'}
                       </span>
                     </div>
-                    {newRole === role && <Check size={20} className="text-[#193C6C]" />}
+                    {newRole === role && <Check size={18} className="text-[#1e2e4a]" />}
                   </label>
                 ))}
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsEditRoleModalOpen(false)}
-                  className="flex-1 px-4 py-2 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  Cancel
-                </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-[#193C6C] text-white px-4 py-2 rounded-xl font-bold hover:bg-[#15325b] transition-colors shadow-lg shadow-blue-900/10"
+                  className="w-full bg-[#1e2e4a] text-white py-3 rounded-xl font-bold hover:bg-[#15233b] transition-colors mt-4 shadow-lg shadow-blue-900/10"
                 >
                   Save Changes
                 </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AdminWrapper>
   );
 };
 
 export default UserManagement;
+
+

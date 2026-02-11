@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Users, Shield, Database, LayoutGrid, ChevronRight, Home, Ticket, Settings, FileText, Monitor, Key, Briefcase } from "lucide-react";
+import { Users, Shield, Database, LayoutGrid, ChevronRight, Ticket, Monitor, Key, FileText, Briefcase, Lock, BookOpen } from "lucide-react";
 import { getDashboardStats } from "../../api/admin";
 import useAuthStore from "../../store/auth-store";
 import { useNavigate } from "react-router-dom";
+import AdminWrapper from "../../components/admin/AdminWrapper";
+import AdminHeader from "../../components/admin/AdminHeader";
 
 const Dashboard = () => {
     const { token } = useAuthStore();
@@ -32,38 +34,26 @@ const Dashboard = () => {
         {
             title: "Total Tickets",
             count: stats.ticketCount,
-            label: "Total Tickets",
-            value: stats.ticketCount,
-            icon: <Ticket size={24} className="text-white" />,
-            bgIcon: "bg-blue-600",
-            text: "text-blue-600"
+            icon: <Ticket size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-gray-100",
         },
         {
             title: "IT Support",
             count: stats.itStaffCount,
-            label: "IT Support",
-            value: stats.itStaffCount,
-            icon: <Briefcase size={24} className="text-white" />,
-            bgIcon: "bg-blue-600",
-            text: "text-blue-600"
+            icon: <Briefcase size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-gray-100",
         },
         {
             title: "Resolution Rate",
             count: stats.resolutionRate + "%",
-            label: "Resolution Rate",
-            value: stats.resolutionRate + "%",
-            icon: <Shield size={24} className="text-white" />,
-            bgIcon: "bg-blue-600",
-            text: "text-blue-600"
+            icon: <Shield size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-gray-100",
         },
         {
             title: "Equipment",
             count: stats.equipmentCount,
-            label: "Equipment",
-            value: stats.equipmentCount,
-            icon: <Database size={24} className="text-white" />,
-            bgIcon: "bg-blue-600",
-            text: "text-blue-600"
+            icon: <Database size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-gray-100",
         }
     ];
 
@@ -71,99 +61,95 @@ const Dashboard = () => {
         {
             title: "User Management",
             desc: "Manage student & staff accounts",
-            icon: <Users size={24} className="text-blue-600" />,
-            bg: "bg-blue-50",
+            icon: <Users size={24} className="text-[#1e2e4a]" />,
+            bg: "bg-gray-100",
             link: "/admin/manage-users",
-        },
-        {
-            title: "IT Staff Management",
-            desc: "Assign roles and schedules",
-            icon: <Monitor size={24} className="text-blue-600" />,
-            bg: "bg-blue-50",
-            link: "/admin/manage-it",
         },
         {
             title: "Floor & Room Management",
             desc: "Lab and server room status",
-            icon: <LayoutGrid size={24} className="text-blue-600" />,
-            bg: "bg-blue-50",
+            icon: <LayoutGrid size={24} className="text-[#1e2e4a]" />,
+            bg: "bg-gray-100",
             link: "/admin/manage-rooms",
         },
         {
             title: "Equipment Management",
             desc: "Inventory tracking",
-            icon: <Database size={24} className="text-blue-600" />,
-            bg: "bg-blue-50",
+            icon: <Database size={24} className="text-[#1e2e4a]" />,
+            bg: "bg-gray-100",
             link: "/admin/manage-equipment",
         },
         {
             title: "Permission",
             desc: "Access control",
-            icon: <Key size={24} className="text-blue-600" />,
-            bg: "bg-blue-50",
+            icon: <Lock size={24} className="text-[#1e2e4a]" />,
+            bg: "bg-gray-100",
             link: "/admin/permission",
+        },
+        {
+            title: "Knowledge Base",
+            desc: "Guides & Troubleshooting",
+            icon: <BookOpen size={24} className="text-[#1e2e4a]" />,
+            bg: "bg-gray-100",
+            link: "/admin/quick-fix",
         },
         {
             title: "Analytics Reports",
             desc: "Dashboard and export the reports",
-            icon: <FileText size={24} className="text-blue-600" />,
-            bg: "bg-blue-50",
+            icon: <FileText size={24} className="text-[#1e2e4a]" />,
+            bg: "bg-gray-100",
             link: "/admin/reports",
         },
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-            {/* Header */}
-            <div className="bg-[#193C6C] pt-12 pb-16 px-6 rounded-b-[2.5rem] relative">
+        <AdminWrapper>
+            <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+                <AdminHeader
+                    title="Analytics Dashboard"
+                    subtitle="Monitor helpdesk performance"
+                    showBackPlaceholder={true}
+                />
 
-                <div>
-                    <p className="text-blue-200 text-sm font-medium mb-1">Monitor helpdesk performance</p>
-                    <h1 className="text-3xl font-bold text-white">Analytics Dashboard</h1>
-                </div>
-            </div>
-
-            {/* Filter Dropdown (Mockup) */}
-
-
-            {/* KPI Cards Grid */}
-            <div className="px-6 grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8 mt-6">
-                {kpiCards.map((card, idx) => (
-                    <div key={idx} className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-24">
-                        <div className="flex justify-between items-start">
-                            <span className="text-xs text-gray-500 font-medium truncate">{card.label}</span>
-                            <div className={`w-8 h-8 rounded-lg ${card.bgIcon} flex items-center justify-center shadow-sm`}>
-                                {React.cloneElement(card.icon, { size: 16 })}
+                {/* KPI Cards Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
+                    {kpiCards.map((card, idx) => (
+                        <div key={idx} className="bg-white px-6 py-5 rounded-[1.5rem] shadow-sm flex items-center justify-between h-28">
+                            <div className="flex flex-col justify-center">
+                                <p className="text-[#1e2e4a] text-3xl font-medium mb-1">{card.count}</p>
+                                <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">{card.title}</span>
                             </div>
-                        </div>
-                        <p className={`text-2xl font-bold ${card.text}`}>{card.value}</p>
-                    </div>
-                ))}
-            </div>
-
-            {/* Management Section */}
-            <div className="px-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Management</h2>
-                <div className="space-y-4">
-                    {menuItems.map((item, index) => (
-                        <div
-                            key={index}
-                            onClick={() => navigate(item.link)}
-                            className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 active:scale-95 transition-transform cursor-pointer"
-                        >
-                            <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
-                                {item.icon}
+                            <div className={`w-12 h-12 rounded-full ${card.bgIcon} flex items-center justify-center shrink-0`}>
+                                {React.cloneElement(card.icon, { size: 24 })}
                             </div>
-                            <div className="flex-1">
-                                <h3 className="text-base font-bold text-gray-900">{item.title}</h3>
-                                <p className="text-xs text-gray-500">{item.desc}</p>
-                            </div>
-                            <ChevronRight size={20} className="text-gray-300" />
                         </div>
                     ))}
                 </div>
+
+                {/* Management Section */}
+                <div className="flex-1 min-h-0 flex flex-col">
+                    <h2 className="text-[#64748b] text-xs font-medium uppercase tracking-wider mb-3 ml-1">MANAGEMENT</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                        {menuItems.map((item, index) => (
+                            <div
+                                key={index}
+                                onClick={() => navigate(item.link)}
+                                className="bg-white px-6 py-4 rounded-[1.5rem] shadow-sm flex items-center gap-5 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+                            >
+                                <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
+                                    {React.cloneElement(item.icon, { size: 24 })}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-medium text-[#1e2e4a] truncate mb-0.5">{item.title}</h3>
+                                    <p className="text-xs text-gray-500 truncate">{item.desc}</p>
+                                </div>
+                                <ChevronRight size={20} className="text-gray-300" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
-        </div>
+        </AdminWrapper>
     );
 };
 

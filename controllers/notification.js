@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 
 exports.list = async (req, res) => {
     try {
@@ -9,7 +10,7 @@ exports.list = async (req, res) => {
         });
         res.json(notifications);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -23,7 +24,7 @@ exports.markRead = async (req, res) => {
         });
         res.json({ message: "Marked as read" });
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -36,7 +37,7 @@ exports.remove = async (req, res) => {
         });
         res.json({ message: "Deleted" });
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 }

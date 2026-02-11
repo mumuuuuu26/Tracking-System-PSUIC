@@ -1,11 +1,12 @@
 // config/nodemailer.js
 const nodemailer = require("nodemailer");
+const { logger } = require("../utils/logger");
 
 // ตรวจสอบ config
 if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
-  console.warn("⚠️ WARNING: Email configuration is missing!");
-  console.log("MAIL_USER:", process.env.MAIL_USER || "NOT SET");
-  console.log("MAIL_PASS:", process.env.MAIL_PASS ? "SET" : "NOT SET");
+  logger.warn("⚠️ WARNING: Email configuration is missing!");
+  logger.info(`MAIL_USER: ${process.env.MAIL_USER || "NOT SET"}`);
+  logger.info(`MAIL_PASS: ${process.env.MAIL_PASS ? "SET" : "NOT SET"}`);
 }
 
 const transporter = nodemailer.createTransport({
@@ -19,9 +20,9 @@ const transporter = nodemailer.createTransport({
 // ทดสอบการเชื่อมต่อ
 transporter.verify((error, success) => {
   if (error) {
-    console.error("❌ Email service error:", error.message);
+    logger.error(`❌ Email service error: ${error.message}`);
   } else {
-    console.log("✅ Email service is ready");
+    logger.info("✅ Email service is ready");
   }
 });
 

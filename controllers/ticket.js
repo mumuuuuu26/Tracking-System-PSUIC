@@ -1,5 +1,6 @@
 // controllers/ticket.js (ส่วนที่ต้องแก้ไข)
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 const { saveImage } = require("../utils/uploadImage");
 
 exports.create = async (req, res) => {
@@ -92,7 +93,7 @@ exports.create = async (req, res) => {
         }
       }
     } catch (emailError) {
-      console.error("❌ Email Send Error:", emailError.message);
+      logger.error("❌ Email Send Error:", emailError.message);
     }
 
     // บันทึก Notification ใน database
@@ -125,7 +126,7 @@ exports.create = async (req, res) => {
 
     res.json(newTicket);
   } catch (err) {
-    console.error("❌ Create Ticket Error:", err);
+    logger.error("❌ Create Ticket Error:", err);
     res.status(500).json({ message: "Server Error: Create Ticket Failed" });
   }
 };
@@ -255,7 +256,7 @@ exports.update = async (req, res) => {
 
     res.json(updatedTicket);
   } catch (err) {
-    console.error("❌ Update Error:", err);
+    logger.error("❌ Update Error:", err);
     res.status(500).json({ message: "Server Error: Update Ticket Failed" });
   }
 };
@@ -299,7 +300,7 @@ exports.list = async (req, res) => {
 
     res.json(sortedTickets);
   } catch (err) {
-    console.error("❌ List Tickets Error:", err);
+    logger.error("❌ List Tickets Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -359,7 +360,7 @@ exports.history = async (req, res) => {
 
     res.json(sortedTickets);
   } catch (err) {
-    console.error("❌ History Error:", err);
+    logger.error("❌ History Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -388,7 +389,7 @@ exports.read = async (req, res) => {
     });
     res.json(ticket);
   } catch (err) {
-    console.error("❌ Read Ticket Error:", err);
+    logger.error("❌ Read Ticket Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -453,7 +454,7 @@ exports.listAll = async (req, res) => {
       totalPages: Math.ceil(total / take)
     });
   } catch (err) {
-    console.error("❌ List All Tickets Error:", err);
+    logger.error("❌ List All Tickets Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -496,7 +497,7 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
-    console.error("❌ Remove Ticket Error:", err);
+    logger.error("❌ Remove Ticket Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -518,7 +519,7 @@ exports.listByEquipment = async (req, res) => {
     });
     res.json(tickets);
   } catch (err) {
-    console.error("❌ List By Equipment Error:", err);
+    logger.error("❌ List By Equipment Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -603,7 +604,7 @@ exports.submitFeedback = async (req, res) => {
 
     res.json(updatedTicket);
   } catch (err) {
-    console.error("❌ Submit Feedback Error:", err);
+    logger.error("❌ Submit Feedback Error:", err);
     res.status(500).json({ message: "Server Error: Feedback Submission Failed" });
   }
 };

@@ -1,6 +1,7 @@
 // middlewares/authCheck.js
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 
 exports.authCheck = async (req, res, next) => {
   try {
@@ -33,7 +34,7 @@ exports.authCheck = async (req, res, next) => {
     req.user = user; // Attach full user data to request
     next();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Token Invalid" });
   }
 };
@@ -47,7 +48,7 @@ exports.adminCheck = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Error Admin access denied" });
   }
 };
@@ -63,7 +64,7 @@ exports.itCheck = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Error IT access denied" });
   }
 };

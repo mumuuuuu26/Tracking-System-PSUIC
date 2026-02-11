@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { logger } = require('../utils/logger');
 
 // Load credentials from environment variables or a JSON file
 // For this implementation, we'll assume they are in env vars or we'll mock if missing
@@ -27,7 +28,7 @@ const getAuthClient = () => {
     };
 
     if (!credentials.client_email || !credentials.private_key) {
-        console.warn('Google Credentials missing. Calendar sync will be mocked.');
+        logger.warn('Google Credentials missing. Calendar sync will be mocked.');
         return null;
     }
 
@@ -77,7 +78,7 @@ exports.createGoogleEvent = async (eventDetails) => {
 
         return res.data.id;
     } catch (error) {
-        console.error('Error creating Google Calendar event:', error);
+        logger.error('Error creating Google Calendar event:', error);
         // Return null or throw depending on how strict we want to be
         // For now, return null so we don't break the app flow if google fails
         return null;
@@ -112,7 +113,7 @@ exports.updateGoogleEvent = async (eventId, eventDetails) => {
 
         return true;
     } catch (error) {
-        console.error('Error updating Google Calendar event:', error);
+        logger.error('Error updating Google Calendar event:', error);
         return false;
     }
 };
@@ -129,7 +130,7 @@ exports.deleteGoogleEvent = async (eventId) => {
         });
         return true;
     } catch (error) {
-        console.error('Error deleting Google Calendar event:', error);
+        logger.error('Error deleting Google Calendar event:', error);
         return false;
     }
 }
@@ -138,7 +139,7 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
     try {
         const auth = getAuthClient();
         if (!auth) {
-            console.warn("Google Calendar Auth Failed: Missing Credentials");
+            logger.warn("Google Calendar Auth Failed: Missing Credentials");
             throw new Error("Missing Google API Credentials in Server Environment");
         }
 
@@ -173,11 +174,11 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
 
             return allEvents;
         } catch (apiError) {
-            console.error('Google API Error Details:', apiError.message);
+            logger.error('Google API Error Details:', apiError.message);
             throw new Error(`Google API Failed: ${apiError.message}`);
         }
     } catch (error) {
-        console.error('Error listing Google Calendar events:', error);
+        logger.error('Error listing Google Calendar events:', error);
         throw error; // Propagate error to controller
     }
 };

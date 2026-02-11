@@ -1,5 +1,6 @@
 // controllers/category.js
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 
 // สร้างหมวดหมู่ (เผื่อไว้ใช้ในอนาคต หรือให้ Admin ใช้)
 exports.create = async (req, res) => {
@@ -10,7 +11,7 @@ exports.create = async (req, res) => {
     });
     res.json(category);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -23,7 +24,7 @@ exports.list = async (req, res) => {
     });
     res.json(categories);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -38,7 +39,7 @@ exports.update = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -52,7 +53,7 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: "Category deleted successfully" });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };

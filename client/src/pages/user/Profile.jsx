@@ -20,6 +20,7 @@ import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import Swal from "sweetalert2";
 import { getImageUrl } from "../../utils/imageUrl";
+import { confirmLogout } from "../../utils/sweetalert";
 
 const Profile = () => {
   const { token, checkUser, actionLogout } = useAuthStore();
@@ -102,29 +103,12 @@ const Profile = () => {
     }
   };
 
-  const handleLogout = () => {
-    Swal.fire({
-      title: "Log out",
-      text: "Are you sure you want to log out ?",
-      showCancelButton: true,
-      confirmButtonColor: "#2563eb",
-      cancelButtonColor: "#fff",
-      confirmButtonText: "Log out",
-      cancelButtonText: "Cancel",
-      customClass: {
-        popup: "rounded-3xl p-6 md:p-8",
-        title: "text-xl md:text-2xl font-bold text-gray-900 mb-2",
-        htmlContainer: "text-gray-500 text-base",
-        confirmButton: "bg-[#2563eb] hover:bg-blue-700 text-white min-w-[120px] py-3 rounded-xl font-bold text-sm shadow-sm transition-colors",
-        cancelButton: "bg-white hover:bg-gray-50 text-[#2563eb] border border-[#2563eb] min-w-[120px] py-3 rounded-xl font-bold text-sm transition-colors",
-        actions: "gap-4 w-full px-4 mt-4"
-      },
-      buttonsStyling: false
-    }).then((result) => {
-      if (result.isConfirmed) {
-        actionLogout();
-      }
-    });
+  const handleLogout = async () => {
+    const isConfirmed = await confirmLogout();
+    if (isConfirmed) {
+      actionLogout();
+      navigate("/");
+    }
   };
 
   if (loading)

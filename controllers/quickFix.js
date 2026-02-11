@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { logger } = require("../utils/logger");
 
 exports.list = async (req, res) => {
     try {
@@ -12,7 +13,7 @@ exports.list = async (req, res) => {
         });
         res.send(data);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -31,7 +32,7 @@ exports.create = async (req, res) => {
         });
         res.send(newFix);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -52,7 +53,7 @@ exports.update = async (req, res) => {
         });
         res.send(updated);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -65,7 +66,7 @@ exports.remove = async (req, res) => {
         });
         res.send(deleted);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -84,7 +85,7 @@ exports.read = async (req, res) => {
         });
         res.send(data);
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         res.status(500).json({ message: "Server Error" });
     }
 }

@@ -76,6 +76,15 @@ pm2 start ecosystem.config.js
 **Log Files:**
 - Logs are written to the `./logs/` directory.
 
+## Logging
+
+The application uses **Winston** for robust logging. Logs are automatically rotated daily and stored in the `logs/` directory.
+
+- **Error Logs**: `logs/error/YYYY-MM-DD.log` - Contains only error-level messages (useful for debugging).
+- **Combined Logs**: `logs/YYYY-MM-DD.log` - Contains all log levels (info, warn, error).
+
+These files are excluded from version control (`.gitignore`).
+
 ## Test Strategy
 
 - **CI Pipeline**: Runs Unit and Integration tests (Jest) to ensure core logic and check for regressions.
@@ -106,3 +115,21 @@ Swagger UI is available at:
 - **Input Validation**: Uses `zod` to validate critical inputs.
 - **Error Handling**: Centralized error logging and safe responses.
 - **Data Integrity**: Soft Delete implemented for Tickets.
+
+## Troubleshooting
+
+### Server Won't Start (`npm start` fails)
+- **Port Conflict**: Check if port `5002` is already in use. You can change it in `.env`.
+- **Node Modules**: Ensure you have run `npm install` successfully.
+- **Environment Variables**: Verify that your `.env` file exists and has valid values.
+
+### Database Connection Failed
+- **MySQL Service**: Ensure your MySQL server service is running.
+- **Credentials**: Double-check `DATABASE_URL` in `.env`. The format should be `mysql://user:password@host:port/database`.
+- **Network**: Ensure firewall is not blocking port `3306` (or your DB port).
+
+### Where are the logs?
+- **Location**: All logs are stored in the `./logs/` directory.
+- **Error Logs**: See `./logs/error/`.
+- **Combined Logs**: See `./logs/`.
+- Logs are rotated daily.
