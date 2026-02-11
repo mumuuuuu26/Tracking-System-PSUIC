@@ -186,7 +186,7 @@ if (process.env.NODE_ENV !== "test") {
       const { initScheduledJobs } = require("./utils/scheduler");
       initScheduledJobs();
 
-      server.listen(5002, () => {
+      server.listen(5002, '0.0.0.0', () => {
         logger.info(
           `Server running in ${process.env.NODE_ENV || "development"} mode on port 5002`,
         );
