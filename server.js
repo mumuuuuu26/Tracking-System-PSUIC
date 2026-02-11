@@ -186,18 +186,10 @@ if (process.env.NODE_ENV !== "test") {
       const { initScheduledJobs } = require("./utils/scheduler");
       initScheduledJobs();
 
-      server.listen(PORT, '0.0.0.0', () => {
+      server.listen(5002, () => {
         logger.info(
-          `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
+          `🚀 Server running in ${process.env.NODE_ENV || "development"} mode on port 5002`,
         );
-      }).on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-          logger.error(`❌ Error: Port ${PORT} is already in use!`);
-          logger.error(`   Please kill the process running on port ${PORT} or change the PORT in .env`);
-        } else {
-          logger.error('❌ Server failed to start:', err);
-        }
-        process.exit(1);
       });
     } catch (error) {
       logger.error('❌ Database connection failed:', error);
