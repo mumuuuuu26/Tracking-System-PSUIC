@@ -56,6 +56,30 @@ jobs:
         NODE_ENV: test
         DATABASE_URL: mysql://root:password@localhost:3306/ticket_system_test
 
+    # --------------------------------------------------------
+    # 1. Seed ข้อมูล (ใช้ไฟล์ seed-complete.js ที่มีข้อมูลครบ)
+    # --------------------------------------------------------
+    - name: Seed Database for E2E
+      run: node prisma/seed-complete.js
+      env:
+        DATABASE_URL: mysql://root:password@localhost:3306/ticket_system_test
+
+    # 2. เช็คให้ชัวร์ว่าเข้าแล้ว (เพิ่ม Step นี้เพื่อความสบายใจ ดูใน Log ได้เลย)
+    - name: Verify Database Content
+      run: |
+        node -e '
+          const { PrismaClient } = require("@prisma/client");
+          const prisma = new PrismaClient();
+          prisma.category.count().then(c => console.log("DEBUG: Category Count =", c));
+        '
+      env:
+        DATABASE_URL: mysql://root:password@localhost:3306/ticket_system_test
+
+    # 👇👇👇 3. เพิ่ม Step นี้ครับ (สำคัญที่สุด!) 👇👇👇
+    - name: Remove .env to force Server to use CI Environment
+      run: rm .env
+    # 👆👆👆 ลบ .env ทิ้ง เพื่อไม่ให้ Server หลงไปใช้ DB ผิดตัว 👆👆👆
+
     - name: Run Frontend Tests
       run: |
         cd client

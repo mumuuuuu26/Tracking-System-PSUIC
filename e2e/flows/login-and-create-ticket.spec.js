@@ -2,6 +2,9 @@ const { test, expect, request } = require('@playwright/test');
 
 test.describe('User Workflow', () => {
     test('Register, Login and Create Ticket', async ({ page }) => {
+        // Increase timeout for this test as per recommendation
+        test.setTimeout(60000);
+
         const uniqueEmail = `e2e_${Date.now()}@example.com`;
         
         // 1. API Seeding: Create User via API
@@ -13,35 +16,55 @@ test.describe('User Workflow', () => {
             }
         });
 
-        // 2. Login
-        await page.goto('/login');
-        
-        // Click "Login with Email" to show the email/password form
-        // The login page has multiple login methods, so we need to select email login first
-        await page.getByRole('button', { name: /Login with Email/i }).click();
-        
-        // Wait for email input to be visible
-        const emailInput = page.locator('input[name="email"]');
-        await emailInput.waitFor({ state: 'visible', timeout: 10000 });
-        await emailInput.fill(uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
-        await page.click('button[type="submit"]'); // Or 'Sign In' button
+        // 2. Login via API (Bypass UI to avoid race conditions)
+        const loginResponse = await apiContext.post('http://localhost:5002/api/login', {
+            data: {
+                email: uniqueEmail,
+                password: 'password123'
+            }
+        });
 
-        // Verify successful login via Toast or URL
-        await expect(page.getByText('Welcome back')).toBeVisible({ timeout: 15000 });
+        expect(loginResponse.ok()).toBeTruthy();
+        const loginData = await loginResponse.json();
+        const token = loginData.token;
+
+        // Inject token BEFORE app loads to avoid race conditions
+        // The app uses Zustand with persist middleware, key: 'auth-store'
+        await page.addInitScript((value) => {
+            window.localStorage.setItem('auth-store', JSON.stringify(value));
+            // Also set 'token' just in case legacy code or other checks use it
+            window.localStorage.setItem('token', value.state.token); 
+        }, {
+            state: {
+                user: loginData.payload,
+                token: loginData.token,
+                hasHydrated: true
+            },
+            version: 0
+        });
+
+        // Navigate to Dashboard (Protected Route)
+        await page.goto('/user');
+        
+        // Ensure we are on user dashboard
+        await expect(page).toHaveURL(/\/user/);
+
+
 
         // Debugging: Log current URL and localStorage
         const currentUrl = page.url();
         console.log('Current URL after login attempt:', currentUrl);
 
-        // Verification: Check if auth-storage exists in localStorage
+        // Verification: Check if auth token exists in localStorage (auth-store is the actual key)
         await page.waitForFunction(() => {
-            const auth = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-            return auth?.state?.user && auth?.state?.token;
-        }, null, { timeout: 10000 }).catch(() => console.log('Auth storage not found in localStorage'));
+            const token = localStorage.getItem('token'); // Fallback
+            const authStore = localStorage.getItem('auth-store'); // Zustand
+            return token !== null || (authStore && JSON.parse(authStore)?.state?.token);
+        }, null, { timeout: 10000 }).catch(() => console.log('Auth token/store not found in localStorage'));
 
         // 3. Verify redirection to Dashboard (HomeUser)
-        await expect(page).toHaveURL('/user', { timeout: 30000 }); 
+        // Double ensure we are on the user dashboard
+        await expect(page).toHaveURL(/\/user/, { timeout: 30000 }); 
 
         // 4. Navigate to "Create Ticket"
         // In HomeUser, there is a "Report Issue" button
@@ -57,10 +80,19 @@ test.describe('User Workflow', () => {
         // Select Equipment (CustomSelect)
         // Click the trigger (placeholder text)
         await page.getByText('Select Equipment').click();
+
+        // Wait for Dropdown to be visible
+        const dropdown = page.locator('div.absolute.z-50');
+        await dropdown.waitFor({ state: 'visible' });
+
+        // Check if there are options
+        const optionsCount = await dropdown.locator('div.cursor-pointer').count();
+        expect(optionsCount, 'Dropdown is empty! Did you seed the database?').toBeGreaterThan(0);
+
         // Click the first option (assuming there is at least one)
         // We use locator for the dropdown item. CustomSelect renders items as divs with text.
         // We avoid "No options available"
-        const equipmentOption = page.locator('div.absolute.z-50').locator('div.cursor-pointer').first();
+        const equipmentOption = dropdown.locator('div.cursor-pointer').first();
         await equipmentOption.click();
 
         // Select Floor

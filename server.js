@@ -180,13 +180,18 @@ const PORT = process.env.PORT || 5002;
 
 const startServer = async () => {
   try {
-    if (process.env.NODE_ENV !== "test") {
+    if (process.env.NODE_ENV !== "test" && !process.env.CI) {
       const prisma = require("./config/prisma");
       await prisma.$connect();
       logger.info("Database connected successfully");
 
       const { initScheduledJobs } = require("./utils/scheduler");
       initScheduledJobs();
+    } else if (process.env.NODE_ENV === "test" || process.env.CI) {
+      // Still connect to DB in test/CI mode, but skip scheduler
+       const prisma = require("./config/prisma");
+       await prisma.$connect();
+       logger.info("Database connected successfully (Test/CI Mode - Scheduler Disabled)");
     }
 
     server.listen(PORT, "0.0.0.0", () => {
