@@ -203,7 +203,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server
 process.on("SIGTERM", () => {
