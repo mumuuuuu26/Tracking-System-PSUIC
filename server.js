@@ -156,11 +156,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. บอกให้ Server รู้จักโฟลเดอร์หน้าเว็บ (ที่ Build แล้ว)
+// 2. Health Check Endpoint (สำหรับ start-server-and-test)
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
+// 3. บอกให้ Server รู้จักโฟลเดอร์หน้าเว็บ (ที่ Build แล้ว)
 app.use(express.static(path.join(__dirname, "client/dist")));
 
-// 3. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
-// 3. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
+// 4. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
 app.get(/.*/, (req, res) => {
     // ป้องกันไม่ให้ไปแย่ง Route ของ API
     if (!req.originalUrl.startsWith('/api')) {
@@ -174,34 +178,32 @@ app.get(/.*/, (req, res) => {
 // --- Start Server & Graceful Shutdown ---
 const PORT = process.env.PORT || 5002;
 
-if (process.env.NODE_ENV !== "test") {
-  // Verify Database Connection & Start Server
-  const startServer = async () => {
-    try {
+const startServer = async () => {
+  try {
+    if (process.env.NODE_ENV !== "test") {
       const prisma = require("./config/prisma");
       await prisma.$connect();
-      logger.info('Database connected successfully');
-      
-      // Initialize Scheduler
+      logger.info("Database connected successfully");
+
       const { initScheduledJobs } = require("./utils/scheduler");
       initScheduledJobs();
-
-      server.listen(5002, '0.0.0.0', () => {
-        logger.info(
-          `Server running in ${process.env.NODE_ENV || "development"} mode on port 5002`,
-        );
-      });
-    } catch (error) {
-      logger.error('Database connection failed:', error);
-      process.exit(1);
     }
-  };
 
-  startServer().then(() => {
-    // Set server timeout to 30 seconds to avoid hanging requests during high load
+    server.listen(PORT, "0.0.0.0", () => {
+      logger.info(
+        `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
+      );
+    });
+
     server.setTimeout(30000);
-  });
-}
+
+  } catch (error) {
+    logger.error("Server failed to start:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server
 process.on("SIGTERM", () => {

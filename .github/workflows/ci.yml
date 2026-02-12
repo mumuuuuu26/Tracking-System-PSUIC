@@ -67,7 +67,6 @@ jobs:
     - name: Run E2E Tests
       run: npm run test:e2e:ci
       env:
-        NODE_ENV: test
         DATABASE_URL: mysql://root:password@localhost:3306/ticket_system_test
         PORT: 5002
         SECRET: test_secret
