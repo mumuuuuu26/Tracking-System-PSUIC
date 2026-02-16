@@ -45,8 +45,11 @@ jobs:
         echo "JWT_SECRET=supersecret" >> .env
         cd client && echo "VITE_API_URL=/api" > .env
 
-    - name: Run Database Migrations
-      run: npx prisma migrate deploy
+    - name: Generate Prisma Client
+      run: npx prisma generate
+
+    - name: Sync Database Schema
+      run: npx prisma db push --accept-data-loss
       env:
         DATABASE_URL: mysql://root:password@localhost:3306/ticket_system_test
 
