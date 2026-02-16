@@ -4,6 +4,8 @@ test.describe('User Workflow', () => {
     test('Register, Login and Create Ticket', async ({ page }) => {
         // Increase timeout for this test as per recommendation
         test.setTimeout(60000);
+        // Set viewport to mobile to see the mobile-only "Report Issue" button
+        await page.setViewportSize({ width: 375, height: 667 });
 
         const uniqueEmail = `e2e_${Date.now()}@example.com`;
         
@@ -118,5 +120,19 @@ test.describe('User Workflow', () => {
         
         // Verify redirection to ticket detail
         await expect(page).toHaveURL(/\/user\/ticket\/\d+/);
+
+        // 7. Verify Profile Picture Navigation (Mobile Header)
+        await page.goto('/user'); // Go back to home
+        await page.waitForTimeout(1000); // Wait for header to load
+        
+        // Click on the profile picture in the header (mobile view)
+        // We target the div that has the click handler. It's the one with w-12 h-12 classes or we can rely on hierarchy.
+        // Or better, let's look for the profile image or fallback text "U" or initial.
+        const profileSelector = page.locator('div.w-12.h-12.cursor-pointer').first(); 
+        await expect(profileSelector).toBeVisible();
+        await profileSelector.click();
+
+        // Verify navigation to profile page
+        await expect(page).toHaveURL(/\/user\/profile/);
     });
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AdminWrapper = ({ children }) => {
+const ITWrapper = ({ children }) => {
     return (
         <div className="max-w-7xl mx-auto w-full h-full font-sans text-[#1e2e4a]">
             {children}
@@ -8,4 +8,4 @@ const AdminWrapper = ({ children }) => {
     );
 };
 
-export default AdminWrapper;
+export default ITWrapper;

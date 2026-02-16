@@ -1,10 +1,10 @@
 import React from "react";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Home, User, CircleUser, Mail, Heart } from "lucide-react";
+import { Home, User, CircleUser, Mail, Clock } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
 
-import SidebarUser from "../components/user/SidebarUser";
+import UserNavbar from "../components/user/UserNavbar";
 
 const LayoutUser = ({ children }) => {
   const { user, hasHydrated } = useAuthStore();
@@ -27,41 +27,12 @@ const LayoutUser = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Mobile Header (Hidden on Desktop) */}
-      {/* Global Header */}
-      {/* Global Header - Hidden on Home Page (/user) */}
-      {/* Desktop Header (Visible on Desktop) */}
-      <header className="hidden md:flex bg-[#193C6C] shadow-lg shadow-blue-900/10 px-10 py-6 justify-between items-center text-white sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <img src="/img/psuic_logo.png" alt="PSUIC Service" className="h-12 w-auto object-contain brightness-0 invert" />
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden lg:block text-right">
-            <p className="text-sm font-bold">{user?.name || "User"}</p>
-            <p className="text-xs text-blue-200 uppercase tracking-wide">
-              {user?.role || "Student"}
-            </p>
-          </div>
-
-          <button
-            onClick={() => navigate("/user/profile")}
-            className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-white/10 transition-colors"
-          >
-            <CircleUser className="text-white" size={32} />
-          </button>
-        </div>
-      </header>
-
-
+      {/* Desktop Navigation */}
+      <UserNavbar />
 
       {/* Main Content */}
-      <main className="pb-32 md:pb-24">
-        <div className="max-w-[1920px] mx-auto flex items-start gap-8 lg:gap-24 px-0 md:px-6 lg:px-8">
-          {/* Sidebar - Visible only on Desktop */}
-          <div className="hidden lg:block w-80 shrink-0 sticky top-24 h-fit pt-8">
-            <SidebarUser />
-          </div>
+      <main className="pb-32 md:pb-24 pt-0 md:pt-6">
+        <div className="max-w-[1920px] mx-auto flex items-start justify-center px-0 md:px-6 lg:px-8">
 
           {/* Content */}
           <div className="flex-1 w-full min-w-0">
@@ -75,8 +46,8 @@ const LayoutUser = ({ children }) => {
         <nav className="bg-white border-t border-gray-100 pb-safe pt-3 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between max-w-md mx-auto">
             <NavLink href="/user" icon={<Home size={24} />} label="Home" active={isActive("/user")} />
-            <NavLink href="/user/create-ticket" icon={<Mail size={24} />} label="Report" active={isActive("/user/create-ticket")} />
-            <NavLink href="/user/history" icon={<Heart size={24} />} label="History" active={isActive("/user/history")} />
+            <NavLink href="/user/report" icon={<Mail size={24} />} label="Report" active={isActive("/user/report")} />
+            <NavLink href="/user/history" icon={<Clock size={24} />} label="History" active={isActive("/user/history")} />
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
           </div>
         </nav>

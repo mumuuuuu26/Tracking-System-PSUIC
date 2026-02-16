@@ -12,6 +12,13 @@ import {
   acceptJob,
   rejectJob
 } from "../../api/it";
+import { currentUser } from "../../api/auth";
+import { getImageUrl } from "../../utils/imageUrl";
+import socket from "../../utils/socket";
+import DashboardDesktop from "./DashboardDesktop";
+import ITWrapper from "../../components/it/ITWrapper";
+
+
 
 
 const ITDashboard = () => {
@@ -19,6 +26,7 @@ const ITDashboard = () => {
   const { token } = useAuthStore();
 
   const [tickets, setTickets] = useState([]);
+  const [profile, setProfile] = useState(null);
 
   const [stats, setStats] = useState({
     pending: 0,
@@ -39,9 +47,12 @@ const ITDashboard = () => {
     try {
       setLoading(true);
 
-      const [ticketsRes] = await Promise.all([
-        getMyTasks(token)
+      const [ticketsRes, profileRes] = await Promise.all([
+        getMyTasks(token),
+        currentUser(token)
       ]);
+
+      setProfile(profileRes.data);
 
 
       // Ensure array
@@ -74,6 +85,32 @@ const ITDashboard = () => {
       loadDashboardData();
     }
   }, [token, loadDashboardData]);
+
+  // Real-time updates
+  // Real-time updates
+  useEffect(() => {
+    const handleNewTicket = (newTicket) => {
+      console.log("Socket: New Ticket Received", newTicket);
+      setTickets((prev) => [newTicket, ...prev]);
+      setStats((prev) => ({
+        ...prev,
+        pending: prev.pending + 1,
+      }));
+    };
+
+    const handleUpdateTicket = (updatedTicket) => {
+      console.log("Socket: Ticket Updated", updatedTicket);
+      setTickets((prev) => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+    }
+
+    socket.on("server:new-ticket", handleNewTicket);
+    socket.on("server:update-ticket", handleUpdateTicket);
+
+    return () => {
+      socket.off("server:new-ticket", handleNewTicket);
+      socket.off("server:update-ticket", handleUpdateTicket);
+    };
+  }, []);
 
   const handleAccept = async (e, ticketId) => {
     e.stopPropagation();
@@ -119,162 +156,190 @@ const ITDashboard = () => {
       if (weightA !== weightB) {
         return weightB - weightA; // Higher priority first
       }
-      return new Date(a.createdAt) - new Date(b.createdAt); // Oldest first
+      return new Date(b.createdAt) - new Date(a.createdAt); // Newest first
     });
 
 
 
+  // Handler for Reject Modal trigger
+  const handleRejectClick = (ticket) => {
+    setSelectedTicket(ticket);
+    setShowRejectModal(true);
+  };
+
+
+
+  const displayName = profile?.name || (profile?.email ? profile.email.split('@')[0] : "IT Support");
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <>
+      <DashboardDesktop
+        tickets={tickets}
+        stats={stats}
+        profile={profile}
+        onAccept={handleAccept}
+        onReject={handleRejectClick}
+        navigate={navigate}
+      />
 
-      {/* Blue Header Section */}
-      <div className="bg-blue-600 pt-6 pb-24 px-6 rounded-b-[2.5rem] shadow-lg relative z-0">
-      </div>
-
-      {/* Floating Stats Card */}
-      <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
-        <div className="bg-white rounded-3xl shadow-xl p-6 flex justify-between items-center text-center">
-          <StatItem count={stats.pending} label="Booking" />
-          <StatItem count={stats.inProgress} label="In progress" />
-          <StatItem count={stats.completed} label="Completed" />
-
-        </div>
-      </div>
-
-      {/* New Tickets Section */}
-      <div className="max-w-4xl mx-auto px-6 mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg text-gray-800">New Tickets</h3>
-          <button
-            onClick={() => setShowAllNew(!showAllNew)}
-            className="text-blue-600 text-sm font-medium hover:underline"
-          >
-            {showAllNew ? "Show Less" : "See all"}
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {newTickets.length > 0 ? newTickets.slice(0, showAllNew ? undefined : 5).map((ticket) => (
+      {/* Mobile View */}
+      <div className="md:hidden">
+        {/* 1. New Header Section (Welcome back) - Matching User Side */}
+        <div className="bg-[#193C6C] pt-8 pb-8 rounded-b-[2.5rem] shadow-md relative z-0 -mx-4 md:-mx-8">
+          <div className="flex items-center justify-between text-white px-6">
+            <div className="flex flex-col">
+              <span className="text-base font-medium opacity-90">Welcome back,</span>
+              <span className="text-2xl font-bold mt-1 tracking-tight">{displayName}</span>
+            </div>
+            {/* Profile Picture */}
             <div
-              key={ticket.id}
-              onClick={() => navigate(`/it/ticket/${ticket.id}`)}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative group cursor-pointer hover:shadow-md transition-all duration-300"
+              onClick={() => navigate("/it/profile")}
+              className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/30 bg-white/10 flex items-center justify-center cursor-pointer hover:border-white transition-colors"
             >
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="text-xl md:text-2xl font-bold text-[#193C6C] group-hover:text-blue-800 transition-colors flex-1 pr-2 break-words">
-                  {ticket.category?.name || "General"}
-                </h4>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-bold border ${ticket.status === 'completed' ? 'border-green-500 text-green-600 bg-green-50' :
-                    ticket.status === 'in_progress' ? 'border-yellow-500 text-yellow-600 bg-yellow-50' :
-                      'border-red-500 text-red-600 bg-red-50'
-                    }`}>
-                    {ticket.status === 'not_start' ? 'Not Started' :
-                      ticket.status === 'in_progress' ? 'In Progress' : 'Completed'}
-                  </div>
-
-                  {/* Eye Icon */}
-                  <div className="h-full px-2 py-1 rounded-lg border border-gray-100 bg-gray-50 text-gray-400 group-hover:text-blue-500 group-hover:border-blue-100 transition-colors flex items-center justify-center">
-                    <Eye size={16} />
-                  </div>
-                </div>
-              </div>
-
-
-              {/* Content */}
-              <div className="flex flex-col gap-1 mb-6">
-                <p className="text-base md:text-lg text-gray-800 font-bold break-words">
-                  {ticket.description || "No description provided"}
-                </p>
-                <p className="text-sm md:text-base text-gray-500">
-                  Floor {ticket.room?.floor || "-"} , {ticket.room?.roomNumber || "-"}
-                </p>
-              </div>
-
-              {/* Footer Separator */}
-              <div className="h-px w-full bg-gray-100 mb-4"></div>
-
-              {/* Footer Info */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-gray-500">
-                  <span>{new Date(ticket.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", ".")} PM</span>
-                  <span className="w-px h-3 bg-gray-300"></span>
-                  <span>{new Date(ticket.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}</span>
-                </div>
-                <span className="text-xs md:text-sm font-bold text-gray-500">
-                  {ticket.createdBy?.name || "Unknown User"}
-                </span>
-              </div>
-
-              <div className="flex gap-3 relative z-20">
-                <button
-                  onClick={(e) => handleAccept(e, ticket.id)}
-                  className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedTicket(ticket);
-                    setShowRejectModal(true);
-                  }}
-                  className="flex-1 bg-red-50 text-red-600 font-semibold py-2.5 rounded-xl hover:bg-red-100 transition-colors"
-                >
-                  Reject
-                </button>
-              </div>
+              {profile?.picture ? (
+                <img src={getImageUrl(profile.picture)} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.target.src = '/default-profile.png'; }} />
+              ) : (
+                <span className="text-lg font-bold text-white">{displayName.charAt(0).toUpperCase()}</span>
+              )}
             </div>
-          )) : (
-            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-              <p className="text-gray-500">No new tickets</p>
-            </div>
-          )}
+          </div>
         </div>
-      </div >
 
+        <div className="mt-4 relative z-10 text-gray-900">
+          <div className="flex flex-col gap-6">
+            {/* Floating Stats Card */}
+            <div className="w-full">
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex justify-between items-center text-center">
+                <StatItem count={stats.pending} label="Booking" />
+                <StatItem count={stats.inProgress} label="In progress" />
+                <StatItem count={stats.completed} label="Completed" />
+              </div>
+            </div>
 
-
-
-      {/* Reject Modal */}
-      {
-        showRejectModal && selectedTicket && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
-              <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Reject Ticket?</h3>
-              <p className="text-gray-500 text-center mb-4 text-sm">
-                Please provide a reason for rejecting this ticket.
-              </p>
-              <textarea
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-red-100 outline-none mb-4"
-                rows="3"
-                placeholder="Reason for rejection..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-              ></textarea>
-              <div className="flex gap-3">
+            {/* New Tickets Section */}
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">New Tickets</h2>
                 <button
-                  onClick={() => setShowRejectModal(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
+                  onClick={() => navigate("/it/tickets")}
+                  className="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                  style={{ fontSize: '12px' }}
                 >
-                  Cancel
+                  View All
                 </button>
-                <button
-                  onClick={handleReject}
-                  className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition"
-                >
-                  Reject
-                </button>
+              </div>
+
+              <div className="space-y-4">
+                {newTickets.length > 0 ? newTickets.slice(0, showAllNew ? undefined : 5).map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    onClick={() => navigate(`/it/ticket/${ticket.id}`)}
+                    className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative group cursor-pointer hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-xl font-bold text-[#193C6C] group-hover:text-blue-800 transition-colors flex-1 pr-2 break-words">
+                        {ticket.category?.name || "General"}
+                      </h4>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className={`px-3 py-1 rounded-lg text-[10px] font-bold border ${ticket.status === 'completed' ? 'border-green-500 text-green-600 bg-green-50' :
+                          ticket.status === 'in_progress' ? 'border-yellow-500 text-yellow-600 bg-yellow-50' :
+                            'border-red-500 text-red-600 bg-red-50'
+                          }`}>
+                          {ticket.status === 'not_start' ? 'Not Started' :
+                            ticket.status === 'in_progress' ? 'In Progress' : 'Completed'}
+                        </div>
+                      </div>
+                    </div>
+
+
+                    {/* Content */}
+                    <div className="flex flex-col gap-1 mb-6">
+                      <p className="text-base text-gray-800 font-bold break-words line-clamp-2">
+                        {ticket.description || "No description provided"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Floor {ticket.room?.floor || "-"} , {ticket.room?.roomNumber || "-"}
+                      </p>
+                    </div>
+
+                    {/* Footer Separator */}
+                    <div className="h-px w-full bg-gray-100 mb-4"></div>
+
+                    {/* Footer Info */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3 text-xs font-medium text-gray-500">
+                        <span>{new Date(ticket.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", ".")} PM</span>
+                        <span className="w-px h-3 bg-gray-300"></span>
+                        <span>{new Date(ticket.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}</span>
+                      </div>
+                      <span className="text-xs font-bold text-gray-500">
+                        {ticket.createdBy?.name || ticket.createdBy?.username || ticket.createdBy?.email || "Unknown User"}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-3 relative z-20">
+                      <button
+                        onClick={(e) => handleAccept(e, ticket.id)}
+                        className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRejectClick(ticket);
+                        }}
+                        className="flex-1 bg-red-50 text-red-600 font-semibold py-2.5 rounded-xl hover:bg-red-100 transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+                    <p className="text-gray-500">No new tickets</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      </div>
 
-
-
-    </div >
+      {/* Reject Modal */}
+      {showRejectModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold mb-2 text-center text-gray-800">Reject Ticket?</h3>
+            <p className="text-gray-500 text-center mb-4 text-sm">
+              Please provide a reason for rejecting this ticket.
+            </p>
+            <textarea
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-red-100 outline-none mb-4"
+              rows="3"
+              placeholder="Reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            ></textarea>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReject}
+                className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

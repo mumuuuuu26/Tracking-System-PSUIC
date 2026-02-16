@@ -1,14 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Clock, Calendar, CheckCircle, Search, Filter, Printer, User, Wifi, Monitor, Cpu, Box } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getHistory } from "../../api/it";
-import { listCategories } from "../../api/category"; // Import list categories
+import { listCategories } from "../../api/category";
+import ITHeader from "../../components/it/ITHeader";
+import ITWrapper from "../../components/it/ITWrapper";
+import AdminSelect from "../../components/admin/AdminSelect";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
 const History = () => {
+    const navigate = useNavigate();
     const { token } = useAuthStore();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -79,47 +84,40 @@ const History = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 p-4 md:p-6 animate-in fade-in duration-500">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3 tracking-tight">
-                            <Clock className="text-blue-600" size={32} />
-                            Task History
-                        </h1>
-                        <p className="text-gray-500 text-sm mt-2 ml-1">Archive of all completed maintenance tasks and resolutions</p>
-                    </div>
-                </div>
+        <ITWrapper>
+            <div className="space-y-6">
+                {/* Modern Header */}
+                <ITHeader
+                    title="Task History"
+                    subtitle="Archive of all completed maintenance tasks and resolutions"
+                    onBack={() => navigate(-1)}
+                />
 
-                {/* Filters */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 p-4 sticky top-20 z-20">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Search by title, equipment, or room..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
-                            />
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="relative w-full md:w-auto">
-                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <select
-                                    value={filterCategory}
-                                    onChange={(e) => setFilterCategory(e.target.value)}
-                                    className="w-full md:w-64 pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white appearance-none"
-                                >
-                                    <option value="All">All Categories</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                {/* Filters - Modern Style */}
+                <div className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
+                    {/* Search - Left Aligned */}
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search tickets by ID, title, or requester..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-sm md:text-base outline-none shadow-sm"
+                        />
+                    </div>
+
+                    {/* Category Filter - Right Aligned Select */}
+                    <div className="relative w-full md:w-auto">
+                        <AdminSelect
+                            value={filterCategory}
+                            onChange={setFilterCategory}
+                            options={['All', ...categories.map(cat => cat.name)]}
+                            placeholder="All Categories"
+                            icon={Filter}
+                            minWidth="md:w-64 w-full"
+                            buttonClassName="py-3 rounded-xl border-gray-200 text-sm md:text-base font-bold text-[#1e2e4a] h-full"
+                        />
                     </div>
                 </div>
 
@@ -137,7 +135,11 @@ const History = () => {
                         filteredTickets.map((ticket) => {
                             const style = getCategoryStyle(ticket.category?.name);
                             return (
-                                <div key={ticket.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                                <div
+                                    key={ticket.id}
+                                    onClick={() => navigate(`/it/ticket/${ticket.id}`)}
+                                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
+                                >
                                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                                         <div className="flex items-start gap-5">
                                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${style.bg} ${style.text}`}>
@@ -204,7 +206,7 @@ const History = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </ITWrapper>
     );
 };
 

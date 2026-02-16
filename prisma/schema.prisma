@@ -23,7 +23,10 @@ model User {
   // [NEW] เพิ่ม field สำหรับ IT Support
   department    String?  // แผนก เช่น "IT Support", "Network", "Software"
   phoneNumber   String?  // เบอร์โทรสำหรับติดต่อด่วน
+
   lineId        String?  // Line ID สำหรับแจ้งเตือน
+  officeExtension String? // [NEW] เบอร์ภายใน
+  workingHoursJson String? // [NEW] JSON string for working hours schedule
   
   // [NEW] Personal Notification Settings
   isEmailEnabled    Boolean @default(true)

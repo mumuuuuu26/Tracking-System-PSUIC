@@ -24,6 +24,7 @@ import ITSchedule from "../pages/user/ITSchedule";
 import Feedback from "../pages/user/Feedback";
 import WaitingForFeedback from "../pages/user/WaitingForFeedback";
 import QuickFix from "../pages/user/QuickFix";
+import Report from "../pages/user/Report";
 
 // Admin
 import Dashboard from "../pages/admin/Dashboard";
@@ -82,6 +83,7 @@ const AppRoutes = () => {
         <Route path="feedback" element={<WaitingForFeedback />} />
         <Route path="feedback/:ticketId" element={<Feedback />} />
         <Route path="quick-fix" element={<QuickFix />} />
+        <Route path="report" element={<Report />} />
       </Route>
 
       {/* Admin Routes */}

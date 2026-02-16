@@ -124,7 +124,9 @@ exports.currentUser = async (req, res) => {
         updatedAt: true,
         isEmailEnabled: true,
         notificationEmail: true,
-        googleCalendarId: true
+        googleCalendarId: true,
+        officeExtension: true,
+        workingHoursJson: true
       },
     });
 

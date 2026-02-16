@@ -3,6 +3,10 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getAllTickets } from "../../api/ticket";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import socket from "../../utils/socket";
+import ITHeader from "../../components/it/ITHeader";
+import ITPageHeader from "../../components/it/ITPageHeader"; // [NEW]
+import ITWrapper from "../../components/it/ITWrapper"; // [NEW]
 
 
 const Tickets = () => {
@@ -72,6 +76,31 @@ const Tickets = () => {
         loadTickets();
     }, [loadTickets]);
 
+    // Real-time updates
+    useEffect(() => {
+        const handleNewTicket = (newTicket) => {
+            console.log("Socket: New Ticket Received", newTicket);
+            // Only add if it matches current filter (simplified check)
+            // Or just prepend and let user re-filter if needed. 
+            // For simplicity and immediate feedback, we prepend.
+            setTickets((prev) => [newTicket, ...prev]);
+            setTotalTickets((prev) => prev + 1);
+        };
+
+        const handleUpdateTicket = (updatedTicket) => {
+            console.log("Socket: Ticket Updated", updatedTicket);
+            setTickets((prev) => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+        }
+
+        socket.on("server:new-ticket", handleNewTicket);
+        socket.on("server:update-ticket", handleUpdateTicket);
+
+        return () => {
+            socket.off("server:new-ticket", handleNewTicket);
+            socket.off("server:update-ticket", handleUpdateTicket);
+        };
+    }, []);
+
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages) {
             setCurrentPage(newPage);
@@ -82,33 +111,27 @@ const Tickets = () => {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-8 font-sans text-gray-900">
-            {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-10 pb-24 rounded-b-[2.5rem] shadow-lg relative z-0">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
-                        >
-                            <ChevronLeft size={28} />
-                        </button>
-                        <div>
-                            <h1 className="text-white text-3xl font-bold">Support Tickets</h1>
-                            <p className="text-blue-200 mt-1">Manage and track IT support requests</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10 text-white">
-                        <span className="text-sm font-medium">Total Tickets:</span>
+        <div className="flex flex-col h-full bg-slate-50">
+            {/* Mobile Header */}
+            <ITPageHeader title="Support Tickets" />
+
+            {/* Desktop Header */}
+            <div className="hidden lg:block">
+                <ITHeader
+                    title="Support Tickets"
+                    subtitle="Manage and track IT support requests"
+                    onBack={() => navigate(-1)}
+                >
+                    <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 text-blue-700">
+                        <span className="text-sm font-bold">Total Tickets:</span>
                         <span className="font-bold text-xl">{totalTickets}</span>
                     </div>
-                </div>
+                </ITHeader>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10 space-y-6">
-
+            <div className="mt-6 space-y-4">
                 {/* Filters & Search - Modern Style */}
-                <div className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 flex flex-col md:flex-row gap-4">
+                <div className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
                     {/* Search - Left Aligned & Bigger */}
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -134,7 +157,7 @@ const Tickets = () => {
                                         (activeFilter === "completed" && filter === "Completed") ||
                                         (activeFilter === "in_progress" && filter === "In Progress") ||
                                         (activeFilter === "not_start" && filter === "Not Start"))
-                                        ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                                        ? "bg-[#1e2e4a] text-white border-[#1e2e4a] shadow-md"
                                         : "bg-gray-50 text-gray-500 border-transparent hover:bg-gray-100 hover:text-gray-700"
                                     }
                             `}
@@ -168,20 +191,25 @@ const Tickets = () => {
                                     key={ticket.id}
                                     onClick={() => navigate(`/it/ticket/${ticket.id}`)}
                                     className={`
-                                    bg-white rounded-2xl p-6 shadow-sm border border-gray-200 relative cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group
-                                    ${(ticket.status === 'completed' || ticket.status === 'closed') ? 'opacity-60 hover:opacity-100' : ''}
+                                    bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100 relative cursor-pointer hover:shadow-md transition-all duration-300 group
+                                    ${(ticket.status === 'completed' || ticket.status === 'closed') ? 'opacity-75 hover:opacity-100' : ''}
                                 `}
                                 >
-                                    {/* Header Row: Category & Status */}
+                                    {/* Header Row: Title & Status */}
                                     <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-xl md:text-2xl font-bold text-[#193C6C] line-clamp-1 group-hover:text-blue-800 transition-colors">
-                                            {ticket.category?.name || "General"}
-                                        </h3>
+                                        <div>
+                                            <h3 className="text-lg md:text-xl font-bold text-[#1e2e4a] mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                                {ticket.title || "No Subject"}
+                                            </h3>
+                                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                                {ticket.category?.name || "General"}
+                                            </span>
+                                        </div>
 
                                         {/* Status Badge */}
-                                        <div className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-bold border ${ticket.status === 'completed' ? 'border-green-500 text-green-600 bg-green-50' :
-                                            ticket.status === 'in_progress' ? 'border-yellow-500 text-yellow-600 bg-yellow-50' :
-                                                'border-red-500 text-red-600 bg-red-50'
+                                        <div className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${ticket.status === 'completed' ? 'border-green-200 text-green-600 bg-green-50' :
+                                            ticket.status === 'in_progress' ? 'border-orange-200 text-orange-600 bg-orange-50' :
+                                                'border-red-200 text-red-600 bg-red-50'
                                             }`}>
                                             {ticket.status === 'not_start' ? 'Not Started' :
                                                 ticket.status === 'in_progress' ? 'In Progress' : 'Completed'}
@@ -189,11 +217,11 @@ const Tickets = () => {
                                     </div>
 
                                     {/* Content */}
-                                    <div className="flex flex-col gap-1 mb-6">
-                                        <p className="text-base md:text-lg text-gray-800 font-bold line-clamp-1">
-                                            {ticket.title}
+                                    <div className="flex flex-col gap-1 mb-4">
+                                        <p className="text-sm md:text-base text-gray-600 line-clamp-2 leading-relaxed">
+                                            {ticket.description}
                                         </p>
-                                        <p className="text-sm md:text-base text-gray-500">
+                                        <p className="text-xs md:text-sm text-gray-400 mt-1">
                                             Floor {ticket.room?.floor || "-"} , {ticket.room?.roomNumber || "-"}
                                         </p>
                                     </div>
@@ -202,16 +230,14 @@ const Tickets = () => {
                                     <div className="h-px w-full bg-gray-100 mb-4"></div>
 
                                     {/* Footer Info */}
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-gray-500">
+                                    <div className="flex items-center justify-between text-xs md:text-sm text-gray-400 font-medium">
+                                        <div className="flex items-center gap-3">
                                             <span>{new Date(ticket.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", ".")} PM</span>
-                                            <span className="w-px h-3 bg-gray-300"></span>
+                                            <span className="text-gray-300">|</span>
                                             <span>{new Date(ticket.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs md:text-sm font-bold text-gray-500 text-right">
-                                                {ticket.createdBy?.name || ticket.createdBy?.username}
-                                            </span>
+                                        <div className="font-bold text-[#1e2e4a]">
+                                            {ticket.requester?.name || ticket.requester?.username || "Unknown User"}
                                         </div>
                                     </div>
                                 </div>
@@ -220,7 +246,7 @@ const Tickets = () => {
 
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
-                            <div className="flex justify-center items-center gap-4 mt-12 mb-8">
+                            <div className="flex justify-center items-center gap-4 mt-8">
                                 <button
                                     onClick={() => handlePageChange(currentPage - 1)}
                                     disabled={currentPage === 1}
@@ -245,7 +271,7 @@ const Tickets = () => {
                     </>
                 )}
             </div>
-        </div >
+        </div>
     );
 };
 

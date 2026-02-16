@@ -162,7 +162,9 @@ exports.acceptJob = async (req, res) => {
     // Check if ticket exists and is available
     const ticket = await prisma.ticket.findUnique({
       where: { id: parseInt(id) },
-      include: { createdBy: true },
+      include: { 
+          createdBy: true 
+      },
     });
 
     if (!ticket) {
@@ -189,7 +191,25 @@ exports.acceptJob = async (req, res) => {
           },
         },
       },
+      include: {
+        createdBy: true,
+        assignedTo: true
+      }
     });
+
+    // Send Email to User
+    if (updatedTicket.createdBy?.email) {
+      const { sendEmailNotification } = require("../utils/sendEmailHelper");
+      await sendEmailNotification(
+        "ticket_accepted",
+        updatedTicket.createdBy.email,
+        {
+          id: updatedTicket.id,
+          title: updatedTicket.title,
+          assignedTo: req.user.name || "IT Support"
+        }
+      );
+    }
 
     // Update IT performance metrics
     await prisma.user.update({
@@ -198,6 +218,21 @@ exports.acceptJob = async (req, res) => {
         totalResolved: { increment: 1 },
       },
     });
+    
+    // Notify User via System Notification
+    await prisma.notification.create({
+        data: {
+            userId: updatedTicket.createdById,
+            ticketId: updatedTicket.id,
+            title: "Ticket Accepted",
+            message: `Your ticket "${updatedTicket.title}" has been accepted by ${req.user.name}.`,
+            type: "ticket_accepted"
+        }
+    });
+
+    if (req.io) {
+        req.io.emit("server:update-ticket", updatedTicket);
+    }
 
     res.json(updatedTicket);
   } catch (err) {
@@ -229,7 +264,39 @@ exports.rejectJob = async (req, res) => {
           },
         },
       },
+      include: {
+          createdBy: true
+      }
     });
+
+    // Send Email to User
+    if (ticket.createdBy?.email) {
+        const { sendEmailNotification } = require("../utils/sendEmailHelper");
+        await sendEmailNotification(
+            "ticket_rejected",
+            ticket.createdBy.email,
+            {
+                id: ticket.id,
+                title: ticket.title,
+                reason: reason
+            }
+        );
+    }
+
+    // System Notification
+    await prisma.notification.create({
+        data: {
+            userId: ticket.createdById,
+            ticketId: ticket.id,
+            title: "Ticket Rejected",
+            message: `Your ticket "${ticket.title}" was rejected. Reason: ${reason}`,
+            type: "ticket_rejected"
+        }
+    });
+    
+    if (req.io) {
+        req.io.emit("server:update-ticket", ticket);
+    }
 
     res.json(ticket);
   } catch (err) {
@@ -322,8 +389,41 @@ exports.closeJob = async (req, res) => {
       include: {
         createdBy: true,
         category: true,
+        assignedTo: true,
+        room: true
       },
     });
+
+    // Send Email to User
+    if (ticket.createdBy?.email) {
+        const { sendEmailNotification } = require("../utils/sendEmailHelper");
+        await sendEmailNotification(
+            "ticket_resolved_user",
+            ticket.createdBy.email,
+            {
+                id: ticket.id,
+                title: ticket.title,
+                room: ticket.room?.roomNumber || "N/A",
+                resolver: ticket.assignedTo?.name || "IT Team",
+                link: `${process.env.FRONTEND_URL}/user/feedback/${ticket.id}`
+            }
+        );
+    }
+
+    // System Notification
+    await prisma.notification.create({
+        data: {
+            userId: ticket.createdById,
+            ticketId: ticket.id,
+            title: "Ticket Resolved",
+            message: `Your ticket "${ticket.title}" has been resolved. Please rate our service.`,
+            type: "ticket_resolved"
+        }
+    });
+
+    if (req.io) {
+        req.io.emit("server:update-ticket", ticket);
+    }
 
     res.json(ticket);
   } catch (err) {

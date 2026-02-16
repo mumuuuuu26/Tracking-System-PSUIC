@@ -1,0 +1,192 @@
+import React from "react";
+import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { getImageUrl } from "../../utils/imageUrl";
+import ITHeader from "../../components/it/ITHeader";
+
+const DashboardDesktop = ({
+    tickets = [],
+    stats,
+    profile,
+    onAccept,
+    onReject,
+    onSelectTicket,
+    navigate
+}) => {
+
+    // Filter for New Tickets (Not Started)
+    const newTickets = tickets.filter(t => t.status === "not_start");
+
+    // Filter for My Active Jobs (In Progress)
+    const myActiveJobs = tickets.filter(t => t.status === "in_progress" && (t.assigneeId === profile?.id || t.acceptedBy === profile?.id));
+
+    // Stats Card Data
+    const statCards = [
+        {
+            label: "Booking",
+            value: stats.pending,
+            icon: <AlertCircle size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-red-50 text-red-600",
+            borderColor: "border-red-100"
+        },
+        {
+            label: "In Progress",
+            value: stats.inProgress,
+            icon: <Clock size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-orange-50 text-orange-600",
+            borderColor: "border-orange-100"
+        },
+        {
+            label: "Completed",
+            value: stats.completed,
+            icon: <CheckCircle size={24} className="text-[#1e2e4a]" />,
+            bgIcon: "bg-green-50 text-green-600",
+            borderColor: "border-green-100"
+        }
+    ];
+
+    return (
+        <div className="flex flex-col h-full space-y-6">
+
+            {/* Header Section */}
+            <ITHeader
+                title="Dashboard"
+                subtitle="Overview of your current workload and incoming requests."
+            />
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                {statCards.map((stat, idx) => (
+                    <div key={idx} className="bg-white px-6 py-5 rounded-[1.5rem] shadow-sm flex items-center justify-between h-28 border border-transparent hover:border-gray-200 transition-all">
+                        <div className="flex flex-col justify-center">
+                            <p className="text-[#1e2e4a] text-3xl font-bold mb-1">{stat.value}</p>
+                            <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">{stat.label}</span>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full ${stat.bgIcon} flex items-center justify-center shrink-0`}>
+                            {stat.icon}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="flex-1 min-h-0">
+
+                {/* New Tickets (Pool) */}
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between px-1">
+                        <h2 className="text-[#64748b] text-xs font-medium uppercase tracking-wider">New Tickets</h2>
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold border border-blue-100">
+                            {newTickets.length} Available
+                        </span>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                        {newTickets.length > 0 ? (
+                            newTickets.map((ticket) => (
+                                <TicketCard
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    onAccept={onAccept}
+                                    onReject={onReject}
+                                    onClick={() => navigate(`/it/ticket/${ticket.id}`)}
+                                />
+                            ))
+                        ) : (
+                            <div className="bg-white rounded-[1.5rem] p-12 text-center border border-dashed border-gray-200 text-gray-400 flex flex-col items-center justify-center h-48">
+                                <CheckCircle size={48} className="text-gray-200 mb-4" />
+                                <p>No new tickets available.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+// Sub-components
+const TicketCard = ({ ticket, onAccept, onReject, onClick }) => {
+    const dateObj = new Date(ticket.createdAt);
+
+    // Format Date: "14 Feb 26"
+    const dateStr = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
+
+    // Format Time: "16.29 PM"
+    const timeStr = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", ".") + " PM";
+
+    return (
+        <div
+            onClick={onClick}
+            className="bg-white rounded-[1.5rem] p-6 shadow-sm hover:shadow-md transition-all border border-gray-100 cursor-pointer group flex flex-col gap-4"
+        >
+            {/* Header: Title | Status | Eye */}
+            <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-xl font-bold text-[#1e2e4a] tracking-tight mb-1">
+                        {ticket.title || "No Subject"}
+                    </h3>
+                    <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                        {ticket.category?.name || "General"}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="px-3 py-1.5 rounded-xl text-xs font-bold border border-red-200 text-red-600 bg-white">
+                        {ticket.status === 'not_start' ? 'Not Started' : ticket.status}
+                    </span>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onClick(); }}
+                        className="text-gray-400 hover:text-blue-600 p-2 rounded-xl bg-gray-50 hover:bg-blue-50 transition-colors"
+                    >
+                        <Eye size={20} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Body: Description & Location */}
+            <div>
+                <h4 className="text-base font-medium text-gray-600 mb-2 line-clamp-2 leading-relaxed">
+                    {ticket.description || "-"}
+                </h4>
+                <p className="text-gray-500 text-sm">
+                    Floor {ticket.room?.floor || "-"} , {ticket.room?.roomNumber || "-"}
+                </p>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px w-full bg-gray-100"></div>
+
+            {/* Meta: Time | Date ... User */}
+            <div className="flex items-center justify-between text-sm text-gray-500 font-medium">
+                <div className="flex items-center gap-3">
+                    <span>{timeStr}</span>
+                    <span className="text-gray-300">|</span>
+                    <span>{dateStr}</span>
+                </div>
+                <div className="font-bold text-[#1e2e4a]">
+                    {ticket.requester?.name || "Unknown User"}
+                </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+                <button
+                    onClick={(e) => onAccept(e, ticket.id)}
+                    className="flex-1 bg-[#1e2e4a] text-white text-base font-bold py-3 rounded-xl hover:bg-[#132c4f] transition-colors shadow-sm shadow-blue-900/10"
+                >
+                    Accept
+                </button>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onReject(ticket);
+                    }}
+                    className="flex-1 bg-red-50 text-red-600 text-base font-bold py-3 rounded-xl hover:bg-red-100 transition-colors"
+                >
+                    Reject
+                </button>
+            </div>
+        </div>
+    );
+};
+
+export default DashboardDesktop;

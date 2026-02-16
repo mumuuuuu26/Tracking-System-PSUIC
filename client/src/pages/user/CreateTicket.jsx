@@ -13,6 +13,9 @@ import { listCategories } from "../../api/category";
 import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import UserWrapper from "../../components/user/UserWrapper";
+import UserPageHeader from "../../components/user/UserPageHeader";
+import UserSelect from "../../components/user/UserSelect"; // Import the new component
 
 const CreateTicket = () => {
   const location = useLocation();
@@ -25,18 +28,28 @@ const CreateTicket = () => {
   const [dbCategories, setDbCategories] = useState([]);
   const [floors, setFloors] = useState([]);
 
-  // Custom "Appointment" Form State
+  // Form State
   const [form, setForm] = useState({
+    title: "", // Topic Issue
     equipmentId: prefilledData?.equipmentId || "",
-    categoryId: "", // Selected "Equipment" category
+    categoryId: prefilledData?.equipmentId ? "" : (location.state?.categoryId || ""), // If accessing directly, might prefill
     description: "",
     floor: prefilledData?.floorName || "",
     room: prefilledData?.roomNumber || "",
     roomId: prefilledData?.roomId || "",
     urgency: "Low",
-
     images: [],
   });
+
+  // Set category if prefilled data has it (logic to find category from equipment if needed, 
+  // but usually we select category manually if not provided)
+  useEffect(() => {
+    if (prefilledData?.equipmentId) {
+      // If we have equipment, we might want to auto-select its category if available in data
+      // For now, relies on user or complex logic not fully shown in original file. 
+      // Original file didn't seem to prefill categoryId from equipmentId directly in state init.
+    }
+  }, [prefilledData]);
 
   const urgencyLevels = ["Low", "Medium", "High"];
 
@@ -86,19 +99,20 @@ const CreateTicket = () => {
 
   const handleSubmit = async () => {
     if (
+      !form.title ||
       !form.categoryId ||
       !form.description ||
       !form.roomId
     ) {
       toast.error(
-        "Please fill in all required fields (Equipment, Room, Description)"
+        "Please fill in all required fields (Topic, Category, Room, Description)"
       );
       return;
     }
 
     try {
       const payload = {
-        title: `${getCategoryName(form.categoryId)} Issue`, // Auto-generate title
+        title: form.title,
         description: form.description,
         urgency: form.urgency,
         categoryId: parseInt(form.categoryId),
@@ -134,165 +148,182 @@ const CreateTicket = () => {
     }
   };
 
-  const getCategoryName = (id) => {
-    const cat = dbCategories.find((c) => c.id == id);
-    return cat ? cat.name : "General";
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-20">
-      {/* Header */}
-      <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
-          Report Issue
-        </span>
-      </div>
+    <UserWrapper>
+      <div className="pb-20 min-h-screen">
+        {/* Header */}
+        <UserPageHeader title="Report Issue" />
 
-      <div className="max-w-md md:max-w-3xl mx-auto lg:mx-0 mt-6 px-6 space-y-5 animate-in fade-in duration-500 relative z-10">
+        <div className="max-w-md md:max-w-3xl mx-auto mt-6 px-6 space-y-6 animate-in fade-in duration-500 relative z-10 text-left">
 
-        {/* Equipment (Category) */}
-        <div className="space-y-2">
-          <label className="text-gray-500 text-sm font-bold ml-1 hidden md:block">
-            Equipment
-          </label>
-          <CustomSelect
-            options={dbCategories}
-            value={form.categoryId}
-            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-            placeholder="Select Equipment"
-          />
-        </div>
-
-        {/* Description */}
-        <div className="space-y-2">
-          <label className="text-gray-500 text-sm font-bold ml-1">
-            Description
-          </label>
-          <textarea
-            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-700 placeholder-gray-400 min-h-[100px]"
-            placeholder="Describe the issue..."
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-        </div>
-
-        {/* Floor & Room Row */}
-        <div className="grid grid-cols-2 gap-4">
+          {/* Topic Issue */}
           <div className="space-y-2">
-            <label className="text-gray-500 text-sm font-bold ml-1">
-              Floor
+            <label className="text-[#193C6C] text-base font-bold flex gap-1">
+              Topic Issue <span className="text-red-500">*</span>
             </label>
-            <CustomSelect
-              options={floors.map((f) => ({ id: f, name: `Floor ${f}` }))}
-              value={form.floor}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  floor: e.target.value,
-                  roomId: "",
-                  room: "",
-                })
-              }
-              placeholder="Floor"
+            <input
+              type="text"
+              placeholder="e.g. Computer cannot start, Projector dim"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-700 placeholder-gray-400"
             />
           </div>
+
+          {/* Equipment Category */}
           <div className="space-y-2">
-            <label className="text-gray-500 text-sm font-bold ml-1">Room</label>
-            <CustomSelect
-              disabled={!form.floor}
-              options={getAvailableRooms().map((r) => ({
-                ...r,
-                name: r.roomNumber,
-              }))}
-              value={form.roomId}
-              onChange={(e) => setForm({ ...form, roomId: e.target.value })}
-              placeholder="Room"
+            <label className="text-[#193C6C] text-base font-bold flex gap-1">
+              Equipment Category <span className="text-red-500">*</span>
+            </label>
+            <UserSelect
+              options={dbCategories}
+              value={form.categoryId}
+              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+              placeholder="Select equipment category"
             />
           </div>
-        </div>
 
-        {/* Priority */}
-        <div className="space-y-2">
-          <label className="text-gray-500 text-sm font-bold ml-1">
-            Priority
-          </label>
-          <div className="flex gap-2">
-            {urgencyLevels.map((level) => (
-              <button
-                key={level}
-                onClick={() => setForm({ ...form, urgency: level })}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${form.urgency === level
-                  ? level === "High"
-                    ? "bg-red-50 text-red-600 border-red-200"
-                    : level === "Medium"
-                      ? "bg-amber-50 text-amber-600 border-amber-200"
-                      : "bg-green-50 text-green-600 border-green-200"
-                  : "bg-white text-gray-400 border-gray-200 hover:bg-gray-50"
-                  }`}
-              >
-                {level}
-              </button>
-            ))}
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-[#193C6C] text-base font-bold flex gap-1">
+              Describe the Issue <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-700 placeholder-gray-400 min-h-[120px] resize-none"
+              placeholder="Please describe the issue in detail..."
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
           </div>
-        </div>
 
-        {/* Upload Photo */}
-        <div className="space-y-2">
-          <label className="text-gray-500 text-sm font-bold ml-1">
-            Upload Photo
-          </label>
-          <div className="grid grid-cols-4 gap-2">
-            {/* Upload Button */}
-            <div className="aspect-square bg-blue-50 rounded-xl border-dashed border-2 border-blue-200 flex flex-col items-center justify-center text-blue-400 relative cursor-pointer hover:bg-blue-100 transition-colors">
-              <Camera size={24} />
+          {/* Floor & Room Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[#193C6C] text-base font-bold flex gap-1">
+                Floor <span className="text-red-500">*</span>
+              </label>
+              <UserSelect
+                options={floors.map((f) => ({ id: f, name: `Floor ${f}` }))}
+                value={form.floor}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    floor: e.target.value,
+                    roomId: "",
+                    room: "",
+                  })
+                }
+                placeholder="Select"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[#193C6C] text-base font-bold flex gap-1">Room <span className="text-red-500">*</span></label>
+              <UserSelect
+                disabled={!form.floor}
+                options={getAvailableRooms().map((r) => ({ id: r.id, name: r.roomNumber }))}
+                value={form.roomId}
+                onChange={(e) => setForm({ ...form, roomId: e.target.value })}
+                placeholder="Select"
+              />
+            </div>
+          </div>
+
+          {/* Priority */}
+          <div className="space-y-2">
+            <label className="text-[#193C6C] text-base font-bold">
+              Priority Level
+            </label>
+            <div className="flex gap-3">
+              {urgencyLevels.map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setForm({ ...form, urgency: level })}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${form.urgency === level
+                    ? level === "High"
+                      ? "bg-red-50 text-red-600 border-red-200 shadow-sm"
+                      : level === "Medium"
+                        ? "bg-amber-50 text-amber-600 border-amber-200 shadow-sm"
+                        : "bg-green-50 text-green-600 border-green-200 shadow-sm"
+                    : "text-gray-400 border-gray-200 hover:bg-gray-50"
+                    }`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Upload Photo */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-end">
+              <label className="text-[#193C6C] text-base font-bold">
+                Add Photo
+              </label>
+              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded-md mb-1">Optional</span>
+            </div>
+
+            <div className="border-2 border-dashed border-blue-100 rounded-2xl p-8 hover:bg-blue-50/30 transition-colors cursor-pointer relative text-center">
               <input
                 type="file"
                 multiple
                 accept="image/*"
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="absolute inset-0 opacity-0 cursor-pointer z-20"
                 onChange={handleImageUpload}
               />
+              <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-400 mb-2">
+                  <Camera size={24} />
+                </div>
+                <span className="text-gray-400 font-medium text-sm">Click to attach photo</span>
+              </div>
             </div>
 
             {/* Previews */}
-            {form.images.map((img, idx) => (
-              <div
-                key={idx}
-                className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative group"
-              >
-                <img src={img} className="w-full h-full object-cover" />
-                <button
-                  onClick={() =>
-                    setForm((prev) => ({
-                      ...prev,
-                      images: prev.images.filter((_, i) => i !== idx),
-                    }))
-                  }
-                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={12} />
-                </button>
+            {form.images.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mt-4">
+                {form.images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative group"
+                  >
+                    <img src={img} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          images: prev.images.filter((_, i) => i !== idx),
+                        }))
+                      }
+                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+            <p className="text-xs text-gray-400 text-center mt-2">You can add a photo to help us fix the issue faster.</p>
           </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 pt-4 pb-8">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex-1 py-3.5 bg-white text-gray-600 border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="flex-1 py-3.5 bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-[#132E52] transition-colors shadow-lg shadow-blue-900/20"
+            >
+              Submit Report
+            </button>
+          </div>
+
         </div>
-
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmit}
-          className="w-full py-4 bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-[#132E52] transition-colors shadow-lg shadow-blue-200 mt-4 active:scale-[0.99]"
-        >
-          Submit Request
-        </button>
-
       </div>
-    </div>
+    </UserWrapper>
   );
 };
 

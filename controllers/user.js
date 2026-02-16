@@ -146,7 +146,7 @@ exports.updateProfileImage = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { email, phoneNumber, department, name, username, isEmailEnabled, notificationEmail, googleCalendarId } = req.body;
+    const { email, phoneNumber, department, name, username, isEmailEnabled, notificationEmail, googleCalendarId, officeExtension, workingHoursJson } = req.body;
 
     // Validate if email is already taken by another user
     if (email) {
@@ -179,11 +179,12 @@ exports.updateProfile = async (req, res) => {
       phoneNumber,
       department,
       name,
-      username
+      username,
+      officeExtension,
+      workingHoursJson
     };
 
     // Only update if provided (handle boolean/null correctly)
-    if (typeof isEmailEnabled !== 'undefined') updateData.isEmailEnabled = isEmailEnabled;
     if (typeof isEmailEnabled !== 'undefined') updateData.isEmailEnabled = isEmailEnabled;
     if (typeof notificationEmail !== 'undefined') updateData.notificationEmail = notificationEmail;
     if (typeof googleCalendarId !== 'undefined') updateData.googleCalendarId = googleCalendarId.trim();
@@ -202,7 +203,9 @@ exports.updateProfile = async (req, res) => {
         picture: true,
         isEmailEnabled: true,
         notificationEmail: true,
-        googleCalendarId: true
+        googleCalendarId: true,
+        officeExtension: true,
+        workingHoursJson: true
       }
     });
 

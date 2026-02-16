@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ChevronLeft, Clock, User } from "lucide-react";
+import { Calendar, ChevronLeft, Clock, User, MapPin, X, ChevronRight, Check } from "lucide-react";
 import dayjs from "dayjs";
 import useAuthStore from "../../store/auth-store";
 import { getPublicSchedule, syncGoogleCalendar } from "../../api/it";
@@ -8,6 +8,9 @@ import { updateProfile } from "../../api/user";
 import { currentUser } from "../../api/auth";
 // Reuse CalendarGrid
 import CalendarGrid from "../../components/CalendarGrid";
+import ITHeader from "../../components/it/ITHeader";
+import ITPageHeader from "../../components/it/ITPageHeader"; // [NEW]
+import ITWrapper from "../../components/it/ITWrapper"; // [NEW]
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
@@ -20,7 +23,10 @@ const Schedule = () => {
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState(false); // Fix: remove brackets to use state correctly
+    const [syncing, setSyncing] = useState(false);
+
+    // Task Detail State
+    const [selectedTask, setSelectedTask] = useState(null);
 
     // Settings State
     const [showSettings, setShowSettings] = useState(false);
@@ -142,157 +148,242 @@ const Schedule = () => {
     ).sort((a, b) => dayjs(a.start).diff(dayjs(b.start)));
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-8 font-sans text-gray-900">
-            {/* Header */}
-            <div className="bg-[#193C6C] px-6 pt-10 pb-20 rounded-b-[2.5rem] shadow-lg relative z-0">
-                <div className="max-w-md md:max-w-2xl mx-auto flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="text-white hover:bg-white/10 p-2 -ml-2 rounded-full transition-colors"
+        <>
+            <div className="flex flex-col h-full min-h-screen bg-gray-50 pb-20">
+                {/* Mobile Header */}
+                <ITPageHeader title="My Schedule" />
+
+                {/* Desktop Header */}
+                <div className="hidden lg:block">
+                    <ITHeader
+                        title="My Schedule"
+                        subtitle="Manage your tasks and calendar events"
+                        onBack={() => navigate(-1)}
                     >
-                        <ChevronLeft size={28} />
-                    </button>
-                    <h1 className="text-white text-2xl font-bold flex-1 text-center pr-8">
-                        My Schedule
-                    </h1>
-                    <button
-                        onClick={() => setShowSettings(true)}
-                        className="text-white hover:bg-white/10 p-2 rounded-full transition-colors relative"
-                    >
-                        <User size={24} />
-                        {savedCalendarId && <span className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full border border-[#193C6C]"></span>}
-                    </button>
+                        <button
+                            onClick={() => setShowSettings(true)}
+                            className="p-2 -mr-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative"
+                        >
+                            <User size={24} />
+                            {savedCalendarId && <span className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full border border-white shadow-sm"></span>}
+                        </button>
+                    </ITHeader>
                 </div>
-            </div>
 
-            <div className="max-w-md md:max-w-2xl mx-auto px-6 -mt-12 relative z-10 space-y-6">
 
-                {/* Calendar */}
-                <CalendarGrid
-                    currentDate={currentMonth}
-                    setCurrentDate={setCurrentMonth}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
-                    events={eventsForCalendar}
-                    onDateSelect={setSelectedDate}
-                />
 
-                {/* Daily List */}
-                <div className="space-y-4">
-                    <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                        <Calendar className="text-blue-600" size={20} />
-                        Tasks for {selectedDate.format('DD MMM YYYY')}
-                    </h3>
+                <div className="mt-6 space-y-4">
+                    {/* Calendar */}
+                    <CalendarGrid
+                        currentDate={currentMonth}
+                        setCurrentDate={setCurrentMonth}
+                        selectedDate={selectedDate}
+                        setSelectedDate={setSelectedDate}
+                        events={eventsForCalendar}
+                        onDateSelect={setSelectedDate}
+                    />
 
-                    {loading || syncing ? (
-                        <div className="text-center py-10 text-gray-400 animate-pulse">
-                            {syncing ? "Syncing with Google Calendar..." : "Loading schedule..."}
-                        </div>
-                    ) : selectedItems.length > 0 ? (
-                        selectedItems.map((item, idx) => (
-                            <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-start gap-4">
-                                <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center ${item.type === 'ticket' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
-                                    }`}>
-                                    <Clock size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-gray-900">{item.details}</h4>
-                                        <span className="text-xs font-medium text-gray-400">
-                                            {dayjs(item.start).format('HH:mm')}
-                                        </span>
+                    {/* Daily List */}
+                    <div className="space-y-4">
+                        <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                            <Calendar className="text-blue-600" size={20} />
+                            Tasks for {selectedDate.format('DD MMM YYYY')}
+                        </h3>
+
+                        {loading || syncing ? (
+                            <div className="text-center py-10 text-gray-400 animate-pulse">
+                                {syncing ? "Syncing with Google Calendar..." : "Loading schedule..."}
+                            </div>
+                        ) : selectedItems.length > 0 ? (
+                            selectedItems.map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={() => setSelectedTask(item)}
+                                    className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-start gap-4 hover:shadow-md transition-all cursor-pointer group"
+                                >
+                                    <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center transition-transform group-hover:scale-110 ${item.type === 'ticket' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                                        }`}>
+                                        <Clock size={20} />
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description || item.title}</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${item.type === 'ticket' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                                            }`}>
-                                            {item.type === 'ticket' ? 'Ticket' : 'Personal/Google'}
-                                        </span>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <h4 className="font-bold text-gray-900 line-clamp-1">{item.details}</h4>
+                                            <span className="text-xs font-medium text-gray-400 whitespace-nowrap ml-2">
+                                                {dayjs(item.start).format('HH:mm')}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description || item.title}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${item.type === 'ticket' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                {item.type === 'ticket' ? 'Ticket' : 'Personal/Google'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
+                                <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <Calendar size={32} />
+                                </div>
+                                <p className="text-gray-900 font-bold">No tasks scheduled</p>
+                                <p className="text-sm text-gray-500">Enjoy your free time!</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Task Details Modal */}
+                    {selectedTask && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`
+                                                w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm
+                                                ${selectedTask.status === 'completed' ? 'bg-green-100 text-green-600' :
+                                                    selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}
+                                            `}>
+                                                <Calendar size={24} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Task Details</p>
+                                                <h3 className="text-lg font-bold text-gray-800 line-clamp-1">{selectedTask.title}</h3>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedTask(null)}
+                                            className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <Clock size={20} className="text-blue-500 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-700">Time & Date</p>
+                                                <p className="text-sm text-gray-600 mt-0.5">
+                                                    {dayjs(selectedTask.date || selectedTask.start).format("MMMM D, YYYY")}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    {dayjs(selectedTask.date || selectedTask.start).format("h:mm A")}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <MapPin size={20} className="text-red-500 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-700">Location</p>
+                                                <p className="text-sm text-gray-600 mt-0.5">
+                                                    Floor {selectedTask.room?.floor || "-"}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Room {selectedTask.room?.roomNumber || "-"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                                            <p className="text-sm font-bold text-gray-700 mb-2">Description</p>
+                                            <p className="text-sm text-gray-600 leading-relaxed">
+                                                {selectedTask.description || "No description provided."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8">
+                                        {selectedTask.type === 'ticket' && (
+                                            <button
+                                                onClick={() => {
+                                                    navigate(`/it/ticket/${selectedTask.id}`);
+                                                }}
+                                                className="w-full bg-[#1e2e4a] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                            >
+                                                View Full Ticket
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
-                            <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <Calendar size={32} />
-                            </div>
-                            <p className="text-gray-900 font-bold">No tasks scheduled</p>
-                            <p className="text-sm text-gray-500">Enjoy your free time!</p>
                         </div>
                     )}
                 </div>
-
             </div>
 
             {/* Settings Modal */}
-            {showSettings && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-xl font-bold mb-4 text-center text-gray-800">Connection Setup</h3>
+            {
+                showSettings && ( // Only show modal if settings are open AND sync is not enabled
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                        <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
+                            <h3 className="text-xl font-bold mb-4 text-center text-gray-800">Connection Setup</h3>
 
-                        {/* Step 1: Share Instruction */}
-                        <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-100">
-                            <h4 className="text-sm font-bold text-blue-800 mb-2">Step 1: Share Calendar</h4>
-                            <p className="text-xs text-blue-700 mb-2">
-                                Go to Google Calendar Settings {'>'} "Share with specific people" and add this email:
-                            </p>
-                            <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-blue-200">
-                                <code className="text-xs font-mono text-gray-600 flex-1 break-all">
-                                    {serviceEmail || "Loading email..."}
-                                </code>
+                            {/* Step 1: Share Instruction */}
+                            <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-100">
+                                <h4 className="text-sm font-bold text-blue-800 mb-2">Step 1: Share Calendar</h4>
+                                <p className="text-xs text-blue-700 mb-2">
+                                    Go to Google Calendar Settings {'>'} "Share with specific people" and add this email:
+                                </p>
+                                <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-blue-200">
+                                    <code className="text-xs font-mono text-gray-600 flex-1 break-all">
+                                        {serviceEmail || "Loading email..."}
+                                    </code>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(serviceEmail);
+                                            toast.success("Copied to clipboard!");
+                                        }}
+                                        className="text-blue-600 font-bold text-xs hover:bg-blue-50 px-2 py-1 rounded"
+                                    >
+                                        COPY
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Step 2: Input ID */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-bold text-gray-700 mb-2">Step 2: Enter Calendar ID</h4>
+                                <input
+                                    type="text"
+                                    value={calendarId}
+                                    onChange={(e) => setCalendarId(e.target.value)}
+                                    placeholder="e.g. your.email@gmail.com"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-100 outline-none"
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    Usually your email address (or finding in Calendar Settings).
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
                                 <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(serviceEmail);
-                                        toast.success("Copied to clipboard!");
-                                    }}
-                                    className="text-blue-600 font-bold text-xs hover:bg-blue-50 px-2 py-1 rounded"
+                                    onClick={() => setShowSettings(false)}
+                                    className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
                                 >
-                                    COPY
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveSettings}
+                                    disabled={syncing}
+                                    className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                                >
+                                    {syncing ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                                            Connecting...
+                                        </>
+                                    ) : (
+                                        "Save & Connect"
+                                    )}
                                 </button>
                             </div>
                         </div>
-
-                        {/* Step 2: Input ID */}
-                        <div className="mb-6">
-                            <h4 className="text-sm font-bold text-gray-700 mb-2">Step 2: Enter Calendar ID</h4>
-                            <input
-                                type="text"
-                                value={calendarId}
-                                onChange={(e) => setCalendarId(e.target.value)}
-                                placeholder="e.g. your.email@gmail.com"
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-100 outline-none"
-                            />
-                            <p className="text-[10px] text-gray-400 mt-1">
-                                Usually your email address (or finding in Calendar Settings).
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowSettings(false)}
-                                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSaveSettings}
-                                disabled={syncing}
-                                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
-                            >
-                                {syncing ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                                        Connecting...
-                                    </>
-                                ) : (
-                                    "Save & Connect"
-                                )}
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+        </>
     );
 };
 
