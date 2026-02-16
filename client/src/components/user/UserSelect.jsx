@@ -43,6 +43,10 @@ const UserSelect = ({ options = [], value, onChange, placeholder = "Select", dis
         <div className="relative w-full" ref={containerRef}>
             {/* Trigger Area */}
             <div
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+                aria-label={placeholder}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
                     w-full px-4 py-3 bg-white border rounded-xl flex items-center justify-between cursor-pointer transition-all
@@ -61,13 +65,17 @@ const UserSelect = ({ options = [], value, onChange, placeholder = "Select", dis
 
             {/* Dropdown Menu */}
             {isOpen && !disabled && (
-                <div className="absolute z-50 left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
+                <div
+                    role="listbox"
+                    className="absolute z-50 left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
                     <div className="max-h-60 overflow-y-auto p-2 scrollbar-hide">
                         {options.map((opt, idx) => {
                             const isSelected = getValue(opt) === value;
                             return (
                                 <div
                                     key={idx}
+                                    role="option"
+                                    aria-selected={isSelected}
                                     onClick={() => handleSelect(opt)}
                                     className={`
                                         flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-colors mb-1 last:mb-0

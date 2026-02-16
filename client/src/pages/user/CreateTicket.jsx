@@ -213,7 +213,7 @@ const CreateTicket = () => {
                     room: "",
                   })
                 }
-                placeholder="Select"
+                placeholder="Select Floor"
               />
             </div>
             <div className="space-y-2">
@@ -223,7 +223,7 @@ const CreateTicket = () => {
                 options={getAvailableRooms().map((r) => ({ id: r.id, name: r.roomNumber }))}
                 value={form.roomId}
                 onChange={(e) => setForm({ ...form, roomId: e.target.value })}
-                placeholder="Select"
+                placeholder="Select Room"
               />
             </div>
           </div>

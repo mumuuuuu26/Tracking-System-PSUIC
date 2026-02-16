@@ -46,6 +46,10 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, disabled = f
         <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`} ref={dropdownRef}>
             {/* Trigger Button */}
             <div
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+                aria-label={placeholder}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`
           w-full p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all
@@ -66,7 +70,9 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, disabled = f
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute z-50 left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
+                <div
+                    role="listbox"
+                    className="absolute z-50 left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
                     <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
                         {options.length > 0 ? (
                             options.map((opt, index) => {
@@ -74,6 +80,8 @@ const CustomSelect = ({ options = [], value, onChange, placeholder, disabled = f
                                 return (
                                     <div
                                         key={index}
+                                        role="option"
+                                        aria-selected={isSelected}
                                         onClick={() => !opt.disabled && handleSelect(opt)}
                                         className={`
                       px-4 py-3 rounded-lg flex items-center justify-between group transition-colors

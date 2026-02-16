@@ -1,15 +1,33 @@
 const { test, expect, request } = require('@playwright/test');
 
+async function waitForAppReady(page) {
+    // 1. Wait for network to settle
+    await page.waitForLoadState('networkidle');
+
+    // 2. Ensure Zustand hydrate is complete
+    await page.waitForFunction(() => {
+        const store = window.localStorage.getItem('auth-store');
+        return store !== null && JSON.parse(store).state.hasHydrated === true;
+    }, { timeout: 15000 });
+
+    // 3. Wait for critical setup data to be fetched
+    // These calls happen on HomeUser and CreateTicket
+    await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/category') && res.status() === 200, { timeout: 15000 }).catch(() => {}),
+        page.waitForResponse(res => res.url().includes('/api/room') && res.status() === 200, { timeout: 15000 }).catch(() => {})
+    ]);
+}
+
 test.describe('User Workflow', () => {
     test('Register, Login and Create Ticket', async ({ page }) => {
         // Increase timeout for this test as per recommendation
-        test.setTimeout(60000);
-        // Set viewport to mobile to see the mobile-only "Report Issue" button
+        test.setTimeout(90000);
+        // Set viewport to mobile
         await page.setViewportSize({ width: 375, height: 667 });
 
         const uniqueEmail = `e2e_${Date.now()}@example.com`;
         
-        // 1. API Seeding: Create User via API
+        // 1. API Seeding: Create User
         const apiContext = await request.newContext();
         await apiContext.post('http://localhost:5002/api/register', {
             data: {
@@ -18,7 +36,7 @@ test.describe('User Workflow', () => {
             }
         });
 
-        // 2. Login via API (Bypass UI to avoid race conditions)
+        // 2. Login via API
         const loginResponse = await apiContext.post('http://localhost:5002/api/login', {
             data: {
                 email: uniqueEmail,
@@ -28,13 +46,10 @@ test.describe('User Workflow', () => {
 
         expect(loginResponse.ok()).toBeTruthy();
         const loginData = await loginResponse.json();
-        const token = loginData.token;
 
-        // Inject token BEFORE app loads to avoid race conditions
-        // The app uses Zustand with persist middleware, key: 'auth-store'
+        // Inject token
         await page.addInitScript((value) => {
             window.localStorage.setItem('auth-store', JSON.stringify(value));
-            // Also set 'token' just in case legacy code or other checks use it
             window.localStorage.setItem('token', value.state.token); 
         }, {
             state: {
@@ -45,94 +60,91 @@ test.describe('User Workflow', () => {
             version: 0
         });
 
-        // Navigate to Dashboard (Protected Route)
+        // Navigate to Dashboard
         await page.goto('/user');
+        await waitForAppReady(page);
         
         // Ensure we are on user dashboard
-        await expect(page).toHaveURL(/\/user/);
-
-
-
-        // Debugging: Log current URL and localStorage
-        const currentUrl = page.url();
-        console.log('Current URL after login attempt:', currentUrl);
-
-        // Verification: Check if auth token exists in localStorage (auth-store is the actual key)
-        await page.waitForFunction(() => {
-            const token = localStorage.getItem('token'); // Fallback
-            const authStore = localStorage.getItem('auth-store'); // Zustand
-            return token !== null || (authStore && JSON.parse(authStore)?.state?.token);
-        }, null, { timeout: 10000 }).catch(() => console.log('Auth token/store not found in localStorage'));
-
-        // 3. Verify redirection to Dashboard (HomeUser)
-        // Double ensure we are on the user dashboard
         await expect(page).toHaveURL(/\/user/, { timeout: 30000 }); 
 
         // 4. Navigate to "Create Ticket"
-        // In HomeUser, there is a "Report Issue" button
-        await page.getByRole('button', { name: 'Report Issue' }).click();
+        const reportBtn = page.getByRole('button', { name: /report issue/i });
+        await expect(reportBtn).toBeVisible();
+        await reportBtn.click();
         
         // 5. Submit a ticket
-        // Verify we are on create page
-        await expect(page).toHaveURL(/\/user\/create-ticket/);
+        await page.waitForURL('**/create-ticket');
+        await waitForAppReady(page);
+
+        // Fill Topic Issue (Title)
+        const topicInput = page.getByPlaceholder(/computer cannot start/i);
+        await expect(topicInput).toBeVisible();
+        await topicInput.fill('E2E Test: Printer Jam');
+
+        // Select Equipment Category
+        const equipmentSelect = page.getByRole('combobox', { name: /equipment category/i });
+        await expect(equipmentSelect).toBeVisible({ timeout: 15000 });
+        await equipmentSelect.click();
+
+        const categoryDropdown = page.getByRole('listbox');
+        await expect(categoryDropdown).toBeVisible();
+        const categoryOption = categoryDropdown.getByRole('option').first();
+        await expect(categoryOption).toBeVisible();
+        await categoryOption.click();
 
         // Fill Description
-        await page.fill('textarea', 'This is an automated E2E test ticket.');
-        
-        // Select Equipment (CustomSelect)
-        // Click the trigger (placeholder text)
-        await page.getByText('Select Equipment').click();
-
-        // Wait for Dropdown to be visible
-        const dropdown = page.locator('div.absolute.z-50');
-        await dropdown.waitFor({ state: 'visible' });
-
-        // Check if there are options
-        const optionsCount = await dropdown.locator('div.cursor-pointer').count();
-        expect(optionsCount, 'Dropdown is empty! Did you seed the database?').toBeGreaterThan(0);
-
-        // Click the first option (assuming there is at least one)
-        // We use locator for the dropdown item. CustomSelect renders items as divs with text.
-        // We avoid "No options available"
-        const equipmentOption = dropdown.locator('div.cursor-pointer').first();
-        await equipmentOption.click();
+        await page.getByPlaceholder(/describe the issue in detail/i).fill('This is an automated E2E test ticket description.');
 
         // Select Floor
-        // Use more specific locator because label also has text "Floor"
-        await page.locator('span').filter({ hasText: /^Floor$/ }).click();
-        const floorOption = page.locator('div.absolute.z-50').locator('div.cursor-pointer').first();
+        const floorSelect = page.getByRole('combobox', { name: /select floor/i });
+        await expect(floorSelect).toBeVisible({ timeout: 15000 });
+        await floorSelect.click();
+        
+        const floorDropdown = page.getByRole('listbox');
+        await expect(floorDropdown).toBeVisible();
+        const floorOption = floorDropdown.getByRole('option').first();
+        await expect(floorOption).toBeVisible();
         await floorOption.click();
 
         // Select Room
-        await page.locator('span').filter({ hasText: /^Room$/ }).click();
-        const roomOption = page.locator('div.absolute.z-50').locator('div.cursor-pointer').first();
+        const roomSelect = page.getByRole('combobox', { name: /select room/i });
+        await expect(roomSelect).toBeVisible({ timeout: 15000 });
+        await roomSelect.click();
+
+        const roomDropdown = page.getByRole('listbox');
+        await expect(roomDropdown).toBeVisible();
+        const roomOption = roomDropdown.getByRole('option').first();
+        await expect(roomOption).toBeVisible();
         await roomOption.click();
         
-        // Select Urgency (Optional, default Low)
-        await page.click('button:has-text("Medium")');
+        // Select Urgency
+        await page.getByRole('button', { name: /medium/i }).click();
 
         // Click Submit
-        await page.click('button:has-text("Submit Request")');
+        const submitBtn = page.getByRole('button', { name: /submit report/i });
+        await expect(submitBtn).toBeVisible();
+        await submitBtn.click();
 
         // 6. Verify success (SweetAlert2 popup)
-        await expect(page.getByText('Created Successfully')).toBeVisible();
-        await page.click('button:has-text("View Ticket")');
+        const swal = page.locator('.swal2-popup');
+        await expect(swal).toBeVisible({ timeout: 30000 });
+        await expect(swal).toContainText(/created successfully/i);
+        await swal.getByRole('button', { name: /view ticket/i }).click();
         
         // Verify redirection to ticket detail
+        await page.waitForURL('**/user/ticket/**', { timeout: 15000 });
         await expect(page).toHaveURL(/\/user\/ticket\/\d+/);
 
-        // 7. Verify Profile Picture Navigation (Mobile Header)
-        await page.goto('/user'); // Go back to home
-        await page.waitForTimeout(1000); // Wait for header to load
+        // 7. Verify Profile Picture Navigation
+        await page.goto('/user'); 
+        await waitForAppReady(page);
         
-        // Click on the profile picture in the header (mobile view)
-        // We target the div that has the click handler. It's the one with w-12 h-12 classes or we can rely on hierarchy.
-        // Or better, let's look for the profile image or fallback text "U" or initial.
         const profileSelector = page.locator('div.w-12.h-12.cursor-pointer').first(); 
         await expect(profileSelector).toBeVisible();
         await profileSelector.click();
 
         // Verify navigation to profile page
+        await page.waitForURL('**/user/profile');
         await expect(page).toHaveURL(/\/user\/profile/);
     });
 });

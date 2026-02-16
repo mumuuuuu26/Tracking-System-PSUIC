@@ -23,9 +23,9 @@ const UserPageHeader = ({ title, showBack = true, onBack }) => {
                     <ArrowLeft size={24} />
                 </button>
             )}
-            <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
+            <h1 className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
                 {title}
-            </span>
+            </h1>
         </div>
     );
 };
