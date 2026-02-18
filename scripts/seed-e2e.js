@@ -1,9 +1,25 @@
+require('../config/env');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function seed() {
+    const dbUrl = process.env.DATABASE_URL || '';
+
+    if (!dbUrl.includes('_test')) {
+      console.error('\n🚨 SAFETY STOP');
+      console.error('Seed is allowed ONLY on TEST database');
+      console.error('Current DB:', dbUrl);
+      process.exit(1);
+    }
+
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('\n🚨 SAFETY STOP');
+      console.error('NODE_ENV must be test to run seed');
+      process.exit(1);
+    }
+
     console.log('🌱 Resetting E2E database...');
 
     try {

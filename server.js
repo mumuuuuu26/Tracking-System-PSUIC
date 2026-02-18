@@ -196,6 +196,8 @@ const startServer = async () => {
       logger.info(
         `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
       );
+      console.log("ENV:", process.env.NODE_ENV);
+      console.log("DB:", process.env.DATABASE_URL);
     });
 
     server.setTimeout(30000);
