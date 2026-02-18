@@ -13,11 +13,11 @@ const UserNavbar = () => {
     const isActive = (path) => location.pathname === path;
 
     const navLinks = [
-        { name: "Home", path: "/user" },
-        { name: "Report Issue", path: "/user/create-ticket" },
-        { name: "History", path: "/user/history" },
-        { name: "Schedule", path: "/user/it-schedule" },
-        { name: "Knowledge", path: "/user/quick-fix" },
+        { name: "Home", path: "/user", testId: "nav-home" },
+        { name: "Report Issue", path: "/user/create-ticket", testId: "nav-create-ticket" },
+        { name: "History", path: "/user/history", testId: "nav-history" },
+        { name: "Schedule", path: "/user/it-schedule", testId: "nav-schedule" },
+        { name: "Knowledge", path: "/user/quick-fix", testId: "nav-knowledge" },
     ];
 
     const handleLogout = async () => {
@@ -45,6 +45,7 @@ const UserNavbar = () => {
                     <Link
                         key={link.name}
                         to={link.path}
+                        data-testid={link.testId}
                         className={`text-sm font-bold uppercase tracking-wider transition-all duration-200 border-b-2 py-1 ${isActive(link.path)
                             ? "text-white border-white"
                             : "text-gray-300 border-transparent hover:text-white"

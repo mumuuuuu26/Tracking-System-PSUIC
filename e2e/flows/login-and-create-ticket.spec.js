@@ -10,12 +10,9 @@ async function waitForAppReady(page) {
         return store !== null && JSON.parse(store).state.hasHydrated === true;
     }, { timeout: 15000 });
 
-    // 3. Wait for critical setup data to be fetched
-    // These calls happen on HomeUser and CreateTicket
-    await Promise.all([
-        page.waitForResponse(res => res.url().includes('/api/category') && res.status() === 200, { timeout: 15000 }).catch(() => {}),
-        page.waitForResponse(res => res.url().includes('/api/room') && res.status() === 200, { timeout: 15000 }).catch(() => {})
-    ]);
+    // 3. Wait for critical setup data (Implicitly waited by networkidle)
+    // Removed explicit waitForResponse because it races with networkidle.
+    // Use UI assertions in the test flow to ensure data readiness.
 }
 
 test.describe('User Workflow', () => {
@@ -25,25 +22,23 @@ test.describe('User Workflow', () => {
         // Set viewport to mobile
         await page.setViewportSize({ width: 375, height: 667 });
 
-        const uniqueEmail = `e2e_${Date.now()}@example.com`;
+        // Seeded User
+        const email = 'e2e@test.com';
+        const password = '12345678';
         
-        // 1. API Seeding: Create User
+        // 1. Login via API (User already exists from seed)
         const apiContext = await request.newContext();
-        await apiContext.post('http://localhost:5002/api/register', {
-            data: {
-                email: uniqueEmail,
-                password: 'password123'
-            }
-        });
-
-        // 2. Login via API
         const loginResponse = await apiContext.post('http://localhost:5002/api/login', {
             data: {
-                email: uniqueEmail,
-                password: 'password123'
+                email: email,
+                password: password
             }
         });
 
+        if (!loginResponse.ok()) {
+            console.log('Login failed status:', loginResponse.status());
+            console.log('Login failed body:', await loginResponse.text());
+        }
         expect(loginResponse.ok()).toBeTruthy();
         const loginData = await loginResponse.json();
 
@@ -103,12 +98,18 @@ test.describe('User Workflow', () => {
         const floorDropdown = page.getByRole('listbox');
         await expect(floorDropdown).toBeVisible();
         const floorOption = floorDropdown.getByRole('option').first();
+        const floorName = await floorOption.textContent();
         await expect(floorOption).toBeVisible();
         await floorOption.click();
 
+        // Wait for floor selection to be reflected in the combobox
+        await expect(floorSelect).toContainText(floorName);
+
         // Select Room
         const roomSelect = page.getByRole('combobox', { name: /select room/i });
-        await expect(roomSelect).toBeVisible({ timeout: 15000 });
+        // Wait for it to not be disabled (meaning floor selection worked)
+        await expect(roomSelect).toBeEnabled({ timeout: 15000 });
+        await expect(roomSelect).not.toHaveClass(/opacity-60/);
         await roomSelect.click();
 
         const roomDropdown = page.getByRole('listbox');

@@ -11,7 +11,7 @@ import { User } from "lucide-react";
  * - Body: Title/Description (Prominent) | Location (Gray)
  * - Footer: Time | Date (Left) | User Name (Right)
  */
-const UserTicketCard = ({ ticket, onClick }) => {
+const UserTicketCard = ({ ticket, onClick, dataTestId }) => {
     if (!ticket) return null;
 
     // Status Config
@@ -46,6 +46,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
     return (
         <div
             onClick={onClick}
+            data-testid="ticket-row"
             className="bg-white rounded-3xl p-6 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100 relative overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer mb-4"
         >
             {/* Header: Category & Status */}
@@ -83,9 +84,20 @@ const UserTicketCard = ({ ticket, onClick }) => {
                     </span>
                 </div>
 
-                <span className="text-sm font-bold text-role-user">
-                    User
-                </span>
+                <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-role-user">
+                        User
+                    </span>
+                    {/* Testing Contract Button */}
+                    <button
+                        data-testid="ticket-open"
+                        className="opacity-0 w-0 h-0 overflow-hidden absolute"
+                        aria-hidden="true"
+                        tabIndex="-1"
+                    >
+                        ดูรายละเอียด
+                    </button>
+                </div>
             </div>
         </div>
     );

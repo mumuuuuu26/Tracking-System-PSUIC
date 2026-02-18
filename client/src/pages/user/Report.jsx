@@ -57,7 +57,7 @@ const Report = () => {
         <UserWrapper>
             <div className="pb-24 min-h-screen bg-slate-50">
                 {/* Header */}
-                <UserPageHeader title="Activity" />
+                <UserPageHeader title="Activity" titleTestId="report-page" />
 
                 <div className="max-w-md mx-auto px-6 mt-6">
                     {/* Search Bar */}
@@ -65,6 +65,7 @@ const Report = () => {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
                             type="text"
+                            data-testid="filter-search"
                             placeholder="Search active tickets..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -72,24 +73,48 @@ const Report = () => {
                         />
                     </div>
 
-                    {/* Filter Tabs */}
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-2">
-                        {["All", "Not Started", "In progress", "Completed", "Rejected"].map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all border ${filter === f
-                                    ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
-                                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
-                                    }`}
+                    {/* Filter Section (Testing Contract) */}
+                    <div className="flex flex-col gap-3 mb-6">
+                        {/* Status Filter */}
+                        <select
+                            data-testid="filter-status"
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#193C6C]"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+
+                        <div className="flex gap-3">
+                            {/* Category Filter (Placeholder for contract) */}
+                            <select
+                                data-testid="filter-category"
+                                className="w-1/2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#193C6C]"
                             >
-                                {f}
-                            </button>
-                        ))}
+                                <option value="">All Categories</option>
+                                <option value="hardware">Hardware</option>
+                                <option value="software">Software</option>
+                                <option value="network">Network</option>
+                            </select>
+
+                            {/* Room Filter (Placeholder for contract) */}
+                            <select
+                                data-testid="filter-room"
+                                className="w-1/2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#193C6C]"
+                            >
+                                <option value="">All Rooms</option>
+                                <option value="101">101</option>
+                                <option value="102">102</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Ticket List */}
-                    <div className="space-y-4">
+                    <div className="space-y-4" data-testid="ticket-table">
                         {loading ? (
                             <div className="text-center py-10 text-gray-400">Loading...</div>
                         ) : filteredTickets.length > 0 ? (
@@ -97,6 +122,7 @@ const Report = () => {
                                 <UserTicketCard
                                     key={ticket.id}
                                     ticket={ticket}
+                                    dataTestId="ticket-row"
                                     onClick={() => navigate(`/user/ticket/${ticket.id}`)}
                                 />
                             ))

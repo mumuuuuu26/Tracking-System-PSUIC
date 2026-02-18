@@ -131,6 +131,7 @@ const Login = () => {
                     onChange={hdlChange}
                     placeholder="name@psu.ac.th"
                     required
+                    aria-label="Email"
                   />
                 </div>
                 <div>
@@ -141,6 +142,7 @@ const Login = () => {
                     onChange={hdlChange}
                     placeholder="••••••••"
                     required
+                    aria-label="Password"
                   />
                 </div>
                 <button

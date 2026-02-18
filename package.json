@@ -6,7 +6,8 @@
   "scripts": {
     "test": "cross-env NODE_ENV=test jest",
     "test:e2e": "playwright test",
-    "test:e2e:ci": "start-server-and-test start http://localhost:5002/health test:e2e",
+    "seed:e2e": "node scripts/seed-e2e.js",
+    "test:e2e:ci": "npm run seed:e2e && start-server-and-test start http://localhost:5002/health test:e2e",
     "start": "node server.js",
     "client": "cd client && npm run dev",
     "dev": "nodemon server.js",

@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import MobileHeader from "../ui/MobileHeader";
 
-const UserPageHeader = ({ title, showBack = true, onBack }) => {
+const UserPageHeader = ({ title, showBack = true, onBack, titleTestId }) => {
     const navigate = useNavigate();
 
     const handleBack = () => {
@@ -25,7 +25,10 @@ const UserPageHeader = ({ title, showBack = true, onBack }) => {
                     <ArrowLeft size={24} />
                 </button>
             )}
-            <h1 className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
+            <h1
+                data-testid={titleTestId}
+                className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2"
+            >
                 {title}
             </h1>
         </MobileHeader>

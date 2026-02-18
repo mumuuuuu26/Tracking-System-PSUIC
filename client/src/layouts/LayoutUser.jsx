@@ -43,10 +43,10 @@ const LayoutUser = ({ children }) => {
       <div className="fixed bottom-0 left-0 right-0 z-30 lg:hidden">
         <nav className="bg-white border-t border-gray-100 pb-safe pt-3 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between max-w-md mx-auto">
-            <NavLink href="/user" icon={<Home size={24} />} label="Home" active={isActive("/user")} />
-            <NavLink href="/user/report" icon={<Mail size={24} />} label="Activity" active={isActive("/user/report")} />
-            <NavLink href="/user/history" icon={<Clock size={24} />} label="History" active={isActive("/user/history")} />
-            <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
+            <NavLink href="/user" icon={<Home size={24} />} label="Home" active={isActive("/user")} dataTestId="nav-home" />
+            <NavLink href="/user/report" icon={<Mail size={24} />} label="Activity" active={isActive("/user/report")} dataTestId="nav-report" />
+            <NavLink href="/user/history" icon={<Clock size={24} />} label="History" active={isActive("/user/history")} dataTestId="nav-history" />
+            <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} dataTestId="nav-profile" />
           </div>
         </nav>
       </div>
@@ -55,9 +55,10 @@ const LayoutUser = ({ children }) => {
 };
 
 // Helper Component for Nav Links
-const NavLink = ({ href, icon, label, active, hasDot, badge }) => (
+const NavLink = ({ href, icon, label, active, hasDot, badge, dataTestId }) => (
   <a
     href={href}
+    data-testid={dataTestId}
     className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 w-16 relative ${active
       ? "text-[#193C6C]"
       : "text-gray-400 hover:text-gray-600"
