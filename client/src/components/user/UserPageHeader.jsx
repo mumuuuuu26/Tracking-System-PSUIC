@@ -2,6 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
+import MobileHeader from "../ui/MobileHeader";
+
 const UserPageHeader = ({ title, showBack = true, onBack }) => {
     const navigate = useNavigate();
 
@@ -14,7 +16,7 @@ const UserPageHeader = ({ title, showBack = true, onBack }) => {
     };
 
     return (
-        <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm rounded-b-[30px]">
+        <MobileHeader className="flex items-center">
             {showBack && (
                 <button
                     onClick={handleBack}
@@ -26,7 +28,7 @@ const UserPageHeader = ({ title, showBack = true, onBack }) => {
             <h1 className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
                 {title}
             </h1>
-        </div>
+        </MobileHeader>
     );
 };
 

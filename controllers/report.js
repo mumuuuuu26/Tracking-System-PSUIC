@@ -21,6 +21,9 @@ exports.getMonthlyStats = async (req, res) => {
                     gte: startDate,
                     lte: endDate,
                 },
+                status: {
+                    not: 'rejected'
+                }
             },
             select: {
                 id: true,
@@ -87,6 +90,9 @@ exports.getAnnualStats = async (req, res) => {
                 createdAt: {
                     gte: startDate,
                     lte: endDate
+                },
+                status: {
+                    not: 'rejected'
                 }
             }
         });
@@ -124,7 +130,11 @@ exports.getEquipmentStats = async (req, res) => {
         // Group by equipmentId
         const result = await prisma.ticket.groupBy({
             by: ['equipmentId'],
-            where: { equipmentId: { not: null } },
+            where: { 
+                equipmentId: { not: null },
+                isDeleted: false,
+                status: { not: 'rejected' }
+            },
             _count: {
                 _all: true
             },
@@ -182,21 +192,25 @@ exports.getITPerformance = async (req, res) => {
             const pending = await prisma.ticket.count({
                 where: {
                     assignedToId: u.id,
-                    status: { not: 'completed' }
+                    status: { notIn: ['completed', 'rejected'] }
                 }
             });
 
             // Calculate SLA Averages
             const closedTickets = await prisma.ticket.findMany({
-                where: { assignedToId: u.id, status: 'completed' },
+                where: { 
+                    assignedToId: u.id, 
+                    status: 'completed',
+                    isDeleted: false
+                },
                 select: { responseTime: true, resolutionTime: true }
             });
 
             let totalResponse = 0, totalResolution = 0, countResponse = 0, countResolution = 0;
 
             closedTickets.forEach(t => {
-                if (t.responseTime) { totalResponse += t.responseTime; countResponse++; }
-                if (t.resolutionTime) { totalResolution += t.resolutionTime; countResolution++; }
+                if (t.responseTime !== null) { totalResponse += t.responseTime; countResponse++; }
+                if (t.resolutionTime !== null) { totalResolution += t.resolutionTime; countResolution++; }
             });
 
             return {
@@ -257,6 +271,64 @@ exports.getSatisfactionStats = async (req, res) => {
 
     } catch (err) {
         logger.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// 6. Floor & Room Analysis
+exports.getRoomStats = async (req, res) => {
+    try {
+        // Get ticket distribution by room
+        const ticketsByRoom = await prisma.ticket.groupBy({
+            by: ['roomId'],
+            where: { 
+                isDeleted: false,
+                status: { not: 'rejected' }
+            },
+            _count: {
+                _all: true
+            },
+            orderBy: {
+                _count: {
+                    roomId: 'desc'
+                }
+            }
+        });
+
+        // Enrich with room details and status breakdown
+        const enriched = await Promise.all(ticketsByRoom.map(async (item) => {
+            const room = await prisma.room.findUnique({
+                where: { id: item.roomId },
+                select: { roomNumber: true, floor: true }
+            });
+
+            const statusCounts = await prisma.ticket.groupBy({
+                by: ['status'],
+                where: { 
+                    roomId: item.roomId,
+                    isDeleted: false,
+                    status: { not: 'rejected' }
+                },
+                _count: { _all: true }
+            });
+
+            const breakdown = {
+                completed: statusCounts.find(s => s.status === 'completed')?._count._all || 0,
+                pending: statusCounts.filter(s => s.status !== 'completed' && s.status !== 'rejected').reduce((acc, s) => acc + s._count._all, 0)
+            };
+
+            return {
+                roomId: item.roomId,
+                roomNumber: room?.roomNumber || 'Unknown',
+                floor: room?.floor || 'Unspecified',
+                totalTickets: item._count._all,
+                ...breakdown
+            };
+        }));
+
+        res.json(enriched);
+    } catch (err) {
+        console.error("getRoomStats Error:", err);
         res.status(500).json({ message: "Server Error" });
     }
 };

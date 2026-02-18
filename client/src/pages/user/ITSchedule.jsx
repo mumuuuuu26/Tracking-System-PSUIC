@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { Calendar, ChevronLeft, Clock, User, ArrowLeft } from "lucide-react";
 import dayjs from "dayjs";
 import useAuthStore from "../../store/auth-store";
@@ -10,7 +10,6 @@ import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 
 const ITSchedule = () => {
-    const navigate = useNavigate();
     const { token } = useAuthStore();
 
     // State

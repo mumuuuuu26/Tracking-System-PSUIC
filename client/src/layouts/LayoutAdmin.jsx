@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
+import { Outlet, Navigate, useLocation, Link } from "react-router-dom";
 import {
     Users,
     BarChart,
@@ -57,16 +57,16 @@ const LayoutAdmin = () => {
                             active={isActive("/admin/manage-users")}
                         />
                         <NavLink
-                            href="/admin/profile"
-                            icon={<User size={24} />}
-                            label="Profile"
-                            active={isActive("/admin/profile")}
-                        />
-                        <NavLink
                             href="/admin/quick-fix"
                             icon={<Briefcase size={24} />}
                             label="Quick Fix"
                             active={isActive("/admin/quick-fix")}
+                        />
+                        <NavLink
+                            href="/admin/profile"
+                            icon={<User size={24} />}
+                            label="Profile"
+                            active={isActive("/admin/profile")}
                         />
                     </div>
                 </nav>

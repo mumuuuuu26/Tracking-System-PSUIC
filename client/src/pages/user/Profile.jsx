@@ -9,8 +9,6 @@ import {
   Edit2,
   Check,
   X,
-  ChevronLeft,
-  ArrowLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/auth-store";
@@ -18,7 +16,6 @@ import { currentUser } from "../../api/auth";
 import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import Swal from "sweetalert2";
 import { getImageUrl } from "../../utils/imageUrl";
 import { confirmLogout } from "../../utils/sweetalert";
 import UserPageHeader from "../../components/user/UserPageHeader";

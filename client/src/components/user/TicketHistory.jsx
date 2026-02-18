@@ -47,12 +47,12 @@ const TicketHistory = () => {
         <div className="space-y-6">
             {/* Filter Bar */}
             <div className="flex flex-row items-center gap-3">                {/* Category Pills */}
-                <div className="flex-1 flex gap-2 overflow-x-auto w-full no-scrollbar px-1 mask-linear-fade">
+                <div className="flex-1 flex gap-2 overflow-x-auto w-full no-scrollbar pb-2">
                     <button
                         onClick={() => setFilters(prev => ({ ...prev, categoryId: "all" }))}
-                        className={`px-5 h-12 rounded-xl text-sm font-bold border whitespace-nowrap transition-all shadow-sm flex items-center justify-center ${filters.categoryId === "all"
-                            ? "bg-[#193C6C] text-white border-[#193C6C]"
-                            : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                        className={`px-6 py-2 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${filters.categoryId === "all"
+                            ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                             }`}
                     >
                         All
@@ -61,9 +61,9 @@ const TicketHistory = () => {
                         <button
                             key={cat.id}
                             onClick={() => setFilters(prev => ({ ...prev, categoryId: cat.id }))}
-                            className={`px-5 h-12 rounded-xl text-sm font-bold border whitespace-nowrap transition-all shadow-sm flex items-center justify-center ${filters.categoryId === cat.id
-                                ? "bg-[#193C6C] text-white border-[#193C6C]"
-                                : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                            className={`px-6 py-2 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${filters.categoryId === cat.id
+                                ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
+                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                                 }`}
                         >
                             {cat.name}

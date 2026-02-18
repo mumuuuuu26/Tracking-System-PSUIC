@@ -27,7 +27,7 @@ const AdminNavbar = () => {
     };
 
     return (
-        <header className="bg-[#273267] shadow-md sticky top-0 z-50 font-sans text-white">
+        <header className="bg-role-admin shadow-md sticky top-0 z-50 font-sans text-white">
             <div className="max-w-7xl mx-auto px-4 md:px-8 py-5 flex items-center justify-start gap-10">
                 {/* Logo Section */}
                 <div className="flex items-center gap-3 shrink-0">

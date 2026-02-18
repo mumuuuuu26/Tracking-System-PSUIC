@@ -92,8 +92,10 @@ model Ticket {
   readAt         DateTime?  // เวลาที่ user อ่าน
   
   // [NEW] SLA tracking
-  responseTime   Int?       // เวลาตอบสนอง (นาที)
-  resolutionTime Int?       // เวลาแก้ไข (นาที)
+  acceptedAt     DateTime?  // เวลาที่ IT รับงาน
+  completedAt    DateTime?  // เวลาที่งานเสร็จสิ้น
+  responseTime   Int?       // เวลาตอบสนอง (นาที) from createdAt to acceptedAt
+  resolutionTime Int?       // เวลาแก้ไข (นาที) from acceptedAt to completedAt
   
   // [NEW] Checklist & IT Note (Draft)
   checklist      String?    @db.Text // JSON string: [{id, text, checked}]

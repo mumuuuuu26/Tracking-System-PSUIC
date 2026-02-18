@@ -50,7 +50,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
         >
             {/* Header: Category & Status */}
             <div className="flex justify-between items-start mb-3">
-                <h3 className="text-xl font-bold text-[#193C6C] tracking-tight">
+                <h3 className="text-xl font-bold text-role-user tracking-tight">
                     {ticket.category?.name || "General Issue"}
                 </h3>
                 <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${statusConfig.className}`}>
@@ -83,7 +83,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
                     </span>
                 </div>
 
-                <span className="text-sm font-bold text-[#193C6C]">
+                <span className="text-sm font-bold text-role-user">
                     User
                 </span>
             </div>

@@ -7,7 +7,8 @@ const {
     getAnnualStats,
     getEquipmentStats,
     getITPerformance,
-    getSatisfactionStats
+    getSatisfactionStats,
+    getRoomStats
 } = require("../controllers/report");
 
 // @ENDPOINT http://localhost:5002/api/reports/monthly
@@ -24,5 +25,8 @@ router.get("/reports/performance", authCheck, adminCheck, getITPerformance);
 
 // @ENDPOINT http://localhost:5002/api/reports/satisfaction
 router.get("/reports/satisfaction", authCheck, adminCheck, getSatisfactionStats);
+
+// @ENDPOINT http://localhost:5002/api/reports/room
+router.get("/reports/room", authCheck, adminCheck, getRoomStats);
 
 module.exports = router;

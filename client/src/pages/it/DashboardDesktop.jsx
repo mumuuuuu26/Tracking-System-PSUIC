@@ -1,23 +1,18 @@
 import React from "react";
 import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
-import { getImageUrl } from "../../utils/imageUrl";
+// import { getImageUrl } from "../../utils/imageUrl";
 import ITHeader from "../../components/it/ITHeader";
 
 const DashboardDesktop = ({
     tickets = [],
     stats,
-    profile,
     onAccept,
     onReject,
-    onSelectTicket,
     navigate
 }) => {
 
     // Filter for New Tickets (Not Started)
     const newTickets = tickets.filter(t => t.status === "not_start");
-
-    // Filter for My Active Jobs (In Progress)
-    const myActiveJobs = tickets.filter(t => t.status === "in_progress" && (t.assigneeId === profile?.id || t.acceptedBy === profile?.id));
 
     // Stats Card Data
     const statCards = [
@@ -74,22 +69,41 @@ const DashboardDesktop = ({
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="text-[#64748b] text-xs font-medium uppercase tracking-wider">New Tickets</h2>
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold border border-blue-100">
-                            {newTickets.length} Available
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => navigate('/it/tickets')}
+                                className="text-blue-600 text-xs font-bold hover:underline"
+                            >
+                                View All
+                            </button>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold border border-blue-100">
+                                {newTickets.length} Available
+                            </span>
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-4">
                         {newTickets.length > 0 ? (
-                            newTickets.map((ticket) => (
-                                <TicketCard
-                                    key={ticket.id}
-                                    ticket={ticket}
-                                    onAccept={onAccept}
-                                    onReject={onReject}
-                                    onClick={() => navigate(`/it/ticket/${ticket.id}`)}
-                                />
-                            ))
+                            newTickets
+                                .sort((a, b) => {
+                                    const urgencyWeight = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
+                                    const weightA = urgencyWeight[a.urgency] || 0;
+                                    const weightB = urgencyWeight[b.urgency] || 0;
+                                    if (weightA !== weightB) {
+                                        return weightB - weightA; // Higher priority first
+                                    }
+                                    return new Date(a.createdAt) - new Date(b.createdAt); // Oldest first (FIFO)
+                                })
+                                .slice(0, 3)
+                                .map((ticket) => (
+                                    <TicketCard
+                                        key={ticket.id}
+                                        ticket={ticket}
+                                        onAccept={onAccept}
+                                        onReject={onReject}
+                                        onClick={() => navigate(`/it/ticket/${ticket.id}`)}
+                                    />
+                                ))
                         ) : (
                             <div className="bg-white rounded-[1.5rem] p-12 text-center border border-dashed border-gray-200 text-gray-400 flex flex-col items-center justify-center h-48">
                                 <CheckCircle size={48} className="text-gray-200 mb-4" />

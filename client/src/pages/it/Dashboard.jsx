@@ -34,7 +34,6 @@ const ITDashboard = () => {
     completed: 0,
   });
   const [, setLoading] = useState(true);
-  const [showAllNew, setShowAllNew] = useState(false);
 
   // Modal States
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -156,7 +155,7 @@ const ITDashboard = () => {
       if (weightA !== weightB) {
         return weightB - weightA; // Higher priority first
       }
-      return new Date(b.createdAt) - new Date(a.createdAt); // Newest first
+      return new Date(a.createdAt) - new Date(b.createdAt); // Oldest first (FIFO)
     });
 
 
@@ -173,19 +172,22 @@ const ITDashboard = () => {
 
   return (
     <>
-      <DashboardDesktop
-        tickets={tickets}
-        stats={stats}
-        profile={profile}
-        onAccept={handleAccept}
-        onReject={handleRejectClick}
-        navigate={navigate}
-      />
+      {/* Desktop View */}
+      <div className="hidden md:block h-full">
+        <DashboardDesktop
+          tickets={tickets}
+          stats={stats}
+          profile={profile}
+          onAccept={handleAccept}
+          onReject={handleRejectClick}
+          navigate={navigate}
+        />
+      </div>
 
       {/* Mobile View */}
       <div className="md:hidden">
         {/* 1. New Header Section (Welcome back) - Matching User Side */}
-        <div className="bg-[#193C6C] pt-8 pb-8 rounded-b-[2.5rem] shadow-md relative z-0 -mx-4 md:-mx-8">
+        <div className="bg-[#193C6C] pt-8 pb-8 rounded-b-[2.5rem] shadow-md relative z-0 -mx-4 md:-mx-8 -mt-6">
           <div className="flex items-center justify-between text-white px-6">
             <div className="flex flex-col">
               <span className="text-base font-medium opacity-90">Welcome back,</span>
@@ -230,7 +232,7 @@ const ITDashboard = () => {
               </div>
 
               <div className="space-y-4">
-                {newTickets.length > 0 ? newTickets.slice(0, showAllNew ? undefined : 5).map((ticket) => (
+                {newTickets.length > 0 ? newTickets.slice(0, 3).map((ticket) => (
                   <div
                     key={ticket.id}
                     onClick={() => navigate(`/it/ticket/${ticket.id}`)}

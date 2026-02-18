@@ -1,8 +1,8 @@
 import React from 'react';
 
-const ITWrapper = ({ children }) => {
+const ITWrapper = ({ children, className = "" }) => {
     return (
-        <div className="max-w-7xl mx-auto w-full h-full font-sans text-[#1e2e4a]">
+        <div className={`w-full max-w-5xl mx-auto ${className}`}>
             {children}
         </div>
     );

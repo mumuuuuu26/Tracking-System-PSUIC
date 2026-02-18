@@ -85,7 +85,6 @@ app.use("/uploads", express.static(absoluteUploadDir));
 // Global Limiter: กันยิงรัวๆ ทั่วไป
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 นาที
-  windowMs: 15 * 60 * 1000, // 15 นาที
   max: 3000, // เพิ่มเป็น 3000 เพื่อรองรับ user 100+ คนใช้งานพร้อมกัน (เฉลี่ย 1 request/3วิ ต่อ user)
   standardHeaders: true,
   legacyHeaders: false,
@@ -122,7 +121,6 @@ app.use("/api", quickFixRoutes);
 app.use("/api", permissionRoutes);
 // app.use("/api", healthRoutes); // Uncomment if exists
 
-// --- Global Error Handler ---
 // --- Global Error Handler ---
 const errorHandler = require("./middlewares/errorHandler");
 app.use(errorHandler);

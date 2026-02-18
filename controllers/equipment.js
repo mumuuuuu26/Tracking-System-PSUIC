@@ -68,14 +68,13 @@ exports.getByQRCode = async (req, res) => {
   try {
     const { qrCode } = req.params;
 
-    const equipment = await prisma.equipment.findUnique({
+    // 1. Try exact QR Code match
+    let equipment = await prisma.equipment.findUnique({
       where: { qrCode },
       include: {
         room: true,
         tickets: {
-          where: {
-            status: { not: "Fixed" }, // แสดงเฉพาะงานที่ยังซ่อมไม่เสร็จ
-          },
+          where: { status: { not: "Fixed" } },
           orderBy: { createdAt: "desc" },
           take: 5,
           include: {
@@ -85,6 +84,44 @@ exports.getByQRCode = async (req, res) => {
         },
       },
     });
+
+    // 2. Fallback: Try Serial Number
+    if (!equipment) {
+      equipment = await prisma.equipment.findFirst({
+        where: { serialNo: qrCode },
+        include: {
+          room: true,
+          tickets: {
+            where: { status: { not: "Fixed" } },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            include: {
+              category: true,
+              createdBy: { select: { name: true } },
+            },
+          },
+        },
+      });
+    }
+
+    // 3. Fallback: Try ID (if input is numeric)
+    if (!equipment && /^\d+$/.test(qrCode)) {
+      equipment = await prisma.equipment.findUnique({
+        where: { id: parseInt(qrCode) },
+        include: {
+          room: true,
+          tickets: {
+            where: { status: { not: "Fixed" } },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            include: {
+              category: true,
+              createdBy: { select: { name: true } },
+            },
+          },
+        },
+      });
+    }
 
     if (!equipment) {
       return res.status(404).json({ message: "ไม่พบข้อมูลอุปกรณ์นี้ในระบบ" });

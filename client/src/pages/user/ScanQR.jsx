@@ -4,36 +4,31 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Flashlight, FlashlightOff, Image as ImageIcon, Loader2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Resizer from "react-image-file-resizer";
 
 const ScanQR = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
-  const [hasFlash, setHasFlash] = useState(false);
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
   const mountedRef = useRef(true);
+  const startScannerRef = useRef(null);
 
-  // Reuse existing logic to fetch and navigate
   const fetchEquipmentData = useCallback(async (qrCode) => {
     if (!qrCode) return;
-
-    // Stop scanning temporarily
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      try {
-        await scannerRef.current.stop();
-      } catch (err) {
-        console.warn("Failed to stop scanner", err);
-      }
-    }
 
     setLoading(true);
     try {
       const res = await axios.get(`/api/equipment/qr/${qrCode}`);
       const equipmentData = res.data;
 
-      toast.success("Equipment found");
+      // Stop scanning only after successful find
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        await scannerRef.current.stop().catch(() => { });
+      }
 
+      toast.success("Equipment found");
       navigate("/user/create-ticket", {
         state: {
           equipmentId: equipmentData.id,
@@ -44,11 +39,13 @@ const ScanQR = () => {
           floorName: equipmentData.room?.floor || "",
         },
       });
-    } catch (err) {
-      console.error(err);
-      toast.error("Equipment not found or invalid QR Code");
-      // If failed, restart scanner
-      startScanner();
+    } catch (error) {
+      console.error(error);
+      toast.error("Invalid QR Code or Equipment not found");
+      // If it was a file upload, we might need to restart if we stopped it.
+      if (!scannerRef.current?.isScanning) {
+        if (startScannerRef.current) startScannerRef.current();
+      }
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -62,43 +59,31 @@ const ScanQR = () => {
         });
       }
 
+      if (scannerRef.current.isScanning) return;
+
       const cameras = await Html5Qrcode.getCameras();
       if (cameras && cameras.length > 0) {
-        // Prefer back camera
-        const cameraId = cameras[cameras.length - 1].id;
-
         await scannerRef.current.start(
           { facingMode: "environment" },
           {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
+            fps: 15, // Higher FPS for smoother feel
+            // REMOVED qrbox to allow scanning the ENTIRE screen as requested
             aspectRatio: window.innerWidth / window.innerHeight
           },
           (decodedText) => {
             fetchEquipmentData(decodedText);
           },
-          (errorMessage) => {
-            // ignore
-          }
+          () => { }
         );
-
-        // Check flash support (only works if camera started)
-        try {
-          // This API might vary based on browser support
-          // For now, we assume if start is successful we can try to get capabilities
-          // But Html5Qrcode doesn't expose getCapabilities easily in all versions.
-          // We'll manage flash state via applyVideoConstraints if possible, 
-          // or just toggle state and catch errors.
-          setHasFlash(true);
-        } catch (e) {
-          console.log("Flash check failed", e);
-        }
       }
     } catch (err) {
       console.error("Error starting scanner", err);
-      toast.error("Camera permission denied or error starting camera.");
     }
   }, [fetchEquipmentData]);
+
+  useEffect(() => {
+    startScannerRef.current = startScanner;
+  }, [startScanner]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -107,15 +92,9 @@ const ScanQR = () => {
     return () => {
       mountedRef.current = false;
       if (scannerRef.current) {
-        try {
-          if (scannerRef.current.isScanning) {
-            scannerRef.current.stop().catch(e => console.warn(e));
-          }
-        } catch (e) { console.warn(e); }
-
-        try {
-          scannerRef.current.clear().catch(e => console.warn(e));
-        } catch (e) { console.warn(e); }
+        if (scannerRef.current.isScanning) {
+          scannerRef.current.stop().catch(() => { });
+        }
       }
     };
   }, [startScanner]);
@@ -127,115 +106,128 @@ const ScanQR = () => {
         advanced: [{ torch: !flashOn }]
       });
       setFlashOn(!flashOn);
-    } catch (err) {
-      console.error("Torch toggle failed", err);
-      toast.warn("Flashlight not supported on this device.");
-      setHasFlash(false);
+    } catch {
+      toast.warn("Flashlight not supported");
     }
   };
+
+  const resizeFile = (file) =>
+    new Promise((resolve) => {
+      Resizer.imageFileResizer(
+        file,
+        800, // Max width
+        800, // Max height
+        "JPEG",
+        100,
+        0,
+        (uri) => {
+          resolve(uri);
+        },
+        "file"
+      );
+    });
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode("reader");
-    }
+    setLoading(true);
 
     try {
-      const result = await scannerRef.current.scanFile(file, true);
-      fetchEquipmentData(result);
+      // 1. Resize image first for MUCH faster QR decoding
+      const resizedImage = await resizeFile(file);
+
+      // Stop camera temporarily to focus on file
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        await scannerRef.current.stop().catch(() => { });
+      }
+
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode("reader");
+      }
+
+      const result = await scannerRef.current.scanFile(resizedImage, true);
+      await fetchEquipmentData(result);
     } catch (err) {
       console.error("File scan error", err);
-      toast.error("Could not read QR code from image.");
+      toast.error("Could not read QR code. Please ensure it's clear.");
+      startScanner(); // Always restart if file scan failed
+    } finally {
+      if (mountedRef.current) setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center text-white">
-        <Loader2 className="animate-spin mb-4" size={48} />
-        <p className="animate-pulse">Processing...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 bg-black text-white z-[9999]">
-      {/* Camera Viewport */}
-      <div id="reader" className="w-full h-full object-cover"></div>
+    <div className="fixed inset-0 bg-black text-white z-[9999] overflow-hidden font-sans">
+      {/* Viewport - Full Feed */}
+      <div id="reader" className="absolute inset-0 w-full h-full [&>video]:object-cover [&>video]:h-full [&>video]:w-full"></div>
+
+      {/* Overlay Mask - Very subtle to indicate scanning */}
+      <div className="absolute inset-0 pointer-events-none z-10">
+        <div className="w-full h-full shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] bg-black/10" />
+      </div>
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-6 pt-safe-top z-20 flex items-center gap-4 bg-gradient-to-b from-black/80 to-transparent pb-10">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
-        >
-          <ArrowLeft size={28} />
-        </button>
-        <h1 className="text-xl font-bold">Scanner</h1>
+      <div className="absolute top-0 left-0 right-0 pt-safe-top z-40">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/10 transition-all active:scale-95"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-sm font-medium tracking-[0.2em] text-white/90 uppercase opacity-60">Scanning...</h1>
+          <div className="w-10" />
+        </div>
       </div>
 
-      {/* Overlay UI */}
-      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-
-        {/* Scan Frame */}
-        <div className="relative w-[250px] h-[250px]">
-          {/* Corners */}
-          <div className="absolute top-0 left-0 w-12 h-12 border-t-[5px] border-l-[5px] border-white rounded-tl-3xl shadow-sm"></div>
-          <div className="absolute top-0 right-0 w-12 h-12 border-t-[5px] border-r-[5px] border-white rounded-tr-3xl shadow-sm"></div>
-          <div className="absolute bottom-0 left-0 w-12 h-12 border-b-[5px] border-l-[5px] border-white rounded-bl-3xl shadow-sm"></div>
-          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[5px] border-r-[5px] border-white rounded-br-3xl shadow-sm"></div>
-
-          {/* Scanning Line Animation */}
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-scan-move opacity-80"></div>
+      {/* Scan Zone Indicators (Subtle edges) */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
+        <div className="relative w-[80%] aspect-square max-w-[300px]">
+          <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white/40 rounded-tl-lg"></div>
+          <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white/40 rounded-tr-lg"></div>
+          <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white/40 rounded-bl-lg"></div>
+          <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white/40 rounded-br-lg"></div>
         </div>
       </div>
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-10 left-0 right-0 px-10 flex justify-between items-center z-30 pointer-events-auto pb-safe-bottom">
-        {/* Flashlight Button */}
-        <button
-          onClick={toggleFlash}
-          className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all border ${flashOn ? "bg-white text-black border-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-            }`}
-        >
-          {flashOn ? <Flashlight size={24} fill="currentColor" /> : <FlashlightOff size={24} />}
-        </button>
+      <div className="absolute bottom-12 left-0 right-0 px-12 flex justify-around items-center z-50 pointer-events-auto pb-safe-bottom">
+        <div className="flex flex-col items-center gap-2">
+          <button
+            onClick={toggleFlash}
+            className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all border duration-300 ${flashOn ? "bg-white text-black border-white shadow-xl scale-110" : "bg-white/10 border-white/10"
+              }`}
+          >
+            {flashOn ? <Flashlight size={24} /> : <FlashlightOff size={24} />}
+          </button>
+          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">Flash</span>
+        </div>
 
-        {/* Gallery Button */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-14 h-14 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
-        >
-          <ImageIcon size={24} />
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleFileUpload}
-          />
-        </button>
+        <div className="flex flex-col items-center gap-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-14 h-14 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"
+          >
+            <ImageIcon size={24} />
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+          </button>
+          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">Gallery</span>
+        </div>
       </div>
 
+      {/* Subtle Loading Overlay (Doesn't block view) */}
+      {loading && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center transition-all">
+          <Loader2 className="animate-spin text-white mb-3" size={32} strokeWidth={3} />
+          <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-60">Identifying</p>
+        </div>
+      )}
+
       <style jsx>{`
-                @keyframes scan-move {
-                    0% { top: 0; opacity: 0; }
-                    10% { opacity: 1; }
-                    90% { opacity: 1; }
-                    100% { top: 100%; opacity: 0; }
-                }
-                .animate-scan-move {
-                    animation: scan-move 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-                }
-                .pt-safe-top {
-                    padding-top: env(safe-area-inset-top, 24px);
-                }
-                .pb-safe-bottom {
-                    padding-bottom: env(safe-area-inset-bottom, 24px);
-                }
-            `}</style>
+        .pt-safe-top { padding-top: env(safe-area-inset-top, 24px); }
+        .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 24px); }
+      `}</style>
     </div>
   );
 };

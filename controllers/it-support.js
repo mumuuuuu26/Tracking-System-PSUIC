@@ -177,6 +177,10 @@ exports.acceptJob = async (req, res) => {
         .json({ message: "Ticket already assigned to another IT" });
     }
 
+    if (ticket.status === 'rejected') {
+        return res.status(400).json({ message: "Cannot accept a rejected ticket." });
+    }
+
     // Update ticket
     const updatedTicket = await prisma.ticket.update({
       where: { id: parseInt(id) },
@@ -197,19 +201,8 @@ exports.acceptJob = async (req, res) => {
       }
     });
 
-    // Send Email to User
-    if (updatedTicket.createdBy?.email) {
-      const { sendEmailNotification } = require("../utils/sendEmailHelper");
-      await sendEmailNotification(
-        "ticket_accepted",
-        updatedTicket.createdBy.email,
-        {
-          id: updatedTicket.id,
-          title: updatedTicket.title,
-          assignedTo: req.user.name || "IT Support"
-        }
-      );
-    }
+    // Email notification removed as per user request (2026-02-18)
+    // if (updatedTicket.createdBy?.email) { ... }
 
     // Update IT performance metrics
     await prisma.user.update({
@@ -254,7 +247,7 @@ exports.rejectJob = async (req, res) => {
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
-        status: "completed", // Closest equivalent to 'Rejected' in 3-state system
+        status: "rejected", 
         note: `REJECTED: ${reason}`, // Save rejection reason in note for visibility
         logs: {
           create: {
@@ -326,6 +319,12 @@ exports.saveDraft = async (req, res) => {
           public_id: "local"
         });
       }
+    }
+
+    const existingTicket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+
+    if (existingTicket.status === 'rejected' || existingTicket.status === 'completed') {
+        return res.status(400).json({ message: "Cannot edit a finalized ticket." });
     }
 
     const ticket = await prisma.ticket.update({
@@ -476,40 +475,17 @@ exports.getPublicSchedule = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const isIT = req.user.role === 'it_support' || req.user.role === 'admin';
-
-    // Fetch active tickets (accepted/in_progress) OR completed tickets from previous year
+    // Fetch Google Calendar Events ONLY
+    // Filter by description containing "Imported from Google Calendar"
     const startOfPrevYear = new Date(today.getFullYear() - 1, today.getMonth(), 1);
     startOfPrevYear.setHours(0, 0, 0, 0);
 
-    const activeTickets = await prisma.ticket.findMany({
+    const googleEvents = await prisma.personalTask.findMany({
       where: {
-        OR: [
-          { status: { in: ["in_progress"] } },
-          { 
-            status: "completed",
-            updatedAt: { gte: startOfPrevYear }
-          }
-        ]
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        assignedTo: {
-          select: { name: true, id: true }
+        date: { gte: startOfPrevYear },
+        description: {
+            contains: 'Imported from Google Calendar'
         }
-      }
-    });
-
-    // Fetch Personal Tasks of IT Staff
-    // Show ALL tasks (completed or not) from start of PREVIOUS YEAR
-    const personalTasks = await prisma.personalTask.findMany({
-      where: {
-        date: { gte: startOfPrevYear }
       },
       include: {
         user: { select: { name: true, id: true } }
@@ -517,28 +493,16 @@ exports.getPublicSchedule = async (req, res) => {
     });
 
     // Format for frontend
-    const schedule = [
-      ...activeTickets.map(t => ({
-        id: `ticket-${t.id}`,
-        title: isIT ? `[Ticket] ${t.title}` : `Busy: ${t.assignedTo?.name || "IT Staff"}`,
-        start: t.createdAt,
-        end: t.updatedAt,
-        type: 'ticket',
-        staff: t.assignedTo?.name,
-        details: t.title, // Show real title
-        description: isIT ? t.description : undefined
-      })),
-      ...personalTasks.map(t => ({
+    const schedule = googleEvents.map(t => ({
         id: `task-${t.id}`,
-        title: isIT ? `[Task] ${t.title}` : `Busy: ${t.user?.name || "IT Staff"}`,
+        title: t.title,
         start: t.startTime || t.date,
         end: t.endTime,
-        type: 'personal',
+        type: 'google', // Changed type to 'google' for clarity
         staff: t.user?.name,
-        details: t.title, // Show real title
-        description: isIT ? t.description : undefined
-      }))
-    ];
+        details: t.title,
+        description: t.description
+    }));
 
     res.json(schedule);
   } catch (err) {

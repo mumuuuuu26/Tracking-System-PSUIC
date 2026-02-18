@@ -64,7 +64,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1B365D]">
+    <div className="min-h-screen flex flex-col bg-blue-600">
       {/* Centered Logo Section */}
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md hover:scale-105 transition-transform duration-500">
@@ -77,16 +77,16 @@ const Login = () => {
       </div>
 
       {/* Bottom Actions Section */}
-      <div className="w-full p-8 pb-12 bg-[#1B365D] animate-fade-in-up">
+      <div className="w-full p-8 pb-12 bg-blue-600 animate-fade-in-up">
         <div className="max-w-md mx-auto space-y-6">
           {/* Primary Button: PSU Passport */}
           <button
             onClick={handlePSUPassport}
-            className="w-full group relative overflow-hidden bg-white hover:bg-gray-100 text-[#1B365D] font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+            className="w-full group relative overflow-hidden bg-white hover:bg-gray-100 text-blue-600 font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="relative z-10 flex items-center justify-center gap-3">
               <span className="text-lg">Login with PSU Passport</span>
-              <ChevronRight className="w-6 h-6 text-[#1B365D]/80 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="w-6 h-6 text-blue-600/80 group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
 

@@ -16,7 +16,7 @@ const UserManagement = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 9;
   const [viewFilter, setViewFilter] = useState("All");
 
   // Add User State
@@ -24,7 +24,6 @@ const UserManagement = () => {
   const [addUserForm, setAddUserForm] = useState({
     name: "",
     email: "",
-    password: "",
     role: "user"
   });
 
@@ -88,13 +87,13 @@ const UserManagement = () => {
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
-      if (!addUserForm.name || !addUserForm.email || !addUserForm.password) {
+      if (!addUserForm.name || !addUserForm.email) {
         return toast.error("Please fill in all required fields");
       }
       await createUser(token, addUserForm);
       toast.success("User Added Successfully");
       setIsAddModalOpen(false);
-      setAddUserForm({ name: "", email: "", password: "", role: "user" });
+      setAddUserForm({ name: "", email: "", role: "user" });
       loadUsers();
     } catch (err) {
       console.error(err);
@@ -154,7 +153,7 @@ const UserManagement = () => {
 
   return (
     <AdminWrapper>
-      <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+      <div className="flex flex-col h-full px-6 pt-4 pb-24 md:pb-4 space-y-4 overflow-hidden">
         {/* Page Header */}
         <AdminHeader
           title="User Management"
@@ -163,121 +162,170 @@ const UserManagement = () => {
         />
 
         {/* Filters & Action Bar */}
-        <div className="bg-white p-2 pl-4 rounded-2xl shadow-sm mb-6 flex items-center gap-4 h-16 shrink-0">
-          <div className="flex-1 flex items-center gap-3">
+        <div className="bg-white p-1.5 pl-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4 h-auto md:h-14 shrink-0">
+          <div className="flex-1 flex items-center gap-3 w-full">
             <Search className="text-gray-400" size={20} />
             <input
               type="text"
               placeholder="Search by name, email or ID..."
-              className="flex-1 bg-transparent border-none focus:outline-none text-gray-700 placeholder:text-gray-400 text-sm h-full"
+              className="flex-1 bg-transparent border-none focus:outline-none text-gray-700 placeholder:text-gray-400 text-sm h-12 md:h-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center gap-3 border-l border-gray-100 pl-4 py-1">
-            <div className="relative">
+          <div className="flex items-center gap-3 border-t md:border-t-0 md:border-l border-gray-100 pl-0 md:pl-4 py-2 md:py-1 w-full md:w-auto justify-between md:justify-start">
+            <div className="relative flex-1 md:flex-none">
               <AdminSelect
                 value={viewFilter}
                 onChange={setViewFilter}
                 options={['All', 'User', 'IT Support', 'Admin']}
                 placeholder="View: All"
                 minWidth="min-w-[140px]"
-                className="z-20"
+                className="z-20 w-full md:w-auto"
               />
             </div>
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-[#1e2e4a] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#15233b] transition-colors mr-2"
+              className="bg-[#1e2e4a] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#15233b] transition-colors mr-2 whitespace-nowrap"
             >
               <Plus size={16} /> Add User
             </button>
           </div>
         </div>
 
-        {/* User Cards Grid */}
-        <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* User Grid */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {paginatedUsers.map((user) => (
-              <div key={user.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 flex items-start gap-4 hover:shadow-md transition-shadow">
+              <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between hover:shadow-md transition-shadow relative">
 
-                {/* Avatar */}
-                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100">
-                  {user.picture ? (
-                    <img src={user.picture} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <img src={`https://ui-avatars.com/api/?name=${user.name}&background=random`} alt="" className="w-full h-full object-cover" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-[#1e2e4a] text-sm truncate pr-2">{user.name}</h3>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* You can show/hide actions on hover or keep them visible. Screenshot shows pencil/trash lightly */}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setNewRole(user.role);
-                          setIsEditRoleModalOpen(true);
-                        }}
-                        className="text-gray-300 hover:text-blue-600 transition-colors"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user.id)}
-                        className="text-gray-300 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Avatar */}
+                  <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                    {user.picture ? (
+                      <img src={user.picture} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={`https://ui-avatars.com/api/?name=${user.name || 'U'}&background=random`} alt="" className="w-full h-full object-cover" />
+                    )}
                   </div>
 
-                  <p className="text-gray-400 text-xs mb-2 truncate">
-                    {/* Display Username (Student ID) for users, Email for others */}
-                    {user.role === 'user' ? (user.username || user.email) : user.email}
-                  </p>
+                  {/* Info */}
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-[#1e2e4a] text-base leading-tight truncate">{user.name || 'No Name'}</h3>
+                    <p className="text-gray-400 text-xs font-medium mt-0.5 truncate uppercase">
+                      {user.username || user.email || '-'}
+                    </p>
+                    <div className="mt-2">
+                      <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${getRoleBadgeStyle(user.role)}`}>
+                        {getRoleLabel(user.role)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${getRoleBadgeStyle(user.role)}`}>
-                    {getRoleLabel(user.role)}
-                  </span>
+                {/* Actions */}
+                <div className="flex gap-2 text-gray-300 ml-4 shrink-0">
+                  <button
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setNewRole(user.role);
+                      setIsEditRoleModalOpen(true);
+                    }}
+                    className="hover:text-blue-600 transition-colors"
+                    title="Change Role"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user.id)}
+                    className="hover:text-red-500 transition-colors"
+                    title="Delete User"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
 
           {paginatedUsers.length === 0 && !loading && (
-            <div className="text-center py-12 text-gray-400">
-              <p>No users found matching your search.</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
+              <Search size={48} className="mb-4 opacity-10" />
+              <p className="text-sm font-medium">No users found matching your search.</p>
             </div>
           )}
         </div>
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-4 shrink-0">
+          <div className="flex justify-center items-center gap-1 mt-4 shrink-0 flex-wrap px-4 pb-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
             >
               <ChevronLeft size={20} />
             </button>
 
-            <span className="text-xs font-bold text-gray-500">
-              Page {currentPage} of {totalPages}
-            </span>
+            {(() => {
+              // Generate pages with visibility logic
+              const generatePages = () => {
+                const pages = [];
+                const addPage = (num, type = 'visible') => pages.push({ num, type });
+                const addEllipsis = () => pages.push({ num: '...', type: 'visible' });
+
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) addPage(i);
+                } else {
+                  if (currentPage <= 4) {
+                    for (let i = 1; i <= 5; i++) addPage(i, i > 3 && i < 5 ? 'desktop-only' : 'visible');
+                    addEllipsis();
+                    addPage(totalPages);
+                  } else if (currentPage >= totalPages - 3) {
+                    addPage(1);
+                    addEllipsis();
+                    for (let i = totalPages - 4; i <= totalPages; i++) {
+                      addPage(i, i > totalPages - 4 && i < totalPages - 2 ? 'desktop-only' : 'visible');
+                    }
+                  } else {
+                    addPage(1);
+                    addEllipsis();
+                    addPage(currentPage - 1, 'desktop-only');
+                    addPage(currentPage);
+                    addPage(currentPage + 1, 'desktop-only');
+                    addEllipsis();
+                    addPage(totalPages);
+                  }
+                }
+                return pages;
+              };
+
+              return generatePages().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page.num === 'number' && setCurrentPage(page.num)}
+                  disabled={page.num === '...'}
+                  className={`flex items-center justify-center rounded-lg text-sm font-bold transition-all
+                    ${page.type === 'desktop-only' ? 'hidden md:flex' : 'flex'}
+                    ${page.num === '...' ? 'w-6 md:w-8 cursor-default text-gray-400' : 'w-8 h-8 md:w-9 md:h-9'}
+                    ${page.num === currentPage
+                      ? 'bg-[#1e2e4a] text-white shadow-md shadow-blue-900/10'
+                      : page.num === '...'
+                        ? ''
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  {page.num}
+                </button>
+              ));
+            })()}
 
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
             >
               <ChevronRight size={20} />
             </button>
@@ -315,17 +363,6 @@ const UserManagement = () => {
                     value={addUserForm.email}
                     onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
                     placeholder="e.g. student@psu.ac.th"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Password</label>
-                  <input
-                    type="password"
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a] text-sm"
-                    value={addUserForm.password}
-                    onChange={(e) => setAddUserForm({ ...addUserForm, password: e.target.value })}
-                    placeholder="Enter secure password"
                   />
                 </div>
                 <div>
@@ -386,9 +423,7 @@ const UserManagement = () => {
                         onChange={(e) => setNewRole(e.target.value)}
                         className="accent-[#1e2e4a]"
                       />
-                      <span className={`font-bold text-sm ${role === 'admin' ? 'text-blue-900' :
-                        role === 'it_support' ? 'text-purple-700' : 'text-gray-700'
-                        }`}>
+                      <span className="font-bold text-sm text-[#1e2e4a]">
                         {role === 'it_support' ? 'IT Support' : role === 'admin' ? 'System Admin' : 'User'}
                       </span>
                     </div>

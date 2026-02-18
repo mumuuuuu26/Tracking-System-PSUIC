@@ -1,0 +1,23 @@
+/* _variables.scss */
+
+:root {
+    /* --- 1. Typography Tokens --- */
+    /* กำหนดให้ Poppins เป็นฟอนต์หลักของทั้งระบบ */
+    --font-primary: 'Poppins', sans-serif;
+
+    /* --- 2. Color Palette (PSU Theme) --- */
+    /* แม่สีหลัก (Brand Colors) */
+    --color-psu-dark-blue: #193C6C;
+    /* PSUIC Deep Blue */
+    --color-psu-light-blue: #3D76BA;
+    --color-psu-gold: #D4AF37;
+
+    /* สีสถานะ (Functional Colors) */
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-text-main: #1f2937;
+    --color-text-muted: #6b7280;
+    --color-bg-body: #F4F7FB;
+    /* สีพื้นหลังเทาอ่อนๆ สบายตา */
+}

@@ -256,7 +256,7 @@ const EquipmentManagement = () => {
 
   return (
     <AdminWrapper>
-      <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+      <div className="flex flex-col h-full px-6 pt-6 pb-24 md:pb-6 space-y-6 overflow-y-auto">
         {/* Header Card */}
         <AdminHeader
           title="Equipment Management"
@@ -265,108 +265,123 @@ const EquipmentManagement = () => {
         />
 
         {/* Toolbar */}
-        <div className="bg-white rounded-3xl p-4 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center border border-gray-50">
           {/* Search */}
           <div className="flex-1 relative w-full">
-            <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
               placeholder="Search asset ID or Name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/20 focus:border-[#1e2e4a] transition-all border border-gray-100 font-medium text-gray-700"
+              className="w-full pl-14 pr-6 py-4 bg-gray-50/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a]/20 transition-all border border-gray-100 font-medium text-gray-700 placeholder:text-gray-400"
             />
           </div>
 
-          {/* Category Dropdown */}
-          <div className="relative w-full md:w-64 flex gap-2">
-            <div className="flex-1">
-              <AdminSelect
-                value={selectedCategory}
-                onChange={setSelectedCategory}
-                options={[
-                  "All Categories",
-                  ...allCategories.map(c => c.name)
-                ]}
-                placeholder="All Categories"
-                className="w-full"
-                minWidth="w-full"
-              />
+          <div className="flex flex-col md:flex-row w-full md:w-auto gap-3 items-center">
+            {/* Category Dropdown */}
+            <div className="relative w-full md:w-64 flex gap-2">
+              <div className="flex-1">
+                <AdminSelect
+                  value={selectedCategory}
+                  onChange={setSelectedCategory}
+                  options={[
+                    "All Categories",
+                    ...allCategories.map(c => c.name)
+                  ]}
+                  placeholder="All Categories"
+                  className="w-full"
+                  minWidth="w-full"
+                  buttonClassName="bg-gray-50/50 border-gray-100 px-5 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
+                />
+              </div>
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="bg-gray-50/50 text-[#1e2e4a] p-4 rounded-2xl hover:bg-gray-100/50 transition-colors border border-gray-100 group shadow-sm"
+                title="Manage Categories"
+              >
+                <Edit size={20} className="group-hover:scale-110 transition-transform" />
+              </button>
             </div>
+
+            {/* Add Button */}
             <button
-              onClick={() => setShowCategoryModal(true)}
-              className="bg-gray-50 text-[#1e2e4a] px-3 py-2 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors uppercase tracking-wider h-full border border-gray-200"
-              title="Manage Categories"
+              onClick={openAddModal}
+              className="w-full md:w-auto whitespace-nowrap bg-[#1e2e4a] text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#15233b] transition-all shadow-lg shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]"
             >
-              <Edit size={16} />
+              <Plus size={22} strokeWidth={2.5} />
+              Add Equipment
             </button>
           </div>
-
-          {/* Add Button */}
-          <button
-            onClick={openAddModal}
-            className="w-full md:w-auto bg-[#1e2e4a] text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#15233b] transition-all shadow-md hover:shadow-lg"
-          >
-            <Plus size={20} />
-            Add Equipment
-          </button>
         </div>
 
         {/* Stats */}
-        <div className="mb-6 ml-1">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Total Items <span className="text-gray-300 ml-1">({filteredEquipments.length})</span>
-          </h2>
+        <div className="mb-4 px-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">
+              Inventory Overview
+            </h2>
+            <div className="h-px w-8 bg-gray-200" />
+            <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              {filteredEquipments.length} {filteredEquipments.length === 1 ? 'Item' : 'Items'}
+            </span>
+          </div>
         </div>
 
         {/* Equipment Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
           {filteredEquipments.map((item) => (
-            <div key={item.id} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-start gap-4 group">
-              <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 text-[#1e2e4a]">
+            <div key={item.id} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-start gap-5 group relative overflow-hidden">
+              {/* Subtle background decoration */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+
+              <div className="relative w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 text-[#1e2e4a] shadow-inner border border-gray-100/50">
                 {getCategoryIcon(item.type)}
               </div>
 
-              <div className="flex-1 min-w-0 py-1">
-                <div className="mb-2">
-                  <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight truncate pr-2">{item.name}</h3>
-                  <p className="text-gray-400 text-xs font-bold mt-0.5">ID #{String(item.id).padStart(4, '0')}</p>
+              <div className="flex-1 min-w-0 py-1 relative z-10">
+                <div className="mb-2.5">
+                  <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight truncate pr-8 group-hover:text-blue-700 transition-colors">{item.name}</h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">ID #{String(item.id).padStart(4, '0')}</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                  <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2.5 py-1.5 rounded-lg border border-gray-200/50">
                     {item.room?.roomNumber || "No Room"}
                   </span>
                   {item.serialNo && (
-                    <span className="text-[10px] font-mono text-gray-400 border border-gray-100 px-2 py-1 rounded-md truncate max-w-[120px]">
+                    <span className="text-[10px] font-mono text-gray-500 bg-white border border-gray-100 px-2.5 py-1.5 rounded-lg truncate max-w-[130px] shadow-sm">
                       SN: {item.serialNo}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Actions Column */}
-              <div className="flex flex-col items-end gap-1 shrink-0">
+              {/* Actions Overlay */}
+              <div className="absolute top-4 right-4 flex flex-col gap-1 shrink-0 z-20">
                 <button
                   onClick={() => openEditModal(item)}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:shadow-sm"
                   title="Edit"
                 >
-                  <Edit size={18} />
-                </button>
-                <button
-                  onClick={() => handleDeleteEquipment(item.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={18} />
+                  <Edit size={16} strokeWidth={2.5} />
                 </button>
                 <button
                   onClick={() => showQR(item.id)}
-                  className="p-2 text-gray-400 hover:text-[#1e2e4a] hover:bg-blue-50 rounded-lg transition-colors mt-1"
+                  className="p-2 text-gray-300 hover:text-[#1e2e4a] hover:bg-gray-50 rounded-xl transition-all hover:shadow-sm"
                   title="View QR Code"
                 >
-                  <QrCode size={18} />
+                  <QrCode size={16} strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={() => handleDeleteEquipment(item.id)}
+                  className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all hover:shadow-sm"
+                  title="Delete"
+                >
+                  <Trash2 size={16} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -383,20 +398,25 @@ const EquipmentManagement = () => {
 
       {/* Add/Edit Equipment Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-xl font-bold text-[#1e2e4a]">{editingEquipment ? "Edit Equipment" : "Add New Equipment"}</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 bg-white p-2 rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-md p-4 transition-all duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="px-8 py-7 border-b border-gray-50 flex justify-between items-center bg-white">
+              <h2 className="text-2xl font-black text-[#1e2e4a] tracking-tight">{editingEquipment ? "Edit Equipment" : "Add New Equipment"}</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-[#1e2e4a] bg-gray-50 p-2.5 rounded-full hover:bg-gray-100 transition-all group"
+              >
+                <X size={22} className="group-hover:rotate-90 transition-transform duration-300" />
+              </button>
             </div>
 
-            <form onSubmit={handleEquipmentSubmit} className="p-8 space-y-6">
+            <form onSubmit={handleEquipmentSubmit} className="p-8 space-y-7">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Equipment Name</label>
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3 ml-1">Equipment Name</label>
                 <input
                   type="text"
                   required
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-[#1e2e4a]/20 focus:border-[#1e2e4a] outline-none transition-all placeholder-gray-400 font-medium text-gray-800"
+                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 outline-none transition-all placeholder:text-gray-300 font-semibold text-gray-700"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. MacBook Pro M1"
@@ -404,7 +424,7 @@ const EquipmentManagement = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category / Type</label>
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3 ml-1">Category / Type</label>
                 <AdminSelect
                   value={form.type}
                   onChange={(val) => setForm({ ...form, type: val })}
@@ -412,35 +432,34 @@ const EquipmentManagement = () => {
                   placeholder="Select Category"
                   className="w-full"
                   minWidth="w-full"
-                  buttonClassName="bg-gray-50 border-gray-200 px-4 py-3 rounded-xl text-sm font-medium text-gray-800"
+                  buttonClassName="bg-gray-50/50 border-gray-100 px-6 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                {/* Serial Number removed - auto-generated by backend */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Room</label>
-                  <AdminSelect
-                    value={form.roomId}
-                    onChange={(val) => setForm({ ...form, roomId: val })}
-                    options={rooms.map(room => ({
-                      value: room.id,
-                      label: `${room.roomNumber} - ${room.building}`
-                    }))}
-                    placeholder="Select Room"
-                    className="w-full"
-                    minWidth="w-full"
-                    buttonClassName="bg-gray-50 border-gray-200 px-4 py-3 rounded-xl text-sm font-medium text-gray-800"
-                  />
-                </div>
+              <div>
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3 ml-1">Room / Location</label>
+                <AdminSelect
+                  value={form.roomId}
+                  onChange={(val) => setForm({ ...form, roomId: val })}
+                  options={rooms.map(room => ({
+                    value: room.id,
+                    label: `${room.roomNumber} - ${room.building}`
+                  }))}
+                  placeholder="Select Room"
+                  className="w-full"
+                  minWidth="w-full"
+                  buttonClassName="bg-gray-50/50 border-gray-100 px-6 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
+                />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-[#1e2e4a] text-white py-4 rounded-xl font-bold hover:bg-[#15325b] transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98]"
-              >
-                {editingEquipment ? "Update Equipment" : "Confirm"}
-              </button>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-[#1e2e4a] text-white py-5 rounded-2xl font-bold text-lg hover:bg-[#15325b] transition-all shadow-xl shadow-blue-900/10 active:scale-[0.98] flex items-center justify-center gap-3"
+                >
+                  {editingEquipment ? "Update Equipment" : "Confirm & Save"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -448,26 +467,26 @@ const EquipmentManagement = () => {
 
       {/* Manage Categories Modal */}
       {showCategoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[80vh] flex flex-col">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-xl font-bold text-[#1e2e4a]">Manage Categories</h2>
-              <button onClick={() => setShowCategoryModal(false)} className="text-gray-400 hover:text-gray-600 bg-white p-2 rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-md p-4 transition-all duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[85vh] flex flex-col">
+            <div className="px-8 py-7 border-b border-gray-50 flex justify-between items-center bg-white">
+              <h2 className="text-xl font-black text-[#1e2e4a] tracking-tight text-center uppercase tracking-widest">Manage Categories</h2>
+              <button onClick={() => setShowCategoryModal(false)} className="text-gray-400 hover:text-[#1e2e4a] bg-gray-50 p-2 rounded-full hover:bg-gray-100 transition-colors"><X size={20} /></button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
               {/* Add New Category Section */}
-              <div className="mb-8">
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Add New Category</label>
-                <form onSubmit={handleAddCategory} className="flex gap-2">
+              <div className="mb-10">
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4 ml-1">New Category</label>
+                <form onSubmit={handleAddCategory} className="flex gap-3">
                   <input
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="e.g. Server"
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 focus:bg-white focus:ring-2 focus:ring-[#1e2e4a]/20 focus:border-[#1e2e4a] outline-none transition-all font-medium text-gray-800"
+                    placeholder="e.g. Workstation"
+                    className="flex-1 bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 outline-none transition-all font-semibold text-gray-700"
                   />
-                  <button type="submit" className="bg-[#1e2e4a] text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-[#15325b] transition-colors">
+                  <button type="submit" className="bg-[#1e2e4a] text-white px-6 py-3.5 rounded-2xl font-bold text-sm hover:bg-[#15325b] transition-all shadow-lg shadow-blue-900/10 active:scale-95">
                     Add
                   </button>
                 </form>
@@ -475,39 +494,42 @@ const EquipmentManagement = () => {
 
               {/* Existing Categories List */}
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Existing Categories</label>
-                <div className="space-y-2">
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4 ml-1">Active Categories</label>
+                <div className="space-y-3">
                   {allCategories.map(cat => (
-                    <div key={cat.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-gray-300 transition-colors group">
+                    <div key={cat.id} className="flex items-center justify-between p-4 bg-gray-50/30 border border-gray-50 rounded-2xl shadow-sm hover:bg-white hover:border-gray-100 hover:shadow-md transition-all group">
                       {editingCategory?.id === cat.id ? (
                         <div className="flex-1 flex gap-2 mr-2">
                           <input
                             type="text"
                             value={editingCategory.name}
                             onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-                            className="flex-1 bg-white border border-blue-500 rounded-lg px-2 py-1 text-sm outline-none"
+                            className="flex-1 bg-white border-2 border-blue-500/50 rounded-xl px-3 py-2 text-sm font-bold outline-none"
                             autoFocus
                           />
-                          <button onClick={() => handleUpdateCategory(cat.id, editingCategory.name)} className="text-green-600 hover:bg-green-50 p-1 rounded"><Save size={16} /></button>
-                          <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-1 rounded"><X size={16} /></button>
+                          <button onClick={() => handleUpdateCategory(cat.id, editingCategory.name)} className="text-emerald-500 hover:bg-emerald-50 p-2 rounded-xl transition-colors"><Save size={18} /></button>
+                          <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-xl transition-colors"><X size={18} /></button>
                         </div>
                       ) : (
-                        <span className="font-medium text-gray-700">{cat.name}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full bg-blue-500/30" />
+                          <span className="font-bold text-gray-700">{cat.name}</span>
+                        </div>
                       )}
 
                       {editingCategory?.id !== cat.id && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
                           <button
                             onClick={() => setEditingCategory({ id: cat.id, name: cat.name })}
-                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
                           >
-                            <Edit size={14} />
+                            <Edit size={16} strokeWidth={2.5} />
                           </button>
                           <button
                             onClick={() => handleDeleteCategory(cat.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} strokeWidth={2.5} />
                           </button>
                         </div>
                       )}
@@ -522,30 +544,41 @@ const EquipmentManagement = () => {
 
       {/* QR Code Modal */}
       {showQRModal && selectedQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">QR Code</h2>
-              <button onClick={() => setShowQRModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/70 p-4 backdrop-blur-md transition-all duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-300 text-center">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black text-[#1e2e4a] tracking-tight uppercase tracking-widest">Asset QR Code</h2>
+              <button onClick={() => setShowQRModal(false)} className="text-gray-400 hover:text-[#1e2e4a] bg-gray-50 p-2 rounded-full transition-colors font-bold"><X size={20} /></button>
             </div>
-            <div className="text-center">
-              <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-inner inline-block mb-4">
-                <img src={selectedQR.qrCodeImage} alt="QR Code" className="w-56 h-56 object-contain" />
-              </div>
-              <div className="bg-gray-50 p-4 rounded-xl mb-6 text-left">
-                <p className="font-bold text-gray-900 text-lg">{selectedQR.equipment.name}</p>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                  <Monitor size={16} className="text-blue-500" />
+
+            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 shadow-inner inline-block mb-8 group">
+              <img
+                src={selectedQR.qrCodeImage}
+                alt="QR Code"
+                className="w-48 h-48 object-contain mix-blend-multiply transition-transform group-hover:scale-105 duration-500"
+              />
+            </div>
+
+            <div className="bg-gray-50/50 p-6 rounded-2xl mb-8 text-left border border-gray-100">
+              <p className="font-black text-[#1e2e4a] text-xl leading-tight mb-4">{selectedQR.equipment.name}</p>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-sm text-gray-600 font-bold uppercase tracking-wider bg-white/50 p-2 rounded-lg">
+                  <Monitor size={16} className="text-blue-500" strokeWidth={2.5} />
                   <span>Room: {selectedQR.equipment.room.roomNumber}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                  <Box size={16} className="text-orange-500" />
-                  <span>SN: {selectedQR.equipment.serialNo || "-"}</span>
+                <div className="flex items-center gap-3 text-sm text-gray-600 font-bold uppercase tracking-wider bg-white/50 p-2 rounded-lg">
+                  <Box size={16} className="text-orange-500" strokeWidth={2.5} />
+                  <span>SN: {selectedQR.equipment.serialNo || "NO SERIAL"}</span>
                 </div>
               </div>
             </div>
-            <button onClick={printQR} className="w-full py-3 bg-[#193C6C] text-white rounded-xl font-bold hover:bg-[#15325b] flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
-              <Printer size={18} /> Print
+
+            <button
+              onClick={printQR}
+              className="w-full py-4 bg-[#1e2e4a] text-white rounded-2xl font-bold hover:bg-[#15325b] flex items-center justify-center gap-3 shadow-xl shadow-blue-900/10 active:scale-95 transition-all"
+            >
+              <Printer size={20} strokeWidth={2.5} /> Print Asset Tag
             </button>
           </div>
         </div>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import MonthlyReport from './MonthlyReport';
-import AnnualReport from './AnnualReport';
 import EquipmentAnalysis from './EquipmentAnalysis';
 import ITPerformance from './ITPerformance';
-import SatisfactionReport from './SatisfactionReport';
-import { BarChart, PieChart, Activity, Server, Heart, ArrowLeft, Download, Calendar } from 'lucide-react';
+import RoomAnalysis from './RoomAnalysis';
+// import AnnualReport from './AnnualReport';
+// import SatisfactionReport from './SatisfactionReport';
+import { Activity, Server, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import ErrorBoundary from '../../../components/common/ErrorBoundary';
@@ -23,13 +24,11 @@ const ReportDashboard = () => {
         { id: 'performance', label: 'User Analysis', icon: <Activity size={18} /> },
         { id: 'room', label: 'Floor & Room', icon: <Server size={18} /> },
         { id: 'equipment', label: 'Equipment', icon: <Server size={18} /> },
-        // { id: 'annual', label: 'Annual Report', icon: <PieChart size={18} /> },
-        // { id: 'satisfaction', label: 'Satisfaction', icon: <Heart size={18} /> },
     ];
 
     return (
         <AdminWrapper>
-            <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+            <div className="flex flex-col h-full px-6 pt-2 pb-24 md:pb-2 space-y-2 overflow-y-auto">
                 {/* Header Card */}
                 <AdminHeader
                     title="System Reports"
@@ -48,7 +47,7 @@ const ReportDashboard = () => {
                                 className={`
                                         flex items-center gap-2 px-3 py-1.5 rounded-md font-bold text-xs transition-all
                                         ${activeTab === tab.id
-                                        ? 'bg-[#1e2e4a] text-white shadow-md'
+                                        ? 'bg-primary text-white shadow-md' /* แก้ไข: ใช้ bg-primary */
                                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                                     }
                                     `}
@@ -65,7 +64,7 @@ const ReportDashboard = () => {
                             <AdminSelect
                                 value={year}
                                 onChange={setYear}
-                                options={Array.from({ length: 3 }, (_, i) => 2024 + i)} // [2024, 2025, 2026]
+                                options={Array.from({ length: (dayjs().year() + 10) - 2024 + 1 }, (_, i) => 2024 + i)} // Dynamic + 10 years buffer
                                 className="min-w-[90px]"
                             />
 
@@ -79,9 +78,6 @@ const ReportDashboard = () => {
                                 className="min-w-[140px]"
                             />
 
-                            <button className="bg-[#1e2e4a] text-white p-2 rounded-lg shadow-sm hover:bg-[#15233b] transition-colors">
-                                <Download size={16} />
-                            </button>
                         </div>
                     )}
                 </div>
@@ -91,17 +87,7 @@ const ReportDashboard = () => {
                     <ErrorBoundary>
                         {activeTab === 'monthly' && <MonthlyReport month={month} year={year} />}
                         {activeTab === 'performance' && <ITPerformance />}
-                        {activeTab === 'room' && (
-                            <div className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[300px]">
-                                <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mb-3">
-                                    <Server size={24} />
-                                </div>
-                                <h3 className="text-lg font-bold text-[#1e2e4a] mb-1">Floor & Room Analysis</h3>
-                                <p className="text-gray-500 text-sm text-center max-w-md">
-                                    Detailed analysis of ticket distribution across different floors and rooms will be displayed here.
-                                </p>
-                            </div>
-                        )}
+                        {activeTab === 'room' && <RoomAnalysis />}
                         {activeTab === 'equipment' && <EquipmentAnalysis />}
                         {/* {activeTab === 'annual' && <AnnualReport />}
                             {activeTab === 'satisfaction' && <SatisfactionReport />} */}
