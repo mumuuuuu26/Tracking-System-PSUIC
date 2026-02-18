@@ -31,3 +31,9 @@ export const getSatisfactionStats = async (token) => {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
+
+export const getRoomStats = async (token) => {
+    return await api.get(`/reports/room`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+};

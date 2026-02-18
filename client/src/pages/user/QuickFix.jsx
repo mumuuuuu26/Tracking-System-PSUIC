@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { listQuickFix, readQuickFix } from "../../api/quickFix";
 import { Search, ChevronDown, ChevronUp, BookOpen, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+
 import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 
@@ -59,7 +59,6 @@ const QuickFix = () => {
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [openId, setOpenId] = useState(null);
-    const navigate = useNavigate();
 
     const loadData = useCallback(async () => {
         try {

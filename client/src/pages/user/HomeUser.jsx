@@ -13,6 +13,7 @@ import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import UserWrapper from "../../components/user/UserWrapper";
 import UserTicketCard from "../../components/user/UserTicketCard";
+import MobileHeader from "../../components/ui/MobileHeader";
 
 
 
@@ -38,25 +39,25 @@ const HomeUser = () => {
 
   const services = [
     {
-      icon: <ScanLine className="w-6 h-6 text-[#193C6C]" />,
+      icon: <ScanLine className="w-6 h-6 text-role-user" />,
       title: "Scan QR",
       action: () => navigate("/user/scan-qr"),
       bg: "bg-white"
     },
     {
-      icon: <CirclePlus className="w-6 h-6 text-[#193C6C]" />,
+      icon: <CirclePlus className="w-6 h-6 text-role-user" />,
       title: "Report Issue",
       action: () => navigate("/user/create-ticket"),
       bg: "bg-white"
     },
     {
-      icon: <CalendarDays className="w-6 h-6 text-[#193C6C]" />,
+      icon: <CalendarDays className="w-6 h-6 text-role-user" />,
       title: "IT Schedule",
       action: () => navigate("/user/it-schedule"),
       bg: "bg-white"
     },
     {
-      icon: <BookOpen className="w-6 h-6 text-[#193C6C]" />,
+      icon: <BookOpen className="w-6 h-6 text-role-user" />,
       title: "Knowledge",
       action: () => navigate("/user/quick-fix"),
       bg: "bg-white"
@@ -82,7 +83,8 @@ const HomeUser = () => {
       <div className="pb-24">
 
         {/* 1. New Header Section (Welcome back) - Matching Image 2 */}
-        <div className="bg-[#193C6C] px-6 pt-8 pb-14 rounded-b-[2.5rem] shadow-md relative z-0 lg:hidden">
+        {/* 1. New Header Section (Welcome back) - Matching Image 2 */}
+        <MobileHeader className="relative z-0 md:rounded-b-[2.5rem] mt-0">
           <div className="flex items-center justify-between text-white">
             <div className="flex flex-col">
               <span className="text-base font-medium opacity-90">Welcome back,</span>
@@ -100,7 +102,7 @@ const HomeUser = () => {
               )}
             </div>
           </div>
-        </div>
+        </MobileHeader>
 
         <div className="max-w-5xl mx-auto w-full px-6 md:px-8 mt-6 flex flex-col gap-8 relative z-10 text-gray-900">
 

@@ -39,6 +39,7 @@ const Report = () => {
             if (filter === "Not Started" && t.status !== "not_start") return false;
             if (filter === "In progress" && t.status !== "in_progress") return false;
             if (filter === "Completed" && t.status !== "completed") return false;
+            if (filter === "Rejected" && t.status !== "rejected") return false;
         }
 
         // Search Filter
@@ -56,7 +57,7 @@ const Report = () => {
         <UserWrapper>
             <div className="pb-24 min-h-screen bg-slate-50">
                 {/* Header */}
-                <UserPageHeader title="Report" />
+                <UserPageHeader title="Activity" />
 
                 <div className="max-w-md mx-auto px-6 mt-6">
                     {/* Search Bar */}
@@ -73,7 +74,7 @@ const Report = () => {
 
                     {/* Filter Tabs */}
                     <div className="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-2">
-                        {["All", "Not Started", "In progress", "Completed"].map((f) => (
+                        {["All", "Not Started", "In progress", "Completed", "Rejected"].map((f) => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}

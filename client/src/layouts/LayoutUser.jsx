@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Home, User, CircleUser, Mail, Clock } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
@@ -9,8 +9,6 @@ import UserNavbar from "../components/user/UserNavbar";
 const LayoutUser = ({ children }) => {
   const { user, hasHydrated } = useAuthStore();
   const location = useLocation();
-
-  const navigate = useNavigate();
 
   // Wait for hydration to finish before redirecting
   if (!hasHydrated) {
@@ -46,7 +44,7 @@ const LayoutUser = ({ children }) => {
         <nav className="bg-white border-t border-gray-100 pb-safe pt-3 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between max-w-md mx-auto">
             <NavLink href="/user" icon={<Home size={24} />} label="Home" active={isActive("/user")} />
-            <NavLink href="/user/report" icon={<Mail size={24} />} label="Report" active={isActive("/user/report")} />
+            <NavLink href="/user/report" icon={<Mail size={24} />} label="Activity" active={isActive("/user/report")} />
             <NavLink href="/user/history" icon={<Clock size={24} />} label="History" active={isActive("/user/history")} />
             <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} />
           </div>

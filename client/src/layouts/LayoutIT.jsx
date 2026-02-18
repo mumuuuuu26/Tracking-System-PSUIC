@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
+import { Outlet, Navigate, useLocation, Link } from "react-router-dom";
 import { Home, Calendar, User, CircleUser, FileText, Bell } from "lucide-react";
 import useAuthStore from "../store/auth-store";
 import Swal from "sweetalert2";
@@ -9,7 +9,6 @@ import ITWrapper from "../components/it/ITWrapper";
 const LayoutIT = () => {
   const { user } = useAuthStore();
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Assuming role is 'it_support' based on backend
   if (!user || user.role !== "it_support") {
@@ -21,7 +20,7 @@ const LayoutIT = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 overflow-x-hidden">
 
 
       {/* Desktop Header (Visible on Desktop) */}
@@ -35,7 +34,7 @@ const LayoutIT = () => {
       </main>
 
       {/* Floating Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
         <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-2 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
           <div className="flex items-end justify-between w-full max-w-lg mx-auto relative">
             <NavLink href="/it" icon={<Home size={22} />} label="Home" active={isActive("/it")} />

@@ -1,11 +1,10 @@
+import React from "react";
 import { Clock, ArrowLeft } from "lucide-react";
 import TicketHistory from "../../components/user/TicketHistory";
-import { useNavigate } from "react-router-dom";
 import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 
 const History = () => {
-    const navigate = useNavigate();
 
     return (
         <UserWrapper>

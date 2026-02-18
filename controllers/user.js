@@ -3,35 +3,31 @@ const { logger } = require("../utils/logger");
 const bcrypt = require("bcryptjs");
 const { saveImage } = require("../utils/uploadImage");
 
-// Create User (Invite)
+// Create User (Invite/Promote Existing User)
 exports.createUser = async (req, res) => {
     try {
-        const { email, role, password, name } = req.body;
+        const { email, role, name } = req.body;
 
-        // Check if user exists
+        // Check if user exists (Must exist to be added by admin now)
         const existingUser = await prisma.user.findFirst({
             where: { email }
         });
 
-        if (existingUser) {
-            return res.status(400).json({ message: "Email already exists" });
+        if (!existingUser) {
+            return res.status(404).json({ message: "User not found. They must log in via PSU Passport first." });
         }
 
-        // Hash password (default: 123456 if not provided)
-        const salt = await bcrypt.genSalt(10);
-        const hashPassword = await bcrypt.hash(password || "123456", salt);
-
-        const newUser = await prisma.user.create({
+        // Update existing user (Promote to new role or update name)
+        const updatedUser = await prisma.user.update({
+            where: { id: existingUser.id },
             data: {
-                email,
-                password: hashPassword,
                 role: role || 'user',
-                name: name || undefined,
+                name: name || existingUser.name,
                 enabled: true
             }
         });
 
-        res.json(newUser);
+        res.json(updatedUser);
     } catch (err) {
         logger.error(err);
         res.status(500).json({ message: "Server Error" });

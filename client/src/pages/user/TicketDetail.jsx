@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ChevronDown, ArrowLeft } from "lucide-react";
+import MobileHeader from "../../components/ui/MobileHeader";
 import { getTicket } from "../../api/ticket";
 import useAuthStore from "../../store/auth-store";
 
@@ -75,6 +76,27 @@ const TicketDetail = () => {
   const getTimelineSteps = () => {
     if (!ticket) return [];
 
+    // If Rejected, show Submitted -> Rejected
+    if (ticket.status === 'rejected') {
+      return [
+        {
+          id: 'submitted',
+          label: 'Submitted',
+          date: ticket.createdAt,
+          completed: true,
+          icon: <CheckCircle className="w-6 h-6 text-white" />
+        },
+        {
+          id: 'rejected',
+          label: 'Rejected',
+          date: ticket.updatedAt,
+          completed: true,
+          icon: <XCircle className="w-6 h-6 text-white" />
+        }
+      ];
+    }
+
+    // Normal Flow
     const steps = [
       {
         id: 'submitted',
@@ -110,7 +132,7 @@ const TicketDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans text-gray-900">
       {/* Standard Header */}
-      <div className="bg-[#193C6C] px-4 py-4 flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
+      <MobileHeader className="flex items-center sticky top-0 z-50 lg:hidden shadow-sm">
         <button
           onClick={() => navigate(-1)}
           className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
@@ -120,7 +142,7 @@ const TicketDetail = () => {
         <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2">
           Ticket Details
         </span>
-      </div>
+      </MobileHeader>
 
       <div className="max-w-md md:max-w-2xl mx-auto px-4 mt-6 pb-6 space-y-6 animate-in fade-in duration-500 relative z-10">
 
@@ -177,27 +199,38 @@ const TicketDetail = () => {
           </span>
         </div>
 
+        {/* Rejection Note */}
+        {ticket?.status === 'rejected' && ticket?.note && (
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3 text-red-700">
+            <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-bold text-sm uppercase mb-1">Reason for Rejection</h4>
+              <p className="text-sm">{ticket.note}</p>
+            </div>
+          </div>
+        )}
+
         {/* Timeline */}
         <div>
           <h3 className="font-bold text-[#3B4D68] uppercase text-sm mb-4">TIMELINE</h3>
           <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] p-6">
-            <div className="space-y-8 relative pl-2">
+            <div className="space-y-8 relative">
               {/* Vertical Line */}
-              <div className="absolute left-[19px] top-3 bottom-6 w-0.5 bg-gray-200"></div>
+              <div className="absolute left-[19px] top-5 bottom-5 w-0.5 bg-gray-200"></div>
 
               {timelineSteps.map((step) => (
                 <div key={step.id} className="flex gap-4 relative z-10 font-sans">
                   {/* Icon Bubble */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-[3px] border-white shadow-sm ring-1 ring-gray-100 ${step.completed ? 'bg-green-500' :
-                    (step.id === 'accepted' && ticket?.status === 'in_progress') ? 'bg-amber-400' : 'bg-gray-100' // Amber for hourglass
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-[3px] border-white shadow-sm ring-1 ring-gray-100 ${step.completed ? (step.id === 'rejected' ? 'bg-red-500' : 'bg-green-500') :
+                    (step.id === 'accepted' && ticket?.status === 'in_progress') ? 'bg-amber-400' : 'bg-gray-100'
                     }`}>
-                    {step.completed ? <CheckCircle size={20} className="text-white" /> :
+                    {step.completed ? (step.id === 'rejected' ? <XCircle size={20} className="text-white" /> : <CheckCircle size={20} className="text-white" />) :
                       (step.id === 'accepted' && ticket?.status === 'in_progress') ? <Clock size={20} className="text-white" /> :
                         <div className="w-3 h-3 bg-gray-300 rounded-full"></div>}
                   </div>
 
                   <div className="pt-0.5">
-                    <h4 className="font-bold text-gray-900 text-base">{step.label}</h4>
+                    <h4 className={`font-bold text-base ${step.id === 'rejected' ? 'text-red-600' : 'text-gray-900'}`}>{step.label}</h4>
                     {step.date && (
                       <p className="text-gray-400 text-xs mt-1">
                         {formatDate(step.date, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
@@ -206,7 +239,7 @@ const TicketDetail = () => {
                     {step.id === 'accepted' && ticket?.status === 'not_start' && (
                       <span className="inline-block bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full mt-2">Waiting</span>
                     )}
-                    {step.id === 'completed' && ticket?.status !== 'completed' && (
+                    {step.id === 'completed' && ticket?.status !== 'completed' && ticket?.status !== 'rejected' && (
                       <p className="text-xs text-gray-400 mt-1">Pending resolution</p>
                     )}
                   </div>

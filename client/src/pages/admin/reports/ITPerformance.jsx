@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import useAuthStore from '../../../store/auth-store';
 import { getITPerformance } from '../../../api/report';
-import { Star, CheckCircle, Clock, Trophy, Medal, Award } from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { Star, CheckCircle, Clock, Award } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExportButtons from '../../../components/admin/ExportButtons';
 
@@ -30,12 +28,7 @@ const ITPerformance = () => {
         loadData();
     }, [loadData]);
 
-    const getRankIcon = (index) => {
-        if (index === 0) return <Trophy className="text-blue-600 fill-blue-600" size={24} />;
-        if (index === 1) return <Medal className="text-gray-400 fill-gray-400" size={24} />;
-        if (index === 2) return <Medal className="text-slate-500 fill-slate-500" size={24} />;
-        return <span className="text-lg font-bold text-gray-400 w-6 text-center">{index + 1}</span>;
-    };
+
 
     const getRankStyle = (index) => {
         if (index === 0) return "bg-blue-50 border-blue-200 shadow-md";
@@ -44,37 +37,6 @@ const ITPerformance = () => {
         return "bg-white border-gray-100";
     };
 
-    const exportPDF = async () => {
-        try {
-            setLoading(true);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-
-            let pageIndex = 1;
-            let element = document.getElementById(`pdf-page-${pageIndex}`);
-
-            while (element) {
-                if (pageIndex > 1) {
-                    pdf.addPage();
-                }
-
-                const canvas = await html2canvas(element, { scale: 3, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-                pageIndex++;
-                element = document.getElementById(`pdf-page-${pageIndex}`);
-            }
-
-            pdf.save(`it_performance_${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (err) {
-            console.error("PDF Export failed:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const exportExcel = () => {
         const ws = XLSX.utils.json_to_sheet(data.map((it, index) => ({
@@ -175,9 +137,6 @@ const ITPerformance = () => {
                                     className={`p-3 md:p-4 rounded-xl border flex flex-col md:flex-row items-center justify-between transition-all hover:shadow-md hover:-translate-y-0.5 ${getRankStyle(index)}`}
                                 >
                                     <div className="flex items-center gap-4 w-full md:w-auto mb-2 md:mb-0">
-                                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                                            {getRankIcon(index)}
-                                        </div>
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full p-0.5 bg-white shadow-sm border border-gray-100">
                                                 <img
@@ -248,115 +207,7 @@ const ITPerformance = () => {
                         </div>
                     </div>
 
-                    <ExportButtons onExportPDF={exportPDF} onExportExcel={exportExcel} />
-
-                    {/* Hidden PDF Export Content - PAGINATED */}
-                    <div className="absolute -left-[9999px] top-0 font-['Sarabun'] text-black">
-                        {/* Page 1: Header, Summary, and First Batch */}
-                        <div id="pdf-page-1" className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between">
-                            <div>
-                                {/* Header Section */}
-                                <div className="relative mb-8">
-                                    {/* Logo Centered */}
-                                    <div className="flex justify-center mb-4">
-                                        <img src="/img/psu_emblem.png" alt="PSU Emblem" className="h-24 w-auto object-contain grayscale" />
-                                    </div>
-
-                                    {/* Text Centered */}
-                                    <div className="text-center space-y-1">
-                                        <h1 className="text-xl font-bold text-black uppercase">Prince of Songkla University</h1>
-                                        <h2 className="text-lg font-medium text-black">International College</h2>
-                                        <h3 className="text-2xl font-bold mt-4 text-black uppercase">IT Staff Performance Report</h3>
-                                        <p className="text-lg font-medium text-black">Academic Year {new Date().getFullYear()}</p>
-                                    </div>
-
-                                    {/* Document Info (Top Right) */}
-                                    <div className="absolute top-0 right-0 text-right text-xs text-black">
-                                        <p>Doc ID: PSUIC-ITP-{new Date().getFullYear()}-01</p>
-                                        <p>Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                                    </div>
-                                </div>
-
-                                {/* Executive Summary Ranking */}
-                                <div className="mb-6">
-                                    <h4 className="text-lg font-bold mb-2 text-black">1. Performance Ranking</h4>
-                                    <table className="w-full border-collapse border border-black text-sm text-black">
-                                        <thead className="bg-gray-100">
-                                            <tr>
-                                                <th className="border border-black p-2 text-center font-bold w-16 text-black">Rank</th>
-                                                <th className="border border-black p-2 text-left font-bold text-black">Name</th>
-                                                <th className="border border-black p-2 text-center font-bold text-black">Resolved</th>
-                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Score</th>
-                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Time/Task</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {/* Limited to 10 to fit page 1 */}
-                                            {data.slice(0, 10).map((it, index) => (
-                                                <tr key={index}>
-                                                    <td className="border border-black p-2 text-center font-bold text-black">{index + 1}</td>
-                                                    <td className="border border-black p-2 font-medium text-black">{it.name || it.email}</td>
-                                                    <td className="border border-black p-2 text-center text-black">{it.totalResolved}</td>
-                                                    <td className="border border-black p-2 text-center font-bold text-black">{Number(it.avgRating || 0).toFixed(1)}</td>
-                                                    <td className="border border-black p-2 text-center text-black">{it.avgResolutionTime || 0} min</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div className="text-right text-sm text-black">Page 1</div>
-                        </div>
-
-                        {/* Subsequent Pages (20 items per page) */}
-                        {Array.from({ length: Math.ceil(Math.max(data.length - 10, 0) / 20) }).map((_, pageIndex) => (
-                            <div key={pageIndex} id={`pdf-page-${pageIndex + 2}`} className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between mt-10">
-                                <div>
-                                    {/* Header Repeat */}
-                                    <div className="flex justify-between items-center border-b border-black pb-2 mb-6">
-                                        <span className="font-bold text-black">Performance Ranking (Continued)</span>
-                                        <span className="text-sm text-black">{new Date().toLocaleDateString('en-GB')}</span>
-                                    </div>
-
-                                    <table className="w-full border-collapse border border-black text-sm text-black">
-                                        <thead className="bg-gray-100">
-                                            <tr>
-                                                <th className="border border-black p-2 text-center font-bold w-16 text-black">Rank</th>
-                                                <th className="border border-black p-2 text-left font-bold text-black">Name</th>
-                                                <th className="border border-black p-2 text-center font-bold text-black">Resolved</th>
-                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Score</th>
-                                                <th className="border border-black p-2 text-center font-bold text-black">Avg Time/Task</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.slice(10 + (pageIndex * 20), 10 + ((pageIndex + 1) * 20)).map((it, index) => (
-                                                <tr key={index}>
-                                                    <td className="border border-black p-2 text-center font-bold text-black">{10 + index + (pageIndex * 20) + 1}</td>
-                                                    <td className="border border-black p-2 font-medium text-black">{it.name || it.email}</td>
-                                                    <td className="border border-black p-2 text-center text-black">{it.totalResolved}</td>
-                                                    <td className="border border-black p-2 text-center font-bold text-black">{Number(it.avgRating || 0).toFixed(1)}</td>
-                                                    <td className="border border-black p-2 text-center text-black">{it.avgResolutionTime || 0} min</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Signature Area on Last Page */}
-                                {pageIndex === Math.ceil(Math.max(data.length - 10, 0) / 20) - 1 && (
-                                    <div className="mt-8 flex justify-end">
-                                        <div className="text-center w-64">
-                                            <div className="border-b border-black mb-2 h-8"></div>
-                                            <p className="text-sm font-bold text-black">Authorized Signature</p>
-                                            <p className="text-xs text-black">Admin / Manager</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="text-right text-sm text-black">Page {pageIndex + 2}</div>
-                            </div>
-                        ))}
-                    </div>
+                    <ExportButtons onExportExcel={exportExcel} />
                 </>
             )}
         </div>

@@ -2,12 +2,10 @@ import React, { useEffect, useState } from 'react';
 import useAuthStore from '../../../store/auth-store';
 import { getMonthlyStats } from '../../../api/report';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import ExportButtons from '../../../components/admin/ExportButtons';
 import { Download, Calendar, Activity, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import dayjs from 'dayjs';
-import html2canvas from 'html2canvas';
 
 const MonthlyReport = ({ month, year }) => {
     const { token } = useAuthStore();
@@ -33,37 +31,6 @@ const MonthlyReport = ({ month, year }) => {
         loadData();
     }, [loadData]);
 
-    const exportPDF = async () => {
-        try {
-            setLoading(true);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-
-            let pageIndex = 1;
-            let element = document.getElementById(`pdf-page-${pageIndex}`);
-
-            while (element) {
-                if (pageIndex > 1) {
-                    pdf.addPage();
-                }
-
-                const canvas = await html2canvas(element, { scale: 3, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-                pageIndex++;
-                element = document.getElementById(`pdf-page-${pageIndex}`);
-            }
-
-            pdf.save(`monthly_report_${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (err) {
-            console.error("PDF Export failed:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const exportExcel = () => {
         if (!data?.data) return;
@@ -82,7 +49,7 @@ const MonthlyReport = ({ month, year }) => {
     const resolutionRate = data?.resolutionRate || 0;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -104,10 +71,10 @@ const MonthlyReport = ({ month, year }) => {
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         {/* Total Tickets */}
-                        <div className="bg-[#1e3a8a] text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                        <div className="bg-primary text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div>
-                                    <h3 className="text-3xl font-bold">{totalTickets}</h3>
+                                    <h3 className="text-3xl font-bold text-white">{totalTickets}</h3>
                                     <p className="text-blue-200 text-xs font-medium uppercase tracking-wider">Total Tickets</p>
                                 </div>
                                 <button className="mt-2 text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded w-fit transition-colors flex items-center gap-1">
@@ -121,10 +88,10 @@ const MonthlyReport = ({ month, year }) => {
                         </div>
 
                         {/* Not Started */}
-                        <div className="bg-[#dc2626] text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                        <div className="bg-error text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div>
-                                    <h3 className="text-3xl font-bold">{notStarted}</h3>
+                                    <h3 className="text-3xl font-bold text-white">{notStarted}</h3>
                                     <p className="text-red-100 text-xs font-medium uppercase tracking-wider">Not Started</p>
                                 </div>
                                 <button className="mt-2 text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded w-fit transition-colors flex items-center gap-1">
@@ -138,10 +105,10 @@ const MonthlyReport = ({ month, year }) => {
                         </div>
 
                         {/* In Progress */}
-                        <div className="bg-[#d97706] text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                        <div className="bg-warning text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div>
-                                    <h3 className="text-3xl font-bold">{inProgress}</h3>
+                                    <h3 className="text-3xl font-bold text-white">{inProgress}</h3>
                                     <p className="text-orange-100 text-xs font-medium uppercase tracking-wider">In Progress</p>
                                 </div>
                                 <button className="mt-2 text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded w-fit transition-colors flex items-center gap-1">
@@ -155,10 +122,10 @@ const MonthlyReport = ({ month, year }) => {
                         </div>
 
                         {/* Completed */}
-                        <div className="bg-[#10b981] text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                        <div className="bg-success text-white p-4 rounded-xl shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                             <div className="relative z-10 flex flex-col h-full justify-between">
                                 <div>
-                                    <h3 className="text-3xl font-bold">{completed}</h3>
+                                    <h3 className="text-3xl font-bold text-white">{completed}</h3>
                                     <p className="text-green-100 text-xs font-medium uppercase tracking-wider">Completed</p>
                                 </div>
                                 <button className="mt-2 text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded w-fit transition-colors flex items-center gap-1">
@@ -176,12 +143,12 @@ const MonthlyReport = ({ month, year }) => {
                         {/* Daily Trend Chart (2/3 width) */}
                         <div className="lg:col-span-2 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-bold text-sm text-[#1e2e4a]">Daily Ticket Trend</h3>
+                                <h3 className="font-bold text-sm text-gray-900">Daily Ticket Trend</h3>
                                 <div className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-[10px] font-semibold">
                                     Last 7 Days
                                 </div>
                             </div>
-                            <div className="h-[200px]">
+                            <div className="h-[180px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={reportData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                                         <defs>
@@ -218,7 +185,7 @@ const MonthlyReport = ({ month, year }) => {
                                 <Activity size={24} />
                             </div>
                             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Resolution Rate</h3>
-                            <p className="text-4xl font-bold text-[#1e2e4a] mb-1">{resolutionRate}%</p>
+                            <p className="text-4xl font-bold text-gray-900 mb-1">{resolutionRate}%</p>
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">
                                 Success
                             </span>
@@ -238,59 +205,7 @@ const MonthlyReport = ({ month, year }) => {
                 </div>
             )}
 
-            <ExportButtons onExportPDF={exportPDF} onExportExcel={exportExcel} />
-
-            {/* Hidden PDF Export Content - PAGINATED (Restored original table structure for PDF) */}
-            {data && (
-                <div className="absolute -left-[9999px] top-0 font-['Sarabun'] text-black">
-                    {/* ... (Keep existing PDF generation logic or update if needed) ... */}
-                    {/* For brevity, keeping basic structure but ensuring it uses new data fields if needed. 
-                         The original code already had 'completed' and 'pending'. 
-                         We should update 'pending' to be 'not_started + in_progress' for the PDF if we want strict compatibility,
-                         or update the PDF to show all 3 columns. 
-                         For now, I'll rely on the existing mapped fields: completed and pending. 
-                         Note: The backend now returns 'not_started', 'in_progress', 'completed'.
-                         The existing PDF code uses 'pending', which is now undefined in the new backend response!
-                         I MUST FIX THE PDF GENERATION LOGIC TO USE THE NEW FIELDS.
-                     */}
-                    <div id="pdf-page-1" className="w-[210mm] h-[297mm] bg-white p-[20mm] relative flex flex-col justify-between">
-                        <div>
-                            {/* ... Header ... */}
-                            <div className="relative mb-8">
-                                <div className="text-center space-y-1">
-                                    <h1 className="text-xl font-bold text-black uppercase">Prince of Songkla University</h1>
-                                    <h3 className="text-2xl font-bold mt-4 text-black uppercase">Monthly Performance Report</h3>
-                                </div>
-                            </div>
-
-                            {/* Summary */}
-                            <div className="mb-8">
-                                <h4 className="text-lg font-bold mb-2 text-black">1. Executive Summary</h4>
-                                <table className="w-full border-collapse border border-black text-sm text-black">
-                                    <tbody>
-                                        <tr>
-                                            <td className="border border-black p-2 bg-gray-100 font-bold w-1/3 text-black">Total Tickets</td>
-                                            <td className="border border-black p-2 text-center text-lg font-bold text-black">{totalTickets} Items</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="border border-black p-2 bg-gray-100 font-bold text-black">Completed</td>
-                                            <td className="border border-black p-2 text-center font-bold text-black">{completed} Items</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="border border-black p-2 bg-gray-100 font-bold text-black">In Progress</td>
-                                            <td className="border border-black p-2 text-center font-bold text-black">{inProgress} Items</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="border border-black p-2 bg-gray-100 font-bold text-black">Not Started</td>
-                                            <td className="border border-black p-2 text-center font-bold text-black">{notStarted} Items</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ExportButtons onExportExcel={exportExcel} />
         </div>
     );
 };

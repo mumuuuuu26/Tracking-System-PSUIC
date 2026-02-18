@@ -172,147 +172,155 @@ const Schedule = () => {
 
 
 
-                <div className="mt-6 space-y-4">
-                    {/* Calendar */}
-                    <CalendarGrid
-                        currentDate={currentMonth}
-                        setCurrentDate={setCurrentMonth}
-                        selectedDate={selectedDate}
-                        setSelectedDate={setSelectedDate}
-                        events={eventsForCalendar}
-                        onDateSelect={setSelectedDate}
-                    />
+                <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                    {/* Left Column: Calendar */}
+                    <div className="bg-white rounded-[1.5rem] p-4 shadow-sm border border-gray-100 h-full flex flex-col">
+                        <CalendarGrid
+                            currentDate={currentMonth}
+                            setCurrentDate={setCurrentMonth}
+                            selectedDate={selectedDate}
+                            setSelectedDate={setSelectedDate}
+                            events={eventsForCalendar}
+                            onDateSelect={setSelectedDate}
+                        />
+                    </div>
 
-                    {/* Daily List */}
-                    <div className="space-y-4">
-                        <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                            <Calendar className="text-blue-600" size={20} />
+                    {/* Right Column: Daily List */}
+                    <div className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100 h-full flex flex-col">
+                        <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2 mb-6 shrink-0">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <Calendar size={20} />
+                            </div>
                             Tasks for {selectedDate.format('DD MMM YYYY')}
                         </h3>
 
-                        {loading || syncing ? (
-                            <div className="text-center py-10 text-gray-400 animate-pulse">
-                                {syncing ? "Syncing with Google Calendar..." : "Loading schedule..."}
-                            </div>
-                        ) : selectedItems.length > 0 ? (
-                            selectedItems.map((item, idx) => (
-                                <div
-                                    key={idx}
-                                    onClick={() => setSelectedTask(item)}
-                                    className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-start gap-4 hover:shadow-md transition-all cursor-pointer group"
-                                >
-                                    <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center transition-transform group-hover:scale-110 ${item.type === 'ticket' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
-                                        }`}>
-                                        <Clock size={20} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <h4 className="font-bold text-gray-900 line-clamp-1">{item.details}</h4>
-                                            <span className="text-xs font-medium text-gray-400 whitespace-nowrap ml-2">
-                                                {dayjs(item.start).format('HH:mm')}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description || item.title}</p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${item.type === 'ticket' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                        <div className="flex-1">
+                            {loading || syncing ? (
+                                <div className="text-center py-20 text-gray-400 animate-pulse">
+                                    {syncing ? "Syncing with Google Calendar..." : "Loading schedule..."}
+                                </div>
+                            ) : selectedItems.length > 0 ? (
+                                <div className="space-y-3">
+                                    {selectedItems.map((item, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedTask(item)}
+                                            className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex items-start gap-4 hover:bg-blue-50/50 hover:border-blue-100 transition-all cursor-pointer group"
+                                        >
+                                            <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center transition-transform group-hover:scale-110 ${item.type === 'ticket' ? 'bg-white text-red-600 shadow-sm' : 'bg-white text-blue-600 shadow-sm'
                                                 }`}>
-                                                {item.type === 'ticket' ? 'Ticket' : 'Personal/Google'}
-                                            </span>
+                                                <Clock size={20} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-blue-700 transition-colors">{item.details}</h4>
+                                                    <span className="text-xs font-medium text-gray-400 whitespace-nowrap ml-2">
+                                                        {dayjs(item.start).format('HH:mm')}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description || item.title}</p>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${item.type === 'ticket' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                        {item.type === 'ticket' ? 'Ticket' : 'Google Calendar'}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                                    <div className="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mb-4">
+                                        <Calendar size={40} />
                                     </div>
+                                    <p className="text-gray-900 font-bold text-lg">No tasks scheduled</p>
+                                    <p className="text-sm text-gray-500">Enjoy your free time!</p>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
-                                <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <Calendar size={32} />
-                                </div>
-                                <p className="text-gray-900 font-bold">No tasks scheduled</p>
-                                <p className="text-sm text-gray-500">Enjoy your free time!</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
+                </div>
 
-                    {/* Task Details Modal */}
-                    {selectedTask && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-                            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`
+                {/* Task Details Modal */}
+                {selectedTask && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl scale-100 animate-in zoom-in-95 duration-200 overflow-hidden">
+                            <div className="p-6">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`
                                                 w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm
                                                 ${selectedTask.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                                    selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}
+                                                selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}
                                             `}>
-                                                <Calendar size={24} />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Task Details</p>
-                                                <h3 className="text-lg font-bold text-gray-800 line-clamp-1">{selectedTask.title}</h3>
-                                            </div>
+                                            <Calendar size={24} />
                                         </div>
-                                        <button
-                                            onClick={() => setSelectedTask(null)}
-                                            className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
-                                        >
-                                            <X size={20} />
-                                        </button>
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Task Details</p>
+                                            <h3 className="text-lg font-bold text-gray-800 line-clamp-1">{selectedTask.title}</h3>
+                                        </div>
                                     </div>
+                                    <button
+                                        onClick={() => setSelectedTask(null)}
+                                        className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
 
-                                    <div className="space-y-4">
-                                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <Clock size={20} className="text-blue-500 mt-0.5" />
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-700">Time & Date</p>
-                                                <p className="text-sm text-gray-600 mt-0.5">
-                                                    {dayjs(selectedTask.date || selectedTask.start).format("MMMM D, YYYY")}
-                                                </p>
-                                                <p className="text-sm text-gray-500">
-                                                    {dayjs(selectedTask.date || selectedTask.start).format("h:mm A")}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <MapPin size={20} className="text-red-500 mt-0.5" />
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-700">Location</p>
-                                                <p className="text-sm text-gray-600 mt-0.5">
-                                                    Floor {selectedTask.room?.floor || "-"}
-                                                </p>
-                                                <p className="text-sm text-gray-500">
-                                                    Room {selectedTask.room?.roomNumber || "-"}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-                                            <p className="text-sm font-bold text-gray-700 mb-2">Description</p>
-                                            <p className="text-sm text-gray-600 leading-relaxed">
-                                                {selectedTask.description || "No description provided."}
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <Clock size={20} className="text-blue-500 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700">Time & Date</p>
+                                            <p className="text-sm text-gray-600 mt-0.5">
+                                                {dayjs(selectedTask.date || selectedTask.start).format("MMMM D, YYYY")}
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                                {dayjs(selectedTask.date || selectedTask.start).format("h:mm A")}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-8">
-                                        {selectedTask.type === 'ticket' && (
-                                            <button
-                                                onClick={() => {
-                                                    navigate(`/it/ticket/${selectedTask.id}`);
-                                                }}
-                                                className="w-full bg-[#1e2e4a] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                            >
-                                                View Full Ticket
-                                                <ChevronRight size={18} />
-                                            </button>
-                                        )}
+                                    <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <MapPin size={20} className="text-red-500 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700">Location</p>
+                                            <p className="text-sm text-gray-600 mt-0.5">
+                                                Floor {selectedTask.room?.floor || "-"}
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                                Room {selectedTask.room?.roomNumber || "-"}
+                                            </p>
+                                        </div>
                                     </div>
+
+                                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                                        <p className="text-sm font-bold text-gray-700 mb-2">Description</p>
+                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                            {selectedTask.description || "No description provided."}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8">
+                                    {selectedTask.type === 'ticket' && (
+                                        <button
+                                            onClick={() => {
+                                                navigate(`/it/ticket/${selectedTask.id}`);
+                                            }}
+                                            className="w-full bg-[#1e2e4a] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            View Full Ticket
+                                            <ChevronRight size={18} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Settings Modal */}
@@ -382,7 +390,8 @@ const Schedule = () => {
                             </div>
                         </div>
                     </div>
-                )}
+                )
+            }
         </>
     );
 };

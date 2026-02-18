@@ -130,7 +130,7 @@ const QuickFixManagement = () => {
 
     return (
         <AdminWrapper>
-            <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+            <div className="flex flex-col h-full px-6 pt-6 pb-24 md:pb-6 space-y-6 overflow-y-auto">
 
                 {/* Header Card */}
                 <AdminHeader
