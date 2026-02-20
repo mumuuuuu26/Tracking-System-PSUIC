@@ -54,6 +54,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
             <div className="flex justify-between items-start mb-3">
                 <h3 className="text-xl font-bold text-role-user tracking-tight">
                     {ticket.category?.name || "General Issue"}
+                    {ticket.subComponent ? ` (${ticket.subComponent})` : ""}
                 </h3>
                 <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${statusConfig.className}`}>
                     {statusConfig.label}

@@ -149,7 +149,10 @@ const TicketDetail = () => {
           {/* Row item helper */}
           {[
             { label: "Ticket ID", value: "#" + ticket?.id, color: "text-blue-600 font-bold" },
-            { label: "Equipment Type", value: ticket?.category?.name || "General" },
+            {
+              label: "Category",
+              value: ticket?.category?.name ? `${ticket.category.name}${ticket.subComponent ? ` (${ticket.subComponent})` : ""}` : "General"
+            },
             { label: "Description", value: ticket?.description || "none" },
             { label: "Floor", value: ticket?.room?.floor || "-" },
             { label: "Room", value: ticket?.room?.roomNumber || "-" },

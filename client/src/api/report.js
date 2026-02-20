@@ -24,6 +24,12 @@ export const getITPerformance = async (startDate, endDate) => {
     });
 };
 
+export const getSubComponentStats = async (month, year) => {
+    return await api.get(`/reports/subcomponents`, {
+        params: { month, year }
+    });
+};
+
 
 
 export const getRoomStats = async (month, year) => {

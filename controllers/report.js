@@ -61,6 +61,32 @@ exports.getMonthlyStats = async (req, res, next) => {
         // Resolution Rate
         const resolutionRate = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
 
+        // [NEW] SubComponent Breakdown for Completed Tickets
+        const completedTicketsWithSubComponent = await prisma.ticket.findMany({
+            where: {
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+                status: 'completed',
+                isDeleted: false,
+                subComponent: { not: null, not: "" }
+            },
+            select: { subComponent: true }
+        });
+
+        // Group by subcomponent manually
+        const subComponentCounts = {};
+        completedTicketsWithSubComponent.forEach(t => {
+            const sc = t.subComponent;
+            subComponentCounts[sc] = (subComponentCounts[sc] || 0) + 1;
+        });
+        
+        // Convert to array and sort descending
+        const subComponentBreakdown = Object.entries(subComponentCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
         res.json({
             period: `${targetMonth + 1}/${targetYear}`,
             total,
@@ -68,6 +94,7 @@ exports.getMonthlyStats = async (req, res, next) => {
             in_progress,
             completed,
             resolutionRate,
+            subComponentBreakdown, // Include in response
             data: Object.values(statsByDay)
         });
 
@@ -170,6 +197,49 @@ exports.getEquipmentStats = async (req, res, next) => {
 
         res.json(enriched);
 
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 3.5 Top Replaced Parts (SubComponent Stats)
+exports.getSubComponentStats = async (req, res, next) => {
+    try {
+        const { month, year } = req.query;
+        let whereTicket = { 
+            subComponent: { not: null, not: "" }, // Must have a subComponent named
+            isDeleted: false,
+            status: { not: 'rejected' }
+        };
+
+        if (month && year) {
+            const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+            whereTicket.createdAt = { gte: startDate, lte: endDate };
+        }
+
+        // Top 5 replaced parts
+        const result = await prisma.ticket.groupBy({
+            by: ['subComponent'],
+            where: whereTicket,
+            _count: {
+                subComponent: true
+            },
+            orderBy: {
+                _count: {
+                    subComponent: 'desc'
+                }
+            },
+            take: 5
+        });
+
+        // Format for frontend
+        const formatted = result.map(item => ({
+            name: item.subComponent,
+            amount: item._count.subComponent
+        }));
+
+        res.json(formatted);
     } catch (err) {
         next(err);
     }

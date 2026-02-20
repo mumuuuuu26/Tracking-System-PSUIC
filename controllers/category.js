@@ -15,10 +15,11 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// ดึงรายการหมวดหมู่ทั้งหมด
+// ดึงรายการหมวดหมู่ทั้งหมดพร้อม SubComponent
 exports.list = async (req, res, next) => {
   try {
     const categories = await prisma.category.findMany({
+      include: { subComponents: true },
       orderBy: { name: "asc" }, // เรียงตามตัวอักษร
     });
     res.json(categories);
@@ -50,6 +51,39 @@ exports.remove = async (req, res, next) => {
       where: { id: parseInt(id) },
     });
     res.json({ message: "Category deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// [NEW] เพิ่ม SubComponent ให้ Category
+exports.addSubComponent = async (req, res, next) => {
+  try {
+    const { categoryId } = req.params;
+    const { name } = req.body;
+    
+    if (!name) return res.status(400).json({ message: "SubComponent name is required" });
+
+    const subComponent = await prisma.subComponent.create({
+      data: {
+        name,
+        categoryId: parseInt(categoryId),
+      },
+    });
+    res.json(subComponent);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// [NEW] ลบ SubComponent
+exports.removeSubComponent = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.subComponent.delete({
+      where: { id: parseInt(id) },
+    });
+    res.json({ message: "SubComponent deleted successfully" });
   } catch (err) {
     next(err);
   }

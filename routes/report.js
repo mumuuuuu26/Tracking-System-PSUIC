@@ -7,7 +7,8 @@ const {
     getAnnualStats,
     getEquipmentStats,
     getITPerformance,
-    getRoomStats
+    getRoomStats,
+    getSubComponentStats // [NEW]
 } = require("../controllers/report");
 
 // @ENDPOINT http://localhost:5002/api/reports/monthly
@@ -18,6 +19,9 @@ router.get("/reports/annual", authCheck, adminCheck, getAnnualStats);
 
 // @ENDPOINT http://localhost:5002/api/reports/equipment
 router.get("/reports/equipment", authCheck, adminCheck, getEquipmentStats);
+
+// @ENDPOINT http://localhost:5002/api/reports/subcomponents
+router.get("/reports/subcomponents", authCheck, adminCheck, getSubComponentStats);
 
 // @ENDPOINT http://localhost:5002/api/reports/performance
 router.get("/reports/performance", authCheck, adminCheck, getITPerformance);

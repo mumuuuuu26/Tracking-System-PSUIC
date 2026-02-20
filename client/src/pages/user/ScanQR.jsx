@@ -37,6 +37,9 @@ const ScanQR = () => {
           roomId: equipmentData.roomId,
           roomNumber: equipmentData.room?.roomNumber || "N/A",
           floorName: equipmentData.room?.floor || "",
+          categoryId: equipmentData.categoryObj?.id || "",
+          categoryName: equipmentData.categoryObj?.name || "",
+          subComponents: equipmentData.categoryObj?.subComponents || []
         },
       });
     } catch (error) {

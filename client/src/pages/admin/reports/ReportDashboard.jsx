@@ -10,7 +10,7 @@ import ErrorBoundary from '../../../components/common/ErrorBoundary';
 import AdminWrapper from "../../../components/admin/AdminWrapper";
 import AdminHeader from "../../../components/admin/AdminHeader";
 import AdminSelect from "../../../components/admin/AdminSelect";
-import { getMonthlyStats, getEquipmentStats, getITPerformance, getRoomStats } from '../../../api/report';
+import { getMonthlyStats, getEquipmentStats, getITPerformance, getRoomStats, getSubComponentStats } from '../../../api/report';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -26,6 +26,7 @@ const ReportDashboard = () => {
     // ---- Central data state for all tabs ----
     const [monthlyData, setMonthlyData] = useState(null);
     const [equipmentData, setEquipmentData] = useState([]);
+    const [subComponentData, setSubComponentData] = useState([]); // [NEW]
     const [roomData, setRoomData] = useState([]);
     const [itData, setItData] = useState([]);
     const [loadingAll, setLoadingAll] = useState(false);
@@ -44,17 +45,19 @@ const ReportDashboard = () => {
             const startDate = dayjs(`${year}-${String(month).padStart(2, '0')}-01`).format('YYYY-MM-DD');
             const endDate = dayjs(`${year}-${String(month).padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD');
 
-            const [mRes, eRes, rRes, iRes] = await Promise.allSettled([
+            const [mRes, eRes, rRes, iRes, sRes] = await Promise.allSettled([
                 getMonthlyStats(month, year),
                 getEquipmentStats(month, year),
                 getRoomStats(month, year),
                 getITPerformance(startDate, endDate),
+                getSubComponentStats(month, year) // [NEW]
             ]);
 
             if (mRes.status === 'fulfilled') setMonthlyData(mRes.value.data);
             if (eRes.status === 'fulfilled') setEquipmentData(eRes.value.data || []);
             if (rRes.status === 'fulfilled') setRoomData(rRes.value.data || []);
             if (iRes.status === 'fulfilled') setItData(Array.isArray(iRes.value.data) ? iRes.value.data : []);
+            if (sRes.status === 'fulfilled') setSubComponentData(Array.isArray(sRes.value.data) ? sRes.value.data : []); // [NEW]
         } catch (err) {
             console.error('Failed to fetch report data:', err);
         } finally {
@@ -345,6 +348,14 @@ const ReportDashboard = () => {
             }));
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(equipRows.length ? equipRows : [{ Note: 'No data' }]), 'Equipment');
 
+            // Sheet 5: Top Replaced Parts
+            const subRows = subComponentData.map((s, i) => ({
+                Rank: i + 1,
+                'Replacement Part': s.name || '-',
+                'Count': s.amount ?? 0,
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(subRows.length ? subRows : [{ Note: 'No data' }]), 'Replaced Parts');
+
             XLSX.writeFile(wb, `System_Report_${periodLabel}.xlsx`);
         } catch (err) {
             console.error('Excel export failed:', err);
@@ -467,6 +478,7 @@ const ReportDashboard = () => {
                                 month={month}
                                 year={year}
                                 externalData={equipmentData}
+                                externalSubData={subComponentData}
                                 externalLoading={loadingAll}
                             />
                         )}

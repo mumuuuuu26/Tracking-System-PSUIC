@@ -36,16 +36,19 @@ const CreateTicket = () => {
     room: prefilledData?.roomNumber || "",
     roomId: prefilledData?.roomId || "",
     urgency: "",
+    subComponent: "",
     images: [],
   });
 
-  // Set category if prefilled data has it (logic to find category from equipment if needed, 
-  // but usually we select category manually if not provided)
+  const [activeSubComponents, setActiveSubComponents] = useState([]);
+
+  // Set category if prefilled data has it
   useEffect(() => {
-    if (prefilledData?.equipmentId) {
-      // If we have equipment, we might want to auto-select its category if available in data
-      // For now, relies on user or complex logic not fully shown in original file. 
-      // Original file didn't seem to prefill categoryId from equipmentId directly in state init.
+    if (prefilledData?.categoryId) {
+      setForm(prev => ({ ...prev, categoryId: prefilledData.categoryId }));
+      if (prefilledData.subComponents && prefilledData.subComponents.length > 0) {
+        setActiveSubComponents(prefilledData.subComponents);
+      }
     }
   }, [prefilledData]);
 
@@ -72,6 +75,19 @@ const CreateTicket = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Handle manual category change
+  const handleCategoryChange = (e) => {
+    const selectedCatId = e.target.value;
+    setForm({ ...form, categoryId: selectedCatId, subComponent: "" });
+
+    const selectedCat = dbCategories.find(c => c.id === parseInt(selectedCatId));
+    if (selectedCat && selectedCat.subComponents && selectedCat.subComponents.length > 0) {
+      setActiveSubComponents(selectedCat.subComponents);
+    } else {
+      setActiveSubComponents([]);
+    }
+  };
 
 
   const handleImageUpload = (e) => {
@@ -120,6 +136,7 @@ const CreateTicket = () => {
         categoryId: parseInt(form.categoryId),
         roomId: parseInt(form.roomId),
         equipmentId: form.equipmentId ? parseInt(form.equipmentId) : null,
+        subComponent: form.subComponent || null,
         images: form.images
       };
 
@@ -180,10 +197,26 @@ const CreateTicket = () => {
             <UserSelect
               options={dbCategories}
               value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+              onChange={handleCategoryChange}
               placeholder="Select equipment category"
+              disabled={!!prefilledData?.categoryId} // Lock if scanned from QR
             />
           </div>
+
+          {/* Dynamic Sub-Component (if applicable) */}
+          {activeSubComponents.length > 0 && (
+            <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+              <label className="text-[#193C6C] text-base font-bold flex gap-1">
+                อุปกรณ์ส่วนที่พบปัญหา (Sub-Component)
+              </label>
+              <UserSelect
+                options={activeSubComponents}
+                value={form.subComponent}
+                onChange={(e) => setForm({ ...form, subComponent: e.target.value })}
+                placeholder="Select sub-component (Optional)"
+              />
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">

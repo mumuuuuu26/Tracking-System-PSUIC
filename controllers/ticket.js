@@ -11,6 +11,7 @@ const createTicketSchema = z.object({
   roomId: z.preprocess((val) => parseInt(val), z.number()),
   equipmentId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
   categoryId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
+  subComponent: z.string().nullable().optional(),
   images: z.array(z.string()).optional(),
 });
 
@@ -20,6 +21,7 @@ const updateTicketSchema = z.object({
   assignedToId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
   adminNote: z.string().optional(),
   categoryId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
+  subComponent: z.string().nullable().optional(),
 });
 
 
@@ -33,7 +35,8 @@ exports.create = async (req, res, next) => {
       roomId,
       equipmentId,
       images,
-      categoryId
+      categoryId,
+      subComponent
     } = validatedData;
 
     const newTicket = await prisma.ticket.create({
@@ -45,6 +48,7 @@ exports.create = async (req, res, next) => {
         roomId,
         equipmentId,
         categoryId,
+        subComponent,
         status: "not_start",
         images: images && images.length > 0 ? {
           create: images.map(img => {
@@ -174,6 +178,7 @@ exports.update = async (req, res, next) => {
     if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (adminNote !== undefined) updateData.note = adminNote;
+    if (validatedData.subComponent !== undefined) updateData.subComponent = validatedData.subComponent;
 
     if (status) {
       const now = new Date();

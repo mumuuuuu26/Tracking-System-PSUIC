@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, ChevronDown, Monitor, Printer, Wifi, Wind, Box, ArrowLeft, QrCode, Edit, Trash2, X, Save } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { listCategories, createCategory, updateCategory, removeCategory } from "../../api/category";
+import { listCategories, createCategory, updateCategory, removeCategory, addSubComponent, removeSubComponent } from "../../api/category";
 import { listEquipments, createEquipment, updateEquipment, removeEquipment, getEquipmentQR } from "../../api/equipment";
 import { listRooms } from "../../api/room";
 import AdminWrapper from "../../components/admin/AdminWrapper";
@@ -30,6 +30,8 @@ const EquipmentManagement = () => {
   const [categories, setCategories] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState(null); // { id, name }
+  const [newSubComponentName, setNewSubComponentName] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState(null); // categoryId
 
   // Form (Add/Edit Equipment)
   const [editingEquipment, setEditingEquipment] = useState(null);
@@ -165,10 +167,39 @@ const EquipmentManagement = () => {
     try {
       await removeCategory(id);
       toast.success("Category deleted");
+      if (expandedCategory === id) setExpandedCategory(null);
       loadCategories();
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete category");
+    }
+  };
+
+  // --- SubComponent Management Logic ---
+  const handleAddSubComponent = async (e, categoryId) => {
+    e.preventDefault();
+    if (!newSubComponentName.trim()) return;
+
+    try {
+      await addSubComponent(categoryId, { name: newSubComponentName });
+      toast.success("Sub-component added");
+      setNewSubComponentName("");
+      loadCategories();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add sub-component");
+    }
+  };
+
+  const handleDeleteSubComponent = async (subId) => {
+    if (!window.confirm("Delete this sub-component?")) return;
+    try {
+      await removeSubComponent(subId);
+      toast.success("Sub-component deleted");
+      loadCategories();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete sub-component");
     }
   };
 
@@ -482,40 +513,85 @@ const EquipmentManagement = () => {
                 <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4 ml-1">Active Categories</label>
                 <div className="space-y-3">
                   {allCategories.map(cat => (
-                    <div key={cat.id} className="flex items-center justify-between p-4 bg-gray-50/30 border border-gray-50 rounded-2xl shadow-sm hover:bg-white hover:border-gray-100 hover:shadow-md transition-all group">
-                      {editingCategory?.id === cat.id ? (
-                        <div className="flex-1 flex gap-2 mr-2">
-                          <input
-                            type="text"
-                            value={editingCategory.name}
-                            onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-                            className="flex-1 bg-white border-2 border-blue-500/50 rounded-xl px-3 py-2 text-sm font-bold outline-none"
-                            autoFocus
-                          />
-                          <button onClick={() => handleUpdateCategory(cat.id, editingCategory.name)} className="text-emerald-500 hover:bg-emerald-50 p-2 rounded-xl transition-colors"><Save size={18} /></button>
-                          <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-xl transition-colors"><X size={18} /></button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-blue-500/30" />
-                          <span className="font-bold text-gray-700">{cat.name}</span>
-                        </div>
-                      )}
+                    <div key={cat.id} className="bg-gray-50/30 border border-gray-50 rounded-2xl shadow-sm hover:bg-white hover:border-gray-100 transition-all group overflow-hidden">
+                      <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setExpandedCategory(expandedCategory === cat.id ? null : cat.id)}>
+                        {editingCategory?.id === cat.id ? (
+                          <div className="flex-1 flex gap-2 mr-2" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editingCategory.name}
+                              onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                              className="flex-1 bg-white border-2 border-blue-500/50 rounded-xl px-3 py-2 text-sm font-bold outline-none"
+                              autoFocus
+                            />
+                            <button onClick={() => handleUpdateCategory(cat.id, editingCategory.name)} className="text-emerald-500 hover:bg-emerald-50 p-2 rounded-xl transition-colors"><Save size={18} /></button>
+                            <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-xl transition-colors"><X size={18} /></button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500/30 shrink-0" />
+                            <span className="font-bold text-gray-700 flex-1">{cat.name}</span>
+                            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 rounded-md">
+                              {cat.subComponents?.length || 0} sub
+                            </span>
+                          </div>
+                        )}
 
-                      {editingCategory?.id !== cat.id && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <button
-                            onClick={() => setEditingCategory({ id: cat.id, name: cat.name })}
-                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
-                          >
-                            <Edit size={16} strokeWidth={2.5} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                          >
-                            <Trash2 size={16} strokeWidth={2.5} />
-                          </button>
+                        {editingCategory?.id !== cat.id && (
+                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 ml-2" onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => setEditingCategory({ id: cat.id, name: cat.name })}
+                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
+                            >
+                              <Edit size={16} strokeWidth={2.5} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            >
+                              <Trash2 size={16} strokeWidth={2.5} />
+                            </button>
+                            <button className={`p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-transform ${expandedCategory === cat.id ? 'rotate-180' : ''}`}>
+                              <ChevronDown size={16} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Subcomponents Section */}
+                      {expandedCategory === cat.id && (
+                        <div className="px-5 pb-5 pt-1 border-t border-gray-100 bg-white">
+                          <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.1em] mt-3 mb-2 ml-1">Sub-Components</label>
+                          <form onSubmit={(e) => handleAddSubComponent(e, cat.id)} className="flex gap-2 mb-3">
+                            <input
+                              type="text"
+                              value={newSubComponentName}
+                              onChange={(e) => setNewSubComponentName(e.target.value)}
+                              placeholder="Add sub-component e.g. Mouse"
+                              className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/10 outline-none text-gray-700 font-semibold"
+                            />
+                            <button type="submit" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-2 rounded-xl text-sm font-bold transition-colors">
+                              <Plus size={16} strokeWidth={3} />
+                            </button>
+                          </form>
+
+                          <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                            {cat.subComponents && cat.subComponents.length > 0 ? (
+                              cat.subComponents.map(sub => (
+                                <div key={sub.id} className="flex items-center justify-between bg-gray-50/50 px-3 py-2 rounded-lg group/sub border border-transparent hover:border-gray-100">
+                                  <span className="text-sm font-semibold text-gray-600">- {sub.name}</span>
+                                  <button
+                                    onClick={() => handleDeleteSubComponent(sub.id)}
+                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-md opacity-0 group-hover/sub:opacity-100 transition-all"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-center text-gray-400 py-3 italic bg-gray-50/50 rounded-lg">No sub-components added</p>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

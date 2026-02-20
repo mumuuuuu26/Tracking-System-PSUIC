@@ -83,6 +83,17 @@ exports.getByQRCode = async (req, res, next) => {
       },
     });
 
+    // แนบ Category และ subComponents เข้าไปด้วยถ้าหา Type เจอ
+    if (equipment && equipment.type) {
+      const category = await prisma.category.findUnique({
+          where: { name: equipment.type },
+          include: { subComponents: true }
+      });
+      if (category) {
+          equipment.categoryObj = category;
+      }
+    }
+
     // 2. Fallback: Try Serial Number
     if (!equipment) {
       equipment = await prisma.equipment.findFirst({
@@ -100,6 +111,16 @@ exports.getByQRCode = async (req, res, next) => {
           },
         },
       });
+
+      if (equipment && equipment.type) {
+        const category = await prisma.category.findUnique({
+            where: { name: equipment.type },
+            include: { subComponents: true }
+        });
+        if (category) {
+            equipment.categoryObj = category;
+        }
+      }
     }
 
     // 3. Fallback: Try ID (if input is numeric)
@@ -119,6 +140,16 @@ exports.getByQRCode = async (req, res, next) => {
           },
         },
       });
+
+      if (equipment && equipment.type) {
+        const category = await prisma.category.findUnique({
+            where: { name: equipment.type },
+            include: { subComponents: true }
+        });
+        if (category) {
+            equipment.categoryObj = category;
+        }
+      }
     }
 
     if (!equipment) {

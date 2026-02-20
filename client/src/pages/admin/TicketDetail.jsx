@@ -118,8 +118,11 @@ const AdminTicketDetail = () => {
                             </div>
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-0.5">Equipment Type</label>
-                                    <p className="font-bold text-gray-800 text-sm">{ticket.category?.name || "General"}</p>
+                                    <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-0.5">Category</label>
+                                    <p className="font-bold text-gray-800 text-sm">
+                                        {ticket.category?.name || "General"}
+                                        {ticket.subComponent ? ` (${ticket.subComponent})` : ""}
+                                    </p>
                                 </div>
                                 <span className="text-xs text-gray-400">{dayjs(ticket.createdAt).format('D MMM YY, HH:mm A')}</span>
                             </div>

@@ -45,6 +45,7 @@ const MonthlyReport = ({ month, year, externalData, externalLoading }) => {
     const inProgress = data?.in_progress || 0;
     const completed = data?.completed || 0;
     const resolutionRate = data?.resolutionRate || 0;
+    const subComponentBreakdown = data?.subComponentBreakdown || []; // [NEW]
 
     return (
         <div className="space-y-6">
@@ -189,6 +190,51 @@ const MonthlyReport = ({ month, year, externalData, externalLoading }) => {
                             </span>
                         </div>
                     </div>
+
+                    {/* [NEW] Inventory & Purchasing Summary */}
+                    {subComponentBreakdown.length > 0 && (
+                        <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden flex flex-col mt-4">
+                            <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Inventory & Purchasing Summary</h3>
+                                </div>
+                                <span className="text-xs text-gray-500 bg-white px-2.5 py-1 rounded border border-gray-200">
+                                    Based on Completed Tickets
+                                </span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-white text-gray-600 font-semibold text-xs uppercase border-b border-gray-100">
+                                        <tr>
+                                            <th className="p-4 pl-6">Replaced Part (Sub-Component)</th>
+                                            <th className="p-4 pr-6 text-right w-32">Amount Used</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {subComponentBreakdown.map((item, index) => (
+                                            <tr key={index} className="hover:bg-blue-50/50 transition-colors">
+                                                <td className="p-4 pl-6 font-medium text-gray-800">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                                        {item.name}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 pr-6 text-right">
+                                                    <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold min-w-[3rem]">
+                                                        {item.count}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="p-4 bg-blue-50/50 border-t border-gray-100 text-xs text-gray-600 flex items-center gap-2">
+                                <AlertCircle size={14} className="text-blue-500" />
+                                <span>Use this data to plan purchasing and replenish IT stock for next month.</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="min-h-[400px] flex flex-col items-center justify-center p-8 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">

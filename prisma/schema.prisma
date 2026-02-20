@@ -107,6 +107,9 @@ model Ticket {
   checklist      String?    @db.Text // JSON string: [{id, text, checked}]
   note           String?    @db.Text // IT Note / Diagnosis / Solution
 
+  // [NEW] Subcomponent
+  subComponent   String?    @db.VarChar(255)
+
   // Relations
   createdById Int
   createdBy   User @relation("TicketCreator", fields: [createdById], references: [id])
@@ -185,9 +188,17 @@ model ActivityLog {
 
 // === Models อื่นๆ ที่มีอยู่แล้ว (ไม่เปลี่ยน) ===
 model Category {
-  id      Int      @id @default(autoincrement())
-  name    String   @unique
-  tickets   Ticket[]
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  tickets       Ticket[]
+  subComponents SubComponent[]
+}
+
+model SubComponent {
+  id         Int      @id @default(autoincrement())
+  name       String
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 
