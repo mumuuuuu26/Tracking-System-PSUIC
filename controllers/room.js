@@ -3,7 +3,7 @@ const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 
 // สร้างห้อง
-exports.create = async (req, res) => {
+exports.create = async (req, res, next) => {
   try {
     const { roomNumber, building, floor, imageUrl } = req.body;
 
@@ -18,13 +18,12 @@ exports.create = async (req, res) => {
 
     res.json(room);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // ดูรายการห้องทั้งหมด
-exports.list = async (req, res) => {
+exports.list = async (req, res, next) => {
   try {
     const rooms = await prisma.room.findMany({
       include: {
@@ -37,13 +36,12 @@ exports.list = async (req, res) => {
 
     res.json(rooms);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // อัพเดทข้อมูลห้อง
-exports.update = async (req, res) => {
+exports.update = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { roomNumber, building, floor, imageUrl } = req.body;
@@ -60,13 +58,12 @@ exports.update = async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // ลบห้อง
-exports.remove = async (req, res) => {
+exports.remove = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.room.delete({
@@ -74,7 +71,6 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: "Room deleted successfully" });
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };

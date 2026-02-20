@@ -1,39 +1,33 @@
 import api from '../utils/axios';
 
-export const getMonthlyStats = async (token, month, year) => {
+export const getMonthlyStats = async (month, year) => {
     return await api.get(`/reports/monthly`, {
-        headers: { Authorization: `Bearer ${token}` },
         params: { month, year }
     });
 };
 
-export const getAnnualStats = async (token, year) => {
+export const getAnnualStats = async (year) => {
     return await api.get(`/reports/annual`, {
-        headers: { Authorization: `Bearer ${token}` },
         params: { year }
     });
 };
 
-export const getEquipmentStats = async (token) => {
+export const getEquipmentStats = async (month, year) => {
     return await api.get(`/reports/equipment`, {
-        headers: { Authorization: `Bearer ${token}` }
+        params: { month, year }
     });
 };
 
-export const getITPerformance = async (token) => {
+export const getITPerformance = async (startDate, endDate) => {
     return await api.get(`/reports/performance`, {
-        headers: { Authorization: `Bearer ${token}` }
+        params: { startDate, endDate }
     });
 };
 
-export const getSatisfactionStats = async (token) => {
-    return await api.get(`/reports/satisfaction`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-};
 
-export const getRoomStats = async (token) => {
+
+export const getRoomStats = async (month, year) => {
     return await api.get(`/reports/room`, {
-        headers: { Authorization: `Bearer ${token}` }
+        params: { month, year }
     });
 };

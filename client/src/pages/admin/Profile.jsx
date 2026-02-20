@@ -60,7 +60,7 @@ const AdminProfile = () => {
         reader.onloadend = async () => {
             try {
                 const base64Image = reader.result;
-                await updateProfileImage(token, base64Image);
+                await updateProfileImage(base64Image);
                 toast.success("Profile picture updated!");
                 await checkUser();
                 fetchProfile();
@@ -74,7 +74,7 @@ const AdminProfile = () => {
     const handleUpdateField = async (field, value, updateStateFn, closeEditFn) => {
         try {
             const payload = { [field]: value };
-            await updateProfile(token, payload);
+            await updateProfile(payload);
             toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`);
             setProfile({ ...profile, ...payload });
             await checkUser();
@@ -116,7 +116,7 @@ const AdminProfile = () => {
                                         src={getImageUrl(profile.picture)}
                                         alt="Profile"
                                         className="w-full h-full object-cover"
-                                        onError={(e) => { e.target.src = '/default-profile.png'; }}
+                                        onError={(e) => { e.target.src = '/default-profile.svg'; }}
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-[#1e2e4a] text-white text-4xl font-bold">

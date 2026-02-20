@@ -48,20 +48,22 @@ app.use(express.json({ limit: "20mb" }));
 
 // 5. CORS (Production Grade)
 // อนุญาตเฉพาะ Frontend ของเราเท่านั้น เพื่อความปลอดภัย
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  "http://10.135.2.243:5173", // Still kept but prefer env
+  "http://10.135.2.243",
+  "http://172.20.10.2:5173",
+  "http://172.20.10.2",
+  /https?:\/\/.*\.ngrok-free\.app/
+].filter(Boolean); // Remove undefined/null from env
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",       // สำหรับ Dev ในเครื่อง
-      process.env.CLIENT_URL,        // จาก .env
-      process.env.FRONTEND_URL,      // จาก .env
-      "http://10.135.2.243:5173",    // สำหรับ Dev บน Server (เผื่อไว้)
-      "http://10.135.2.243",         // สำหรับ User ทั่วไป (Production)
-      "http://172.20.10.2:5173",     // For mobile testing
-      "http://172.20.10.2",          // For mobile testing
-      /https?:\/\/.*\.ngrok-free\.app/ // Allow all Ngrok subdomains
-    ],
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, // ถ้ามีการใช้ Cookie/Session
+    credentials: true,
   }),
 );
 
@@ -121,14 +123,14 @@ app.use("/api", quickFixRoutes);
 app.use("/api", permissionRoutes);
 // app.use("/api", healthRoutes); // Uncomment if exists
 
-// --- Global Error Handler ---
-const errorHandler = require("./middlewares/errorHandler");
-app.use(errorHandler);
-
-// --- Swagger ---
+// --- Swagger --- (mounted BEFORE error handler so errors are catchable)
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// --- Global Error Handler ---
+const errorHandler = require("./middlewares/errorHandler");
+app.use(errorHandler);
 
 // --- Server & Socket.io ---
 const http = require("http");
@@ -196,8 +198,6 @@ const startServer = async () => {
       logger.info(
         `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
       );
-      console.log("ENV:", process.env.NODE_ENV);
-      console.log("DB:", process.env.DATABASE_URL);
     });
 
     server.setTimeout(30000);
@@ -213,11 +213,17 @@ if (require.main === module) {
 }
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   logger.info("SIGTERM signal received: closing HTTP server");
-  server.close(() => {
+  const prisma = require("./config/prisma");
+  server.close(async () => {
     logger.info("HTTP server closed");
-    // ปิด Database connection ตรงนี้ได้ (ถ้าใช้ Prisma: prisma.$disconnect())
+    try {
+      await prisma.$disconnect();
+      logger.info("Prisma disconnected");
+    } catch (err) {
+      logger.error("Error during Prisma disconnect:", err);
+    }
     process.exit(0);
   });
 });

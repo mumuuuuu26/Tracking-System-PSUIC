@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Search, MapPin, Clock } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
 import { listMyTickets } from "../../api/ticket";
 import { useNavigate } from "react-router-dom";
 import UserWrapper from "../../components/user/UserWrapper";
@@ -10,7 +9,6 @@ import UserPageHeader from "../../components/user/UserPageHeader";
 import UserTicketCard from "../../components/user/UserTicketCard";
 
 const Report = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,14 +18,14 @@ const Report = () => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await listMyTickets(token);
+            const res = await listMyTickets();
             setTickets(res.data);
         } catch (err) {
             console.error("Ticket Fetch Error:", err);
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadData();

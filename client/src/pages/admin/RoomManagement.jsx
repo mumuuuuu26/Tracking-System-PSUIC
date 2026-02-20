@@ -2,13 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Search, MapPin, MoreVertical, Plus, Edit, Trash2, X, Image, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 
 const RoomManagement = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const [rooms, setRooms] = useState([]);
     const [filteredRooms, setFilteredRooms] = useState([]);
@@ -26,14 +24,14 @@ const RoomManagement = () => {
 
     const loadRooms = useCallback(async () => {
         try {
-            const res = await listRooms(token);
+            const res = await listRooms();
             setRooms(res.data);
             setFilteredRooms(res.data);
         } catch (err) {
             console.error(err);
             toast.error("Failed to load rooms");
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadRooms();
@@ -74,10 +72,10 @@ const RoomManagement = () => {
         e.preventDefault();
         try {
             if (isEditMode) {
-                await updateRoom(token, currentRoomId, formData);
+                await updateRoom(currentRoomId, formData);
                 toast.success("Room updated successfully");
             } else {
-                await createRoom(token, formData);
+                await createRoom(formData);
                 toast.success("Room created successfully");
             }
             setIsModalOpen(false);
@@ -91,7 +89,7 @@ const RoomManagement = () => {
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this room?")) {
             try {
-                await removeRoom(token, id);
+                await removeRoom(id);
                 toast.success("Room deleted successfully");
                 loadRooms();
             } catch (err) {

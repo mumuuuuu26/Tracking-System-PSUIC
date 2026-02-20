@@ -1,105 +1,59 @@
 import api from "../utils/axios";
 
 // Get dashboard statistics
-export const getStats = async (token) => {
-    return await api.get('/it/stats', {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const getStats = async () => {
+    return await api.get('/it/stats');
 };
 
 // Get IT tasks
-export const getMyTasks = async (token) => {
-    return await api.get('/it/tasks', {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const getMyTasks = async () => {
+    return await api.get('/it/tasks');
 };
 
 
 
 // Accept job
-export const previewJob = async (token, id) => {
-    return await api.get(`/it/job/${id}/preview`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const previewJob = async (id) => {
+    return await api.get(`/it/job/${id}/preview`);
 };
 
-export const acceptJob = async (token, id) => {
-    return await api.put(
-        `/it/accept/${id}`,
-        {},
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
+export const acceptJob = async (id) => {
+    return await api.put(`/it/accept/${id}`, {});
 };
 
-export const rejectJob = async (token, id, reason) => {
-    return await api.put(
-        `/it/reject/${id}`,
-        { reason },
-        {
-            headers: { Authorization: `Bearer ${token}` },
-        }
-    );
+export const rejectJob = async (id, reason) => {
+    return await api.put(`/it/reject/${id}`, { reason });
 };
 
 
 
 // Close job
-export const closeJob = async (token, id, data) => {
-    return await api.put(`/it/close/${id}`, data, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const closeJob = async (id, data) => {
+    return await api.put(`/it/close/${id}`, data);
 };
 
 // Save Draft (Checklist & Notes)
-export const saveDraft = async (token, id, data) => {
-    return await api.put(`/it/draft/${id}`, data, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const saveDraft = async (id, data) => {
+    return await api.put(`/it/draft/${id}`, data);
 };
 
 
 
 // Get history
-export const getHistory = async (token) => {
-    return await api.get('/it/history', {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const getHistory = async () => {
+    return await api.get('/it/history');
 };
 
 
 // Get public schedule
-export const getPublicSchedule = async (token) => {
-    return await api.get('/it/public-schedule', {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
+export const getPublicSchedule = async () => {
+    return await api.get('/it/public-schedule');
 };
 
-export const syncGoogleCalendar = async (token) => {
-    return await api.post('/it/google-sync', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+export const syncGoogleCalendar = async () => {
+    return await api.post('/it/google-sync', {})
 };
 
-export const testGoogleSync = async (token) => {
-    return await api.get('/it/test-google-sync', {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+export const testGoogleSync = async () => {
+    return await api.get('/it/test-google-sync');
 };

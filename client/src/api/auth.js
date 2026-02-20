@@ -11,20 +11,12 @@ export const login = async (form) => {
 }
 
 // Get Current User
-export const currentUser = async (token) => {
-    return await api.post('/current-user', {}, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
+export const currentUser = async () => {
+    return await api.post('/current-user', {})
 }
 
 // Get Current Admin
-export const currentAdmin = async (token) => {
-    return await api.post('/current-admin', {}, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
+export const currentAdmin = async () => {
+    return await api.post('/current-admin', {})
 }
 

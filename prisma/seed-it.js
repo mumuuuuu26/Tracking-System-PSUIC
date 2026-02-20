@@ -73,7 +73,7 @@ async function main() {
       title: "Projector ไม่ทำงาน",
       description: "เปิดเครื่องไม่ติด ไฟไม่เข้า",
       urgency: "High",
-      status: "pending",
+      status: "not_start",
       createdById: testUser.id,
       roomId: 3, // Room 201
       categoryId: 1, // Classroom Equipment
@@ -82,7 +82,7 @@ async function main() {
       title: "คอมพิวเตอร์ค้าง",
       description: "เปิดโปรแกรมไม่ได้ หน้าจอค้าง",
       urgency: "Medium",
-      status: "pending",
+      status: "not_start",
       createdById: testUser.id,
       roomId: 6, // Computer Lab
       categoryId: 2, // Computer Lab

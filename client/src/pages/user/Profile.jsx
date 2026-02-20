@@ -61,7 +61,7 @@ const Profile = () => {
     reader.onloadend = async () => {
       try {
         const base64Image = reader.result;
-        await updateProfileImage(token, base64Image);
+        await updateProfileImage(base64Image);
         toast.success("Profile picture updated!");
         await checkUser();
         fetchProfile();
@@ -78,7 +78,7 @@ const Profile = () => {
       return;
     }
     try {
-      await updateProfile(token, { name: nameInput });
+      await updateProfile({ name: nameInput });
       toast.success("Name updated successfully!");
       setProfile({ ...profile, name: nameInput });
       await checkUser(); // Sync header
@@ -91,7 +91,7 @@ const Profile = () => {
 
   const handleUpdateUsername = async () => {
     try {
-      await updateProfile(token, { username: usernameInput });
+      await updateProfile({ username: usernameInput });
       toast.success("Username updated successfully!");
       setProfile({ ...profile, username: usernameInput });
       await checkUser(); // Sync header
@@ -142,7 +142,7 @@ const Profile = () => {
                     src={getImageUrl(profile.picture)}
                     alt="Profile"
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.target.src = '/default-profile.png'; }}
+                    onError={(e) => { e.target.src = '/default-profile.svg'; }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-4xl font-bold">

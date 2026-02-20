@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, ChevronLeft, Clock, User, MapPin, X, ChevronRight, Check } from "lucide-react";
 import dayjs from "dayjs";
-import useAuthStore from "../../store/auth-store";
 import { getPublicSchedule, syncGoogleCalendar } from "../../api/it";
 import { updateProfile } from "../../api/user";
 import { currentUser } from "../../api/auth";
@@ -16,7 +15,6 @@ import Swal from "sweetalert2";
 
 const Schedule = () => {
     const navigate = useNavigate();
-    const { token } = useAuthStore();
 
     // State
     const [schedule, setSchedule] = useState([]);
@@ -37,7 +35,7 @@ const Schedule = () => {
     const loadSchedule = React.useCallback(async () => {
         try {
             setLoading(true);
-            const res = await getPublicSchedule(token);
+            const res = await getPublicSchedule();
             setSchedule(res.data);
         } catch (err) {
             console.error(err);
@@ -45,11 +43,11 @@ const Schedule = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     const loadProfile = React.useCallback(async () => {
         try {
-            const res = await currentUser(token);
+            const res = await currentUser();
             if (res.data) {
                 setCalendarId(res.data.googleCalendarId || "");
                 setSavedCalendarId(res.data.googleCalendarId || ""); // This triggers the useEffect below
@@ -58,7 +56,7 @@ const Schedule = () => {
         } catch (err) {
             console.error("Failed to load profile", err);
         }
-    }, [token]);
+    }, []);
 
     const performSync = React.useCallback(async () => {
         // Prevent sync if no ID is saved to avoid 400 errors
@@ -66,7 +64,7 @@ const Schedule = () => {
 
         try {
             setSyncing(true);
-            await syncGoogleCalendar(token);
+            await syncGoogleCalendar();
             loadSchedule();
         } catch (err) {
             console.error(err);
@@ -77,29 +75,27 @@ const Schedule = () => {
         } finally {
             setSyncing(false);
         }
-    }, [token, loadSchedule, savedCalendarId]);
+    }, [loadSchedule, savedCalendarId]);
 
     // Initial Load & Polling
     useEffect(() => {
-        if (token) {
-            loadProfile();
+        loadProfile();
+        loadSchedule();
+
+        const intervalId = setInterval(() => {
             loadSchedule();
+        }, 60000);
 
-            const intervalId = setInterval(() => {
-                loadSchedule();
-            }, 60000);
-
-            return () => clearInterval(intervalId);
-        }
-    }, [token, loadProfile, loadSchedule]);
+        return () => clearInterval(intervalId);
+    }, [loadProfile, loadSchedule]);
 
     // Auto-sync ONCE when savedCalendarId is available (e.g. on page reload)
     useEffect(() => {
-        if (token && savedCalendarId) {
+        if (savedCalendarId) {
             performSync();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token, savedCalendarId]);
+    }, [savedCalendarId]);
 
     const handleSaveSettings = async () => {
         if (!calendarId) {
@@ -110,11 +106,11 @@ const Schedule = () => {
         try {
             setSyncing(true);
             // 1. Save Profile (Backend triggers async sync, but we want to wait for clear result)
-            await updateProfile(token, { googleCalendarId: calendarId });
+            await updateProfile({ googleCalendarId: calendarId });
             setSavedCalendarId(calendarId);
 
             // 2. Explicitly Sync to get event count for feedback
-            const res = await syncGoogleCalendar(token);
+            const res = await syncGoogleCalendar();
 
             setShowSettings(false);
             toast.success(`Connected! Synced ${res.data.count} events.`);

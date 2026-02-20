@@ -4,7 +4,6 @@ import {
   Eye,
 
 } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 
 import {
@@ -23,7 +22,6 @@ import ITWrapper from "../../components/it/ITWrapper";
 
 const ITDashboard = () => {
   const navigate = useNavigate();
-  const { token } = useAuthStore();
 
   const [tickets, setTickets] = useState([]);
   const [profile, setProfile] = useState(null);
@@ -47,8 +45,8 @@ const ITDashboard = () => {
       setLoading(true);
 
       const [ticketsRes, profileRes] = await Promise.all([
-        getMyTasks(token),
-        currentUser(token)
+        getMyTasks(),
+        currentUser()
       ]);
 
       setProfile(profileRes.data);
@@ -75,21 +73,18 @@ const ITDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
 
 
   useEffect(() => {
-    if (token) {
-      loadDashboardData();
-    }
-  }, [token, loadDashboardData]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   // Real-time updates
   // Real-time updates
   useEffect(() => {
     const handleNewTicket = (newTicket) => {
-      console.log("Socket: New Ticket Received", newTicket);
       setTickets((prev) => [newTicket, ...prev]);
       setStats((prev) => ({
         ...prev,
@@ -98,7 +93,6 @@ const ITDashboard = () => {
     };
 
     const handleUpdateTicket = (updatedTicket) => {
-      console.log("Socket: Ticket Updated", updatedTicket);
       setTickets((prev) => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
     }
 
@@ -114,7 +108,7 @@ const ITDashboard = () => {
   const handleAccept = async (e, ticketId) => {
     e.stopPropagation();
     try {
-      await acceptJob(token, ticketId);
+      await acceptJob(ticketId);
       toast.success("Ticket accepted successfully!");
       navigate(`/it/ticket/${ticketId}`);
     } catch (err) {
@@ -125,7 +119,7 @@ const ITDashboard = () => {
   const handleReject = async () => {
     if (!rejectReason.trim()) return toast.warning("Please provide a reason");
     try {
-      await rejectJob(token, selectedTicket.id, rejectReason);
+      await rejectJob(selectedTicket.id, rejectReason);
       toast.success("Ticket rejected successfully");
       setShowRejectModal(false);
       setRejectReason("");
@@ -146,7 +140,7 @@ const ITDashboard = () => {
 
   // Filter "New Tickets" -> Pending status
   // Sort by Priority (Critical > High > Medium > Low) THEN by Arrival (Oldest First)
-  const urgencyWeight = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
+  const urgencyWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
   const newTickets = tickets
     .filter(t => t.status === "not_start")
     .sort((a, b) => {

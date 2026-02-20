@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Edit, Trash2, X, Folder } from "lucide-react";
 import { listCategories, createCategory, updateCategory, removeCategory } from "../../api/category";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 
 const CategoryManagement = () => {
-    const { token } = useAuthStore();
     const [categories, setCategories] = useState([]);
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -22,14 +20,14 @@ const CategoryManagement = () => {
 
     const loadCategories = useCallback(async () => {
         try {
-            const res = await listCategories(token);
+            const res = await listCategories();
             setCategories(res.data);
             setFilteredCategories(res.data);
         } catch (err) {
             console.error(err);
             toast.error("Failed to load categories");
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadCategories();
@@ -65,10 +63,10 @@ const CategoryManagement = () => {
         e.preventDefault();
         try {
             if (isEditMode) {
-                await updateCategory(token, currentCatId, formData);
+                await updateCategory(currentCatId, formData);
                 toast.success("Category updated successfully");
             } else {
-                await createCategory(token, formData);
+                await createCategory(formData);
                 toast.success("Category created successfully");
             }
             setIsModalOpen(false);
@@ -82,7 +80,7 @@ const CategoryManagement = () => {
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this category?")) {
             try {
-                await removeCategory(token, id);
+                await removeCategory(id);
                 toast.success("Category deleted successfully");
                 loadCategories();
             } catch (err) {

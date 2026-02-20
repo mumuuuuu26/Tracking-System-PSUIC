@@ -21,16 +21,24 @@ const Register = () => {
 
     const hdlSubmit = async (e) => {
         e.preventDefault()
+        // Client-side validation
+        if (!form.email || !form.password || !form.confirmPassword) {
+            return toast.error('Please fill in all fields')
+        }
         if (form.password !== form.confirmPassword) {
             return toast.error('Passwords do not match')
         }
+
         try {
             await register(form)
             toast.success('Register Success')
             navigate('/login')
         } catch (err) {
             console.error(err)
-            toast.error(err.response?.data?.message || 'Register Failed')
+            const errMsg = err.response?.data?.message
+            // Check for array of errors from Zod
+            const errErrors = err.response?.data?.errors?.[0]?.message
+            toast.error(errErrors || errMsg || 'Register Failed')
         }
     }
 

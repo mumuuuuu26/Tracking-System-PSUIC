@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Bell, Check, Trash2, Clock, FilePlus, RefreshCw, AlertCircle } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
 import { useNavigate } from "react-router-dom";
 import {
     listNotifications,
@@ -14,7 +13,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 const Notifications = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,7 +20,7 @@ const Notifications = () => {
     const fetchNotifications = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await listNotifications(token);
+            const res = await listNotifications();
             setNotifications(res.data);
         } catch (err) {
             console.error(err);
@@ -30,7 +28,7 @@ const Notifications = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         fetchNotifications();
@@ -39,7 +37,7 @@ const Notifications = () => {
     const handleMarkRead = async (e, id) => {
         e.stopPropagation();
         try {
-            await markRead(token, id);
+            await markRead(id);
             setNotifications((prev) =>
                 prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
             );
@@ -52,7 +50,7 @@ const Notifications = () => {
     const handleDelete = async (e, id) => {
         e.stopPropagation();
         try {
-            await removeNotification(token, id);
+            await removeNotification(id);
             setNotifications((prev) => prev.filter((n) => n.id !== id));
             toast.success("Notification removed");
         } catch {
@@ -68,7 +66,7 @@ const Notifications = () => {
                 prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
             );
             // API call in background (don't await to block nav)
-            markRead(token, notification.id).catch(console.error);
+            markRead(notification.id).catch(console.error);
         }
 
         // 2. Navigate to ticket

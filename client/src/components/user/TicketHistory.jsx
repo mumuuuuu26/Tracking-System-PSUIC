@@ -26,7 +26,7 @@ const TicketHistory = () => {
                 .catch(err => console.error("Category Fetch Error:", err));
 
             // Fetch Tickets
-            const ticketRes = await getTicketHistory(token, { categoryId: filters.categoryId });
+            const ticketRes = await getTicketHistory({ categoryId: filters.categoryId });
             setTickets(ticketRes.data);
         } catch (err) {
             console.error("Ticket Fetch Error:", err);

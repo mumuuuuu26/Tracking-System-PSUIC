@@ -1,5 +1,5 @@
 export const getImageUrl = (path) => {
-  if (!path) return '/default-profile.png';
+  if (!path) return '/default-profile.svg';
   if (path.startsWith('http')) return path;
   
   // Get API URL from env

@@ -1,17 +1,16 @@
 // client/src/pages/admin/EquipmentManagement.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, ChevronDown, Monitor, Printer, Wifi, Wind, Box, ArrowLeft, QrCode, Edit, Trash2, X, Save } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { listCategories, createCategory, updateCategory, removeCategory } from "../../api/category"; // Updated imports
+import { listCategories, createCategory, updateCategory, removeCategory } from "../../api/category";
+import { listEquipments, createEquipment, updateEquipment, removeEquipment, getEquipmentQR } from "../../api/equipment";
+import { listRooms } from "../../api/room";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
 
 const EquipmentManagement = () => {
-  const { token } = useAuthStore();
   const navigate = useNavigate();
   const [equipments, setEquipments] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -38,40 +37,37 @@ const EquipmentManagement = () => {
     name: "",
     type: "", // This will now map to category name
     roomId: "",
+    serialNo: "",
   });
 
   const loadEquipments = useCallback(async () => {
     try {
-      const res = await axios.get("/api/equipment", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await listEquipments();
       setEquipments(res.data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const loadRooms = useCallback(async () => {
     try {
-      const res = await axios.get("/api/room", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await listRooms();
       setRooms(res.data);
     } catch (err) {
       console.error(err);
     }
-  }, [token]);
+  }, []);
 
   const loadCategories = useCallback(async () => {
     try {
-      const res = await listCategories(token);
+      const res = await listCategories();
       setCategories(res.data);
     } catch (err) {
       console.error(err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadEquipments();
@@ -87,21 +83,17 @@ const EquipmentManagement = () => {
     try {
       if (editingEquipment) {
         // Update existing equipment
-        await axios.put(`/api/equipment/${editingEquipment.id}`, form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await updateEquipment(editingEquipment.id, form);
         toast.success("Equipment updated successfully");
       } else {
         // Create new equipment
-        await axios.post("/api/equipment", form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await createEquipment(form);
         toast.success("Equipment created successfully");
       }
       loadEquipments();
       setShowAddModal(false);
       setEditingEquipment(null);
-      setForm({ name: "", type: "", roomId: "" });
+      setForm({ name: "", type: "", roomId: "", serialNo: "" });
     } catch {
       toast.error(editingEquipment ? "Failed to update equipment" : "Failed to create equipment");
     }
@@ -109,7 +101,7 @@ const EquipmentManagement = () => {
 
   const openAddModal = () => {
     setEditingEquipment(null);
-    setForm({ name: "", type: "", roomId: "" });
+    setForm({ name: "", type: "", roomId: "", serialNo: "" });
     setShowAddModal(true);
   };
 
@@ -127,12 +119,7 @@ const EquipmentManagement = () => {
   const handleDeleteEquipment = async (id) => {
     if (window.confirm("Are you sure you want to delete this equipment?")) {
       try {
-        // Assuming DELETE endpoint exists as per standard REST, though not explicitly in the previous file view
-        // If not, we might need to add it to equipment.js api or check routes. 
-        // For now, using axios directly as seen in loadEquipments
-        await axios.delete(`/api/equipment/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await removeEquipment(id);
         toast.success("Equipment deleted successfully");
         loadEquipments();
       } catch (err) {
@@ -150,7 +137,7 @@ const EquipmentManagement = () => {
     if (!newCategoryName.trim()) return;
 
     try {
-      await createCategory(token, { name: newCategoryName });
+      await createCategory({ name: newCategoryName });
       toast.success("Category added");
       setNewCategoryName("");
       loadCategories();
@@ -163,7 +150,7 @@ const EquipmentManagement = () => {
   const handleUpdateCategory = async (id, name) => {
     if (!name.trim()) return;
     try {
-      await updateCategory(token, id, { name });
+      await updateCategory(id, { name });
       toast.success("Category updated");
       setEditingCategory(null);
       loadCategories();
@@ -176,7 +163,7 @@ const EquipmentManagement = () => {
   const handleDeleteCategory = async (id) => {
     if (!window.confirm("Delete this category?")) return;
     try {
-      await removeCategory(token, id);
+      await removeCategory(id);
       toast.success("Category deleted");
       loadCategories();
     } catch (err) {
@@ -189,9 +176,7 @@ const EquipmentManagement = () => {
 
   const showQR = async (equipmentId) => {
     try {
-      const res = await axios.get(`/api/equipment/${equipmentId}/qr`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await getEquipmentQR(equipmentId);
       setSelectedQR(res.data);
       setShowQRModal(true);
     } catch {

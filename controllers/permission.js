@@ -2,7 +2,7 @@ const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 
 // Get permissions for a role (create default if not exists)
-exports.getPermissions = async (req, res) => {
+exports.getPermissions = async (req, res, next) => {
     try {
         const { role } = req.params;
 
@@ -30,13 +30,12 @@ exports.getPermissions = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
 // Update permissions
-exports.updatePermissions = async (req, res) => {
+exports.updatePermissions = async (req, res, next) => {
     try {
         const { role } = req.params;
         const data = req.body;
@@ -58,13 +57,12 @@ exports.updatePermissions = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
 // Reset to default
-exports.resetPermissions = async (req, res) => {
+exports.resetPermissions = async (req, res, next) => {
     try {
         const { role } = req.params;
         
@@ -85,7 +83,6 @@ exports.resetPermissions = async (req, res) => {
 
         res.json(permission);
     } catch (err) {
-         logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 }

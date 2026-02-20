@@ -7,7 +7,7 @@ const { z } = require("zod");
 const createTicketSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  urgency: z.enum(["Low", "Normal", "Medium", "High", "Critical"]),
+  urgency: z.enum(["Low", "Medium", "High"]),
   roomId: z.preprocess((val) => parseInt(val), z.number()),
   equipmentId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
   categoryId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
@@ -16,18 +16,12 @@ const createTicketSchema = z.object({
 
 const updateTicketSchema = z.object({
   status: z.enum(["not_start", "in_progress", "completed", "rejected"]).optional(),
-  urgency: z.enum(["Low", "Normal", "Medium", "High", "Critical"]).optional(),
+  urgency: z.enum(["Low", "Medium", "High"]).optional(),
   assignedToId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
   adminNote: z.string().optional(),
-  rating: z.number().min(0).max(100).optional(),
-  userFeedback: z.string().optional(),
   categoryId: z.preprocess((val) => val ? parseInt(val) : null, z.number().nullable()).optional(),
 });
 
-const feedbackSchema = z.object({
-  susValues: z.array(z.number().min(1).max(5)).length(10, "Please answer all 10 questions"),
-  userFeedback: z.string().optional(),
-});
 
 exports.create = async (req, res, next) => {
   try {
@@ -114,7 +108,7 @@ exports.create = async (req, res, next) => {
         }
       }
     } catch (emailError) {
-      logger.error("❌ Email Send Error:", emailError.message);
+      logger.error(`❌ Email Notification Failed for Ticket #${newTicket.id}:`, emailError);
     }
 
     // Database Notifications
@@ -157,8 +151,6 @@ exports.update = async (req, res, next) => {
       urgency,
       assignedToId,
       adminNote,
-      rating,
-      userFeedback,
       categoryId,
     } = validatedData;
 
@@ -173,24 +165,13 @@ exports.update = async (req, res, next) => {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
-    if (
-      req.user.role !== "admin" &&
-      req.user.role !== "it_support" &&
-      checkTicket.status !== "not_start" &&
-      status !== "completed" && 
-      !rating && !userFeedback 
-    ) {
-      return res.status(403).json({
-        message: "Access Denied: Cannot edit ticket that is being processed."
-      });
-    }
+    // Since the route is protected by `itCheck`, only admin or it_support can reach this point.
+    // They can update any ticket, so we don't need the old role check block.
 
     let updateData = {};
     if (status) updateData.status = status;
     if (urgency) updateData.urgency = urgency;
     if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
-    if (rating !== undefined) updateData.rating = rating;
-    if (userFeedback !== undefined) updateData.userFeedback = userFeedback;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (adminNote !== undefined) updateData.note = adminNote;
 
@@ -229,13 +210,13 @@ exports.update = async (req, res, next) => {
             title: updatedTicket.title,
             room: updatedTicket.room?.roomNumber || "N/A",
             resolver: updatedTicket.assignedTo?.name || "IT Team",
-            link: `${process.env.FRONTEND_URL}/user/feedback/${updatedTicket.id}`
+            link: `${process.env.FRONTEND_URL}/user/ticket/${updatedTicket.id}`
           }
         );
       } catch (e) { logger.error("Email notification failed", e); }
     }
 
-    if (updatedTicket.createdBy) {
+    if (updatedTicket.createdBy && updatedTicket.createdById) {
       await prisma.notification.create({
         data: {
           userId: updatedTicket.createdById,
@@ -259,7 +240,7 @@ exports.update = async (req, res, next) => {
   }
 };
 
-exports.list = async (req, res) => {
+exports.list = async (req, res, next) => {
   try {
     const tickets = await prisma.ticket.findMany({
       where: { 
@@ -284,19 +265,18 @@ exports.list = async (req, res) => {
 
     res.json(sortedTickets);
   } catch (err) {
-    logger.error("❌ List Tickets Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.history = async (req, res) => {
+exports.history = async (req, res, next) => {
   try {
     const { categoryId } = req.query;
     const userId = req.user.id;
 
     const where = {
       createdById: userId,
-      status: 'completed',
+      status: { in: ['completed', 'rejected'] },
       isDeleted: false
     };
 
@@ -318,12 +298,11 @@ exports.history = async (req, res) => {
 
     res.json(allTickets);
   } catch (err) {
-    logger.error("❌ History Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.read = async (req, res) => {
+exports.read = async (req, res, next) => {
   try {
     const { id } = req.params;
     const ticket = await prisma.ticket.findFirst({
@@ -342,14 +321,16 @@ exports.read = async (req, res) => {
         notification: true
       }
     });
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
     res.json(ticket);
   } catch (err) {
-    logger.error("❌ Read Ticket Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.listAll = async (req, res) => {
+exports.listAll = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search, status } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -359,9 +340,7 @@ exports.listAll = async (req, res) => {
 
     if (status && status !== 'all' && status !== 'All') {
       where.status = status;
-    } else {
-      where.status = { not: 'rejected' };
-    }
+    } // No else - if 'all', we don't apply any status filter, showing everything including rejected
 
     if (search) {
       where.OR = [
@@ -402,12 +381,11 @@ exports.listAll = async (req, res) => {
       totalPages: Math.ceil(total / take)
     });
   } catch (err) {
-    logger.error("❌ List All Tickets Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.remove = async (req, res) => {
+exports.remove = async (req, res, next) => {
   try {
     const { id } = req.params;
     const checkTicket = await prisma.ticket.findFirst({
@@ -434,12 +412,11 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
-    logger.error("❌ Remove Ticket Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.listByEquipment = async (req, res) => {
+exports.listByEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;
     const tickets = await prisma.ticket.findMany({
@@ -449,82 +426,8 @@ exports.listByEquipment = async (req, res) => {
     });
     res.json(tickets);
   } catch (err) {
-    logger.error("❌ List By Equipment Error:", err);
-    res.status(500).json({ message: "Server Error" });
-  }
-};
-
-exports.submitFeedback = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { susValues, userFeedback } = feedbackSchema.parse(req.body);
-
-    let sum = 0;
-    susValues.forEach((val, index) => {
-      if (index % 2 === 0) sum += (val - 1);
-      else sum += (5 - val);
-    });
-
-    const finalScore = sum * 2.5;
-
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: parseInt(id) },
-      include: { assignedTo: true }
-    });
-
-    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-
-    const updatedTicket = await prisma.ticket.update({
-      where: { id: parseInt(id) },
-      data: {
-        rating: Math.round(finalScore),
-        susDetails: JSON.stringify(susValues),
-        userFeedback
-      }
-    });
-
-    if (ticket.assignedToId) {
-      const itUser = await prisma.user.findUnique({
-        where: { id: ticket.assignedToId },
-        select: { totalRated: true, avgRating: true }
-      });
-
-      if (itUser) {
-        const newTotal = (itUser.totalRated || 0) + 1;
-        const newAvg = (((itUser.avgRating || 0) * (itUser.totalRated || 0)) + finalScore) / newTotal;
-
-        await prisma.user.update({
-          where: { id: ticket.assignedToId },
-          data: { totalRated: newTotal, avgRating: newAvg }
-        });
-
-        // [NEW] Send Email to IT Support about the feedback
-        if (itUser.isEmailEnabled !== false) {
-           const { sendEmailNotification } = require("../utils/sendEmailHelper");
-           const recipient = itUser.notificationEmail && itUser.notificationEmail.includes("@") 
-              ? itUser.notificationEmail 
-              : itUser.email;
-
-           if (recipient && recipient.includes("@")) {
-              await sendEmailNotification(
-                "ticket_feedback_it",
-                recipient,
-                {
-                   ticketId: ticket.id,
-                   title: ticket.title,
-                   rater: req.user.name || req.user.email,
-                   rating: Math.round(finalScore),
-                   comments: userFeedback || "No comments",
-                   link: `${process.env.FRONTEND_URL}/it/ticket/${ticket.id}`
-                }
-              ).catch(e => logger.error("Feedback Email Error:", e));
-           }
-        }
-      }
-    }
-
-    res.json(updatedTicket);
-  } catch (err) {
     next(err);
   }
 };
+
+

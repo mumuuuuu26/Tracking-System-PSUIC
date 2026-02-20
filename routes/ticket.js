@@ -12,7 +12,6 @@ const {
   remove,
   listAll,
   listByEquipment,
-  submitFeedback,
   history
 } = require("../controllers/ticket");
 
@@ -30,19 +29,19 @@ router.get("/ticket/all", authCheck, itCheck, listAll);
 // ดูประวัติแจ้งซ่อม (History) พร้อม Filter Category
 router.get("/ticket/history", authCheck, history);
 
+// [BUG FIX] ดูประวัติซ่อมของอุปกรณ์ — ต้องอยู่ก่อน /ticket/:id เสมอ
+// มิฉะนั้น Express จะตีความ "equipment" เป็น :id แล้วผ่านค่า NaN ไปยัง DB
+router.get("/ticket/equipment/:id", authCheck, listByEquipment);
+
 //ดูรายละเอียด Ticket ตาม ID
 router.get("/ticket/:id", authCheck, read);
 
-//อัปเดตสถานะ Ticket
-router.put("/ticket/:id", authCheck, adminCheck, update);
+//อัปเดตสถานะ Ticket (admin + it_support)
+router.put("/ticket/:id", authCheck, itCheck, update);
 
 //ลบ Ticket
 router.delete("/ticket/:id", authCheck, adminCheck, remove);
 
-//ดูประวัติซ่อมของอุปกรณ์ (สำหรับ User/Scan QR)
-router.get("/ticket/equipment/:id", authCheck, listByEquipment);
 
-//ให้คะแนนความพึงพอใจ
-router.post("/ticket/:id/feedback", authCheck, submitFeedback);
 
 module.exports = router;

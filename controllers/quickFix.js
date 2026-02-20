@@ -1,7 +1,7 @@
 const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 
-exports.list = async (req, res) => {
+exports.list = async (req, res, next) => {
     try {
         const data = await prisma.quickFix.findMany({
             where: {
@@ -13,12 +13,11 @@ exports.list = async (req, res) => {
         });
         res.send(data);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
-exports.create = async (req, res) => {
+exports.create = async (req, res, next) => {
     try {
         const { title, description, image, category } = req.body;
         const newFix = await prisma.quickFix.create({
@@ -32,12 +31,11 @@ exports.create = async (req, res) => {
         });
         res.send(newFix);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
-exports.update = async (req, res) => {
+exports.update = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { title, description, image, category } = req.body;
@@ -53,12 +51,11 @@ exports.update = async (req, res) => {
         });
         res.send(updated);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
-exports.remove = async (req, res) => {
+exports.remove = async (req, res, next) => {
     try {
         const { id } = req.params;
         const deleted = await prisma.quickFix.delete({
@@ -66,12 +63,11 @@ exports.remove = async (req, res) => {
         });
         res.send(deleted);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
-exports.read = async (req, res) => {
+exports.read = async (req, res, next) => {
     try {
         const { id } = req.params;
         // Increment view count
@@ -85,7 +81,6 @@ exports.read = async (req, res) => {
         });
         res.send(data);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 }

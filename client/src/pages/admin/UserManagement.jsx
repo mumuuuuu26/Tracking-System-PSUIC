@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Edit2, Trash2, ArrowLeft, ChevronLeft, ChevronRight, X, Check, ChevronDown } from "lucide-react";
 import { listUsers, removeUser, createUser, changeRole } from "../../api/user";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -10,7 +9,6 @@ import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
 
 const UserManagement = () => {
-  const { token } = useAuthStore();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -35,8 +33,14 @@ const UserManagement = () => {
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      // Fetch all users mostly
-      const res = await listUsers(token, { role: 'all' });
+
+      // Map UI filter to API role
+      let roleParam = 'all';
+      if (viewFilter === 'User') roleParam = 'user';
+      if (viewFilter === 'IT Support') roleParam = 'it_support';
+      if (viewFilter === 'Admin') roleParam = 'admin';
+
+      const res = await listUsers({ role: roleParam });
       setUsers(res.data);
     } catch (err) {
       console.error(err);
@@ -44,7 +48,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [viewFilter]);
 
   useEffect(() => {
     loadUsers();
@@ -74,7 +78,7 @@ const UserManagement = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await removeUser(token, id);
+          await removeUser(id);
           toast.success("User Deleted");
           loadUsers();
         } catch {
@@ -90,7 +94,7 @@ const UserManagement = () => {
       if (!addUserForm.name || !addUserForm.email) {
         return toast.error("Please fill in all required fields");
       }
-      await createUser(token, addUserForm);
+      await createUser(addUserForm);
       toast.success("User Added Successfully");
       setIsAddModalOpen(false);
       setAddUserForm({ name: "", email: "", role: "user" });
@@ -104,7 +108,7 @@ const UserManagement = () => {
   const handleEditRole = async (e) => {
     e.preventDefault();
     try {
-      await changeRole(token, { id: selectedUser.id, role: newRole });
+      await changeRole({ id: selectedUser.id, role: newRole });
       toast.success("Role Updated Successfully");
       setIsEditRoleModalOpen(false);
       loadUsers();
@@ -120,12 +124,7 @@ const UserManagement = () => {
       (u.email || "").toLowerCase().includes(search.toLowerCase()) ||
       (u.username || "").toLowerCase().includes(search.toLowerCase());
 
-    let matchesRole = true;
-    if (viewFilter === 'User') matchesRole = u.role === 'user';
-    if (viewFilter === 'IT Support') matchesRole = u.role === 'it_support';
-    if (viewFilter === 'Admin') matchesRole = u.role === 'admin';
-
-    return matchesSearch && matchesRole;
+    return matchesSearch;
   });
 
   // Pagination Logic
@@ -153,7 +152,7 @@ const UserManagement = () => {
 
   return (
     <AdminWrapper>
-      <div className="flex flex-col h-full px-6 pt-4 pb-24 md:pb-4 space-y-4 overflow-hidden">
+      <div className="flex flex-col h-full px-6 pt-4 pb-6 space-y-4 overflow-hidden">
         {/* Page Header */}
         <AdminHeader
           title="User Management"
@@ -188,7 +187,7 @@ const UserManagement = () => {
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-[#1e2e4a] text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#15233b] transition-colors mr-2 whitespace-nowrap"
+              className="bg-[#1e2e4a] text-white px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 hover:bg-[#15233b] transition-colors mr-2 whitespace-nowrap"
             >
               <Plus size={16} /> Add User
             </button>
@@ -213,12 +212,12 @@ const UserManagement = () => {
 
                   {/* Info */}
                   <div className="min-w-0">
-                    <h3 className="font-bold text-[#1e2e4a] text-base leading-tight truncate">{user.name || 'No Name'}</h3>
-                    <p className="text-gray-400 text-xs font-medium mt-0.5 truncate uppercase">
+                    <h3 className="text-[#1e2e4a] text-base leading-tight truncate">{user.name || 'No Name'}</h3>
+                    <p className="text-gray-400 text-xs mt-0.5 truncate uppercase">
                       {user.username || user.email || '-'}
                     </p>
                     <div className="mt-2">
-                      <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${getRoleBadgeStyle(user.role)}`}>
+                      <span className={`inline-block px-3 py-1 rounded-full text-[10px] ${getRoleBadgeStyle(user.role)}`}>
                         {getRoleLabel(user.role)}
                       </span>
                     </div>
@@ -251,16 +250,16 @@ const UserManagement = () => {
           </div>
 
           {paginatedUsers.length === 0 && !loading && (
-            <div className="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <Search size={48} className="mb-4 opacity-10" />
-              <p className="text-sm font-medium">No users found matching your search.</p>
+              <p className="text-sm">No users found matching your search.</p>
             </div>
           )}
         </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-1 mt-4 shrink-0 flex-wrap px-4 pb-2">
+        {/* Pagination — pinned to the bottom of the viewport */}
+        {totalPages > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-100 flex justify-center items-center gap-1 py-3 flex-wrap">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -270,7 +269,6 @@ const UserManagement = () => {
             </button>
 
             {(() => {
-              // Generate pages with visibility logic
               const generatePages = () => {
                 const pages = [];
                 const addPage = (num, type = 'visible') => pages.push({ num, type });
@@ -307,7 +305,7 @@ const UserManagement = () => {
                   key={index}
                   onClick={() => typeof page.num === 'number' && setCurrentPage(page.num)}
                   disabled={page.num === '...'}
-                  className={`flex items-center justify-center rounded-lg text-sm font-bold transition-all
+                  className={`flex items-center justify-center rounded-lg text-sm transition-all
                     ${page.type === 'desktop-only' ? 'hidden md:flex' : 'flex'}
                     ${page.num === '...' ? 'w-6 md:w-8 cursor-default text-gray-400' : 'w-8 h-8 md:w-9 md:h-9'}
                     ${page.num === currentPage
@@ -337,14 +335,14 @@ const UserManagement = () => {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-[#1e2e4a]">Add New User</h2>
+                <h2 className="text-xl text-[#1e2e4a]">Add New User</h2>
                 <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                   <X size={24} />
                 </button>
               </div>
               <form onSubmit={handleAddUser} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Full Name</label>
+                  <label className="block text-xs text-gray-500 mb-1 uppercase">Full Name</label>
                   <input
                     type="text"
                     required
@@ -355,7 +353,7 @@ const UserManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Email / Username</label>
+                  <label className="block text-xs text-gray-500 mb-1 uppercase">Email / Username</label>
                   <input
                     type="text"
                     required
@@ -366,14 +364,14 @@ const UserManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Role</label>
+                  <label className="block text-xs text-gray-500 mb-1 uppercase">Role</label>
                   <div className="grid grid-cols-3 gap-2">
                     {['user', 'it_support', 'admin'].map((role) => (
                       <button
                         key={role}
                         type="button"
                         onClick={() => setAddUserForm({ ...addUserForm, role })}
-                        className={`px-2 py-2 rounded-lg text-xs font-bold border transition-colors ${addUserForm.role === role
+                        className={`px-2 py-2 rounded-lg text-xs border transition-colors ${addUserForm.role === role
                           ? 'bg-[#1e2e4a] text-white border-[#1e2e4a]'
                           : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
                           }`}
@@ -385,7 +383,7 @@ const UserManagement = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-[#1e2e4a] text-white py-3 rounded-xl font-bold hover:bg-[#15325b] transition-colors mt-2"
+                  className="w-full bg-[#1e2e4a] text-white py-3 rounded-xl hover:bg-[#15325b] transition-colors mt-2"
                 >
                   Create User
                 </button>
@@ -398,12 +396,12 @@ const UserManagement = () => {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-[#1e2e4a]">Change Role</h2>
+                <h2 className="text-xl text-[#1e2e4a]">Change Role</h2>
                 <button onClick={() => setIsEditRoleModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                   <X size={24} />
                 </button>
               </div>
-              <p className="text-gray-500 text-sm mb-6">Select a new role for <span className="font-bold text-[#1e2e4a]">{selectedUser?.name}</span></p>
+              <p className="text-gray-500 text-sm mb-6">Select a new role for <span className="text-[#1e2e4a]">{selectedUser?.name}</span></p>
 
               <form onSubmit={handleEditRole} className="space-y-3">
                 {['user', 'it_support', 'admin'].map((role) => (
@@ -423,7 +421,7 @@ const UserManagement = () => {
                         onChange={(e) => setNewRole(e.target.value)}
                         className="accent-[#1e2e4a]"
                       />
-                      <span className="font-bold text-sm text-[#1e2e4a]">
+                      <span className="text-sm text-[#1e2e4a]">
                         {role === 'it_support' ? 'IT Support' : role === 'admin' ? 'System Admin' : 'User'}
                       </span>
                     </div>
@@ -433,7 +431,7 @@ const UserManagement = () => {
 
                 <button
                   type="submit"
-                  className="w-full bg-[#1e2e4a] text-white py-3 rounded-xl font-bold hover:bg-[#15233b] transition-colors mt-4 shadow-lg shadow-blue-900/10"
+                  className="w-full bg-[#1e2e4a] text-white py-3 rounded-xl hover:bg-[#15233b] transition-colors mt-4 shadow-lg shadow-blue-900/10"
                 >
                   Save Changes
                 </button>

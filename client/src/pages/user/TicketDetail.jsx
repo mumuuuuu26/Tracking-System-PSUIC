@@ -4,12 +4,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ChevronDown, ArrowLeft } from "lucide-react";
 import MobileHeader from "../../components/ui/MobileHeader";
 import { getTicket } from "../../api/ticket";
-import useAuthStore from "../../store/auth-store";
 
 const TicketDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const token = useAuthStore((state) => state.token);
 
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,19 +16,19 @@ const TicketDetail = () => {
   const fetchTicket = React.useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getTicket(token, id);
+      const res = await getTicket(id);
       setTicket(res.data);
-    } catch (err) {
-      console.error("Error fetching ticket:", err);
+    } catch {
       setError("Failed to load ticket details");
     } finally {
       setLoading(false);
     }
-  }, [token, id]);
+  }, [id]);
 
   useEffect(() => {
     fetchTicket();
   }, [fetchTicket]);
+
 
   if (loading) {
     return (
@@ -108,7 +106,7 @@ const TicketDetail = () => {
       {
         id: 'accepted',
         label: 'Accepted',
-        date: ticket?.status !== 'not_start' ? ticket?.updatedAt : null, // Approximate
+        date: ticket?.acceptedAt || null,
         completed: ticket?.status !== 'not_start',
         icon: <Clock className="w-6 h-6 text-white" />
       },
@@ -159,7 +157,7 @@ const TicketDetail = () => {
               label: "Priority",
               value: (
                 <span
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${ticket?.urgency === "Critical" || ticket?.urgency === "High"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${ticket?.urgency === "High"
                     ? "bg-red-100 text-red-600"
                     : ticket?.urgency === "Medium"
                       ? "bg-orange-100 text-orange-600"
@@ -168,7 +166,7 @@ const TicketDetail = () => {
                         : "bg-gray-100 text-gray-600"
                     }`}
                 >
-                  {ticket?.urgency || "Normal"}
+                  {ticket?.urgency || "Medium"}
                 </span>
               ),
               isBadge: true

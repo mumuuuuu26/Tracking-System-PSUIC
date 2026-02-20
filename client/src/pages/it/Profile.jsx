@@ -30,7 +30,7 @@ import { confirmLogout } from "../../utils/sweetalert";
 
 const ITProfile = () => {
     const navigate = useNavigate();
-    const { token, checkUser, actionLogout } = useAuthStore();
+    const { checkUser, actionLogout } = useAuthStore();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -67,7 +67,7 @@ const ITProfile = () => {
 
     const fetchProfile = React.useCallback(async () => {
         try {
-            const res = await currentUser(token);
+            const res = await currentUser();
             setProfile(res.data);
             setMyEmailEnabled(res.data.isEmailEnabled !== false);
             setMyNotifyEmail(res.data.notificationEmail || res.data.email || "");
@@ -96,7 +96,7 @@ const ITProfile = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
 
     useEffect(() => {
@@ -118,7 +118,7 @@ const ITProfile = () => {
         reader.onloadend = async () => {
             try {
                 const base64Image = reader.result;
-                await updateProfileImage(token, base64Image);
+                await updateProfileImage(base64Image);
                 toast.success("Profile picture updated!");
                 await checkUser();
                 fetchProfile();
@@ -134,7 +134,7 @@ const ITProfile = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await updateProfile(token, {
+            await updateProfile({
                 name: formData.name,
                 phoneNumber: formData.phone,
                 department: formData.department,
@@ -164,7 +164,7 @@ const ITProfile = () => {
     const handleUpdateField = async (field, value, updateStateFn, closeEditFn) => {
         try {
             const payload = { [field]: value };
-            await updateProfile(token, payload);
+            await updateProfile(payload);
             toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} updated!`);
             setProfile(prev => ({ ...prev, ...payload }));
             await checkUser();
@@ -177,7 +177,7 @@ const ITProfile = () => {
 
     const handleSavePreference = async () => {
         try {
-            await updateProfile(token, {
+            await updateProfile({
                 isEmailEnabled: myEmailEnabled,
                 notificationEmail: myNotifyEmail
             });
@@ -195,7 +195,7 @@ const ITProfile = () => {
         const newValue = !myEmailEnabled;
         setMyEmailEnabled(newValue);
         try {
-            await updateProfile(token, {
+            await updateProfile({
                 isEmailEnabled: newValue,
                 notificationEmail: myNotifyEmail
             });

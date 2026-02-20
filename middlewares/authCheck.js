@@ -34,8 +34,11 @@ exports.authCheck = async (req, res, next) => {
     req.user = user; // Attach full user data to request
     next();
   } catch (err) {
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' || err.name === 'NotBeforeError') {
+      return res.status(401).json({ message: "Token Invalid or Expired" });
+    }
     logger.error(err);
-    res.status(500).json({ message: "Token Invalid" });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 

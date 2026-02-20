@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getPermissions, updatePermissions } from "../../api/permission";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
@@ -8,7 +7,6 @@ import { ArrowLeft, Check, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Permission = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const [selectedRole, setSelectedRole] = useState("admin"); // Default to first role in list usually, but admin/it_support common
     const [permissions, setPermissions] = useState({
@@ -29,7 +27,7 @@ const Permission = () => {
     const loadPermissions = useCallback(async (role) => {
 
         try {
-            const res = await getPermissions(token, role);
+            const res = await getPermissions(role);
             if (res.data) {
                 setPermissions({
                     viewTickets: res.data.viewTickets,
@@ -43,7 +41,7 @@ const Permission = () => {
             console.error(err);
             toast.error("Failed to load permissions");
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadPermissions(selectedRole);
@@ -55,7 +53,7 @@ const Permission = () => {
 
     const handleSave = async () => {
         try {
-            await updatePermissions(token, selectedRole, permissions);
+            await updatePermissions(selectedRole, permissions);
             toast.success("Permissions updated successfully");
         } catch (err) {
             console.error(err);

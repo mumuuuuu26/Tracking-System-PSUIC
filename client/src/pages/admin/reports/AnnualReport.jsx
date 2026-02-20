@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import useAuthStore from '../../../store/auth-store';
 import { getAnnualStats } from '../../../api/report';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
@@ -7,7 +6,6 @@ import ExportButtons from '../../../components/admin/ExportButtons';
 import dayjs from 'dayjs';
 
 const AnnualReport = () => {
-    const { token } = useAuthStore();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [year, setYear] = useState(dayjs().year());
@@ -15,14 +13,14 @@ const AnnualReport = () => {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await getAnnualStats(token, year);
+            const res = await getAnnualStats(year);
             setData(res.data);
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, [token, year]);
+    }, [year]);
 
     useEffect(() => {
         loadData();

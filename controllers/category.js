@@ -3,7 +3,7 @@ const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 
 // สร้างหมวดหมู่ (เผื่อไว้ใช้ในอนาคต หรือให้ Admin ใช้)
-exports.create = async (req, res) => {
+exports.create = async (req, res, next) => {
   try {
     const { name } = req.body;
     const category = await prisma.category.create({
@@ -11,25 +11,24 @@ exports.create = async (req, res) => {
     });
     res.json(category);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // ดึงรายการหมวดหมู่ทั้งหมด
-exports.list = async (req, res) => {
+exports.list = async (req, res, next) => {
   try {
     const categories = await prisma.category.findMany({
       orderBy: { name: "asc" }, // เรียงตามตัวอักษร
     });
     res.json(categories);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
+
 // อัพเดทหมวดหมู่
-exports.update = async (req, res) => {
+exports.update = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
@@ -39,13 +38,12 @@ exports.update = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // ลบหมวดหมู่
-exports.remove = async (req, res) => {
+exports.remove = async (req, res, next) => {
   try {
     const { id } = req.params;
     await prisma.category.delete({
@@ -53,7 +51,6 @@ exports.remove = async (req, res) => {
     });
     res.json({ message: "Category deleted successfully" });
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };

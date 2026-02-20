@@ -4,7 +4,7 @@ const { logger } = require("../utils/logger");
 const QRCode = require("qrcode");
 
 // 1. สร้างอุปกรณ์พร้อม Generate QR Code
-exports.create = async (req, res) => {
+exports.create = async (req, res, next) => {
   try {
     const { name, type, serialNo: inputSerialNo, roomId } = req.body;
 
@@ -39,13 +39,12 @@ exports.create = async (req, res) => {
       qrCodeImage,
     });
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // 2. ดูรายการอุปกรณ์ทั้งหมด (สำหรับหน้า Admin/Dashboard)
-exports.list = async (req, res) => {
+exports.list = async (req, res, next) => {
   try {
     const equipments = await prisma.equipment.findMany({
       include: {
@@ -58,13 +57,12 @@ exports.list = async (req, res) => {
     });
     res.json(equipments);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // 3. ดึงข้อมูลอุปกรณ์จาก QR Code (สำหรับหน้า Scan QR ของ User)
-exports.getByQRCode = async (req, res) => {
+exports.getByQRCode = async (req, res, next) => {
   try {
     const { qrCode } = req.params;
 
@@ -74,7 +72,7 @@ exports.getByQRCode = async (req, res) => {
       include: {
         room: true,
         tickets: {
-          where: { status: { not: "Fixed" } },
+          where: { status: { not: "completed" } },
           orderBy: { createdAt: "desc" },
           take: 5,
           include: {
@@ -92,7 +90,7 @@ exports.getByQRCode = async (req, res) => {
         include: {
           room: true,
           tickets: {
-            where: { status: { not: "Fixed" } },
+            where: { status: { not: "completed" } },
             orderBy: { createdAt: "desc" },
             take: 5,
             include: {
@@ -111,7 +109,7 @@ exports.getByQRCode = async (req, res) => {
         include: {
           room: true,
           tickets: {
-            where: { status: { not: "Fixed" } },
+            where: { status: { not: "completed" } },
             orderBy: { createdAt: "desc" },
             take: 5,
             include: {
@@ -129,13 +127,12 @@ exports.getByQRCode = async (req, res) => {
 
     res.json(equipment);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // 4. ดึงข้อมูลอุปกรณ์จาก ID พร้อมสถิติ (Enhanced Version)
-exports.getById = async (req, res) => {
+exports.getById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -144,24 +141,9 @@ exports.getById = async (req, res) => {
       include: {
         room: true,
         tickets: {
-          where: {
-            OR: [
-              { status: "pending" },
-              { status: "in_progress" },
-              {
-                AND: [
-                  { status: "Fixed" },
-                  {
-                    updatedAt: {
-                      gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // ย้อนหลัง 30 วัน
-                    },
-                  },
-                ],
-              },
-            ],
-          },
+          // No status filter here — fetch all tickets so activeIssues can be calculated correctly
           orderBy: { createdAt: "desc" },
-          take: 10,
+          take: 20,
           include: {
             category: true,
             createdBy: { select: { name: true, email: true } },
@@ -183,24 +165,23 @@ exports.getById = async (req, res) => {
       ...equipment,
       totalTickets: equipment._count.tickets,
       activeIssues: equipment.tickets.filter((t) =>
-        ["pending", "in_progress"].includes(t.status)
+        ["not_start", "in_progress"].includes(t.status)
       ).length,
       lastMaintenance:
         equipment.tickets
-          .filter((t) => t.status === "Fixed")
+          .filter((t) => t.status === "completed")
           .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0]
           ?.updatedAt || null,
     };
 
     res.json(enhancedEquipment);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // 5. Generate QR Code Image ใหม่ (กรณีต้องการดาวน์โหลดซ้ำ)
-exports.generateQR = async (req, res) => {
+exports.generateQR = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -220,12 +201,11 @@ exports.generateQR = async (req, res) => {
       equipment,
     });
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.update = async (req, res) => {
+exports.update = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, type, serialNo, roomId, status } = req.body;
@@ -236,7 +216,7 @@ exports.update = async (req, res) => {
         name,
         type,
         serialNo,
-        roomId: parseInt(roomId),
+        ...(roomId !== undefined && roomId !== '' && { roomId: parseInt(roomId) }),
         status
       },
       include: { room: true }
@@ -244,12 +224,11 @@ exports.update = async (req, res) => {
 
     res.json(equipment);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.remove = async (req, res) => {
+exports.remove = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -257,7 +236,7 @@ exports.remove = async (req, res) => {
     const activeTickets = await prisma.ticket.count({
       where: {
         equipmentId: parseInt(id),
-        status: { not: "Fixed" }
+        status: { notIn: ["completed", "rejected"] }
       }
     });
 
@@ -273,8 +252,6 @@ exports.remove = async (req, res) => {
 
     res.json({ message: "Equipment deleted successfully" });
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
-

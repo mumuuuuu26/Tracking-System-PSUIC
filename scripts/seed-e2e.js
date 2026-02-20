@@ -86,7 +86,7 @@ async function seed() {
                                          // Let's use 'not_start' as it is the default in schema and likely what the app expects for "New".
                                          // RE-READING USER REQUEST: "VALUES (?, ?, 'open', ?, ?, ?)". 
                                          // I will use 'not_start' because `Report.jsx` filters check for "not_start".
-                    urgency: 'Normal',
+                    urgency: 'Medium',
                     categoryId: catNetwork.id,
                     roomId: roomLab1.id,
                     createdById: user.id

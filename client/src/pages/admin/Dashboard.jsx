@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Users, Shield, Database, LayoutGrid, ChevronRight, Ticket, Monitor, Key, FileText, Briefcase, Lock, BookOpen } from "lucide-react";
 import { getDashboardStats } from "../../api/admin";
-import useAuthStore from "../../store/auth-store";
 import { useNavigate } from "react-router-dom";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 
 const Dashboard = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const [stats, setStats] = useState({
         ticketCount: 0,
@@ -19,12 +17,12 @@ const Dashboard = () => {
 
     const loadStats = useCallback(async () => {
         try {
-            const res = await getDashboardStats(token);
+            const res = await getDashboardStats();
             setStats(res.data);
         } catch (err) {
             console.error(err);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadStats();

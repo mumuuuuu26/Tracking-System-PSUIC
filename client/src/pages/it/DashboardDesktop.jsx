@@ -86,7 +86,7 @@ const DashboardDesktop = ({
                         {newTickets.length > 0 ? (
                             newTickets
                                 .sort((a, b) => {
-                                    const urgencyWeight = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
+                                    const urgencyWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
                                     const weightA = urgencyWeight[a.urgency] || 0;
                                     const weightB = urgencyWeight[b.urgency] || 0;
                                     if (weightA !== weightB) {

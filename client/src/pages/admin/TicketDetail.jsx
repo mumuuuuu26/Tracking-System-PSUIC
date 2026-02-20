@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, Briefcase } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
 import { getTicket } from "../../api/ticket";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -12,7 +11,6 @@ import AdminHeader from "../../components/admin/AdminHeader";
 dayjs.extend(relativeTime);
 
 const AdminTicketDetail = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const { id } = useParams();
     const [ticket, setTicket] = useState(null);
@@ -21,7 +19,7 @@ const AdminTicketDetail = () => {
     const loadTicket = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await getTicket(token, id);
+            const res = await getTicket(id);
             setTicket(res.data);
         } catch (err) {
             console.error("Failed to load ticket:", err);
@@ -29,7 +27,7 @@ const AdminTicketDetail = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, id]);
+    }, [id]);
 
     useEffect(() => {
         loadTicket();
@@ -56,10 +54,10 @@ const AdminTicketDetail = () => {
 
     const getUrgencyBadge = (urgency) => {
         switch (urgency) {
-            case "Critical": return "bg-red-100 text-red-600 border border-red-200";
-            case "High": return "bg-orange-100 text-orange-600 border border-orange-200";
-            case "Medium": return "bg-yellow-100 text-yellow-600 border border-yellow-200";
-            default: return "bg-green-100 text-green-600 border border-green-200";
+            case "High": return "bg-red-100 text-red-600 border border-red-200";
+            case "Medium": return "bg-orange-100 text-orange-600 border border-orange-200";
+            case "Low": return "bg-green-100 text-green-600 border border-green-200";
+            default: return "bg-gray-100 text-gray-600 border border-gray-200";
         }
     };
 

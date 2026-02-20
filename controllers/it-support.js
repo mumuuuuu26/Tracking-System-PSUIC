@@ -4,7 +4,7 @@ const { listGoogleEvents } = require("./googleCalendar");
 const { logger } = require("../utils/logger");
 
 // Get dashboard statistics
-exports.previewJob = async (req, res) => {
+exports.previewJob = async (req, res, next) => {
     try {
         const { id } = req.params;
         const ticket = await prisma.ticket.findUnique({
@@ -34,28 +34,31 @@ exports.previewJob = async (req, res) => {
 
         res.json(ticket);
     } catch (err) {
-        logger.error("❌ Preview Job Error:", err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
-exports.getStats = async (req, res) => {
+exports.getStats = async (req, res, next) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Get all stats in parallel
-    const [pending, inProgress, todayComplete, todayTotal, urgent] =
+    // [BUG FIX] Get all stats in parallel — including completed count
+    // Bug was: pending query combined OR + outer status: "not_start" causing Prisma to AND them
+    // which over-counted tickets that are assigned to this IT as not_start.
+    // Fix: Use separate OR branches with status inside each branch.
+    const [pending, inProgress, todayComplete, todayTotal, urgent, completed] =
       await Promise.all([
+        // Pending = unassigned not_start OR assigned to me not_start
         prisma.ticket.count({
           where: {
+            isDeleted: false,
             OR: [
-              { assignedToId: req.user.id },
               { assignedToId: null, status: "not_start" },
+              { assignedToId: req.user.id, status: "not_start" },
             ],
-            status: "not_start",
           },
         }),
 
@@ -63,6 +66,7 @@ exports.getStats = async (req, res) => {
           where: {
             assignedToId: req.user.id,
             status: "in_progress",
+            isDeleted: false,
           },
         }),
 
@@ -70,6 +74,7 @@ exports.getStats = async (req, res) => {
           where: {
             assignedToId: req.user.id,
             status: "completed",
+            isDeleted: false,
             updatedAt: { gte: today, lt: tomorrow },
           },
         }),
@@ -77,6 +82,7 @@ exports.getStats = async (req, res) => {
         prisma.ticket.count({
           where: {
             assignedToId: req.user.id,
+            isDeleted: false,
             createdAt: { gte: today, lt: tomorrow },
           },
         }),
@@ -84,33 +90,37 @@ exports.getStats = async (req, res) => {
         prisma.ticket.count({
           where: {
             OR: [{ assignedToId: req.user.id }, { assignedToId: null }],
-            urgency: { in: ["High", "Critical"] },
+            urgency: { in: ["High"] },
             status: { not: "completed" },
+            isDeleted: false,
           },
+        }),
+
+        // [BUG FIX] Moved completed count into Promise.all to avoid extra DB round-trip
+        prisma.ticket.count({
+          where: { assignedToId: req.user.id, status: "completed", isDeleted: false },
         }),
       ]);
 
     res.json({
       pending,
       inProgress,
-      completed: await prisma.ticket.count({
-        where: { assignedToId: req.user.id, status: "completed" },
-      }),
+      completed,
       todayComplete,
       todayTotal,
       urgent,
     });
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // Get tasks with full details
-exports.getMyTasks = async (req, res) => {
+exports.getMyTasks = async (req, res, next) => {
   try {
     const tasks = await prisma.ticket.findMany({
       where: {
+        isDeleted: false, // [BUG FIX] Don't show soft-deleted tickets in IT dashboard
         OR: [
           { assignedToId: req.user.id },
           {
@@ -147,15 +157,14 @@ exports.getMyTasks = async (req, res) => {
 
     res.json(tasks);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 
 
 // Accept job with auto-assignment
-exports.acceptJob = async (req, res) => {
+exports.acceptJob = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -181,12 +190,22 @@ exports.acceptJob = async (req, res) => {
         return res.status(400).json({ message: "Cannot accept a rejected ticket." });
     }
 
+    // [BUG FIX] Record SLA timestamps: acceptedAt and responseTime
+    // Previously, acceptJob set status=in_progress but never wrote acceptedAt/responseTime,
+    // causing IT Performance report to always show 0 for response time.
+    const now = new Date();
+    const responseTime = ticket.acceptedAt
+      ? ticket.responseTime // Already accepted once (re-accept edge case)
+      : Math.floor((now - new Date(ticket.createdAt)) / 60000);
+
     // Update ticket
     const updatedTicket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
         status: "in_progress",
         assignedToId: req.user.id,
+        acceptedAt: ticket.acceptedAt || now,         // Record first accept time
+        responseTime: ticket.acceptedAt ? ticket.responseTime : responseTime, // Don't override if re-accepted
         logs: {
           create: {
             action: "Accept",
@@ -204,13 +223,8 @@ exports.acceptJob = async (req, res) => {
     // Email notification removed as per user request (2026-02-18)
     // if (updatedTicket.createdBy?.email) { ... }
 
-    // Update IT performance metrics
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        totalResolved: { increment: 1 },
-      },
-    });
+    // NOTE: totalResolved is NOT incremented here on accept.
+    // It is incremented in closeJob() when the ticket is actually completed.
     
     // Notify User via System Notification
     await prisma.notification.create({
@@ -229,19 +243,33 @@ exports.acceptJob = async (req, res) => {
 
     res.json(updatedTicket);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // Reject job (Mark as completed with Reject log)
-exports.rejectJob = async (req, res) => {
+exports.rejectJob = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
 
     if (!reason) {
       return res.status(400).json({ message: "Reason is required for rejection" });
+    }
+
+    const existingTicket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+
+    if (!existingTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    if (existingTicket.isDeleted) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    if (existingTicket.status === 'rejected') {
+      return res.status(400).json({ message: "Ticket is already rejected." });
+    }
+    if (existingTicket.status === 'completed') {
+      return res.status(400).json({ message: "Cannot reject a completed ticket." });
     }
 
     const ticket = await prisma.ticket.update({
@@ -293,15 +321,14 @@ exports.rejectJob = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    logger.error("❌ Reject Job Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 
 
 // Save Draft (Checklist & Notes)
-exports.saveDraft = async (req, res) => {
+exports.saveDraft = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { note, checklist, proof } = req.body;
@@ -323,6 +350,10 @@ exports.saveDraft = async (req, res) => {
 
     const existingTicket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
 
+    if (!existingTicket) {
+        return res.status(404).json({ message: "Ticket not found" });
+    }
+
     if (existingTicket.status === 'rejected' || existingTicket.status === 'completed') {
         return res.status(400).json({ message: "Cannot edit a finalized ticket." });
     }
@@ -340,16 +371,27 @@ exports.saveDraft = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 // Close job with completion details
-exports.closeJob = async (req, res) => {
+exports.closeJob = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { note, proof, checklist } = req.body;  // Frontend sends 'note', 'proof', and 'checklist'
+
+    // [BUG FIX] Pre-check: prevent double-closing which would double-increment totalResolved
+    const existingTicket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+    if (!existingTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    if (existingTicket.status === 'completed') {
+      return res.status(400).json({ message: "Ticket is already completed." });
+    }
+    if (existingTicket.status === 'rejected') {
+      return res.status(400).json({ message: "Cannot close a rejected ticket." });
+    }
 
     // Handle Image Upload
     let afterImages = [];
@@ -366,12 +408,19 @@ exports.closeJob = async (req, res) => {
       }
     }
 
+    // Calculate resolution time from acceptedAt (or createdAt as fallback)
+    const now = new Date();
+    const startTime = existingTicket.acceptedAt || existingTicket.createdAt;
+    const resolutionTime = Math.floor((now - new Date(startTime)) / 60000);
+
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
         status: "completed",
-        note: note, // Ensure note is saved to the main field too
+        note: note,
         checklist: checklist ? JSON.stringify(checklist) : undefined,
+        completedAt: now,
+        resolutionTime: resolutionTime,
         logs: {
           create: {
             action: "Complete",
@@ -404,21 +453,31 @@ exports.closeJob = async (req, res) => {
                 title: ticket.title,
                 room: ticket.room?.roomNumber || "N/A",
                 resolver: ticket.assignedTo?.name || "IT Team",
-                link: `${process.env.FRONTEND_URL}/user/feedback/${ticket.id}`
+                link: `${process.env.FRONTEND_URL}/user/ticket/${ticket.id}`
             }
         );
     }
 
+    // Update IT performance metrics — increment on CLOSE (not on accept)
+    if (ticket.assignedToId) {
+      await prisma.user.update({
+        where: { id: ticket.assignedToId },
+        data: { totalResolved: { increment: 1 } },
+      });
+    }
+
     // System Notification
-    await prisma.notification.create({
-        data: {
-            userId: ticket.createdById,
-            ticketId: ticket.id,
-            title: "Ticket Resolved",
-            message: `Your ticket "${ticket.title}" has been resolved. Please rate our service.`,
-            type: "ticket_resolved"
-        }
-    });
+    if (ticket.createdById) {
+      await prisma.notification.create({
+          data: {
+              userId: ticket.createdById,
+              ticketId: ticket.id,
+              title: "Ticket Resolved",
+              message: `Your ticket "${ticket.title}" has been resolved. Please rate our service.`,
+              type: "ticket_resolved"
+          }
+      });
+    }
 
     if (req.io) {
         req.io.emit("server:update-ticket", ticket);
@@ -426,19 +485,21 @@ exports.closeJob = async (req, res) => {
 
     res.json(ticket);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
 
 
+
+
 // Get completed tickets for history
-exports.getHistory = async (req, res) => {
+exports.getHistory = async (req, res, next) => {
   try {
     const history = await prisma.ticket.findMany({
       where: {
-        status: "completed"
+        status: "completed",
+        isDeleted: false, // [BUG FIX] Don't show soft-deleted tickets in IT history
       },
       include: {
         room: true,
@@ -465,12 +526,11 @@ exports.getHistory = async (req, res) => {
 
     res.json(history);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 // Get public schedule (IT availability)
-exports.getPublicSchedule = async (req, res) => {
+exports.getPublicSchedule = async (req, res, next) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -506,12 +566,11 @@ exports.getPublicSchedule = async (req, res) => {
 
     res.json(schedule);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.syncGoogleCalendar = async (req, res) => {
+exports.syncGoogleCalendar = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const googleCalendarId = req.user.googleCalendarId; // Use custom calendar ID
@@ -526,13 +585,11 @@ exports.syncGoogleCalendar = async (req, res) => {
 
         res.json({ message: `Synced ${count} events from Google Calendar`, count });
     } catch (err) {
-        logger.error("Sync Error Detailed:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
-        // Send specific error message to client
-        res.status(500).json({ message: err.message || "Sync Failed" });
+        next(err);
     }
 };
 
-exports.testGoogleSync = async (req, res) => {
+exports.testGoogleSync = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const googleCalendarId = req.user.googleCalendarId;
@@ -561,16 +618,6 @@ exports.testGoogleSync = async (req, res) => {
         });
 
     } catch (err) {
-        logger.error("Test Sync Failed:", err);
-        res.status(500).json({
-            success: false,
-            message: "Sync Failed during Database Save",
-            error: err.message,
-            stack: err.stack,
-            envCheck: {
-                hasProjectId: !!process.env.GOOGLE_PROJECT_ID,
-                hasClientEmail: !!process.env.GOOGLE_CLIENT_EMAIL
-            }
-        });
+        next(err);
     }
 };

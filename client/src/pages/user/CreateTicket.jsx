@@ -10,7 +10,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { createTicket } from "../../api/ticket";
 import { listRooms } from "../../api/room";
 import { listCategories } from "../../api/category";
-import useAuthStore from "../../store/auth-store";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import UserWrapper from "../../components/user/UserWrapper";
@@ -20,7 +19,6 @@ import UserSelect from "../../components/user/UserSelect"; // Import the new com
 const CreateTicket = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { token } = useAuthStore();
 
   const prefilledData = location.state;
 
@@ -37,7 +35,7 @@ const CreateTicket = () => {
     floor: prefilledData?.floorName || "",
     room: prefilledData?.roomNumber || "",
     roomId: prefilledData?.roomId || "",
-    urgency: "Low",
+    urgency: "",
     images: [],
   });
 
@@ -54,11 +52,10 @@ const CreateTicket = () => {
   const urgencyLevels = ["Low", "Medium", "High"];
 
   const loadData = useCallback(async () => {
-    if (!token) return;
     try {
-      const catRes = await listCategories(token);
+      const catRes = await listCategories();
       setDbCategories(catRes.data);
-      const roomRes = await listRooms(token);
+      const roomRes = await listRooms();
       setDbRooms(roomRes.data);
 
       if (Array.isArray(roomRes.data)) {
@@ -70,7 +67,7 @@ const CreateTicket = () => {
     } catch (err) {
       console.error("Error loading data:", err);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -110,6 +107,11 @@ const CreateTicket = () => {
       return;
     }
 
+    if (!form.urgency) {
+      toast.error("Please select a Priority Level");
+      return;
+    }
+
     try {
       const payload = {
         title: form.title,
@@ -121,7 +123,7 @@ const CreateTicket = () => {
         images: form.images
       };
 
-      const res = await createTicket(token, payload);
+      const res = await createTicket(payload);
 
       Swal.fire({
         title: 'Created Successfully',
@@ -237,6 +239,7 @@ const CreateTicket = () => {
               {urgencyLevels.map((level) => (
                 <button
                   key={level}
+                  type="button"
                   onClick={() => setForm({ ...form, urgency: level })}
                   className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${form.urgency === level
                     ? level === "High"

@@ -6,7 +6,6 @@ import {
     updateQuickFix,
     removeQuickFix,
 } from "../../api/quickFix";
-import useAuthStore from "../../store/auth-store";
 import { Trash2, Edit, Plus, X, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -19,7 +18,6 @@ const CATEGORIES = ["ACCOUNT & LOGIN", "COMPUTER", "PROJECTOR", "SOFTWARE", "OTH
 
 const QuickFixManagement = () => {
     const navigate = useNavigate();
-    const { token } = useAuthStore();
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,10 +66,10 @@ const QuickFixManagement = () => {
         e.preventDefault();
         try {
             if (editId) {
-                await updateQuickFix(token, editId, form);
+                await updateQuickFix(editId, form);
                 toast.success("Updated successfully");
             } else {
-                await createQuickFix(token, form);
+                await createQuickFix(form);
                 toast.success("Created successfully");
             }
             setIsModalOpen(false);
@@ -109,7 +107,7 @@ const QuickFixManagement = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await removeQuickFix(token, id);
+                    await removeQuickFix(id);
                     toast.success("Deleted successfully");
                     loadData();
                 } catch (err) {

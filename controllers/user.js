@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const { saveImage } = require("../utils/uploadImage");
 
 // Create User (Invite/Promote Existing User)
-exports.createUser = async (req, res) => {
+exports.createUser = async (req, res, next) => {
     try {
         const { email, role, name } = req.body;
 
@@ -29,13 +29,45 @@ exports.createUser = async (req, res) => {
 
         res.json(updatedUser);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
+// Get a single user by ID (Admin only)
+exports.getUserById = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = await prisma.user.findUnique({
+            where: { id: parseInt(id) },
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                name: true,
+                role: true,
+                enabled: true,
+                department: true,
+                phoneNumber: true,
+                picture: true,
+                createdAt: true,
+                updatedAt: true,
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
+    } catch (err) {
+        next(err);
+    }
+};
+
+
+
 //ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับ Admin ดู)
-exports.listUsers = async (req, res) => {
+exports.listUsers = async (req, res, next) => {
   try {
     const { role, status } = req.query;
 
@@ -62,26 +94,14 @@ exports.listUsers = async (req, res) => {
     });
     res.json(users);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.listITStaff = async (req, res) => {
-  try {
-    const itUsers = await prisma.user.findMany({
-      where: { role: 'it_support', enabled: true },
-      select: { id: true, name: true }
-    });
-    res.json(itUsers);
-  } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
-  }
-};
+
 
 //เปลี่ยนสถานะผู้ใช้ (Enabled/Disabled)
-exports.changeStatus = async (req, res) => {
+exports.changeStatus = async (req, res, next) => {
   try {
     const { id, enabled } = req.body;
     const user = await prisma.user.update({
@@ -90,12 +110,11 @@ exports.changeStatus = async (req, res) => {
     });
     res.json(user);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.changeRole = async (req, res) => {
+exports.changeRole = async (req, res, next) => {
   try {
     const { id, role } = req.body;
 
@@ -111,12 +130,11 @@ exports.changeRole = async (req, res) => {
     });
     res.json(user);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };
 
-exports.updateProfileImage = async (req, res) => {
+exports.updateProfileImage = async (req, res, next) => {
   try {
     const { image } = req.body;
 
@@ -135,12 +153,11 @@ exports.updateProfileImage = async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Upload failed" });
+    next(err);
   }
 };
 
-exports.updateProfile = async (req, res) => {
+exports.updateProfile = async (req, res, next) => {
   try {
     const { email, phoneNumber, department, name, username, isEmailEnabled, notificationEmail, googleCalendarId, officeExtension, workingHoursJson } = req.body;
 
@@ -170,17 +187,17 @@ exports.updateProfile = async (req, res) => {
       }
     }
 
-    const updateData = {
-      email,
-      phoneNumber,
-      department,
-      name,
-      username,
-      officeExtension,
-      workingHoursJson
-    };
-
-    // Only update if provided (handle boolean/null correctly)
+    // [DATA FIX] Only include fields that were actually sent in the request.
+    // Spreading undefined values into Prisma's data object will set DB columns to null,
+    // silently overwriting existing data the user did not intend to change.
+    const updateData = {};
+    if (typeof email !== 'undefined') updateData.email = email;
+    if (typeof phoneNumber !== 'undefined') updateData.phoneNumber = phoneNumber;
+    if (typeof department !== 'undefined') updateData.department = department;
+    if (typeof name !== 'undefined') updateData.name = name;
+    if (typeof username !== 'undefined') updateData.username = username;
+    if (typeof officeExtension !== 'undefined') updateData.officeExtension = officeExtension;
+    if (typeof workingHoursJson !== 'undefined') updateData.workingHoursJson = workingHoursJson;
     if (typeof isEmailEnabled !== 'undefined') updateData.isEmailEnabled = isEmailEnabled;
     if (typeof notificationEmail !== 'undefined') updateData.notificationEmail = notificationEmail;
     if (typeof googleCalendarId !== 'undefined') updateData.googleCalendarId = googleCalendarId.trim();
@@ -218,12 +235,11 @@ exports.updateProfile = async (req, res) => {
 
     res.json(updatedUser);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Update Profile Failed" });
+    next(err);
   }
 };
 
-exports.updateUser = async (req, res) => {
+exports.updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, department, phoneNumber, role } = req.body;
@@ -240,13 +256,11 @@ exports.updateUser = async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    logger.error(err);
-    res.status(500).json({ message: "Update Failed" });
+    next(err);
   }
-
 };
 
-exports.removeUser = async (req, res) => {
+exports.removeUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = parseInt(id);
@@ -255,7 +269,7 @@ exports.removeUser = async (req, res) => {
     // We set assignedToId = null and status = pending so other staff can pick it up
     await prisma.ticket.updateMany({
       where: { assignedToId: userId },
-      data: { assignedToId: null, status: 'pending' }
+      data: { assignedToId: null, status: 'not_start' }
     });
 
     // 3. Delete all Notifications belonging to this user
@@ -276,8 +290,21 @@ exports.removeUser = async (req, res) => {
 
 
     // 7. Delete Tickets CREATED by this user
-    // Prisma schema has onDelete: Cascade for Ticket->Image, Ticket->ActivityLog, Ticket->Appointment
-    // So this will clean up all associated ticket data automatically.
+    // First, find these ticket IDs to clean up related notifications (which might not cascade)
+    const userTickets = await prisma.ticket.findMany({
+      where: { createdById: userId },
+      select: { id: true }
+    });
+    const ticketIds = userTickets.map(t => t.id);
+
+    if (ticketIds.length > 0) {
+      await prisma.notification.deleteMany({
+        where: { ticketId: { in: ticketIds } }
+      });
+    }
+
+    // Prisma schema has onDelete: Cascade for Ticket->Image, Ticket->ActivityLog
+    // So this will clean up most associated ticket data automatically.
     await prisma.ticket.deleteMany({
       where: { createdById: userId }
     });
@@ -290,7 +317,6 @@ exports.removeUser = async (req, res) => {
     res.json({ message: "User and all associated data permanently deleted" });
 
   } catch (err) {
-    logger.error("Delete error:", err);
-    res.status(500).json({ message: "Delete Failed", error: err.message });
+    next(err);
   }
 };

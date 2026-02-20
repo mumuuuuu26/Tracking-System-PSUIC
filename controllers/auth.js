@@ -63,7 +63,10 @@ exports.login = async (req, res, next) => {
       return res.status(400).json({ message: "User not found or disabled" });
     }
 
-    // Check password
+    // Check password — guard against null (PSU-OAuth users have no local password)
+    if (!user.password) {
+      return res.status(400).json({ message: "This account uses SSO login. Please sign in via PSU Passport." });
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -106,7 +109,7 @@ exports.login = async (req, res, next) => {
   }
 };
 
-exports.currentUser = async (req, res) => {
+exports.currentUser = async (req, res, next) => {
   try {
     const user = await prisma.user.findFirst({
       where: { id: req.user.id },
@@ -130,13 +133,16 @@ exports.currentUser = async (req, res) => {
       },
     });
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     // Return user data + service account email for calendar sharing instructions
     res.json({
       ...user,
       serviceAccountEmail: process.env.GOOGLE_CLIENT_EMAIL
     });
   } catch (err) {
-    logger.error("CurrentUser Error:", err);
-    res.status(500).json({ message: "Server Error" });
+    next(err);
   }
 };

@@ -33,7 +33,7 @@ const useAuthStore = create(
                 try {
                     const token = get().token
                     if (!token) return
-                    const res = await currentUser(token)
+                    const res = await currentUser()
                     set({ user: res.data }) // [New] Update user data (name, picture, etc.)
                 } catch (err) {
                     console.error('Token invalid or expired', err)

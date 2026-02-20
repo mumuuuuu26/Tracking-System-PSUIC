@@ -127,7 +127,7 @@ async function main() {
             title: "Computer won't start",
             description: "The computer in Lab 301 won't turn on",
             urgency: "High",
-            status: "pending",
+            status: "not_start",
             createdById: normalUser.id,
             roomId: rooms[0].id,
             equipmentId: equipments[0].id,

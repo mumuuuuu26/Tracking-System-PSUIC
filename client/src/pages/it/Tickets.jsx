@@ -1,16 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { getAllTickets } from "../../api/ticket";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import socket from "../../utils/socket";
 import ITHeader from "../../components/it/ITHeader";
 import ITPageHeader from "../../components/it/ITPageHeader";
 import ITWrapper from "../../components/it/ITWrapper";
-import dayjs from "dayjs";
 
 const Tickets = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -55,7 +52,7 @@ const Tickets = () => {
             if (activeFilter !== "All" && activeFilter !== "all") newParams.status = activeFilter;
             setSearchParams(newParams, { replace: true });
 
-            const res = await getAllTickets(token, params);
+            const res = await getAllTickets(params);
 
             if (res.data.data) {
                 setTickets(res.data.data);
@@ -68,7 +65,7 @@ const Tickets = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, currentPage, debouncedSearch, activeFilter, setSearchParams]);
+    }, [currentPage, debouncedSearch, activeFilter, setSearchParams]);
 
     useEffect(() => {
         loadTickets();
@@ -77,13 +74,10 @@ const Tickets = () => {
     // Real-time updates
     useEffect(() => {
         const handleNewTicket = (newTicket) => {
-            console.log("Socket: New Ticket Received", newTicket);
-            setTickets((prev) => [newTicket, ...prev]);
             setTickets((prev) => [newTicket, ...prev]);
         };
 
         const handleUpdateTicket = (updatedTicket) => {
-            console.log("Socket: Ticket Updated", updatedTicket);
             setTickets((prev) => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
         }
 
@@ -138,14 +132,7 @@ const Tickets = () => {
                     </div>
                 </div>
 
-                {/* Ticket List Header (Desktop Only) */}
-                <div className="hidden lg:grid grid-cols-12 gap-4 px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    <div className="col-span-2">Time</div>
-                    <div className="col-span-2">Status</div>
-                    <div className="col-span-4">Subject</div>
-                    <div className="col-span-2">Location</div>
-                    <div className="col-span-2 text-right">Actions</div>
-                </div>
+
 
                 {/* Ticket List Container */}
                 <div className="flex-1 overflow-y-auto pr-2 -mr-2 pb-20">
@@ -205,130 +192,71 @@ const Tickets = () => {
     );
 };
 
-// Ticket Card Component - Compact List View for Desktop, Compact Card for Mobile
+// Ticket Card Component - Matches UserTicketCard design
 const TicketCard = ({ ticket, navigate }) => {
+    const getStatusConfig = (status) => {
+        switch (status) {
+            case "not_start":
+            case "pending": // legacy value → treat as not started
+                return { label: "Not Started", className: "border-gray-400 text-gray-500 bg-gray-50" };
+            case "in_progress":
+                return { label: "In Progress", className: "border-blue-500 text-blue-600 bg-blue-50" };
+            case "completed":
+                return { label: "Completed", className: "border-green-500 text-green-600 bg-green-50" };
+            case "rejected":
+                return { label: "Rejected", className: "border-red-400 text-red-500 bg-red-50" };
+            default:
+                return { label: "Not Started", className: "border-gray-400 text-gray-500 bg-gray-50" };
+        }
+    };
+
+    const statusConfig = getStatusConfig(ticket.status);
+    const dateObj = new Date(ticket.updatedAt || ticket.createdAt);
+
     return (
-        <>
-            {/* Desktop View: Table-like Row */}
-            <div
-                onClick={() => navigate(`/it/ticket/${ticket.id}`)}
-                className="hidden lg:grid grid-cols-12 gap-4 items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-            >
-                {/* 1. Time & ID (Col 2) */}
-                <div className="col-span-2 flex flex-col justify-center">
-                    <span className="text-xs font-bold text-gray-900">
-                        {dayjs(ticket.createdAt).format("HH:mm")}
-                    </span>
-                    <span className="text-[10px] text-gray-400 font-medium">
-                        {dayjs(ticket.createdAt).format("MMM DD")}
-                    </span>
-                </div>
-
-                {/* 2. Status Badge (Col 2) */}
-                <div className="col-span-2">
-                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-wide w-fit ${ticket.status === 'not_start' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                        ticket.status === 'in_progress' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                            ticket.status === 'completed' ? 'bg-gray-50 text-gray-600 border-gray-200' :
-                                'bg-red-50 text-red-600 border-red-200'
-                        }`}>
-                        {ticket.status === 'not_start' && 'Open'}
-                        {ticket.status === 'in_progress' && 'In Progress'}
-                        {ticket.status === 'completed' && 'Done'}
-                        {ticket.status === 'rejected' && 'Rejected'}
-                    </span>
-                </div>
-
-                {/* 3. Subject & Category (Col 4) */}
-                <div className="col-span-4 flex flex-col">
-                    <h4 className="text-sm font-bold text-[#1e2e4a] truncate pr-4" title={ticket.title}>
-                        {ticket.title || "No Subject"}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                            <span className={`w-1.5 h-1.5 rounded-full ${ticket.urgency === 'Critical' ? 'bg-red-500' : ticket.urgency === 'High' ? 'bg-orange-500' : 'bg-green-500'}`}></span>
-                            {ticket.category?.name || "General"}
-                        </span>
-                    </div>
-                </div>
-
-                {/* 4. Location & User (Col 2) */}
-                <div className="col-span-2 flex flex-col text-xs text-gray-500">
-                    <span className="font-medium truncate" title={`Room ${ticket.room?.roomNumber}, Floor ${ticket.room?.floor}`}>
-                        Rm. {ticket.room?.roomNumber || "-"}
-                    </span>
-                    <span className="text-[10px] truncate">
-                        {ticket.createdBy?.name?.split(' ')[0] || ticket.createdBy?.username || ticket.createdBy?.email?.split('@')[0] || "Unknown User"}
-                    </span>
-                </div>
-
-                {/* 5. Actions (Col 2) */}
-                <div className="col-span-2 flex justify-end items-center gap-2">
-                    {ticket.status === 'not_start' ? (
-                        <>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/it/ticket/${ticket.id}`);
-                                }}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                                title="Accept"
-                            >
-                                <span className="text-xs font-bold">Accept</span>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/it/ticket/${ticket.id}`);
-                                }}
-                                className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Reject"
-                            >
-                                <span className="text-xs font-bold">Reject</span>
-                            </button>
-                        </>
-                    ) : (
-                        <button className="p-1.5 text-gray-400 hover:text-[#1e2e4a]">
-                            <Eye size={16} />
-                        </button>
-                    )}
-                </div>
+        <div
+            onClick={() => navigate(`/it/ticket/${ticket.id}`)}
+            className="bg-white rounded-3xl p-6 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100 relative overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
+        >
+            {/* Header: Category & Status */}
+            <div className="flex justify-between items-start mb-3">
+                <h3 className="text-xl font-bold text-[#193C6C] tracking-tight">
+                    {ticket.category?.name || "General Issue"}
+                </h3>
+                <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border shrink-0 ml-3 ${statusConfig.className}`}>
+                    {statusConfig.label}
+                </span>
             </div>
 
-            {/* Mobile View: Compact Card */}
-            <div
-                onClick={() => navigate(`/it/ticket/${ticket.id}`)}
-                className="lg:hidden bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-100 transition-colors cursor-pointer flex flex-col gap-3"
-            >
-                <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0 pr-3">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border capitalize ${ticket.status === 'not_start' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                ticket.status === 'in_progress' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                    'bg-gray-50 text-gray-500 border-gray-100'
-                                }`}>
-                                {ticket.status?.replace('_', ' ')}
-                            </span>
-                            <span className="text-[10px] text-gray-400 font-medium">
-                                {dayjs(ticket.createdAt).format("HH:mm")}
-                            </span>
-                        </div>
-                        <h3 className="text-base font-bold text-[#1e2e4a] truncate">
-                            {ticket.title}
-                        </h3>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">
-                            {ticket.room?.roomNumber ? `Room ${ticket.room.roomNumber}` : 'No Location'} • {ticket.createdBy?.name || ticket.createdBy?.username || ticket.createdBy?.email?.split('@')[0] || "Unknown"}
-                        </p>
-                    </div>
-                    {ticket.status === 'not_start' && (
-                        <div className="flex flex-col gap-1 shrink-0">
-                            <button className="px-3 py-1 bg-[#1e2e4a] text-white text-[10px] font-bold rounded-lg shadow-sm">
-                                Accept
-                            </button>
-                        </div>
-                    )}
-                </div>
+            {/* Body: Title & Location */}
+            <div className="mb-6">
+                <h4 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 leading-relaxed">
+                    {ticket.title || ticket.description || "-"}
+                </h4>
+                <p className="text-gray-400 text-xs font-semibold bg-gray-50 inline-block px-2 py-1 rounded-md">
+                    Floor {ticket.room?.floor || "-"} , {ticket.room?.roomNumber || "-"}
+                </p>
             </div>
-        </>
+
+            {/* Divider */}
+            <div className="h-px w-full bg-gray-100 mb-4"></div>
+
+            {/* Footer: Time/Date & Reporter */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
+                    <span>
+                        {dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                    </span>
+                    <span className="text-gray-300">|</span>
+                    <span>
+                        {dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                    </span>
+                </div>
+                <span className="text-sm font-bold text-[#193C6C]">
+                    {ticket.createdBy?.name || ticket.createdBy?.username || "User"}
+                </span>
+            </div>
+        </div>
     );
 };
 

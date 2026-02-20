@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 
 import { Calendar, ChevronLeft, Clock, User, ArrowLeft } from "lucide-react";
 import dayjs from "dayjs";
-import useAuthStore from "../../store/auth-store";
 import { getPublicSchedule } from "../../api/it";
 // Reuse CalendarGrid for consistency
 import CalendarGrid from "../../components/CalendarGrid";
@@ -10,9 +9,6 @@ import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 
 const ITSchedule = () => {
-    const { token } = useAuthStore();
-
-    // State
     const [schedule, setSchedule] = useState([]);
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [currentMonth, setCurrentMonth] = useState(dayjs());
@@ -21,7 +17,7 @@ const ITSchedule = () => {
     useEffect(() => {
         const loadSchedule = async () => {
             try {
-                const res = await getPublicSchedule(token);
+                const res = await getPublicSchedule();
                 setSchedule(res.data);
             } catch (err) {
                 console.error(err);
@@ -30,10 +26,8 @@ const ITSchedule = () => {
             }
         };
 
-        if (token) {
-            loadSchedule();
-        }
-    }, [token]);
+        loadSchedule();
+    }, []);
 
     // Helpers
     // Map schedule to events for calendar dots

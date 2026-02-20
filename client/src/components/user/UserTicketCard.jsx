@@ -11,13 +11,14 @@ import { User } from "lucide-react";
  * - Body: Title/Description (Prominent) | Location (Gray)
  * - Footer: Time | Date (Left) | User Name (Right)
  */
-const UserTicketCard = ({ ticket, onClick, dataTestId }) => {
+const UserTicketCard = ({ ticket, onClick }) => {
     if (!ticket) return null;
 
     // Status Config
     const getStatusConfig = (status) => {
         switch (status) {
             case "not_start":
+            case "pending": // legacy fallback
                 return {
                     label: "Not Started",
                     className: "border-gray-400 text-gray-500 bg-gray-50"
@@ -34,7 +35,7 @@ const UserTicketCard = ({ ticket, onClick, dataTestId }) => {
                 };
             default:
                 return {
-                    label: status,
+                    label: "Not Started",
                     className: "border-gray-300 text-gray-500 bg-gray-50"
                 };
         }

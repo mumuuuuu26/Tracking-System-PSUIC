@@ -1,5 +1,6 @@
 const { ZodError } = require("zod");
 const { logger } = require("../utils/logger");
+const { Prisma } = require("@prisma/client");
 
 const errorHandler = (err, req, res, next) => {
   // Log the error for debugging (PM2 will capture this to error.log)
@@ -8,11 +9,28 @@ const errorHandler = (err, req, res, next) => {
     logger.error("❌ Global Error Handler:", err);
   }
 
+  // Handle Prisma Database Errors
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    logger.error(`[Prisma Error] code: ${err.code}, message: ${err.message}`);
+    
+    if (err.code === 'P2002') {
+      return res.status(400).json({ message: "Duplicate record found. A record with this value already exists." });
+    }
+    if (err.code === 'P2025') {
+      return res.status(404).json({ message: "Record not found" });
+    }
+    if (err.code === 'P2003') {
+        return res.status(400).json({ message: "Foreign key constraint failed. Related record not found." });
+    }
+    return res.status(400).json({ message: "Database Error", code: err.code });
+  }
+
   // Handle Zod Validation Errors
   if (err instanceof ZodError) {
+    const errors = err.issues || err.errors || [];
     return res.status(400).json({
       message: "Validation Error",
-      errors: err.errors.map(e => ({
+      errors: errors.map(e => ({
         field: e.path.join('.'),
         message: e.message
       }))
@@ -25,8 +43,8 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Handle JWT Error
-  if (err.name === 'UnauthorizedError') {
-    return res.status(401).json({ message: "Invalid Token" });
+  if (err.name === 'UnauthorizedError' || err.name === 'JsonWebTokenError') {
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 
   // Default Server Error
@@ -34,7 +52,7 @@ const errorHandler = (err, req, res, next) => {
   
   res.status(statusCode).json({
     message: statusCode === 500 ? "Internal Server Error" : err.message,
-    // stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack // Hide stack in production
+    // stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack
   });
 };
 

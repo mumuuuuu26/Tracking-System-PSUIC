@@ -1,22 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import useAuthStore from '../../../store/auth-store';
 import { getEquipmentStats } from '../../../api/report';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import * as XLSX from 'xlsx';
-import ExportButtons from '../../../components/admin/ExportButtons';
+import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from 'recharts';
 
-const EquipmentAnalysis = () => {
-    const { token } = useAuthStore();
+const EquipmentAnalysis = ({ month, year, externalData, externalLoading }) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const loadData = useCallback(async () => {
+        if (externalData !== undefined) return; // skip fetch if parent provides data
         try {
             setLoading(true);
             setError(null);
-            const res = await getEquipmentStats(token);
-            // res.data is array of { amount, name, room }
+            const res = await getEquipmentStats(month, year);
             setData(res.data || []);
         } catch (err) {
             console.error(err);
@@ -24,25 +20,33 @@ const EquipmentAnalysis = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [month, year, externalData]);
+
+    // Sync external data from parent
+    useEffect(() => {
+        if (externalData !== undefined) {
+            setData(externalData);
+            setLoading(false);
+            setError(null);
+        }
+    }, [externalData]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (externalLoading !== undefined) setLoading(externalLoading);
+    }, [externalLoading]);
 
-    const COLORS = ['#193C6C', '#1E40AF', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD']; // Monochromatic Blue Scale
+    // Standalone mode: fetch data ourselves when month/year changes and no parent provides data
+    useEffect(() => {
+        if (externalData === undefined) {
+            loadData();
+        }
+    }, [loadData, externalData]);
 
-
-    const exportExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Equipment Data");
-        XLSX.writeFile(wb, `equipment_analysis_${new Date().toISOString().split('T')[0]}.xlsx`);
-    };
+    const COLORS = ['#193C6C', '#1E40AF', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'];
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-base font-bold">Top Problematic Equipment</h2>
+        <div className="space-y-6">
+            <h2 className="text-base font-bold text-gray-900">Top Problematic Equipment</h2>
 
             {loading ? <div className="h-64 flex items-center justify-center bg-gray-50 rounded-2xl animate-pulse">Loading...</div> : error ? (
                 <div className="p-8 text-center bg-red-50 rounded-3xl border border-red-100">
@@ -51,56 +55,59 @@ const EquipmentAnalysis = () => {
                 </div>
             ) : data.length > 0 ? (
                 <>
-                    <div id="equipment-analysis-content" className="grid md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl">
+                    <div id="equipment-analysis-content" className="grid md:grid-cols-2 gap-4">
                         {/* Chart */}
-                        <div className="bg-white p-2 border rounded-xl h-64 flex flex-col justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={data}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={true}
-                                        label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={65}
-                                        innerRadius={40}
-                                        paddingAngle={5}
-                                        fill="#8884d8"
-                                        dataKey="amount"
-                                    >
+                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[350px]">
+                            <h3 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider w-full text-left">Equipment Distribution</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis
+                                        dataKey="name"
+                                        tick={{ fontSize: 10, fill: '#6B7280' }}
+                                        angle={-35}
+                                        textAnchor="end"
+                                        interval={0}
+                                    />
+                                    <YAxis
+                                        allowDecimals={false}
+                                        tick={{ fontSize: 10, fill: '#6B7280' }}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                        formatter={(value) => [value, 'Issues']}
+                                    />
+                                    <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                                         {data.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend
-                                        verticalAlign="bottom"
-                                        height={36}
-                                        wrapperStyle={{ fontSize: '10px' }}
-                                    />
-                                </PieChart>
+                                    </Bar>
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
 
                         {/* Table */}
-                        <div className="bg-white border rounded-xl overflow-hidden flex flex-col h-64">
-                            <div className="overflow-y-auto flex-1 scrollbar-hide">
-                                <table className="w-full text-xs text-left">
-                                    <thead className="bg-gray-50 text-gray-700 font-bold sticky top-0 z-10">
+                        <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                            <div className="p-2.5 border-b border-gray-100 bg-gray-50">
+                                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Analysis Details</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-[11px] text-left">
+                                    <thead className="bg-gray-50 text-gray-700 font-bold">
                                         <tr>
-                                            <th className="p-2 pl-3">Rank</th>
-                                            <th className="p-2">Equipment</th>
-                                            <th className="p-2">Room</th>
-                                            <th className="p-2 pr-3 text-right">Issues</th>
+                                            <th className="p-2.5 pl-4">Rank</th>
+                                            <th className="p-2.5">Equipment</th>
+                                            <th className="p-2.5">Room</th>
+                                            <th className="p-2.5 pr-4 text-right">Issues</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
                                         {data.map((item, index) => (
                                             <tr key={index} className="hover:bg-gray-50 transition-colors">
-                                                <td className="p-2 pl-3 font-bold text-gray-400">#{index + 1}</td>
-                                                <td className="p-2 font-medium text-gray-700 truncate max-w-[120px]" title={item.name}>{item.name}</td>
-                                                <td className="p-2 text-gray-500">{item.room}</td>
-                                                <td className="p-2 pr-3 text-right font-bold text-red-500">{item.amount}</td>
+                                                <td className="p-2.5 pl-4 font-bold text-gray-400">#{index + 1}</td>
+                                                <td className="p-2.5 font-medium text-gray-900">{item.name}</td>
+                                                <td className="p-2.5 text-gray-500">{item.room}</td>
+                                                <td className="p-2.5 pr-4 text-right font-bold text-primary">{item.amount}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -109,7 +116,7 @@ const EquipmentAnalysis = () => {
                         </div>
                     </div>
 
-                    <ExportButtons onExportExcel={exportExcel} />
+
                 </>
             ) : (
                 <div className="p-12 text-center bg-gray-50 rounded-3xl border border-gray-100">

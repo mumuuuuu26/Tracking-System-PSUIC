@@ -17,7 +17,7 @@ async function testSLA() {
         data: {
             title: "Performance Test Ticket",
             description: "Testing SLA timestamps",
-            urgency: "Normal",
+            urgency: "Medium",
             status: "not_start",
             roomId: 1, // Assuming room 1 exists
             createdById: 1 // Assuming user 1 exists

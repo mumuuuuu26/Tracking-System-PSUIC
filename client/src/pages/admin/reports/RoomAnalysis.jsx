@@ -1,21 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import useAuthStore from '../../../store/auth-store';
 import { getRoomStats } from '../../../api/report';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import * as XLSX from 'xlsx';
-import ExportButtons from '../../../components/admin/ExportButtons';
 
-const RoomAnalysis = () => {
-    const { token } = useAuthStore();
+const RoomAnalysis = ({ month, year, externalData, externalLoading }) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const loadData = useCallback(async () => {
+        if (externalData !== undefined) return; // skip fetch if parent provides data
         try {
             setLoading(true);
             setError(null);
-            const res = await getRoomStats(token);
+            const res = await getRoomStats(month, year);
             setData(res.data || []);
         } catch (err) {
             console.error(err);
@@ -23,18 +20,20 @@ const RoomAnalysis = () => {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, [month, year, externalData]);
+
+    // Sync external data
+    useEffect(() => {
+        if (externalData !== undefined) {
+            setData(externalData);
+            setLoading(false);
+            setError(null);
+        }
+    }, [externalData]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-    const exportExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Room Data");
-        XLSX.writeFile(wb, `room_analysis_${new Date().toISOString().split('T')[0]}.xlsx`);
-    };
+        if (externalLoading !== undefined) setLoading(externalLoading);
+    }, [externalLoading]);
 
     // Calculate aggregated data for charts
     const floorData = data.reduce((acc, item) => {
@@ -51,8 +50,8 @@ const RoomAnalysis = () => {
     }, []).sort((a, b) => a.name.localeCompare(b.name));
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-base font-bold">Floor & Room Analysis</h2>
+        <div className="space-y-3">
+            <h2 className="text-base font-bold text-gray-900">Floor & Room Analysis</h2>
 
             {loading ? (
                 <div className="h-64 flex items-center justify-center bg-gray-50 rounded-2xl animate-pulse">Loading...</div>
@@ -63,48 +62,48 @@ const RoomAnalysis = () => {
                 </div>
             ) : data.length > 0 ? (
                 <div id="room-analysis-report">
-                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
                         {/* Floor-wise Tickets */}
-                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                            <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wider">Tickets by Floor</h3>
-                            <div className="h-56">
+                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                            <h3 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Tickets by Floor</h3>
+                            <div className="h-48">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={floorData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
                                         <Tooltip
-                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                                         />
-                                        <Legend iconType="circle" />
-                                        <Bar dataKey="completed" name="Resolved" fill="#10B981" radius={[4, 4, 0, 0]} />
-                                        <Bar dataKey="pending" name="Pending" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                                        <Bar dataKey="completed" name="Resolved" fill="#10B981" radius={[4, 4, 0, 0]} barSize={24} />
+                                        <Bar dataKey="pending" name="Pending" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={24} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
                         {/* Room Density */}
-                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">Top 5 High-Incident Rooms</h3>
-                            <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                            <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wider">Top 5 High-Incident Rooms</h3>
+                            <div className="space-y-2">
                                 {data.slice(0, 5).map((room, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition-colors">
-                                        <div className="flex items-center gap-4 flex-1">
-                                            <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs min-w-[80px] whitespace-nowrap">
+                                    <div key={idx} className="flex items-center justify-between p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <div className="px-2.5 py-1.5 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px] min-w-[70px] whitespace-nowrap">
                                                 {room.roomNumber}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Location</span>
-                                                <span className="text-sm text-gray-700 font-bold">Floor {room.floor}</span>
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Location</span>
+                                                <span className="text-xs text-gray-700 font-bold">Floor {room.floor}</span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-4">
                                             <div className="text-right">
-                                                <div className="text-lg font-black text-primary leading-none">{room.totalTickets}</div>
-                                                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">Total Issues</div>
+                                                <div className="text-base font-black text-primary leading-none">{room.totalTickets}</div>
+                                                <div className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">Issues</div>
                                             </div>
-                                            <div className="w-32 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner hidden sm:block">
+                                            <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden shadow-inner hidden sm:block">
                                                 <div
                                                     className="h-full bg-primary rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(25,60,108,0.2)]"
                                                     style={{ width: `${(room.totalTickets / data[0].totalTickets) * 100}%` }}
@@ -118,28 +117,28 @@ const RoomAnalysis = () => {
                     </div>
 
                     {/* Detailed Table */}
-                    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm max-h-64 flex flex-col">
-                        <div className="overflow-y-auto flex-1 scrollbar-hide">
-                            <table className="w-full text-xs text-left">
+                    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                        <div className="overflow-y-auto max-h-56 scrollbar-hide">
+                            <table className="w-full text-[11px] text-left">
                                 <thead className="bg-gray-50 text-gray-700 font-bold sticky top-0 z-10">
                                     <tr>
-                                        <th className="p-3">Room</th>
-                                        <th className="p-3">Floor</th>
-                                        <th className="p-3 text-center">Total Issues</th>
-                                        <th className="p-3 text-center">Resolved</th>
-                                        <th className="p-3 text-center">Pending</th>
-                                        <th className="p-3 pr-4 text-right">Rate</th>
+                                        <th className="p-2.5">Room</th>
+                                        <th className="p-2.5">Floor</th>
+                                        <th className="p-2.5 text-center">Total Issues</th>
+                                        <th className="p-2.5 text-center">Resolved</th>
+                                        <th className="p-2.5 text-center">Pending</th>
+                                        <th className="p-2.5 pr-4 text-right">Rate</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {data.map((item, index) => (
                                         <tr key={index} className="hover:bg-gray-50 transition-colors">
-                                            <td className="p-3 font-bold text-gray-900">{item.roomNumber}</td>
-                                            <td className="p-3 text-gray-500">Floor {item.floor}</td>
-                                            <td className="p-3 text-center font-bold">{item.totalTickets}</td>
-                                            <td className="p-3 text-center text-emerald-600 font-medium">{item.completed}</td>
-                                            <td className="p-3 text-center text-amber-600 font-medium">{item.pending}</td>
-                                            <td className="p-3 pr-4 text-right font-bold text-primary">
+                                            <td className="p-2 px-2.5 font-bold text-gray-900">{item.roomNumber}</td>
+                                            <td className="p-2 px-2.5 text-gray-500">Floor {item.floor}</td>
+                                            <td className="p-2 text-center font-bold">{item.totalTickets}</td>
+                                            <td className="p-2 text-center text-emerald-600 font-medium">{item.completed}</td>
+                                            <td className="p-2 text-center text-amber-600 font-medium">{item.pending}</td>
+                                            <td className="p-2 pr-4 text-right font-bold text-primary">
                                                 {item.totalTickets > 0 ? Math.round((item.completed / item.totalTickets) * 100) : 0}%
                                             </td>
                                         </tr>
@@ -149,9 +148,7 @@ const RoomAnalysis = () => {
                         </div>
                     </div>
 
-                    <div className="mt-6">
-                        <ExportButtons onExportExcel={exportExcel} />
-                    </div>
+
                 </div>
             ) : (
                 <div className="p-12 text-center bg-gray-50 rounded-3xl border border-gray-100">

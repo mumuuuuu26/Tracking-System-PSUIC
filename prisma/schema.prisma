@@ -50,6 +50,9 @@ model User {
 
 
   personalTasks   PersonalTask[]   // [NEW]
+
+  @@index([role])
+  @@index([enabled])
 }
 
 // ... existing models ...
@@ -72,6 +75,9 @@ model PersonalTask {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([date])
 }
 
 
@@ -80,7 +86,7 @@ model Ticket {
   id          Int    @id @default(autoincrement())
   title       String
   description String @db.Text
-  urgency     String @default("Normal")
+  urgency     String @default("Medium")
   status      String @default("not_start")
   
   rating       Int?     // 0-100 (SUS Score)

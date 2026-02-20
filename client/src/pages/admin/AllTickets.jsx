@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { listAllTickets, removeTicket } from '../../api/admin'
-import useAuthStore from '../../store/auth-store'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { toast } from 'react-toastify'
@@ -14,7 +13,6 @@ dayjs.extend(relativeTime);
 const AllTickets = () => {
     const navigate = useNavigate()
     const [searchParams, setSearchParams] = useSearchParams()
-    const { token } = useAuthStore()
 
     // Server-side Pagination State
     const [tickets, setTickets] = useState([])
@@ -58,7 +56,7 @@ const AllTickets = () => {
             if (filterStatus !== 'all') newParams.status = filterStatus;
             setSearchParams(newParams, { replace: true });
 
-            const res = await listAllTickets(token, params)
+            const res = await listAllTickets(params)
 
             // New Response Structure: { data, total, page, totalPages }
             if (res.data.data) {
@@ -75,7 +73,7 @@ const AllTickets = () => {
         } finally {
             setLoading(false)
         }
-    }, [token, currentPage, debouncedSearch, filterStatus, setSearchParams])
+    }, [currentPage, debouncedSearch, filterStatus, setSearchParams])
 
     useEffect(() => {
         loadTickets()
@@ -85,7 +83,7 @@ const AllTickets = () => {
         e.stopPropagation();
         if (!window.confirm('Are you sure you want to delete this ticket?')) return
         try {
-            await removeTicket(token, id)
+            await removeTicket(id)
             toast.success('Ticket Deleted')
             loadTickets()
         } catch {
@@ -112,8 +110,7 @@ const AllTickets = () => {
 
     const getUrgencyBadge = (urgency) => {
         switch (urgency) {
-            case "High":
-            case "Critical": return "bg-red-100 text-red-600";
+            case "High": return "bg-red-100 text-red-600";
             case "Medium": return "bg-orange-100 text-orange-600";
             case "Low": return "bg-green-100 text-green-600";
             default: return "bg-gray-100 text-gray-600";

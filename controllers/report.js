@@ -3,7 +3,7 @@ const { logger } = require("../utils/logger");
 
 
 // 1. Overview / Monthly Stats
-exports.getMonthlyStats = async (req, res) => {
+exports.getMonthlyStats = async (req, res, next) => {
     try {
         const { month, year } = req.query; // e.g., month=9 (October, 0-indexed? No, usually 1-12 from user), year=2024
 
@@ -23,7 +23,8 @@ exports.getMonthlyStats = async (req, res) => {
                 },
                 status: {
                     not: 'rejected'
-                }
+                },
+                isDeleted: false // [FIX] exclude soft-deleted tickets from monthly stats
             },
             select: {
                 id: true,
@@ -71,13 +72,12 @@ exports.getMonthlyStats = async (req, res) => {
         });
 
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
 // 2. Annual Stats
-exports.getAnnualStats = async (req, res) => {
+exports.getAnnualStats = async (req, res, next) => {
     try {
         const { year } = req.query;
         const targetYear = year ? parseInt(year) : new Date().getFullYear();
@@ -93,7 +93,8 @@ exports.getAnnualStats = async (req, res) => {
                 },
                 status: {
                     not: 'rejected'
-                }
+                },
+                isDeleted: false // [FIX] exclude soft-deleted tickets from annual stats
             }
         });
 
@@ -118,23 +119,30 @@ exports.getAnnualStats = async (req, res) => {
         res.json(statsByMonth);
 
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
 // 3. Equipment Analysis
-exports.getEquipmentStats = async (req, res) => {
+exports.getEquipmentStats = async (req, res, next) => {
     try {
+        const { month, year } = req.query;
+        let whereTicket = { 
+            equipmentId: { not: null },
+            isDeleted: false,
+            status: { not: 'rejected' }
+        };
+
+        if (month && year) {
+            const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+            whereTicket.createdAt = { gte: startDate, lte: endDate };
+        }
+
         // Top 10 problematic equipment
-        // Group by equipmentId
         const result = await prisma.ticket.groupBy({
             by: ['equipmentId'],
-            where: { 
-                equipmentId: { not: null },
-                isDeleted: false,
-                status: { not: 'rejected' }
-            },
+            where: whereTicket,
             _count: {
                 _all: true
             },
@@ -163,45 +171,62 @@ exports.getEquipmentStats = async (req, res) => {
         res.json(enriched);
 
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
 
 // 4. IT Performance
-exports.getITPerformance = async (req, res) => {
+// 4. IT Performance (Personal KPI)
+exports.getITPerformance = async (req, res, next) => {
     try {
+        const { startDate, endDate } = req.query;
+
+        // Date Filter Logic
+        const dateFilter = startDate && endDate ? {
+            updatedAt: {
+                gte: new Date(startDate),
+                lte: new Date(new Date(endDate).setHours(23, 59, 59))
+            }
+        } : {};
+
         const users = await prisma.user.findMany({
             where: { role: 'it_support' },
             select: {
                 id: true,
                 name: true,
                 email: true,
-                totalResolved: true,
-                totalRated: true,
-                avgRating: true,
-                picture: true
-            },
-            orderBy: {
-                totalResolved: 'desc'
+                picture: true,
+                role: true
             }
         });
 
-        // Optionally calculate current pending jobs for each
         const result = await Promise.all(users.map(async (u) => {
+            // 1. Current Active Jobs (Snapshot - No Date Filter)
             const pending = await prisma.ticket.count({
                 where: {
                     assignedToId: u.id,
-                    status: { notIn: ['completed', 'rejected'] }
+                    status: { notIn: ['completed', 'rejected'] },
+                    isDeleted: false
                 }
             });
 
-            // Calculate SLA Averages
+            // 2. Tickets Resolved in Range
+            const resolvedInRange = await prisma.ticket.count({
+                where: {
+                    assignedToId: u.id,
+                    status: 'completed',
+                    isDeleted: false,
+                    ...dateFilter
+                }
+            });
+
+            // 3. SLA Calculation (based on resolved tickets in range)
             const closedTickets = await prisma.ticket.findMany({
                 where: { 
                     assignedToId: u.id, 
                     status: 'completed',
-                    isDeleted: false
+                    isDeleted: false,
+                    ...dateFilter
                 },
                 select: { responseTime: true, resolutionTime: true }
             });
@@ -216,6 +241,7 @@ exports.getITPerformance = async (req, res) => {
             return {
                 ...u,
                 pendingJobs: pending,
+                totalResolved: resolvedInRange, // Overwrite cumulative with period specific
                 avgResponseTime: countResponse > 0 ? (totalResponse / countResponse).toFixed(0) : 0,
                 avgResolutionTime: countResolution > 0 ? (totalResolution / countResolution).toFixed(0) : 0
             };
@@ -223,68 +249,30 @@ exports.getITPerformance = async (req, res) => {
 
         res.json(result);
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };
-// 5. Satisfaction Stats
-exports.getSatisfactionStats = async (req, res) => {
-    try {
-        const tickets = await prisma.ticket.findMany({
-            where: { rating: { not: null } },
-            select: {
-                id: true,
-                rating: true,
-                userFeedback: true,
-                createdAt: true,
-                title: true, // Add title for "Service/Issue" column
-                assignedTo: { select: { name: true } },
-                createdBy: { select: { name: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
 
-        const totalRated = tickets.length;
-        const averageRating = totalRated > 0
-            ? tickets.reduce((acc, t) => acc + (t.rating || 0), 0) / totalRated
-            : 0;
-
-        // Distribution by Score Ranges (SUS 0-100)
-        const distribution = { "0-20": 0, "21-40": 0, "41-60": 0, "61-80": 0, "81-100": 0 };
-
-        tickets.forEach(t => {
-            const r = t.rating || 0;
-            if (r <= 20) distribution["0-20"]++;
-            else if (r <= 40) distribution["21-40"]++;
-            else if (r <= 60) distribution["41-60"]++;
-            else if (r <= 80) distribution["61-80"]++;
-            else distribution["81-100"]++;
-        });
-
-        res.json({
-            averageRating, // Now 0-100
-            totalRated,
-            distribution,
-            recentFeedback: tickets.slice(0, 10),
-            allFeedback: tickets // Send all tickets for export purposes
-        });
-
-    } catch (err) {
-        logger.error(err);
-        res.status(500).json({ message: "Server Error" });
-    }
-};
 
 // 6. Floor & Room Analysis
-exports.getRoomStats = async (req, res) => {
+exports.getRoomStats = async (req, res, next) => {
     try {
+        const { month, year } = req.query;
+        let baseWhere = { 
+            isDeleted: false,
+            status: { not: 'rejected' }
+        };
+
+        if (month && year) {
+            const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+            baseWhere.createdAt = { gte: startDate, lte: endDate };
+        }
+
         // Get ticket distribution by room
         const ticketsByRoom = await prisma.ticket.groupBy({
             by: ['roomId'],
-            where: { 
-                isDeleted: false,
-                status: { not: 'rejected' }
-            },
+            where: baseWhere,
             _count: {
                 _all: true
             },
@@ -305,9 +293,8 @@ exports.getRoomStats = async (req, res) => {
             const statusCounts = await prisma.ticket.groupBy({
                 by: ['status'],
                 where: { 
-                    roomId: item.roomId,
-                    isDeleted: false,
-                    status: { not: 'rejected' }
+                    ...baseWhere,
+                    roomId: item.roomId
                 },
                 _count: { _all: true }
             });
@@ -328,7 +315,6 @@ exports.getRoomStats = async (req, res) => {
 
         res.json(enriched);
     } catch (err) {
-        console.error("getRoomStats Error:", err);
-        res.status(500).json({ message: "Server Error" });
+        next(err);
     }
 };

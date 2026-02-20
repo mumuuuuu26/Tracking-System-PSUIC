@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, User, MapPin, Calendar, ArrowLeft, Upload, FileText, Check, X, Ban, CalendarClock, Plus, Trash2, Save, PenTool, ChevronDown } from "lucide-react";
 
-import useAuthStore from "../../store/auth-store";
 import ITPageHeader from "../../components/it/ITPageHeader";
 import ITWrapper from "../../components/it/ITWrapper";
 import { getTicket } from "../../api/ticket";
@@ -16,7 +15,6 @@ import Swal from "sweetalert2";
 dayjs.extend(relativeTime);
 
 const TicketDetail = () => {
-    const { token } = useAuthStore();
     const navigate = useNavigate();
     const { id } = useParams();
     const [ticket, setTicket] = useState(null);
@@ -41,7 +39,7 @@ const TicketDetail = () => {
     const loadTicket = React.useCallback(async () => {
         try {
             setLoading(true);
-            const res = await getTicket(token, id);
+            const res = await getTicket(id);
             setTicket(res.data);
             // Pre-fill existing note if available and status is completed (handled in useEffect above partially, but let's keep logic cleaner there)
             if (res.data.status === 'completed') {
@@ -53,12 +51,12 @@ const TicketDetail = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, id]);
+    }, [id]);
 
     const loadPreview = React.useCallback(async () => {
         try {
             setLoading(true);
-            const res = await previewJob(token, id);
+            const res = await previewJob(id);
             setTicket(res.data);
             setLoading(false);
         } catch (err) {
@@ -66,13 +64,13 @@ const TicketDetail = () => {
             // Fallback to getTicket if preview fails or for compatibility, but intended for unaccepted jobs
             await loadTicket();
         }
-    }, [token, id, loadTicket]);
+    }, [id, loadTicket]);
 
     useEffect(() => {
-        if (token && id) {
+        if (id) {
             loadPreview();
         }
-    }, [token, id, loadPreview]);
+    }, [id, loadPreview]);
 
     useEffect(() => {
         if (ticket) {
@@ -131,7 +129,7 @@ const TicketDetail = () => {
     const handleSaveDraft = async () => {
         if (ticket.status === 'rejected') return;
         try {
-            await saveDraft(token, id, {
+            await saveDraft(id, {
                 note: itNote,
                 checklist: checklistItems,
                 proof: proofImage
@@ -146,7 +144,7 @@ const TicketDetail = () => {
     const handleReject = async () => {
         if (!rejectReason.trim()) return toast.warning("Please provide a reason");
         try {
-            await rejectJob(token, id, rejectReason);
+            await rejectJob(id, rejectReason);
             toast.success("Ticket rejected successfully");
             setShowRejectModal(false);
 
@@ -166,7 +164,7 @@ const TicketDetail = () => {
         // 1. Special Handler for Accept Button Click (If ticket is not_start, the ONLY action is Accept)
         if (ticket.status === 'not_start') {
             try {
-                await acceptJob(token, id);
+                await acceptJob(id);
                 toast.success("Job accepted successfully!");
                 // Reload with standard loadTicket to get full edit capabilities
                 loadTicket();
@@ -209,7 +207,7 @@ const TicketDetail = () => {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        await closeJob(token, id, {
+                        await closeJob(id, {
                             note: itNote,
                             proof: proofImage,
                             checklist: checklistItems
@@ -258,7 +256,6 @@ const TicketDetail = () => {
 
     const getUrgencyBadge = (urgency) => {
         switch (urgency) {
-            case "Critical": return "bg-red-100 text-red-600";
             case "High": return "bg-red-100 text-red-600";
             case "Medium": return "bg-orange-100 text-orange-600";
             case "Low": return "bg-green-100 text-green-600";

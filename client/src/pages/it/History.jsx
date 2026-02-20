@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, Calendar, CheckCircle, Search, Filter, Printer, User, Wifi, Monitor, Cpu, Box } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
 import { getHistory } from "../../api/it";
 import { listCategories } from "../../api/category";
 import ITHeader from "../../components/it/ITHeader";
@@ -14,7 +13,6 @@ dayjs.extend(relativeTime);
 
 const History = () => {
     const navigate = useNavigate();
-    const { token } = useAuthStore();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -24,23 +22,23 @@ const History = () => {
     const fetchHistory = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await getHistory(token);
+            const res = await getHistory();
             setTickets(res.data);
         } catch (err) {
             console.error("Failed to load history:", err);
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     const fetchCategories = useCallback(async () => {
         try {
-            const res = await listCategories(token);
+            const res = await listCategories();
             setCategories(res.data);
         } catch (err) {
             console.error("Failed to load categories:", err);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         fetchHistory();

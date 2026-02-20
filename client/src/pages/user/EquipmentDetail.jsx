@@ -10,8 +10,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-import useAuthStore from "../../store/auth-store";
-import axios from "axios";
+import { getEquipment } from "../../api/equipment";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -21,7 +20,6 @@ const EquipmentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = useAuthStore();
 
   const [equipment, setEquipment] = useState(location.state?.equipment || null);
   const [activeTab, setActiveTab] = useState("info");
@@ -29,16 +27,14 @@ const EquipmentDetail = () => {
 
   const loadEquipmentData = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/equipment/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await getEquipment(id);
       setEquipment(res.data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [id, token]);
+  }, [id]);
 
   useEffect(() => {
     if (!equipment) {
