@@ -15,8 +15,8 @@ describe('getImageUrl', () => {
   });
 
   it('should return default image if path is empty', () => {
-    expect(getImageUrl(null)).toBe('/default-profile.png');
-    expect(getImageUrl('')).toBe('/default-profile.png');
+    expect(getImageUrl(null)).toBe('/default-profile.svg');
+    expect(getImageUrl('')).toBe('/default-profile.svg');
   });
 
   it('should return path as is if it starts with http', () => {
