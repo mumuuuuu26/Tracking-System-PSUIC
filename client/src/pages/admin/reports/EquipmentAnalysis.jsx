@@ -134,26 +134,29 @@ const EquipmentAnalysis = ({ month, year, externalData, externalSubData, externa
                                 <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col min-h-[350px] items-center justify-center">
                                     <h3 className="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider w-full text-left">Replacement Distribution</h3>
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                data={subData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={100}
-                                                paddingAngle={2}
-                                                dataKey="amount"
-                                            >
-                                                {subData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                                                ))}
-                                            </Pie>
+                                        <BarChart data={subData} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis
+                                                dataKey="name"
+                                                tick={{ fontSize: 10, fill: '#6B7280' }}
+                                                angle={-35}
+                                                textAnchor="end"
+                                                interval={0}
+                                            />
+                                            <YAxis
+                                                allowDecimals={false}
+                                                tick={{ fontSize: 10, fill: '#6B7280' }}
+                                            />
                                             <Tooltip
                                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                                                 formatter={(value) => [value, 'Replacements']}
                                             />
-                                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                                        </PieChart>
+                                            <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                                                {subData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
                                 </div>
 

@@ -72,21 +72,23 @@ exports.create = async (req, res, next) => {
       },
     });
 
-    // Email notification logic
-    try {
-      const itUsers = await prisma.user.findMany({
-        where: {
-          OR: [{ role: "it_support" }, { role: "admin" }],
-          enabled: true,
-        },
-        select: {
-          email: true,
-          isEmailEnabled: true,
-          notificationEmail: true
-        },
-      });
+    // Fetch IT/admin users ONCE — shared for both email and DB notifications
+    const itUsers = await prisma.user.findMany({
+      where: {
+        OR: [{ role: "it_support" }, { role: "admin" }],
+        enabled: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        isEmailEnabled: true,
+        notificationEmail: true
+      },
+    });
 
-      if (itUsers.length > 0) {
+    // Email notification
+    if (itUsers.length > 0) {
+      try {
         const emails = itUsers
           .filter(u => u.isEmailEnabled !== false)
           .map(u => u.notificationEmail && u.notificationEmail.includes("@") ? u.notificationEmail : u.email)
@@ -110,23 +112,15 @@ exports.create = async (req, res, next) => {
             }
           );
         }
+      } catch (emailError) {
+        logger.error(`❌ Email Notification Failed for Ticket #${newTicket.id}:`, emailError);
       }
-    } catch (emailError) {
-      logger.error(`❌ Email Notification Failed for Ticket #${newTicket.id}:`, emailError);
     }
 
-    // Database Notifications
-    const userForNotify = await prisma.user.findMany({
-      where: {
-        OR: [{ role: "it_support" }, { role: "admin" }],
-        enabled: true,
-      },
-      select: { id: true },
-    });
-
-    if (userForNotify.length > 0) {
+    // Database Notifications — reuse the same itUsers list fetched above
+    if (itUsers.length > 0) {
       await prisma.notification.createMany({
-        data: userForNotify.map((user) => ({
+        data: itUsers.map((user) => ({
           userId: user.id,
           ticketId: newTicket.id,
           title: "New Ticket Created",

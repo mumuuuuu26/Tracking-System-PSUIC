@@ -26,7 +26,7 @@ exports.create = async (req, res, next) => {
                 description,
                 image,
                 category,
-                createdBy: req.user.username,
+                createdBy: req.user.username || req.user.name || req.user.email,
             },
         });
         res.send(newFix);

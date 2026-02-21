@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { logger } = require('./logger');
 
 exports.saveImage = (base64String) => {
     if (!base64String) return null;
@@ -38,7 +39,7 @@ exports.saveImage = (base64String) => {
         // Return relative URL
         return `/uploads/${filename}`;
     } catch (err) {
-        console.error("Image upload failed:", err);
+        logger.error("Image upload failed:", err);
         return null;
     }
 };

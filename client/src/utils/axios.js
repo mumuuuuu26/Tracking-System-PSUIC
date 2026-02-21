@@ -26,8 +26,8 @@ api.interceptors.request.use(
                     config.headers.Authorization = `Bearer ${token}`;
                 }
             }
-        } catch (error) {
-            console.error("Error reading token from localStorage", error);
+        } catch {
+            // Silently ignore localStorage read errors; token won't be attached
         }
         
         return config;

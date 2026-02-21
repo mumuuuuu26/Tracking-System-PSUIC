@@ -193,7 +193,7 @@ const AllTickets = () => {
                                         key={ticket.id}
                                         onClick={() => navigate(`/admin/ticket/${ticket.id}`)}
                                         className={`
-                                        bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300
+                                        bg-white rounded-2xl p-6 shadow-sm border border-l-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group
                                         ${getStatusColor(ticket.status)}
                                     `}
                                     >

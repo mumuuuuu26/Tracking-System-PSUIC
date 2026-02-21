@@ -46,7 +46,6 @@ const TicketDetail = () => {
                 setItNote(res.data.note || "");
             }
         } catch (err) {
-            console.error("Failed to load ticket:", err);
             toast.error(err.response?.data?.message || err.message || "Failed to load ticket details");
         } finally {
             setLoading(false);
@@ -60,8 +59,7 @@ const TicketDetail = () => {
             setTicket(res.data);
             setLoading(false);
         } catch (err) {
-            console.error("Failed to load ticket preview:", err);
-            // Fallback to getTicket if preview fails or for compatibility, but intended for unaccepted jobs
+            // Fallback to getTicket if preview fails or for compatibility
             await loadTicket();
         }
     }, [id, loadTicket]);
@@ -82,7 +80,7 @@ const TicketDetail = () => {
                     const parsed = JSON.parse(ticket.checklist);
                     if (Array.isArray(parsed)) setChecklistItems(parsed);
                 } catch (e) {
-                    console.error("Failed to parse checklist JSON", e);
+                    // Checklist JSON is malformed, ignore
                 }
             }
         }
@@ -136,7 +134,6 @@ const TicketDetail = () => {
             });
             toast.success("Draft saved successfully!");
         } catch (err) {
-            console.error(err);
             toast.error("Failed to save draft");
         }
     };
@@ -169,7 +166,6 @@ const TicketDetail = () => {
                 // Reload with standard loadTicket to get full edit capabilities
                 loadTicket();
             } catch (err) {
-                console.error(err);
                 toast.error(err.response?.data?.message || "Failed to accept job");
             }
             return;
@@ -215,7 +211,6 @@ const TicketDetail = () => {
                         toast.success("Ticket closed successfully!");
                         loadTicket();
                     } catch (err) {
-                        console.error(err);
                         toast.error("Failed to close ticket");
                     }
                 }
@@ -611,7 +606,7 @@ const TicketDetail = () => {
                                     </button>
                                 </div>
                                 <p className="text-center text-gray-400 text-xs mt-3">
-                                    You are in <strong>Read-Only Preview Mode</strong>. Accept to start or Reject to declne.
+                                    You are in <strong>Read-Only Preview Mode</strong>. Accept to start or Reject to decline.
                                 </p>
                             </div>
                         )}

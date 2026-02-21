@@ -70,7 +70,10 @@ exports.getMonthlyStats = async (req, res, next) => {
                 },
                 status: 'completed',
                 isDeleted: false,
-                subComponent: { not: null, not: "" }
+                AND: [
+                    { subComponent: { not: null } },
+                    { subComponent: { not: "" } }
+                ]
             },
             select: { subComponent: true }
         });
@@ -207,7 +210,10 @@ exports.getSubComponentStats = async (req, res, next) => {
     try {
         const { month, year } = req.query;
         let whereTicket = { 
-            subComponent: { not: null, not: "" }, // Must have a subComponent named
+            AND: [
+                { subComponent: { not: null } },
+                { subComponent: { not: "" } }
+            ],
             isDeleted: false,
             status: { not: 'rejected' }
         };

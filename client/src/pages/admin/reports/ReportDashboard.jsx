@@ -78,10 +78,35 @@ const ReportDashboard = () => {
             const pageW = doc.internal.pageSize.getWidth();
             const margin = 14;
 
+            // --- Custom Thai Font Initialization ---
+            try {
+                const arrayBufferToBase64 = (buffer) => {
+                    let binary = '';
+                    const bytes = new Uint8Array(buffer);
+                    const len = bytes.byteLength;
+                    for (let i = 0; i < len; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    return window.btoa(binary);
+                };
+
+                const fontReq = await fetch('/fonts/Sarabun-Regular.ttf');
+                const fontBuffer = await fontReq.arrayBuffer();
+                doc.addFileToVFS('Sarabun-Regular.ttf', arrayBufferToBase64(fontBuffer));
+                doc.addFont('Sarabun-Regular.ttf', 'Sarabun', 'normal');
+
+                const boldReq = await fetch('/fonts/Sarabun-Bold.ttf');
+                const boldBuffer = await boldReq.arrayBuffer();
+                doc.addFileToVFS('Sarabun-Bold.ttf', arrayBufferToBase64(boldBuffer));
+                doc.addFont('Sarabun-Bold.ttf', 'Sarabun', 'bold');
+            } catch (err) {
+                console.warn('Failed to load Thai fonts for PDF:', err);
+            }
+
             // ---- Helper functions ----
             const addSectionTitle = (title, yPos) => {
                 doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
+                doc.setFont('Sarabun', 'bold');
                 doc.setTextColor(25, 60, 108); // primary color
                 doc.text(title, margin, yPos);
                 doc.setDrawColor(25, 60, 108);
@@ -97,11 +122,11 @@ const ReportDashboard = () => {
                     doc.setFillColor(245, 247, 250);
                     doc.roundedRect(x, yStart, colW - 2, 18, 2, 2, 'F');
                     doc.setFontSize(16);
-                    doc.setFont('helvetica', 'bold');
+                    doc.setFont('Sarabun', 'bold');
                     doc.setTextColor(30, 30, 30);
                     doc.text(String(item.value), x + colW / 2, yStart + 9, { align: 'center' });
                     doc.setFontSize(7);
-                    doc.setFont('helvetica', 'normal');
+                    doc.setFont('Sarabun', 'normal');
                     doc.setTextColor(120, 120, 120);
                     doc.text(item.label.toUpperCase(), x + colW / 2, yStart + 14, { align: 'center' });
                 });
@@ -115,11 +140,11 @@ const ReportDashboard = () => {
             doc.setFillColor(25, 60, 108);
             doc.rect(0, 0, pageW, 32, 'F');
             doc.setFontSize(20);
-            doc.setFont('helvetica', 'bold');
+            doc.setFont('Sarabun', 'bold');
             doc.setTextColor(255, 255, 255);
             doc.text('System Analytics Report', margin, 15);
             doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
+            doc.setFont('Sarabun', 'normal');
             doc.setTextColor(180, 200, 230);
             doc.text(`Period: ${periodLabel}  •  Generated: ${dayjs().format('DD MMM YYYY HH:mm')}`, margin, 22);
             doc.text('PSU International College — IT Tracking System', margin, 28);
@@ -150,6 +175,7 @@ const ReportDashboard = () => {
                     head: [['Day', 'Total', 'Not Started', 'In Progress', 'Completed']],
                     body: dailyRows,
                     theme: 'striped',
+                    styles: { font: 'Sarabun' },
                     headStyles: { fillColor: [25, 60, 108], fontSize: 8, fontStyle: 'bold' },
                     bodyStyles: { fontSize: 8 },
                     margin: { left: margin, right: margin },
@@ -187,6 +213,7 @@ const ReportDashboard = () => {
                         s.avgResolutionTime ?? 0,
                     ]),
                     theme: 'striped',
+                    styles: { font: 'Sarabun' },
                     headStyles: { fillColor: [25, 60, 108], fontSize: 8, fontStyle: 'bold' },
                     bodyStyles: { fontSize: 8 },
                     margin: { left: margin, right: margin },
@@ -224,6 +251,7 @@ const ReportDashboard = () => {
                         r.totalTickets > 0 ? `${Math.round((r.completed / r.totalTickets) * 100)}%` : '0%',
                     ]),
                     theme: 'striped',
+                    styles: { font: 'Sarabun' },
                     headStyles: { fillColor: [25, 60, 108], fontSize: 8, fontStyle: 'bold' },
                     bodyStyles: { fontSize: 8 },
                     margin: { left: margin, right: margin },
@@ -260,6 +288,7 @@ const ReportDashboard = () => {
                         e.amount ?? 0,
                     ]),
                     theme: 'striped',
+                    styles: { font: 'Sarabun' },
                     headStyles: { fillColor: [25, 60, 108], fontSize: 8, fontStyle: 'bold' },
                     bodyStyles: { fontSize: 8 },
                     margin: { left: margin, right: margin },
@@ -269,9 +298,42 @@ const ReportDashboard = () => {
                         4: { halign: 'center' },
                     },
                 });
+                y = doc.lastAutoTable.finalY + 10;
             } else {
                 doc.setFontSize(9); doc.setTextColor(150, 150, 150);
                 doc.text('No equipment data available for this period.', margin, y + 4);
+                y += 12;
+            }
+
+            // =========================================
+            // Section 5: Top Replaced Parts (Sub-components)
+            // =========================================
+            if (y > 220) { doc.addPage(); y = 20; }
+            y = addSectionTitle('5. Top Replaced Parts', y);
+
+            if (subComponentData && subComponentData.length > 0) {
+                autoTable(doc, {
+                    startY: y,
+                    head: [['Rank', 'Replacement Part', 'Count']],
+                    body: subComponentData.map((s, i) => [
+                        `#${i + 1}`,
+                        s.name || '-',
+                        s.amount ?? 0,
+                    ]),
+                    theme: 'striped',
+                    styles: { font: 'Sarabun' },
+                    headStyles: { fillColor: [25, 60, 108], fontSize: 8, fontStyle: 'bold' },
+                    bodyStyles: { fontSize: 8 },
+                    margin: { left: margin, right: margin },
+                    tableWidth: pageW - margin * 2,
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 20 },
+                        2: { halign: 'center', cellWidth: 30 },
+                    },
+                });
+            } else {
+                doc.setFontSize(9); doc.setTextColor(150, 150, 150);
+                doc.text('No replaced parts data available for this period.', margin, y + 4);
             }
 
             // ---- Page numbers ----

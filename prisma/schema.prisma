@@ -159,7 +159,7 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id])
   
   ticketId  Int?
-  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   
   title     String
   message   String   @db.Text

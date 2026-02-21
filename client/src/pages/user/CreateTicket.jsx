@@ -68,7 +68,7 @@ const CreateTicket = () => {
         setFloors(uniqueFloors);
       }
     } catch (err) {
-      console.error("Error loading data:", err);
+      // Silently fail — user can still see empty dropdowns and retry
     }
   }, []);
 
@@ -162,7 +162,6 @@ const CreateTicket = () => {
       });
 
     } catch (err) {
-      console.error(err);
       toast.error(err.response?.data?.message || "Failed to submit request");
     }
   };
@@ -210,7 +209,7 @@ const CreateTicket = () => {
                 อุปกรณ์ส่วนที่พบปัญหา (Sub-Component)
               </label>
               <UserSelect
-                options={activeSubComponents}
+                options={activeSubComponents.map(c => ({ id: c.name, name: c.name }))}
                 value={form.subComponent}
                 onChange={(e) => setForm({ ...form, subComponent: e.target.value })}
                 placeholder="Select sub-component (Optional)"

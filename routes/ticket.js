@@ -39,8 +39,8 @@ router.get("/ticket/:id", authCheck, read);
 //อัปเดตสถานะ Ticket (admin + it_support)
 router.put("/ticket/:id", authCheck, itCheck, update);
 
-//ลบ Ticket
-router.delete("/ticket/:id", authCheck, adminCheck, remove);
+//ลบ Ticket (Admin + IT Support)
+router.delete("/ticket/:id", authCheck, itCheck, remove);
 
 
 

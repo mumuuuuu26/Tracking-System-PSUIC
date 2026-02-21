@@ -597,8 +597,7 @@ exports.testGoogleSync = async (req, res, next) => {
         if (!googleCalendarId) {
             return res.status(400).json({ 
                 success: false, 
-                message: "No Google Calendar ID found. Please Enter and Save it first.",
-                user: req.user
+                message: "No Google Calendar ID found. Please Enter and Save it first."
             });
         }
 

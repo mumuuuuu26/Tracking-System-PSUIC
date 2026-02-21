@@ -6,24 +6,26 @@ exports.getDashboardStats = async (req, res, next) => {
   try {
     const [ticketCount, itStaffCount, roomCount, equipmentCount] =
       await Promise.all([
-        prisma.ticket.count(),
+        // [FIX] Only count non-deleted tickets for dashboard display
+        prisma.ticket.count({ where: { isDeleted: false } }),
         prisma.user.count({ where: { role: "it_support", enabled: true } }),
         prisma.room.count(),
         prisma.equipment.count(),
       ]);
 
-    // Calculate Resolution Rate
-    const totalFixed = await prisma.ticket.count({
-      where: { status: "completed" },
-    });
-    const resolutionRate = ticketCount > 0 ? Math.round((totalFixed / ticketCount) * 100) : 0;
+    // [FIX] Resolution rate: completed / (non-deleted, non-rejected) for accurate %
+    const [totalFixed, totalEligible] = await Promise.all([
+      prisma.ticket.count({ where: { status: "completed", isDeleted: false } }),
+      prisma.ticket.count({ where: { isDeleted: false, status: { not: "rejected" } } }),
+    ]);
+    const resolutionRate = totalEligible > 0 ? Math.round((totalFixed / totalEligible) * 100) : 0;
 
     res.json({
       ticketCount,
       itStaffCount,
       roomCount,
       equipmentCount,
-      resolutionRate, // [NEW]
+      resolutionRate,
     });
   } catch (err) {
     next(err);

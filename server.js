@@ -25,8 +25,7 @@ const permissionRoutes = require("./routes/permission");
 
 // --- Middleware Setup ---
 
-// 1. Trust Proxy: จำเป็นมากเมื่ออยู่บน Server จริง (Nginx/Cloudflare)
-// ถ้าไม่เปิด Rate Limit จะมองเห็นทุกคนเป็น IP เดียวกันแล้วบล็อกผิดคน
+
 app.set("trust proxy", 1);
 
 // 2. Security Headers & Compression
@@ -52,10 +51,6 @@ const allowedOrigins = [
   "http://localhost:5173",
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
-  "http://10.135.2.243:5173", // Still kept but prefer env
-  "http://10.135.2.243",
-  "http://172.20.10.2:5173",
-  "http://172.20.10.2",
   /https?:\/\/.*\.ngrok-free\.app/
 ].filter(Boolean); // Remove undefined/null from env
 
