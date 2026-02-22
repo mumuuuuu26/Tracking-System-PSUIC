@@ -2,6 +2,11 @@ const winston = require('winston');
 require('winston-daily-rotate-file');
 const path = require('path');
 
+const isCi = ['1', 'true'].includes(String(process.env.CI).toLowerCase());
+const isTestLike = process.env.NODE_ENV === 'test' || isCi;
+const enableTestLogs = process.env.ENABLE_TEST_LOGS === 'true';
+const enableTestHttpLogs = process.env.ENABLE_TEST_HTTP_LOGS === 'true';
+
 // Determine log directory
 const logDir = path.join(__dirname, '../logs');
 
@@ -13,13 +18,14 @@ const logFormat = winston.format.combine(
   winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
 );
 
+const transports = [];
+
 /*
  * Log Level
  * error: 0, warn: 1, info: 2, http: 3, verbose: 4, debug: 5, silly: 6
  */
-const logger = winston.createLogger({
-  format: logFormat,
-  transports: [
+if (!isTestLike || enableTestLogs) {
+  transports.push(
     // debug log setting
     new winston.transports.DailyRotateFile({
       level: 'debug',
@@ -29,7 +35,9 @@ const logger = winston.createLogger({
       maxFiles: '90d', // 90 Days saved (Legal Requirement)
       json: false,
       zippedArchive: true,
-    }),
+    })
+  );
+  transports.push(
     // error log setting
     new winston.transports.DailyRotateFile({
       level: 'error',
@@ -40,22 +48,41 @@ const logger = winston.createLogger({
       handleExceptions: true,
       json: false,
       zippedArchive: true,
-    }),
-  ],
-});
+    })
+  );
+}
 
-logger.add(
-  new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.splat(),
-      winston.format.colorize(),
-    ),
-  })
-);
+if (isTestLike && !enableTestLogs) {
+  transports.push(
+    new winston.transports.Console({
+      level: 'error',
+      format: logFormat,
+    })
+  );
+} else {
+  transports.push(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.splat(),
+        winston.format.colorize(),
+      ),
+    })
+  );
+}
+
+const logger = winston.createLogger({
+  format: logFormat,
+  transports,
+});
 
 const stream = {
   write: (message) => {
-    logger.info(message.substring(0, message.lastIndexOf('\n')));
+    if (isTestLike && !enableTestHttpLogs) return;
+
+    const trimmedMessage = message.trim();
+    if (trimmedMessage) {
+      logger.info(trimmedMessage);
+    }
   },
 };
 

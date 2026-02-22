@@ -41,8 +41,8 @@ async function seed() {
             await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1;');
             console.log('🧹 Database cleaned');
 
-            // 2. Create User
-            console.log('👤 Creating test user...');
+            // 2. Create Users
+            console.log('👤 Creating test users...');
             const passwordHash = await bcrypt.hash('12345678', 10);
             const user = await tx.user.create({
                 data: {
@@ -50,6 +50,24 @@ async function seed() {
                     password: passwordHash,
                     name: 'E2E User',
                     role: 'user',
+                    enabled: true
+                }
+            });
+            const admin = await tx.user.create({
+                data: {
+                    email: 'e2e.admin@test.com',
+                    password: passwordHash,
+                    name: 'E2E Admin',
+                    role: 'admin',
+                    enabled: true
+                }
+            });
+            const itSupport = await tx.user.create({
+                data: {
+                    email: 'e2e.it@test.com',
+                    password: passwordHash,
+                    name: 'E2E IT',
+                    role: 'it_support',
                     enabled: true
                 }
             });
@@ -75,22 +93,69 @@ async function seed() {
 
             // 5. Create Ticket
             console.log('🎫 Creating tickets...');
-            await tx.ticket.create({
+            const ticketOpen = await tx.ticket.create({
                 data: {
                     title: 'Wifi ใช้ไม่ได้',
                     description: 'E2E auto generated ticket',
-                    status: 'not_start', // User said 'open' but schema defaults/uses 'not_start' usually. User request said 'open' in SQL, but schema probably maps it. 
-                                         // Warning: Schema has 'not_start', 'in_progress', 'completed'. 'open' might be invalid enum if mapped, but here it is String.
-                                         // Checked schema: status String @default("not_start"). 'open' might mean 'not_start' in user's context or just a string.
-                                         // User's SQL used 'open'. I will use 'not_start' to be safe with app logic, or 'open' if strict.
-                                         // Let's use 'not_start' as it is the default in schema and likely what the app expects for "New".
-                                         // RE-READING USER REQUEST: "VALUES (?, ?, 'open', ?, ?, ?)". 
-                                         // I will use 'not_start' because `Report.jsx` filters check for "not_start".
+                    status: 'not_start',
                     urgency: 'Medium',
                     categoryId: catNetwork.id,
                     roomId: roomLab1.id,
                     createdById: user.id
                 }
+            });
+
+            const acceptedAt = new Date(Date.now() - 45 * 60 * 1000);
+            await tx.ticket.create({
+                data: {
+                    title: 'Printer status pending fix',
+                    description: 'Assigned in-progress ticket for IT E2E',
+                    status: 'in_progress',
+                    urgency: 'High',
+                    categoryId: createdCategories[2].id,
+                    roomId: createdRooms[1].id,
+                    createdById: user.id,
+                    assignedToId: itSupport.id,
+                    acceptedAt,
+                    responseTime: 15
+                }
+            });
+
+            await tx.ticket.create({
+                data: {
+                    title: 'Projector resolved',
+                    description: 'Completed ticket for history/report E2E',
+                    status: 'completed',
+                    urgency: 'Low',
+                    categoryId: createdCategories[1].id,
+                    roomId: createdRooms[2].id,
+                    createdById: user.id,
+                    assignedToId: itSupport.id,
+                    acceptedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+                    completedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                    responseTime: 10,
+                    resolutionTime: 60,
+                    note: 'Seeded completed ticket'
+                }
+            });
+
+            await tx.notification.createMany({
+                data: [
+                    {
+                        userId: admin.id,
+                        ticketId: ticketOpen.id,
+                        title: 'New Ticket Created',
+                        message: `Ticket #${ticketOpen.id}: ${ticketOpen.title}`,
+                        type: 'ticket_create'
+                    },
+                    {
+                        userId: itSupport.id,
+                        ticketId: ticketOpen.id,
+                        title: 'New Ticket Created',
+                        message: `Ticket #${ticketOpen.id}: ${ticketOpen.title}`,
+                        type: 'ticket_create'
+                    }
+                ]
             });
         }, {
             timeout: 10000 // 10s timeout

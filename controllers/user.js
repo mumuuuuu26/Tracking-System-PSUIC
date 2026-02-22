@@ -6,28 +6,86 @@ const { saveImage } = require("../utils/uploadImage");
 // Create User (Invite/Promote Existing User)
 exports.createUser = async (req, res, next) => {
     try {
-        const { email, role, name } = req.body;
+        const { email, role, name, password } = req.body;
+        const normalizedEmail = String(email || "").trim().toLowerCase();
+        const normalizedName = String(name || "").trim();
+        const normalizedPassword = String(password || "").trim();
+        const validRoles = ["user", "it_support", "admin"];
+        const selectedRole = role && validRoles.includes(role) ? role : "user";
+        const safeUserSelect = {
+            id: true,
+            email: true,
+            username: true,
+            name: true,
+            role: true,
+            enabled: true,
+            department: true,
+            phoneNumber: true,
+            picture: true,
+            createdAt: true,
+            updatedAt: true,
+        };
 
-        // Check if user exists (Must exist to be added by admin now)
-        const existingUser = await prisma.user.findFirst({
-            where: { email }
-        });
-
-        if (!existingUser) {
-            return res.status(404).json({ message: "User not found. They must log in via PSU Passport first." });
+        if (!normalizedEmail) {
+            return res.status(400).json({ message: "Email is required" });
         }
 
-        // Update existing user (Promote to new role or update name)
-        const updatedUser = await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-                role: role || 'user',
-                name: name || existingUser.name,
-                enabled: true
-            }
+        if (role && !validRoles.includes(role)) {
+            return res.status(400).json({ message: "Invalid role" });
+        }
+
+        const existingUser = await prisma.user.findFirst({
+            where: { email: normalizedEmail },
         });
 
-        res.json(updatedUser);
+        if (existingUser) {
+            const dataToUpdate = {
+                role: selectedRole,
+                name: normalizedName || existingUser.name,
+                enabled: true,
+            };
+
+            if (normalizedPassword) {
+                if (normalizedPassword.length < 6) {
+                    return res.status(400).json({ message: "Password must be at least 6 characters" });
+                }
+                dataToUpdate.password = await bcrypt.hash(normalizedPassword, 10);
+            }
+
+            const updatedUser = await prisma.user.update({
+                where: { id: existingUser.id },
+                data: dataToUpdate,
+                select: safeUserSelect,
+            });
+
+            return res.json({
+                ...updatedUser,
+                onboarding: "updated_existing",
+            });
+        }
+
+        if (!normalizedPassword || normalizedPassword.length < 6) {
+            return res.status(400).json({
+                message: "Password is required for new non-SSO users and must be at least 6 characters",
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(normalizedPassword, 10);
+        const createdUser = await prisma.user.create({
+            data: {
+                email: normalizedEmail,
+                password: passwordHash,
+                role: selectedRole,
+                name: normalizedName || normalizedEmail,
+                enabled: true,
+            },
+            select: safeUserSelect,
+        });
+
+        return res.status(201).json({
+            ...createdUser,
+            onboarding: "created_new",
+        });
     } catch (err) {
         next(err);
     }

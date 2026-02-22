@@ -1,81 +1,133 @@
-const { exec } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { spawn } = require("child_process");
+const path = require("path");
+const fs = require("fs");
+require("../config/env");
 
-// Use our logger if running within the app context, otherwise fallback to console
 let logger = console;
 try {
-    const logUtils = require('../utils/logger');
-    logger = logUtils.logger;
-} catch (e) {
-    // Fallback if logger utility isn't found (e.g. running script standalone)
+  const logUtils = require("../utils/logger");
+  logger = logUtils.logger;
+} catch (_) {
+  // Fallback to console when logger utility is unavailable.
 }
 
-// ตั้งค่าที่เก็บไฟล์ Backup
-const backupDir = path.join(__dirname, '../backups');
+const backupDir = path.join(__dirname, "../backups");
 if (!fs.existsSync(backupDir)) {
-    fs.mkdirSync(backupDir, { recursive: true });
+  fs.mkdirSync(backupDir, { recursive: true });
 }
 
-// ตั้งชื่อไฟล์ตามวันเวลา (เช่น db_2026-02-06_1030.sql)
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-const filename = `db_backup_${timestamp}.sql`;
-const filePath = path.join(backupDir, filename);
+function parseMysqlUrl(urlValue) {
+  if (!urlValue) {
+    throw new Error("DATABASE_URL is missing");
+  }
 
-// ดึงค่าจาก ENV หรือใช้ค่า Default (ควรระวัง)
-const dbUrl = process.env.DATABASE_URL;
-let DB_USER = 'root';
-let DB_PASS = '';
-let DB_NAME = 'tracking_system';
-let DB_HOST = 'localhost';
-let DB_PORT = '3306';
+  let parsed;
+  try {
+    parsed = new URL(urlValue);
+  } catch {
+    throw new Error("DATABASE_URL is invalid");
+  }
 
-// Try to parse DATABASE_URL if available for better security than hardcoding
-if (dbUrl) {
-    try {
-        // Format: mysql://USER:PASS@HOST:PORT/DB
-        const url = new URL(dbUrl);
-        DB_USER = url.username || DB_USER;
-        DB_PASS = url.password || DB_PASS;
-        DB_HOST = url.hostname || DB_HOST;
-        DB_PORT = url.port || DB_PORT;
-        DB_NAME = url.pathname.replace('/', '') || DB_NAME;
-    } catch (e) {
-        logger.error('Failed to parse DATABASE_URL, using defaults/hardcoded values.');
+  if (parsed.protocol !== "mysql:") {
+    throw new Error(`Unsupported DATABASE_URL protocol: ${parsed.protocol}`);
+  }
+
+  const user = decodeURIComponent(parsed.username || "");
+  const password = decodeURIComponent(parsed.password || "");
+  const host = parsed.hostname || "127.0.0.1";
+  const port = parsed.port || "3306";
+  const database = decodeURIComponent((parsed.pathname || "").replace(/^\//, ""));
+
+  if (!user || !database) {
+    throw new Error("DATABASE_URL must include username and database name");
+  }
+
+  return { user, password, host, port, database };
+}
+
+function cleanupOldBackups() {
+  const files = fs.readdirSync(backupDir);
+  const now = Date.now();
+  const retentionMs = 7 * 24 * 60 * 60 * 1000;
+
+  for (const file of files) {
+    if (!file.endsWith(".sql")) continue;
+    const currentFilePath = path.join(backupDir, file);
+    const stats = fs.statSync(currentFilePath);
+    if (now - stats.mtime.getTime() > retentionMs) {
+      fs.unlinkSync(currentFilePath);
+      logger.info(`Deleted old backup: ${file}`);
     }
+  }
 }
 
-// Escaping password for shell command might be needed if it contains special chars
-// For simplicity in this script, we assume basic alphanumeric or handling by exec
-const cmd = `mysqldump -u ${DB_USER} -p"${DB_PASS}" -h ${DB_HOST} -P ${DB_PORT} ${DB_NAME} > "${filePath}"`;
+function runMysqldump(connection, filePath) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "--single-transaction",
+      "--quick",
+      "--skip-lock-tables",
+      "-h",
+      connection.host,
+      "-P",
+      connection.port,
+      "-u",
+      connection.user,
+      connection.database,
+    ];
 
-logger.info(`Starting database backup for ${DB_NAME}...`);
+    const child = spawn("mysqldump", args, {
+      env: {
+        ...process.env,
+        ...(connection.password ? { MYSQL_PWD: connection.password } : {}),
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 
-exec(cmd, (error, stdout, stderr) => {
-    if (error) {
-        logger.error(`Backup failed: ${error.message}`);
+    const output = fs.createWriteStream(filePath);
+    let stderr = "";
+
+    child.stdout.pipe(output);
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("error", (error) => {
+      output.destroy();
+      reject(error);
+    });
+
+    child.on("close", (code) => {
+      output.end();
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `mysqldump exited with code ${code}`));
         return;
-    }
+      }
+      resolve();
+    });
+  });
+}
+
+async function main() {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filename = `db_backup_${timestamp}.sql`;
+  const filePath = path.join(backupDir, filename);
+
+  try {
+    const connection = parseMysqlUrl(process.env.DATABASE_URL);
+    logger.info(`Starting database backup for ${connection.database}...`);
+
+    await runMysqldump(connection, filePath);
     logger.info(`Backup successful: ${filename}`);
-    
-    // (Optional) ลบไฟล์เก่าเกิน 7 วันทิ้ง เพื่อไม่ให้รก
-    try {
-        const files = fs.readdirSync(backupDir);
-        const now = Date.now();
-        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        
-        files.forEach(file => {
-            if (!file.endsWith('.sql')) return;
-            
-            const currentFilePath = path.join(backupDir, file);
-            const stats = fs.statSync(currentFilePath);
-            if (now - stats.mtime.getTime() > SEVEN_DAYS) {
-                 fs.unlinkSync(currentFilePath);
-                 logger.info(`Deleted old backup: ${file}`);
-            }
-        });
-    } catch (cleanupError) {
-        logger.error(`Cleanup failed: ${cleanupError.message}`);
+
+    cleanupOldBackups();
+  } catch (error) {
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, { force: true });
     }
-});
+    logger.error(`Backup failed: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+main();
