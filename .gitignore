@@ -1,6 +1,8 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.production
+.env.production.local
 
 # Logs
 logs/
@@ -11,7 +13,6 @@ yarn-error.log*
 
 # Backups
 backups/
-*.sql
 *.sqlite
 
 # Build
@@ -41,4 +42,3 @@ uploads/*
 # Playwright
 playwright-report/
 test-results/
-

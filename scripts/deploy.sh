@@ -20,6 +20,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 2.5 Validate production environment and DB readiness
+echo "🩺 Running production preflight checks..."
+npm run preflight:prod
+if [ $? -ne 0 ]; then
+    echo "❌ Production preflight failed! Check .env.production and database availability."
+    exit 1
+fi
+
 # 3. Build Frontend
 echo "🎨 Building Frontend..."
 cd client
@@ -39,7 +47,7 @@ cd ..
 
 # 3. Database Migration
 echo "🗄️ Running database migrations..."
-npx prisma migrate deploy
+npm run prisma:migrate:prod
 if [ $? -ne 0 ]; then
     echo "❌ Database migration failed!"
     exit 1
@@ -47,7 +55,7 @@ fi
 
 # 4. Generate Prisma Client
 echo "🔄 Generating Prisma Client..."
-npx prisma generate
+npm run prisma:generate:prod
 
 # 5. Restart Application
 echo "🔄 Restarting application with PM2..."

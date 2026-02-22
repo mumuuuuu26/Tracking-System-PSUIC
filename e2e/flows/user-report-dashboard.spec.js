@@ -2,29 +2,58 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
 
-async function login(page) {
-  await page.goto(BASE_URL + '/login');
-  
-  const loginEmailBtn = page.getByText(/login with email/i);
-  if (await loginEmailBtn.isVisible()) {
-      await loginEmailBtn.click();
+async function login(page, request) {
+  const loginResponse = await request.post('http://localhost:5002/api/login', {
+    data: {
+      email: 'e2e@test.com',
+      password: '12345678',
+    },
+  });
+  expect(loginResponse.ok()).toBeTruthy();
+
+  const loginData = await loginResponse.json();
+  await page.addInitScript((value) => {
+    window.localStorage.setItem('auth-store', JSON.stringify(value));
+    window.localStorage.setItem('token', value.state.token);
+  }, {
+    state: {
+      user: loginData.payload,
+      token: loginData.token,
+      hasHydrated: true,
+    },
+    version: 0,
+  });
+
+  await page.goto(`${BASE_URL}/user`);
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(/\/user/);
+}
+
+async function clickFirstTicketRowWithRetry(page, maxAttempts = 5) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const firstRow = page.getByTestId('ticket-row').first();
+    try {
+      await expect(firstRow).toBeVisible({ timeout: 5000 });
+      await firstRow.click({ force: true });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts) {
+        await page.waitForTimeout(200);
+      }
+    }
   }
 
-  await page.getByLabel(/email/i).fill('e2e@test.com');
-  await page.getByLabel(/password/i).fill('12345678');
-  await page.getByRole('button', { name: /sign in/i }).click();
-
-  await expect(page.locator('body')).not.toContainText('sign in');
-  // ensure we hit the user dashboard
-  await expect(page).toHaveURL(/user/);
+  throw lastError;
 }
 
 test.describe('User History Dashboard', () => {
   // Use mobile viewport for all tests in this file because LayoutUser hides nav on desktop
   test.use({ viewport: { width: 375, height: 667 } });
 
-  test('navigate to history page', async ({ page }) => {
-    await login(page);
+  test('navigate to history page', async ({ page, request }) => {
+    await login(page, request);
 
     // open history
     await page.locator('[data-testid="nav-history"]:visible').click();
@@ -35,8 +64,8 @@ test.describe('User History Dashboard', () => {
   });
 
 
-  test('filter tickets', async ({ page }) => {
-    await login(page);
+  test('filter tickets', async ({ page, request }) => {
+    await login(page, request);
     await page.locator('[data-testid="nav-history"]:visible').click();
     await expect(page).toHaveURL(/history/);
 
@@ -57,16 +86,20 @@ test.describe('User History Dashboard', () => {
   });
 
 
-  test('open ticket detail', async ({ page }) => {
-    await login(page);
+  test('open ticket detail', async ({ page, request }) => {
+    await login(page, request);
     await page.locator('[data-testid="nav-history"]:visible').click();
     await expect(page).toHaveURL(/history/);
 
     const rows = page.getByTestId('ticket-row');
+    const firstRow = rows.first();
+    const emptyState = page.getByText(/No tickets found/i);
 
-    if (await rows.count() > 0) {
-      // Click the row/card itself which navigates to detail
-      await rows.first().click({ force: true });
+    await expect(firstRow.or(emptyState).first()).toBeVisible({ timeout: 10000 });
+
+    if (await firstRow.isVisible()) {
+      // Ticket cards can re-render while list data settles, so click with retry.
+      await clickFirstTicketRowWithRetry(page);
 
       // detail page indicator
       await expect(page).toHaveURL(/ticket|detail|view/);

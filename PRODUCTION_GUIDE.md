@@ -16,9 +16,9 @@ Before installing, ensure the server (Windows Server / Linux / Mac) meets these 
 
 ---
 
-## 2. Environment Configuration (.env)
+## 2. Environment Configuration (.env.production)
 
-Create a `.env` file in the root directory. **Do not commit this file to Git.**
+Create a `.env.production` file in the root directory. **Do not commit this file to Git.**
 
 ### Server & Security
 | Variable | Description | Example |
@@ -117,9 +117,9 @@ npm install
 npm run build
 cd ..
 
-# 4. Setup .env
-copy .env.example .env
-# (Edit .env with your credentials)
+# 4. Setup .env.production
+cp .env.production.example .env.production
+# (Edit .env.production with your credentials)
 ```
 
 ### Step 3: Database Setup
@@ -128,7 +128,7 @@ copy .env.example .env
 # Log into MySQL and run: CREATE DATABASE tracking_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # 2. Run Migrations (Create Tables)
-npx prisma migrate deploy
+npm run prisma:migrate:prod
 
 # 3. Seed Initial Data (Admin User, Rooms, Categories)
 npm run seed
@@ -144,6 +144,12 @@ pm2 save
 pm2 startup
 ```
 
+Before restart/update in production, run:
+```bash
+npm run preflight:prod
+```
+This validates required env keys and checks DB connectivity before migration/restart.
+
 ---
 
 ## 5. Maintenance & Troubleshooting
@@ -157,11 +163,11 @@ Use the provided deployment scripts:
 
 **1. "Database connection failed"**
 -   **Check**: Is MySQL service running? (`services.msc` on Windows)
--   **Check**: Are credentials in `.env` correct?
+-   **Check**: Are credentials in `.env.production` correct?
 -   **Check**: Is firewall blocking port 3306?
 
 **2. "Google Calendar Sync Error"**
--   **Check**: confirm `GOOGLE_PRIVATE_KEY` in `.env` is enclosed in quotes `"..."` and has `\n` for newlines.
+-   **Check**: confirm `GOOGLE_PRIVATE_KEY` in `.env.production` is enclosed in quotes `"..."` and has `\n` for newlines.
 -   **Check**: confirm the service account email has "Make Changes" permission on the target Google Calendar.
 
 **3. "Disk Full"**

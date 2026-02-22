@@ -19,6 +19,14 @@ IF %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
+REM 2.5 Validate production environment and DB readiness
+echo  Running production preflight checks...
+call npm run preflight:prod
+IF %ERRORLEVEL% NEQ 0 (
+    echo  Production preflight failed! Check .env.production and database availability.
+    exit /b %ERRORLEVEL%
+)
+
 REM 3. Build Frontend
 echo  Building Frontend...
 cd client
@@ -38,7 +46,7 @@ cd ..
 
 REM 3. Database Migration
 echo  Running database migrations...
-call npx prisma migrate deploy
+call npm run prisma:migrate:prod
 IF %ERRORLEVEL% NEQ 0 (
     echo  Database migration failed!
     exit /b %ERRORLEVEL%
@@ -46,7 +54,7 @@ IF %ERRORLEVEL% NEQ 0 (
 
 REM 4. Generate Prisma Client
 echo  Generating Prisma Client...
-call npx prisma generate
+call npm run prisma:generate:prod
 
 REM 5. Restart Application
 echo  Restarting application with PM2...

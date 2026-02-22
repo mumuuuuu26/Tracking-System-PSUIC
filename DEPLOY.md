@@ -13,7 +13,8 @@ Before running the deployment script, ensure the server has the following instal
 3.  **PM2**: Process manager to keep the app running.
     - Install: `npm install -g pm2`
 4.  **Database (MySQL)**: Must be running and accessible.
-5.  **Environment Variables (.env)**: Ensure the `.env` file exists in the project root with correct credentials.
+5.  **Environment Variables (.env.production)**: Ensure `.env.production` exists in the project root with correct credentials.
+6.  **Network Access**: Target host `10.135.2.226` is private network (องค์กร/มหาวิทยาลัย). Deploy machine must be on university network or VPN.
 
 ---
 
@@ -44,9 +45,11 @@ Before running the deployment script, ensure the server has the following instal
 ## 🔍 What the Script Does automatically
 1.  **`git pull`**: Updates code from the repository.
 2.  **`npm install`**: Installs new dependencies (if any).
-3.  **`npx prisma migrate deploy`**: Updates database schema safely.
-4.  **`npx prisma generate`**: Refreshes the database client.
-5.  **`pm2 restart`**: Restarts the server to apply changes.
+3.  **`npm run preflight:prod`**: Validates production env + checks DB connectivity.
+4.  **`npm run prisma:migrate:prod`**: Updates database schema safely using production env.
+5.  **`npm run prisma:generate:prod`**: Refreshes the database client using production env.
+6.  **`pm2 restart`**: Restarts the server to apply changes.
+7.  Deployment stops immediately if any preflight/migration step fails.
 
 ---
 
@@ -60,14 +63,15 @@ chmod +x scripts/deploy.sh
 
 ### 2. "Git Conflict" or "Merge Error"
 This happens if you modified files directly on the server.
-**Solution:** Discard server changes (matches the repo):
+**Solution:** Commit or stash local changes first, then pull again:
 ```bash
-git reset --hard
+git status
+git stash
 git pull
 ```
 
 ### 3. Database Connection Failed
-Check your `.env` file:
+Check your `.env.production` file:
 ```env
 DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DATABASE"
 ```
@@ -76,6 +80,6 @@ Ensure the MySQL service is running.
 ### 4. PM2 Service Not Found
 If PM2 doesn't restart, start it manually:
 ```bash
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.js --env production
 pm2 save
 ```

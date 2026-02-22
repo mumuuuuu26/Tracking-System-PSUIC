@@ -17,7 +17,8 @@ Before running the project, ensure you have the following installed:
     npm install
     ```
 3.  **Setup Environment Variables**:
-    Create a `.env` file in the root directory (copy from example if available, or use the reference below).
+    - Local/Dev: use `.env`
+    - Production: use `.env.production` (copy from `.env.production.example`)
 
 ## Configuration (.env)
 
@@ -42,8 +43,8 @@ Initialize the database schema using Prisma:
 # Push schema to DB (Development/Prototyping)
 npx prisma db push
 
-# OR Create a migration (Production)
-npx prisma migrate dev --name init
+# Apply migrations (Production)
+npm run prisma:migrate:prod
 ```
 
 To seed initial data:
@@ -64,7 +65,7 @@ We use **PM2** to manage the process in production.
 
 **Start the server:**
 ```bash
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.js --env production
 ```
 
 **Management Commands:**
@@ -87,9 +88,9 @@ These files are excluded from version control (`.gitignore`).
 
 ## Test Strategy
 
-- **CI Pipeline**: Runs Unit and Integration tests (Jest) to ensure core logic and check for regressions.
-- **E2E Tests**: Playwright tests are available for local or manual execution. They are disabled in CI to prioritize build speed and stability.
-  - Run E2E: `npm run test:e2e`
+- **CI Pipeline**: Runs backend tests, smoke tests, frontend tests, and Playwright E2E.
+- **E2E Tests**: Playwright tests are available for local and CI execution.
+  - Run E2E locally: `npm run test:e2e`
 
 ## Performance & Load Testing
 
