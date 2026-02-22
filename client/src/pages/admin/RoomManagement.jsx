@@ -5,6 +5,7 @@ import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const RoomManagement = () => {
     const navigate = useNavigate();
@@ -141,7 +142,7 @@ const RoomManagement = () => {
                             {/* Room Image */}
                             <div className="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
                                 <img
-                                    src={room.imageUrl || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=300&h=200"}
+                                    src={room.imageUrl ? getImageUrl(room.imageUrl) : "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=300&h=200"}
                                     alt={`Room ${room.roomNumber}`}
                                     className="w-full h-full object-cover"
                                 />
@@ -265,6 +266,10 @@ const RoomManagement = () => {
                                             onChange={(e) => {
                                                 const file = e.target.files[0];
                                                 if (file) {
+                                                    if (file.size > 5 * 1024 * 1024) {
+                                                        toast.error("Image too large (max 5MB)");
+                                                        return;
+                                                    }
                                                     const reader = new FileReader();
                                                     reader.onloadend = () => {
                                                         setFormData({ ...formData, imageUrl: reader.result });
@@ -277,7 +282,7 @@ const RoomManagement = () => {
                                         {formData.imageUrl ? (
                                             <div className="relative h-40 w-full rounded-lg overflow-hidden shadow-sm">
                                                 <img
-                                                    src={formData.imageUrl}
+                                                    src={formData.imageUrl?.startsWith("data:") ? formData.imageUrl : getImageUrl(formData.imageUrl)}
                                                     alt="Preview"
                                                     className="w-full h-full object-cover"
                                                 />
