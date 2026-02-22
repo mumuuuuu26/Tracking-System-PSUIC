@@ -84,22 +84,23 @@ const Login = () => {
           <button
             onClick={handlePSUPassport}
             disabled={!isPsuPassportEnabled}
-            className={`w-full group relative overflow-hidden text-blue-600 font-bold py-4 px-6 rounded-2xl shadow-xl transition-all duration-300 ${
-              isPsuPassportEnabled
-                ? "bg-white hover:bg-gray-100 hover:shadow-2xl transform hover:-translate-y-1"
-                : "bg-white/80 cursor-not-allowed opacity-80"
-            }`}
+            className={`w-full group relative overflow-hidden text-blue-600 font-bold py-4 px-6 rounded-2xl shadow-xl transition-all duration-300 ${isPsuPassportEnabled
+              ? "bg-white hover:bg-gray-100 hover:shadow-2xl transform hover:-translate-y-1"
+              : "bg-white/80 cursor-not-allowed opacity-80"
+              }`}
           >
             <div className="relative z-10 flex items-center justify-center gap-3">
+              <div className="flex flex-col items-center">
                 <span className="text-lg">
-                  {isPsuPassportEnabled
-                    ? "Login with PSU Passport"
-                    : "PSU Passport (ปิดชั่วคราว)"}
+                  {isPsuPassportEnabled ? "Login with PSU Passport" : "PSU Passport"}
                 </span>
+                {!isPsuPassportEnabled && (
+                  <span className="text-sm font-medium opacity-80 mt-0.5">(Temporarily Unavailable)</span>
+                )}
+              </div>
               <ChevronRight
-                className={`w-6 h-6 text-blue-600/80 transition-transform ${
-                  isPsuPassportEnabled ? "group-hover:translate-x-1" : ""
-                }`}
+                className={`w-6 h-6 text-blue-600/80 transition-transform ${isPsuPassportEnabled ? "group-hover:translate-x-1" : ""
+                  }`}
               />
             </div>
           </button>
@@ -122,7 +123,7 @@ const Login = () => {
                 </button>
               </div>
               <div className="text-center text-white/50 text-sm font-light">
-                For PSUIC Students, Faculty & Staff Only
+                For PSUIC Students, Faculty & Staff
               </div>
             </div>
           ) : (

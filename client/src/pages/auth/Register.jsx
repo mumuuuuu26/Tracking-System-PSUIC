@@ -42,7 +42,7 @@ const Register = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-blue-200 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-blue-600 p-4">
             <div className="w-full max-w-md animate-fade-in">
 
                 {/* Back Button */}
@@ -59,7 +59,7 @@ const Register = () => {
                             <UserPlus size={32} />
                         </div>
                         <h2 className="text-3xl font-bold text-white">Create Account</h2>
-                        <p className="text-white/60 text-sm mt-1">Join PSUIC Help Desk System</p>
+                        <p className="text-white/60 text-sm mt-1">Join IT Helpdesk Ticketing System</p>
                     </div>
 
                     <form onSubmit={hdlSubmit} className="space-y-5">
@@ -80,7 +80,7 @@ const Register = () => {
                                 className="w-full border border-white/20 bg-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-white placeholder-white/40"
                                 type="password"
                                 name="password"
-                                placeholder="••••••••"
+                                placeholder="Password"
                                 onChange={hdlChange}
                                 required
                             />
@@ -91,7 +91,7 @@ const Register = () => {
                                 className="w-full border border-white/20 bg-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-white placeholder-white/40"
                                 type="password"
                                 name="confirmPassword"
-                                placeholder="••••••••"
+                                placeholder="Password"
                                 onChange={hdlChange}
                                 required
                             />
