@@ -30,6 +30,10 @@
     "db:reset": "npx prisma migrate reset",
     "logs:clean": "rm -rf logs/*",
     "uploads:clean": "rm -rf uploads/*",
+    "uploads:backup": "node scripts/backup-uploads.js",
+    "uploads:backup:archive": "bash scripts/backup-uploads.sh",
+    "uploads:cleanup": "node scripts/cleanup-uploads.js",
+    "uploads:migrate:room-images": "node scripts/migrate-room-images.js",
     "studio": "npx prisma studio"
   },
   "keywords": [],
@@ -55,6 +59,7 @@
     "nodemailer": "^7.0.12",
     "nodemon": "^3.1.10",
     "qrcode": "^1.5.4",
+    "sharp": "^0.34.5",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",

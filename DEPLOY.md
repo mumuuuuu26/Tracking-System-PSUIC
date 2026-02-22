@@ -51,6 +51,11 @@ Before running the deployment script, ensure the server has the following instal
 6.  **`pm2 restart`**: Restarts the server to apply changes.
 7.  Deployment stops immediately if any preflight/migration step fails.
 
+After deployment, upload maintenance jobs run automatically via scheduler in production mode:
+- `DB_BACKUP_CRON` (default `0 3 * * *`)
+- `UPLOAD_BACKUP_CRON` (default `20 3 * * *`)
+- `UPLOAD_CLEANUP_CRON` (default `50 3 * * *`)
+
 ---
 
 ## ⚠️ Troubleshooting

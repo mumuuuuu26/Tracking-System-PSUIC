@@ -34,6 +34,23 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | :--- | :--- | :--- |
 | `DATABASE_URL` | DB Connection String | `mysql://root:password@localhost:3306/tracking_system` |
 
+### Uploads & Retention
+| Variable | Description | Example |
+| :--- | :--- | :--- |
+| `UPLOAD_DIR` | Path for uploaded files | `uploads` |
+| `UPLOAD_ALLOWED_MIME` | Allowed image MIME list | `image/jpeg,image/png,image/webp` |
+| `UPLOAD_MAX_BYTES` | Max input image size per file | `5242880` |
+| `UPLOAD_MAX_WIDTH` | Max image width (if `sharp` available) | `1920` |
+| `UPLOAD_MAX_HEIGHT` | Max image height (if `sharp` available) | `1920` |
+| `UPLOAD_QUALITY` | Output quality 1-100 (if `sharp` available) | `82` |
+| `UPLOAD_TARGET_FORMAT` | `webp`, `jpeg`, `png`, or `original` | `webp` |
+| `UPLOAD_BACKUP_DIR` | Upload backup output directory | `backups/uploads` |
+| `UPLOAD_BACKUP_RETENTION_DAYS` | Keep upload backups for N days | `14` |
+| `UPLOAD_ORPHAN_RETENTION_HOURS` | Keep unreferenced upload files for N hours before delete | `24` |
+| `DB_BACKUP_CRON` | Cron for DB backup job | `"0 3 * * *"` |
+| `UPLOAD_BACKUP_CRON` | Cron for upload backup job | `"20 3 * * *"` |
+| `UPLOAD_CLEANUP_CRON` | Cron for upload orphan cleanup job | `"50 3 * * *"` |
+
 ### Email Notifications (SMTP)
 | Variable | Description | Example |
 | :--- | :--- | :--- |
@@ -172,8 +189,13 @@ Use the provided deployment scripts:
 
 **3. "Disk Full"**
 -   Logs are automatically rotated and kept for 30 days (`logs/`).
--   Backups are kept for 7 days (`backups/`).
--   Check `uploads/` folder if users are uploading massive images.
+-   DB backups are kept for 7 days (`backups/`).
+-   Upload backups are kept by `UPLOAD_BACKUP_RETENTION_DAYS` (default 14 days).
+-   Orphan upload files are cleaned by scheduler (`npm run uploads:cleanup`).
+-   Manual maintenance commands:
+    - `npm run uploads:backup`
+    - `npm run uploads:cleanup`
+    - `npm run uploads:migrate:room-images` (one-time migration for old Room base64 images)
 
 **4. "Server not responding"**
 -   Run `pm2 status` to see if app is running.

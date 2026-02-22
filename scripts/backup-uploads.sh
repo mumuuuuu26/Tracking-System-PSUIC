@@ -1,41 +1,53 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Configuration
-# Load .env variables if available
-if [ -f "../.env" ]; then
-  export $(grep -v '^#' ../.env | xargs)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ -f "$PROJECT_ROOT/.env.production" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$PROJECT_ROOT/.env.production"
+  set +a
+elif [[ -f "$PROJECT_ROOT/.env" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$PROJECT_ROOT/.env"
+  set +a
 fi
 
-# Determine SOURCE_DIR
-if [ -n "$UPLOAD_DIR" ]; then
-  # Check if absolute path
-  if [[ "$UPLOAD_DIR" = /* ]]; then
-    SOURCE_DIR="$UPLOAD_DIR"
-  else
-    SOURCE_DIR="../$UPLOAD_DIR"
-  fi
+UPLOAD_DIR_RAW="${UPLOAD_DIR:-uploads}"
+if [[ "$UPLOAD_DIR_RAW" = /* ]]; then
+  SOURCE_DIR="$UPLOAD_DIR_RAW"
 else
-  SOURCE_DIR="../uploads"
+  SOURCE_DIR="$PROJECT_ROOT/$UPLOAD_DIR_RAW"
 fi
 
-BACKUP_DIR="../backups"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_NAME="uploads_backup_$TIMESTAMP.tar.gz"
+BACKUP_DIR="${UPLOAD_BACKUP_DIR:-$PROJECT_ROOT/backups/uploads}"
+RETENTION_DAYS="${UPLOAD_BACKUP_RETENTION_DAYS:-14}"
 
-# Ensure backup directory exists
-mkdir -p "$BACKUP_DIR"
+TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"
+BACKUP_NAME="uploads_backup_${TIMESTAMP}.tar.gz"
+BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 
-# Create backup
-echo "Starting backup of $SOURCE_DIR to $BACKUP_DIR/$BACKUP_NAME..."
-tar -czf "$BACKUP_DIR/$BACKUP_NAME" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"
-
-# Check if backup was successful
-if [ $? -eq 0 ]; then
-  echo "✅ Backup completed successfully: $BACKUP_DIR/$BACKUP_NAME"
-else
-  echo "❌ Backup failed!"
+if [[ ! -d "$SOURCE_DIR" ]]; then
+  echo "❌ Upload directory not found: $SOURCE_DIR"
   exit 1
 fi
 
-# Optional: Keep only last 7 days of backups (uncomment to enable)
-# find "$BACKUP_DIR" -name "uploads_backup_*.tar.gz" -mtime +7 -delete
+mkdir -p "$BACKUP_DIR"
+
+echo "Starting uploads backup..."
+echo "Source: $SOURCE_DIR"
+echo "Target: $BACKUP_PATH"
+
+tar -czf "$BACKUP_PATH" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"
+
+echo "✅ Upload backup completed: $BACKUP_PATH"
+
+if [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+  echo "Applying retention policy: keep ${RETENTION_DAYS} days"
+  find "$BACKUP_DIR" -type f -name "uploads_backup_*.tar.gz" -mtime +"$RETENTION_DAYS" -print -delete
+else
+  echo "⚠️ Skip retention cleanup because UPLOAD_BACKUP_RETENTION_DAYS is not numeric: $RETENTION_DAYS"
+fi
