@@ -1,95 +1,73 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Layout from "../layouts/Layout";
-import LayoutUser from "../layouts/LayoutUser";
-import LayoutAdmin from "../layouts/LayoutAdmin";
-import LayoutIT from "../layouts/LayoutIT";
-import PSUCallback from "../pages/auth/PSUCallback";
-import ScanQR from "../pages/user/ScanQR";
-import TicketDetail from "../pages/user/TicketDetail";
-import EquipmentDetail from "../pages/user/EquipmentDetail";
+import React, { Suspense, lazy } from "react";
+import { Routes, Route } from "react-router-dom";
 
+const LayoutUser = lazy(() => import("../layouts/LayoutUser"));
+const LayoutAdmin = lazy(() => import("../layouts/LayoutAdmin"));
+const LayoutIT = lazy(() => import("../layouts/LayoutIT"));
 
-// Auth
-import Login from "../pages/auth/Login";
-import Register from "../pages/auth/Register";
+const Login = lazy(() => import("../pages/auth/Login"));
+const Register = lazy(() => import("../pages/auth/Register"));
+const PSUCallback = lazy(() => import("../pages/auth/PSUCallback"));
 
-// User
-import HomeUser from "../pages/user/HomeUser";
-import CreateTicket from "../pages/user/CreateTicket";
-import UserHistory from "../pages/user/History";
-import Profile from "../pages/user/Profile";
-import ITSchedule from "../pages/user/ITSchedule";
+const HomeUser = lazy(() => import("../pages/user/HomeUser"));
+const CreateTicket = lazy(() => import("../pages/user/CreateTicket"));
+const UserHistory = lazy(() => import("../pages/user/History"));
+const Profile = lazy(() => import("../pages/user/Profile"));
+const ITSchedule = lazy(() => import("../pages/user/ITSchedule"));
+const QuickFix = lazy(() => import("../pages/user/QuickFix"));
+const Report = lazy(() => import("../pages/user/Report"));
+const ScanQR = lazy(() => import("../pages/user/ScanQR"));
+const TicketDetail = lazy(() => import("../pages/user/TicketDetail"));
+const EquipmentDetail = lazy(() => import("../pages/user/EquipmentDetail"));
 
-import QuickFix from "../pages/user/QuickFix";
-import Report from "../pages/user/Report";
+const Dashboard = lazy(() => import("../pages/admin/Dashboard"));
+const UserManagement = lazy(() => import("../pages/admin/UserManagement"));
+const RoomManagement = lazy(() => import("../pages/admin/RoomManagement"));
+const CategoryManagement = lazy(() => import("../pages/admin/CategoryManagement"));
+const EquipmentManagement = lazy(() => import("../pages/admin/EquipmentManagement"));
+const ReportDashboard = lazy(() => import("../pages/admin/reports/ReportDashboard"));
+const AdminProfile = lazy(() => import("../pages/admin/Profile"));
+const AdminTicketDetail = lazy(() => import("../pages/admin/TicketDetail"));
+const Permission = lazy(() => import("../pages/admin/Permission"));
+const QuickFixManagement = lazy(() => import("../pages/admin/QuickFixManagement"));
 
+const ITDashboard = lazy(() => import("../pages/it/Dashboard"));
+const Notifications = lazy(() => import("../pages/it/Notifications"));
+const ITProfile = lazy(() => import("../pages/it/Profile"));
+const History = lazy(() => import("../pages/it/History"));
+const Tickets = lazy(() => import("../pages/it/Tickets"));
+const ITTicketDetail = lazy(() => import("../pages/it/TicketDetail"));
+const ITScheduleInternal = lazy(() => import("../pages/it/Schedule"));
 
+const RouteLoadingFallback = () => (
+  <div className="flex min-h-[40vh] items-center justify-center text-sm text-gray-500">
+    Loading...
+  </div>
+);
 
-// Admin
-import Dashboard from "../pages/admin/Dashboard";
-import UserManagement from "../pages/admin/UserManagement";
-import RoomManagement from "../pages/admin/RoomManagement";
-import CategoryManagement from "../pages/admin/CategoryManagement";
-import EquipmentManagement from "../pages/admin/EquipmentManagement";
-import ReportDashboard from "../pages/admin/reports/ReportDashboard";
-import AdminProfile from "../pages/admin/Profile";
-import AdminTicketDetail from "../pages/admin/TicketDetail";
-import Permission from "../pages/admin/Permission";
-
-
-// IT
-import ITDashboard from "../pages/it/Dashboard";
-
-import Notifications from "../pages/it/Notifications";
-import ITProfile from "../pages/it/Profile";
-import History from "../pages/it/History";
-
-import Tickets from "../pages/it/Tickets";
-import ITTicketDetail from "../pages/it/TicketDetail";
-
-
-
-import QuickFixManagement from "../pages/admin/QuickFixManagement";
-import ITScheduleInternal from "../pages/it/Schedule";
-
-
-
-
-
-const AppRoutes = () => {
-  return (
+const AppRoutes = () => (
+  <Suspense fallback={<RouteLoadingFallback />}>
     <Routes>
-      {/* Public Routes */}
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<PSUCallback />} />
 
-
-      {/* User Routes */}
       <Route path="user" element={<LayoutUser />}>
         <Route index element={<HomeUser />} />
-
         <Route path="create-ticket" element={<CreateTicket />} />
         <Route path="history" element={<UserHistory />} />
-
         <Route path="scan-qr" element={<ScanQR />} />
         <Route path="equipment/:id" element={<EquipmentDetail />} />
         <Route path="ticket/:id" element={<TicketDetail />} />
-
         <Route path="profile" element={<Profile />} />
         <Route path="it-schedule" element={<ITSchedule />} />
-        {/* Feedback routes removed */}
-
         <Route path="quick-fix" element={<QuickFix />} />
         <Route path="report" element={<Report />} />
       </Route>
 
-      {/* Admin Routes */}
       <Route path="admin" element={<LayoutAdmin />}>
         <Route index element={<Dashboard />} />
-
         <Route path="manage-users" element={<UserManagement />} />
         <Route path="manage-rooms" element={<RoomManagement />} />
         <Route path="manage-categories" element={<CategoryManagement />} />
@@ -99,33 +77,21 @@ const AppRoutes = () => {
         <Route path="ticket/:id" element={<AdminTicketDetail />} />
         <Route path="permission" element={<Permission />} />
         <Route path="quick-fix" element={<QuickFixManagement />} />
-
       </Route>
 
-      {/* IT Support Routes */}
       <Route path="it" element={<LayoutIT />}>
         <Route index element={<ITDashboard />} />
-
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<ITProfile />} />
         <Route path="history" element={<History />} />
-
         <Route path="tickets" element={<Tickets />} />
         <Route path="ticket/:id" element={<ITTicketDetail />} />
         <Route path="schedule" element={<ITScheduleInternal />} />
-
-
-
-
-
       </Route>
 
       <Route path="*" element={<h1>404 Not Found</h1>} />
-
-
-
     </Routes>
-  );
-};
+  </Suspense>
+);
 
 export default AppRoutes;

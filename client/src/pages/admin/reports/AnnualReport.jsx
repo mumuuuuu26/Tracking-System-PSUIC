@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getAnnualStats } from '../../../api/report';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx/dist/xlsx.mini.min.js';
 import ExportButtons from '../../../components/admin/ExportButtons';
 import dayjs from 'dayjs';
 

@@ -22,7 +22,8 @@ const UserManagement = () => {
   const [addUserForm, setAddUserForm] = useState({
     name: "",
     email: "",
-    role: "user"
+    role: "user",
+    password: ""
   });
 
   // Edit Role State
@@ -93,10 +94,14 @@ const UserManagement = () => {
       if (!addUserForm.name || !addUserForm.email) {
         return toast.error("Please fill in all required fields");
       }
-      await createUser(addUserForm);
-      toast.success("User Added Successfully");
+      const res = await createUser(addUserForm);
+      if (res.data?.onboarding === "created_new") {
+        toast.success("User account created successfully");
+      } else {
+        toast.success("User updated successfully");
+      }
       setIsAddModalOpen(false);
-      setAddUserForm({ name: "", email: "", role: "user" });
+      setAddUserForm({ name: "", email: "", role: "user", password: "" });
       loadUsers();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to add user");
@@ -361,6 +366,19 @@ const UserManagement = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs text-gray-500 mb-1 uppercase">Password (for new users)</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a] text-sm"
+                    value={addUserForm.password}
+                    onChange={(e) => setAddUserForm({ ...addUserForm, password: e.target.value })}
+                    placeholder="Required for new non-SSO accounts"
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Leave blank only when updating/promoting an existing user.
+                  </p>
+                </div>
+                <div>
                   <label className="block text-xs text-gray-500 mb-1 uppercase">Role</label>
                   <div className="grid grid-cols-3 gap-2">
                     {['user', 'it_support', 'admin'].map((role) => (
@@ -442,5 +460,4 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
 

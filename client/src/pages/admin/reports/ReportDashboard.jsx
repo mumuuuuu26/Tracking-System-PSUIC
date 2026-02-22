@@ -13,7 +13,7 @@ import AdminSelect from "../../../components/admin/AdminSelect";
 import { getMonthlyStats, getEquipmentStats, getITPerformance, getRoomStats, getSubComponentStats } from '../../../api/report';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx/dist/xlsx.mini.min.js';
 
 const ReportDashboard = () => {
     const navigate = useNavigate();

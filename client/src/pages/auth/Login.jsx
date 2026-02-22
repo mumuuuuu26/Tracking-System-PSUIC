@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import useAuthStore from "../../store/auth-store";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { LogIn, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
   const { actionLogin, user } = useAuthStore();
+  const isPsuPassportEnabled = import.meta.env.VITE_PSU_PASSPORT_ENABLED === "true";
   const [showManualLogin, setShowManualLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -56,10 +57,11 @@ const Login = () => {
   };
 
   const handlePSUPassport = () => {
-    // TODO: Implement OAuth2 flow
-    toast.info(
-      "PSU Passport integration coming soon! Please use manual login for now."
-    );
+    if (!isPsuPassportEnabled) {
+      toast.info("PSU Passport ปิดใช้งานชั่วคราว กรุณาเข้าสู่ระบบด้วยอีเมล");
+      return;
+    }
+    toast.info("PSU Passport integration is not available yet.");
   };
 
   return (
@@ -81,11 +83,24 @@ const Login = () => {
           {/* Primary Button: PSU Passport */}
           <button
             onClick={handlePSUPassport}
-            className="w-full group relative overflow-hidden bg-white hover:bg-gray-100 text-blue-600 font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+            disabled={!isPsuPassportEnabled}
+            className={`w-full group relative overflow-hidden text-blue-600 font-bold py-4 px-6 rounded-2xl shadow-xl transition-all duration-300 ${
+              isPsuPassportEnabled
+                ? "bg-white hover:bg-gray-100 hover:shadow-2xl transform hover:-translate-y-1"
+                : "bg-white/80 cursor-not-allowed opacity-80"
+            }`}
           >
             <div className="relative z-10 flex items-center justify-center gap-3">
-              <span className="text-lg">Login with PSU Passport</span>
-              <ChevronRight className="w-6 h-6 text-blue-600/80 group-hover:translate-x-1 transition-transform" />
+                <span className="text-lg">
+                  {isPsuPassportEnabled
+                    ? "Login with PSU Passport"
+                    : "PSU Passport (ปิดชั่วคราว)"}
+                </span>
+              <ChevronRight
+                className={`w-6 h-6 text-blue-600/80 transition-transform ${
+                  isPsuPassportEnabled ? "group-hover:translate-x-1" : ""
+                }`}
+              />
             </div>
           </button>
 
