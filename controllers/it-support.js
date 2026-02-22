@@ -340,7 +340,10 @@ exports.saveDraft = async (req, res, next) => {
     // Handle Image Upload (Optional for draft)
     let afterImages = [];
     if (proof && proof.startsWith("data:image")) {
-      const url = saveImage(proof);
+      const url = await saveImage(proof, { scope: "ticket-after-draft" });
+      if (!url) {
+        return res.status(400).json({ message: "Invalid proof image data" });
+      }
       if (url) {
         afterImages.push({
           url: url,
@@ -400,7 +403,10 @@ exports.closeJob = async (req, res, next) => {
     // Handle Image Upload
     let afterImages = [];
     if (proof && proof.startsWith("data:image")) {
-      const url = saveImage(proof);
+      const url = await saveImage(proof, { scope: "ticket-after-complete" });
+      if (!url) {
+        return res.status(400).json({ message: "Invalid proof image data" });
+      }
       if (url) {
         afterImages.push({
           url: url,

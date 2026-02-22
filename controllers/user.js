@@ -197,7 +197,7 @@ exports.updateProfileImage = async (req, res, next) => {
     const { image } = req.body;
 
     // Use utils/uploadImage to save file to disk
-    const imageUrl = saveImage(image);
+    const imageUrl = await saveImage(image, { scope: "profile-image" });
 
     if (!imageUrl) {
          return res.status(400).json({ message: "Invalid image data" });

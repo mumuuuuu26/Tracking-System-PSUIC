@@ -39,6 +39,24 @@ exports.create = async (req, res, next) => {
       subComponent
     } = validatedData;
 
+    const beforeImages = [];
+    if (Array.isArray(images) && images.length > 0) {
+      for (const imageBase64 of images) {
+        const imageUrl = await saveImage(imageBase64, { scope: "ticket-before" });
+        if (!imageUrl) {
+          return res.status(400).json({ message: "Invalid ticket image data" });
+        }
+
+        beforeImages.push({
+          url: imageUrl,
+          secure_url: imageUrl,
+          type: "before",
+          asset_id: "local",
+          public_id: "local",
+        });
+      }
+    }
+
     const newTicket = await prisma.ticket.create({
       data: {
         title,
@@ -50,18 +68,7 @@ exports.create = async (req, res, next) => {
         categoryId,
         subComponent,
         status: "not_start",
-        images: images && images.length > 0 ? {
-          create: images.map(img => {
-            const imageUrl = saveImage(img);
-            return {
-              url: imageUrl,
-              secure_url: imageUrl,
-              type: "before",
-              asset_id: "local",
-              public_id: "local"
-            };
-          }).filter(img => img.url !== null)
-        } : undefined
+        images: beforeImages.length > 0 ? { create: beforeImages } : undefined,
       },
       include: {
         room: true,
@@ -418,5 +425,4 @@ exports.listByEquipment = async (req, res, next) => {
     next(err);
   }
 };
-
 
