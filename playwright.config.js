@@ -1,3 +1,7 @@
+if (Object.prototype.hasOwnProperty.call(process.env, 'NO_COLOR')) {
+  delete process.env.NO_COLOR;
+}
+
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
@@ -22,5 +26,8 @@ module.exports = defineConfig({
     url: 'http://localhost:5173',
     reuseExistingServer: false,
     timeout: 120 * 1000,
+    env: {
+      ...process.env,
+    },
   },
 });
