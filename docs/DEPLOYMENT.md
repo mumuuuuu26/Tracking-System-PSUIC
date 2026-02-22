@@ -7,7 +7,21 @@ The application stores user-uploaded images in the `server/uploads` directory.
 - **Development**: These files are stored locally in the project folder.
 - **Production**:
   - **Do NOT** rely on the container's filesystem if using Docker/Kubernetes, as data will be lost on redeploy.
-  - **MUST** mount a persistent volume to `/app/uploads` (or wherever the app runs).
+  - **MUST** use absolute persistent paths via `.env.production`:
+    - `UPLOAD_DIR=/srv/psuic/uploads`
+    - `UPLOAD_BACKUP_DIR=/srv/psuic/backups/uploads`
+
+Prepare directory permissions for PM2 user before deploy:
+```bash
+sudo mkdir -p /srv/psuic/uploads /srv/psuic/backups/uploads
+sudo chown -R $USER:$USER /srv/psuic/uploads /srv/psuic/backups/uploads
+sudo chmod 750 /srv/psuic/uploads /srv/psuic/backups/uploads
+```
+
+Validate storage readiness:
+```bash
+npm run preflight:storage:prod
+```
 
 ### Backup Strategy
 To prevent data loss, regular backups of the `uploads` directory are essential.

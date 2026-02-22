@@ -1,4 +1,5 @@
 require("../config/env");
+const path = require("path");
 
 const requiredVars = [
   "NODE_ENV",
@@ -7,6 +8,8 @@ const requiredVars = [
   "DATABASE_URL",
   "CLIENT_URL",
   "FRONTEND_URL",
+  "UPLOAD_DIR",
+  "UPLOAD_BACKUP_DIR",
 ];
 
 const optionalButRecommended = [
@@ -68,6 +71,18 @@ function main() {
 
   if (!isValidUrl(process.env.FRONTEND_URL)) {
     fail(`FRONTEND_URL is not a valid URL: "${process.env.FRONTEND_URL}"`);
+  }
+
+  if (!path.isAbsolute(process.env.UPLOAD_DIR)) {
+    fail(
+      `UPLOAD_DIR must be an absolute path in production (got "${process.env.UPLOAD_DIR}"). Use a persistent volume path.`,
+    );
+  }
+
+  if (!path.isAbsolute(process.env.UPLOAD_BACKUP_DIR)) {
+    fail(
+      `UPLOAD_BACKUP_DIR must be an absolute path in production (got "${process.env.UPLOAD_BACKUP_DIR}").`,
+    );
   }
 
   const missingOptional = optionalButRecommended.filter((key) => !isTruthy(process.env[key]));

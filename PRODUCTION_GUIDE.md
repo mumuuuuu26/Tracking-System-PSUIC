@@ -37,14 +37,14 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 ### Uploads & Retention
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `UPLOAD_DIR` | Path for uploaded files | `uploads` |
+| `UPLOAD_DIR` | Absolute persistent path for uploaded files | `/srv/psuic/uploads` |
 | `UPLOAD_ALLOWED_MIME` | Allowed image MIME list | `image/jpeg,image/png,image/webp` |
 | `UPLOAD_MAX_BYTES` | Max input image size per file | `5242880` |
 | `UPLOAD_MAX_WIDTH` | Max image width (if `sharp` available) | `1920` |
 | `UPLOAD_MAX_HEIGHT` | Max image height (if `sharp` available) | `1920` |
 | `UPLOAD_QUALITY` | Output quality 1-100 (if `sharp` available) | `82` |
 | `UPLOAD_TARGET_FORMAT` | `webp`, `jpeg`, `png`, or `original` | `webp` |
-| `UPLOAD_BACKUP_DIR` | Upload backup output directory | `backups/uploads` |
+| `UPLOAD_BACKUP_DIR` | Absolute persistent path for upload backups | `/srv/psuic/backups/uploads` |
 | `UPLOAD_BACKUP_RETENTION_DAYS` | Keep upload backups for N days | `14` |
 | `UPLOAD_ORPHAN_RETENTION_HOURS` | Keep unreferenced upload files for N hours before delete | `24` |
 | `DB_BACKUP_CRON` | Cron for DB backup job | `"0 3 * * *"` |
@@ -165,7 +165,7 @@ Before restart/update in production, run:
 ```bash
 npm run preflight:prod
 ```
-This validates required env keys and checks DB connectivity before migration/restart.
+This validates required env keys, checks DB connectivity, and verifies upload storage write permissions before migration/restart.
 
 ---
 

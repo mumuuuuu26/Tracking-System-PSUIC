@@ -14,6 +14,7 @@ Before running the deployment script, ensure the server has the following instal
     - Install: `npm install -g pm2`
 4.  **Database (MySQL)**: Must be running and accessible.
 5.  **Environment Variables (.env.production)**: Ensure `.env.production` exists in the project root with correct credentials.
+   - `UPLOAD_DIR` and `UPLOAD_BACKUP_DIR` must be absolute persistent paths (example `/srv/psuic/uploads` and `/srv/psuic/backups/uploads`).
 6.  **Network Access**: Target host `10.135.2.226` is private network (องค์กร/มหาวิทยาลัย). Deploy machine must be on university network or VPN.
 
 ---
@@ -40,12 +41,19 @@ Before running the deployment script, ensure the server has the following instal
     ./scripts/deploy.sh
     ```
 
+Before first deploy, prepare persistent upload directories and permissions for PM2 user:
+```bash
+sudo mkdir -p /srv/psuic/uploads /srv/psuic/backups/uploads
+sudo chown -R $USER:$USER /srv/psuic/uploads /srv/psuic/backups/uploads
+sudo chmod 750 /srv/psuic/uploads /srv/psuic/backups/uploads
+```
+
 ---
 
 ## 🔍 What the Script Does automatically
 1.  **`git pull`**: Updates code from the repository.
 2.  **`npm install`**: Installs new dependencies (if any).
-3.  **`npm run preflight:prod`**: Validates production env + checks DB connectivity.
+3.  **`npm run preflight:prod`**: Validates production env + checks DB + verifies upload storage write permissions.
 4.  **`npm run prisma:migrate:prod`**: Updates database schema safely using production env.
 5.  **`npm run prisma:generate:prod`**: Refreshes the database client using production env.
 6.  **`pm2 restart`**: Restarts the server to apply changes.
