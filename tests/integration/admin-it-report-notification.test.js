@@ -160,6 +160,8 @@ describe("Admin/IT/Report/Notification Integration", () => {
     if (userIds.length > 0) {
       await prisma.user.deleteMany({ where: { id: { in: userIds } } });
     }
+
+    await prisma.$disconnect().catch(() => {});
   });
 
   it("enforces admin access on dashboard stats endpoint", async () => {

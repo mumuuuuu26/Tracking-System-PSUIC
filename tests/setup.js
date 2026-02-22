@@ -11,5 +11,16 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.$disconnect();
+  await prisma.$disconnect().catch(() => {});
+
+  try {
+    const { logger } = require("../utils/logger");
+    logger.transports.forEach((transport) => {
+      if (typeof transport.close === "function") {
+        transport.close();
+      }
+    });
+  } catch (_) {
+    // no-op: logger might not be initialized in some isolated test runs
+  }
 });

@@ -59,7 +59,7 @@ describe("Ticket API Integration", () => {
     } catch (err) {
         console.warn("Cleanup failed:", err.message);
     }
-    // Setup file handles prisma.$disconnect()
+    await prisma.$disconnect().catch(() => {});
   });
 
   describe("POST /api/ticket", () => {
