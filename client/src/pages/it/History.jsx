@@ -24,8 +24,8 @@ const History = () => {
             setLoading(true);
             const res = await getHistory();
             setTickets(res.data);
-        } catch (err) {
-            console.error("Failed to load history:", err);
+        } catch {
+            // Silent fail
         } finally {
             setLoading(false);
         }
@@ -35,8 +35,8 @@ const History = () => {
         try {
             const res = await listCategories();
             setCategories(res.data);
-        } catch (err) {
-            console.error("Failed to load categories:", err);
+        } catch {
+            // Silent fail
         }
     }, []);
 

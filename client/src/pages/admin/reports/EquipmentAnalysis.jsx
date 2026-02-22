@@ -15,8 +15,7 @@ const EquipmentAnalysis = ({ month, year, externalData, externalSubData, externa
             setError(null);
             const res = await getEquipmentStats(month, year);
             setData(res.data || []);
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError("Failed to load equipment data");
         } finally {
             setLoading(false);

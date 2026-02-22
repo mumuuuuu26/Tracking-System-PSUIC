@@ -72,7 +72,7 @@ exports.getByQRCode = async (req, res, next) => {
       include: {
         room: true,
         tickets: {
-          where: { status: { not: "completed" } },
+          where: { status: { not: "completed" }, isDeleted: false },
           orderBy: { createdAt: "desc" },
           take: 5,
           include: {
@@ -101,7 +101,7 @@ exports.getByQRCode = async (req, res, next) => {
         include: {
           room: true,
           tickets: {
-            where: { status: { not: "completed" } },
+            where: { status: { not: "completed" }, isDeleted: false },
             orderBy: { createdAt: "desc" },
             take: 5,
             include: {
@@ -130,7 +130,7 @@ exports.getByQRCode = async (req, res, next) => {
         include: {
           room: true,
           tickets: {
-            where: { status: { not: "completed" } },
+            where: { status: { not: "completed" }, isDeleted: false },
             orderBy: { createdAt: "desc" },
             take: 5,
             include: {

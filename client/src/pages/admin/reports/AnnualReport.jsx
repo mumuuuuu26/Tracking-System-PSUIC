@@ -15,8 +15,8 @@ const AnnualReport = () => {
             setLoading(true);
             const res = await getAnnualStats(year);
             setData(res.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
+            // Silent fail
         } finally {
             setLoading(false);
         }

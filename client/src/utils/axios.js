@@ -37,4 +37,17 @@ api.interceptors.request.use(
     }
 );
 
+// Response interceptor: handle expired/invalid token globally
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Clear stored auth state and redirect to login
+            localStorage.removeItem('auth-store');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;

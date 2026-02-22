@@ -34,8 +34,7 @@ const AdminProfile = () => {
         try {
             const res = await currentUser(token);
             setProfile(res.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to load profile");
         } finally {
             setLoading(false);
@@ -64,8 +63,7 @@ const AdminProfile = () => {
                 toast.success("Profile picture updated!");
                 await checkUser();
                 fetchProfile();
-            } catch (err) {
-                console.error(err);
+            } catch {
                 toast.error("Failed to update profile picture");
             }
         };
@@ -80,7 +78,6 @@ const AdminProfile = () => {
             await checkUser();
             closeEditFn(false);
         } catch (err) {
-            console.error(err);
             toast.error(err.response?.data?.message || `Failed to update ${field} `);
         }
     };

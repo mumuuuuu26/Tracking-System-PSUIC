@@ -3,9 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Camera,
   X,
-  ArrowLeft,
 } from "lucide-react";
-import CustomSelect from "../../components/ui/CustomSelect";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createTicket } from "../../api/ticket";
 import { listRooms } from "../../api/room";
@@ -14,7 +12,7 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
-import UserSelect from "../../components/user/UserSelect"; // Import the new component
+import UserSelect from "../../components/user/UserSelect";
 
 const CreateTicket = () => {
   const location = useLocation();
@@ -26,11 +24,10 @@ const CreateTicket = () => {
   const [dbCategories, setDbCategories] = useState([]);
   const [floors, setFloors] = useState([]);
 
-  // Form State
   const [form, setForm] = useState({
-    title: "", // Topic Issue
+    title: "",
     equipmentId: prefilledData?.equipmentId || "",
-    categoryId: prefilledData?.equipmentId ? "" : (location.state?.categoryId || ""), // If accessing directly, might prefill
+    categoryId: prefilledData?.equipmentId ? "" : (location.state?.categoryId || ""),
     description: "",
     floor: prefilledData?.floorName || "",
     room: prefilledData?.roomNumber || "",
@@ -42,7 +39,6 @@ const CreateTicket = () => {
 
   const [activeSubComponents, setActiveSubComponents] = useState([]);
 
-  // Set category if prefilled data has it
   useEffect(() => {
     if (prefilledData?.categoryId) {
       setForm(prev => ({ ...prev, categoryId: prefilledData.categoryId }));
@@ -67,7 +63,7 @@ const CreateTicket = () => {
         ].sort((a, b) => a - b);
         setFloors(uniqueFloors);
       }
-    } catch (err) {
+    } catch {
       // Silently fail — user can still see empty dropdowns and retry
     }
   }, []);
@@ -76,7 +72,6 @@ const CreateTicket = () => {
     loadData();
   }, [loadData]);
 
-  // Handle manual category change
   const handleCategoryChange = (e) => {
     const selectedCatId = e.target.value;
     setForm({ ...form, categoryId: selectedCatId, subComponent: "" });
@@ -88,7 +83,6 @@ const CreateTicket = () => {
       setActiveSubComponents([]);
     }
   };
-
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -168,45 +162,45 @@ const CreateTicket = () => {
 
   return (
     <UserWrapper>
-      <div className="pb-20 min-h-screen">
+      <div className="pb-32 bg-gray-50 dark:bg-[#0d1b2a] min-h-screen">
         {/* Header */}
         <UserPageHeader title="Report Issue" />
 
-        <div className="max-w-md md:max-w-3xl mx-auto mt-6 px-6 space-y-6 animate-in fade-in duration-500 relative z-10 text-left">
+        <div className="max-w-md md:max-w-3xl mx-auto mt-6 px-6 space-y-6 animate-in fade-in duration-500 relative z-10 text-left pb-8">
 
           {/* Topic Issue */}
           <div className="space-y-2">
-            <label className="text-[#193C6C] text-base font-bold flex gap-1">
-              Topic Issue <span className="text-red-500">*</span>
+            <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">
+              Topic Issue <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <input
               type="text"
               placeholder="e.g. Computer cannot start, Projector dim"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-700 placeholder-gray-400"
+              className="w-full px-4 py-3 bg-white dark:bg-[#1a2f4e] border border-gray-300 dark:border-blue-700/50 rounded-xl focus:border-gray-400 dark:focus:border-blue-700/70 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-blue-400/40 text-sm transition-colors shadow-sm dark:shadow-none"
             />
           </div>
 
           {/* Equipment Category */}
           <div className="space-y-2">
-            <label className="text-[#193C6C] text-base font-bold flex gap-1">
-              Equipment Category <span className="text-red-500">*</span>
+            <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">
+              Equipment Category <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <UserSelect
               options={dbCategories}
               value={form.categoryId}
               onChange={handleCategoryChange}
               placeholder="Select equipment category"
-              disabled={!!prefilledData?.categoryId} // Lock if scanned from QR
+              disabled={!!prefilledData?.categoryId}
             />
           </div>
 
-          {/* Dynamic Sub-Component (if applicable) */}
+          {/* Sub-Component */}
           {activeSubComponents.length > 0 && (
             <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
-              <label className="text-[#193C6C] text-base font-bold flex gap-1">
-                อุปกรณ์ส่วนที่พบปัญหา (Sub-Component)
+              <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">
+                Sub-Component (Optional)
               </label>
               <UserSelect
                 options={activeSubComponents.map(c => ({ id: c.name, name: c.name }))}
@@ -219,11 +213,11 @@ const CreateTicket = () => {
 
           {/* Description */}
           <div className="space-y-2">
-            <label className="text-[#193C6C] text-base font-bold flex gap-1">
-              Describe the Issue <span className="text-red-500">*</span>
+            <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">
+              Describe the Issue <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <textarea
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-gray-700 placeholder-gray-400 min-h-[120px] resize-none"
+              className="w-full px-4 py-3 bg-white dark:bg-[#1a2f4e] border border-gray-300 dark:border-blue-700/50 rounded-xl focus:border-gray-400 dark:focus:border-blue-700/70 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-blue-400/40 text-sm min-h-[120px] resize-none transition-colors shadow-sm dark:shadow-none"
               placeholder="Please describe the issue in detail..."
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -233,8 +227,8 @@ const CreateTicket = () => {
           {/* Floor & Room Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-[#193C6C] text-base font-bold flex gap-1">
-                Floor <span className="text-red-500">*</span>
+              <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">
+                Floor <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <UserSelect
                 options={floors.map((f) => ({ id: f, name: `Floor ${f}` }))}
@@ -251,7 +245,7 @@ const CreateTicket = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[#193C6C] text-base font-bold flex gap-1">Room <span className="text-red-500">*</span></label>
+              <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">Room <span className="text-red-500 dark:text-red-400">*</span></label>
               <UserSelect
                 disabled={!form.floor}
                 options={getAvailableRooms().map((r) => ({ id: r.id, name: r.roomNumber }))}
@@ -264,8 +258,8 @@ const CreateTicket = () => {
 
           {/* Priority */}
           <div className="space-y-2">
-            <label className="text-[#193C6C] text-base font-bold">
-              Priority Level
+            <label className="text-gray-700 dark:text-blue-200 text-sm font-bold flex gap-1 transition-colors">
+              Priority Level <span className="text-red-500 dark:text-red-400">*</span>
             </label>
             <div className="flex gap-3">
               {urgencyLevels.map((level) => (
@@ -275,11 +269,11 @@ const CreateTicket = () => {
                   onClick={() => setForm({ ...form, urgency: level })}
                   className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${form.urgency === level
                     ? level === "High"
-                      ? "bg-red-50 text-red-600 border-red-200 shadow-sm"
+                      ? "bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-300 border-red-200 dark:border-red-500/60 shadow-sm"
                       : level === "Medium"
-                        ? "bg-amber-50 text-amber-600 border-amber-200 shadow-sm"
-                        : "bg-green-50 text-green-600 border-green-200 shadow-sm"
-                    : "text-gray-400 border-gray-200 hover:bg-gray-50"
+                        ? "bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-500/60 shadow-sm"
+                        : "bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/60 shadow-sm"
+                    : "bg-white dark:bg-[#1a2f4e] text-gray-500 dark:text-blue-400/60 border-gray-300 dark:border-blue-700/40 hover:bg-gray-50 dark:hover:bg-[#1e3558] shadow-sm dark:shadow-none"
                     }`}
                 >
                   {level}
@@ -291,13 +285,13 @@ const CreateTicket = () => {
           {/* Upload Photo */}
           <div className="space-y-2">
             <div className="flex justify-between items-end">
-              <label className="text-[#193C6C] text-base font-bold">
+              <label className="text-gray-700 dark:text-blue-200 text-sm font-bold transition-colors">
                 Add Photo
               </label>
-              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded-md mb-1">Optional</span>
+              <span className="bg-gray-100 dark:bg-blue-900/40 text-gray-500 dark:text-blue-400 text-xs px-2 py-1 rounded-md mb-1 border border-gray-200 dark:border-blue-700/40 transition-colors">Optional</span>
             </div>
 
-            <div className="border-2 border-dashed border-blue-100 rounded-2xl p-8 hover:bg-blue-50/30 transition-colors cursor-pointer relative text-center">
+            <div className="border-2 border-dashed border-gray-300 dark:border-blue-700/40 rounded-2xl p-8 hover:bg-gray-50 dark:hover:bg-blue-900/10 transition-colors cursor-pointer relative text-center bg-white dark:bg-[#1a2f4e]/50 shadow-sm dark:shadow-none">
               <input
                 type="file"
                 multiple
@@ -306,10 +300,10 @@ const CreateTicket = () => {
                 onChange={handleImageUpload}
               />
               <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
-                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-400 mb-2">
+                <div className="w-12 h-12 bg-gray-50 dark:bg-blue-900/60 rounded-full flex items-center justify-center text-gray-400 dark:text-blue-400 mb-2 border border-gray-200 dark:border-blue-700/40 transition-colors">
                   <Camera size={24} />
                 </div>
-                <span className="text-gray-400 font-medium text-sm">Click to attach photo</span>
+                <span className="text-gray-500 dark:text-blue-400/60 font-medium text-sm transition-colors">Click to attach photo</span>
               </div>
             </div>
 
@@ -319,7 +313,7 @@ const CreateTicket = () => {
                 {form.images.map((img, idx) => (
                   <div
                     key={idx}
-                    className="aspect-square rounded-xl overflow-hidden border border-gray-200 relative group"
+                    className="aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-blue-700/40 relative group transition-colors"
                   >
                     <img src={img} className="w-full h-full object-cover" />
                     <button
@@ -329,7 +323,7 @@ const CreateTicket = () => {
                           images: prev.images.filter((_, i) => i !== idx),
                         }))
                       }
-                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-30"
                     >
                       <X size={12} />
                     </button>
@@ -337,20 +331,20 @@ const CreateTicket = () => {
                 ))}
               </div>
             )}
-            <p className="text-xs text-gray-400 text-center mt-2">You can add a photo to help us fix the issue faster.</p>
+            <p className="text-xs text-gray-500 dark:text-blue-400/40 text-center mt-2 transition-colors">You can add a photo to help us fix the issue faster.</p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-4 pb-8">
+          <div className="flex gap-4 pt-4">
             <button
               onClick={() => navigate(-1)}
-              className="flex-1 py-3.5 bg-white text-gray-600 border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-colors"
+              className="flex-1 py-3.5 bg-white dark:bg-[#1a2f4e] text-gray-700 dark:text-blue-300 border border-gray-300 dark:border-blue-700/50 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-[#1e3558] hover:border-gray-400 dark:hover:border-blue-500/60 transition-colors shadow-sm dark:shadow-none"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="flex-1 py-3.5 bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-[#132E52] transition-colors shadow-lg shadow-blue-900/20"
+              className="flex-1 py-3.5 bg-blue-600 dark:bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-blue-700 dark:hover:bg-[#15325A] transition-colors shadow-lg shadow-blue-500/30 dark:shadow-blue-900/40"
             >
               Submit Report
             </button>

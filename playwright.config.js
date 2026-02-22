@@ -18,9 +18,9 @@ module.exports = defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev:full',
+    command: 'npm run start:e2e',
     url: 'http://localhost:5173',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 120 * 1000,
   },
 });

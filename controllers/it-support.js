@@ -7,8 +7,8 @@ const { logger } = require("../utils/logger");
 exports.previewJob = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const ticket = await prisma.ticket.findUnique({
-            where: { id: parseInt(id) },
+        const ticket = await prisma.ticket.findFirst({
+            where: { id: parseInt(id), isDeleted: false },
             include: {
                 room: true,
                 equipment: true,
@@ -177,6 +177,10 @@ exports.acceptJob = async (req, res, next) => {
     });
 
     if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    if (ticket.isDeleted) {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
@@ -493,13 +497,14 @@ exports.closeJob = async (req, res, next) => {
 
 
 
-// Get completed tickets for history
+// Get completed tickets for history (scoped to the logged-in IT user)
 exports.getHistory = async (req, res, next) => {
   try {
     const history = await prisma.ticket.findMany({
       where: {
+        assignedToId: req.user.id, // [BUG FIX] Scope to the current IT user only, not all completed tickets
         status: "completed",
-        isDeleted: false, // [BUG FIX] Don't show soft-deleted tickets in IT history
+        isDeleted: false,
       },
       include: {
         room: true,

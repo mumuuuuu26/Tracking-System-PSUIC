@@ -27,8 +27,7 @@ const RoomManagement = () => {
             const res = await listRooms();
             setRooms(res.data);
             setFilteredRooms(res.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to load rooms");
         }
     }, []);
@@ -80,8 +79,7 @@ const RoomManagement = () => {
             }
             setIsModalOpen(false);
             loadRooms();
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error(isEditMode ? "Failed to update room" : "Failed to create room");
         }
     };
@@ -92,8 +90,7 @@ const RoomManagement = () => {
                 await removeRoom(id);
                 toast.success("Room deleted successfully");
                 loadRooms();
-            } catch (err) {
-                console.error(err);
+            } catch {
                 toast.error("Failed to delete room");
             }
         }

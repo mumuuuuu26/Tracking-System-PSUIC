@@ -37,8 +37,7 @@ const Schedule = () => {
             setLoading(true);
             const res = await getPublicSchedule();
             setSchedule(res.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to load schedule");
         } finally {
             setLoading(false);
@@ -53,8 +52,8 @@ const Schedule = () => {
                 setSavedCalendarId(res.data.googleCalendarId || ""); // This triggers the useEffect below
                 setServiceEmail(res.data.serviceAccountEmail || "");
             }
-        } catch (err) {
-            console.error("Failed to load profile", err);
+        } catch {
+            // Silent fail — calendarId stays empty
         }
     }, []);
 
@@ -67,8 +66,6 @@ const Schedule = () => {
             await syncGoogleCalendar();
             loadSchedule();
         } catch (err) {
-            console.error(err);
-            // Only show error if it's NOT a "missing ID" error (which we sort of guard against, but just in case)
             if (err.response?.status !== 400) {
                 toast.error(err.response?.data?.message || "Sync failed");
             }
@@ -116,7 +113,6 @@ const Schedule = () => {
             toast.success(`Connected! Synced ${res.data.count} events.`);
             loadSchedule();
         } catch (err) {
-            console.error(err);
             const msg = err.response?.data?.message || "Failed to save settings";
             // Check if it's a sync error or save error
             Swal.fire({
@@ -147,7 +143,15 @@ const Schedule = () => {
         <>
             <div className="flex flex-col h-full min-h-screen bg-gray-50 pb-20">
                 {/* Mobile Header */}
-                <ITPageHeader title="My Schedule" />
+                <ITPageHeader title="My Schedule">
+                    <button
+                        onClick={() => setShowSettings(true)}
+                        className="p-2 -mr-2 text-white hover:bg-white/10 rounded-full transition-colors relative"
+                    >
+                        <User size={24} />
+                        {savedCalendarId && <span className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full border border-blue-900 shadow-sm"></span>}
+                    </button>
+                </ITPageHeader>
 
                 {/* Desktop Header */}
                 <div className="hidden lg:block">

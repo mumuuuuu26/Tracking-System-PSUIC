@@ -1,6 +1,6 @@
 // client/src/pages/admin/EquipmentManagement.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, ChevronDown, Monitor, Printer, Wifi, Wind, Box, ArrowLeft, QrCode, Edit, Trash2, X, Save } from "lucide-react";
+import { Plus, Search, ChevronDown, Monitor, Printer, Wifi, Wind, Box, ArrowLeft, QrCode, Edit, Trash2, X, Save, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { listCategories, createCategory, updateCategory, removeCategory, addSubComponent, removeSubComponent } from "../../api/category";
@@ -9,6 +9,10 @@ import { listRooms } from "../../api/room";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
+import EquipmentFormModal from "../../components/admin/equipment/EquipmentFormModal";
+import CategoryManagerModal from "../../components/admin/equipment/CategoryManagerModal";
+import SubCategoryManagerModal from "../../components/admin/equipment/SubCategoryManagerModal";
+import QRCodeModal from "../../components/admin/equipment/QRCodeModal";
 
 const EquipmentManagement = () => {
   const navigate = useNavigate();
@@ -19,11 +23,13 @@ const EquipmentManagement = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedRoom, setSelectedRoom] = useState("All Rooms");
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
   const [selectedQR, setSelectedQR] = useState(null);
 
   // Categories State
@@ -31,7 +37,7 @@ const EquipmentManagement = () => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState(null); // { id, name }
   const [newSubComponentName, setNewSubComponentName] = useState("");
-  const [expandedCategory, setExpandedCategory] = useState(null); // categoryId
+  const [selectedParentCategory, setSelectedParentCategory] = useState("");
 
   // Form (Add/Edit Equipment)
   const [editingEquipment, setEditingEquipment] = useState(null);
@@ -42,12 +48,16 @@ const EquipmentManagement = () => {
     serialNo: "",
   });
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
+
   const loadEquipments = useCallback(async () => {
     try {
       const res = await listEquipments();
       setEquipments(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
     } finally {
       setLoading(false);
     }
@@ -57,8 +67,8 @@ const EquipmentManagement = () => {
     try {
       const res = await listRooms();
       setRooms(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
     }
   }, []);
 
@@ -66,8 +76,8 @@ const EquipmentManagement = () => {
     try {
       const res = await listCategories();
       setCategories(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
     }
   }, []);
 
@@ -124,8 +134,8 @@ const EquipmentManagement = () => {
         await removeEquipment(id);
         toast.success("Equipment deleted successfully");
         loadEquipments();
-      } catch (err) {
-        console.error(err);
+      } catch {
+        /* console.error removed */
         toast.error("Failed to delete equipment");
       }
     }
@@ -143,8 +153,8 @@ const EquipmentManagement = () => {
       toast.success("Category added");
       setNewCategoryName("");
       loadCategories();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
       toast.error("Failed to add category");
     }
   };
@@ -156,8 +166,8 @@ const EquipmentManagement = () => {
       toast.success("Category updated");
       setEditingCategory(null);
       loadCategories();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
       toast.error("Failed to update category");
     }
   };
@@ -167,10 +177,9 @@ const EquipmentManagement = () => {
     try {
       await removeCategory(id);
       toast.success("Category deleted");
-      if (expandedCategory === id) setExpandedCategory(null);
       loadCategories();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
       toast.error("Failed to delete category");
     }
   };
@@ -185,8 +194,8 @@ const EquipmentManagement = () => {
       toast.success("Sub-component added");
       setNewSubComponentName("");
       loadCategories();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
       toast.error("Failed to add sub-component");
     }
   };
@@ -197,8 +206,8 @@ const EquipmentManagement = () => {
       await removeSubComponent(subId);
       toast.success("Sub-component deleted");
       loadCategories();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* console.error removed */
       toast.error("Failed to delete sub-component");
     }
   };
@@ -257,8 +266,33 @@ const EquipmentManagement = () => {
     // We compare type (which is saved as category name usually)
     const matchesCategory = selectedCategory === "All Categories" || item.type === selectedCategory;
 
-    return matchesSearch && matchesCategory;
+    // We compare room id if a specific room is selected
+    const matchesRoom = selectedRoom === "All Rooms" ||
+      (item.roomId === selectedRoom) ||
+      (item.room && item.room.id === selectedRoom);
+
+    return matchesSearch && matchesCategory && matchesRoom;
   }) : [];
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedRoom]);
+
+  // Pagination Calculations
+  const totalPages = Math.ceil(filteredEquipments.length / ITEMS_PER_PAGE);
+  const paginatedEquipments = filteredEquipments.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      // Optional: scroll to top of list
+      // window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const getCategoryIcon = (type) => {
     // Simple mapping based on name
@@ -272,7 +306,7 @@ const EquipmentManagement = () => {
 
   return (
     <AdminWrapper>
-      <div className="flex flex-col h-full px-6 pt-6 pb-24 md:pb-6 space-y-6 overflow-y-auto">
+      <div className="flex flex-col h-full bg-[#f8f9fa] px-6 pt-4 pb-6 space-y-4 overflow-hidden">
         {/* Header Card */}
         <AdminHeader
           title="Equipment Management"
@@ -281,7 +315,7 @@ const EquipmentManagement = () => {
         />
 
         {/* Toolbar */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center border border-gray-50">
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col md:flex-row gap-4 items-center border border-gray-50 shrink-0">
           {/* Search */}
           <div className="flex-1 relative w-full">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -294,10 +328,10 @@ const EquipmentManagement = () => {
             />
           </div>
 
-          <div className="flex flex-col md:flex-row w-full md:w-auto gap-3 items-center">
-            {/* Category Dropdown */}
-            <div className="relative w-full md:w-64 flex gap-2">
-              <div className="flex-1">
+          <div className="flex flex-col xl:flex-row w-full xl:w-auto gap-3 items-center">
+            {/* Category Dropdown & Actions */}
+            <div className="relative w-full xl:w-auto flex flex-col md:flex-row gap-2">
+              <div className="flex-1 md:w-36 lg:w-48">
                 <AdminSelect
                   value={selectedCategory}
                   onChange={setSelectedCategory}
@@ -308,16 +342,39 @@ const EquipmentManagement = () => {
                   placeholder="All Categories"
                   className="w-full"
                   minWidth="w-full"
-                  buttonClassName="bg-gray-50/50 border-gray-100 px-5 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
+                  buttonClassName="bg-gray-50/50 border-gray-100 px-4 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
                 />
               </div>
-              <button
-                onClick={() => setShowCategoryModal(true)}
-                className="bg-gray-50/50 text-[#1e2e4a] p-4 rounded-2xl hover:bg-gray-100/50 transition-colors border border-gray-100 group shadow-sm"
-                title="Manage Categories"
-              >
-                <Edit size={20} className="group-hover:scale-110 transition-transform" />
-              </button>
+              <div className="flex-1 md:w-36 lg:w-48">
+                <AdminSelect
+                  value={selectedRoom}
+                  onChange={setSelectedRoom}
+                  options={[
+                    { value: "All Rooms", label: "All Rooms" },
+                    ...rooms.map(r => ({ value: r.id, label: `${r.roomNumber}` }))
+                  ]}
+                  placeholder="All Rooms"
+                  className="w-full"
+                  minWidth="w-full"
+                  buttonClassName="bg-gray-50/50 border-gray-100 px-4 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2 w-full md:w-auto">
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="flex-1 md:flex-none bg-white text-[#1e2e4a] px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-200 group shadow-sm flex items-center justify-center gap-2"
+                >
+                  <Edit size={18} className="group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold whitespace-nowrap">Categories</span>
+                </button>
+                <button
+                  onClick={() => setShowSubCategoryModal(true)}
+                  className="flex-1 md:flex-none bg-white text-[#1e2e4a] px-4 py-4 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-200 group shadow-sm flex items-center justify-center gap-2"
+                >
+                  <Layers size={18} className="group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold whitespace-nowrap">Sub-Categories</span>
+                </button>
+              </div>
             </div>
 
             {/* Add Button */}
@@ -332,7 +389,7 @@ const EquipmentManagement = () => {
         </div>
 
         {/* Stats */}
-        <div className="mb-4 px-2 flex items-center justify-between">
+        <div className="px-2 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">
               Inventory Overview
@@ -345,305 +402,194 @@ const EquipmentManagement = () => {
         </div>
 
         {/* Equipment Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-          {filteredEquipments.map((item) => (
-            <div key={item.id} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-start gap-5 group relative overflow-hidden">
-              {/* Subtle background decoration */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {paginatedEquipments.map((item) => (
+              <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+                {/* Subtle background decoration */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
 
-              <div className="relative w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 text-[#1e2e4a] shadow-inner border border-gray-100/50">
-                {getCategoryIcon(item.type)}
-              </div>
+                <div className="flex items-center gap-3 min-w-0 z-10">
+                  {/* Icon Container (matching User Avatar size constraint) */}
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shrink-0 shadow-sm text-[#1e2e4a]">
+                    {getCategoryIcon(item.type)}
+                  </div>
 
-              <div className="flex-1 min-w-0 py-1 relative z-10">
-                <div className="mb-2.5">
-                  <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight truncate pr-8 group-hover:text-blue-700 transition-colors">{item.name}</h3>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">ID #{String(item.id).padStart(4, '0')}</p>
+                  {/* Info */}
+                  <div className="min-w-0 pr-2">
+                    <h3 className="text-[#1e2e4a] text-base leading-tight truncate group-hover:text-blue-700 transition-colors font-bold">{item.name}</h3>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest truncate">
+                        ID #{String(item.id).padStart(4, '0')}
+                      </p>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 flex-nowrap overflow-hidden">
+                      <span className="shrink-0 inline-block px-2.5 py-0.5 rounded-full text-[10px] bg-gray-100 text-gray-600 font-bold border border-gray-200/50">
+                        {item.room?.roomNumber || "No Room"}
+                      </span>
+                      {item.serialNo && (
+                        <span className="shrink-0 inline-block px-2.5 py-0.5 rounded-full text-[10px] bg-white text-gray-500 font-mono border border-gray-100 truncate max-w-[100px]">
+                          SN: {item.serialNo}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2.5 py-1.5 rounded-lg border border-gray-200/50">
-                    {item.room?.roomNumber || "No Room"}
-                  </span>
-                  {item.serialNo && (
-                    <span className="text-[10px] font-mono text-gray-500 bg-white border border-gray-100 px-2.5 py-1.5 rounded-lg truncate max-w-[130px] shadow-sm">
-                      SN: {item.serialNo}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions Overlay */}
-              <div className="absolute top-4 right-4 flex flex-col gap-1 shrink-0 z-20">
-                <button
-                  onClick={() => openEditModal(item)}
-                  className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all hover:shadow-sm"
-                  title="Edit"
-                >
-                  <Edit size={16} strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() => showQR(item.id)}
-                  className="p-2 text-gray-300 hover:text-[#1e2e4a] hover:bg-gray-50 rounded-xl transition-all hover:shadow-sm"
-                  title="View QR Code"
-                >
-                  <QrCode size={16} strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() => handleDeleteEquipment(item.id)}
-                  className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all hover:shadow-sm"
-                  title="Delete"
-                >
-                  <Trash2 size={16} strokeWidth={2.5} />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {filteredEquipments.length === 0 && !loading && (
-            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-400">
-              <Box size={48} className="mb-4 opacity-20" />
-              <p>No equipment found.</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Add/Edit Equipment Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-md p-4 transition-all duration-300">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="px-8 py-7 border-b border-gray-50 flex justify-between items-center bg-white">
-              <h2 className="text-2xl font-black text-[#1e2e4a] tracking-tight">{editingEquipment ? "Edit Equipment" : "Add New Equipment"}</h2>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-gray-400 hover:text-[#1e2e4a] bg-gray-50 p-2.5 rounded-full hover:bg-gray-100 transition-all group"
-              >
-                <X size={22} className="group-hover:rotate-90 transition-transform duration-300" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEquipmentSubmit} className="p-8 space-y-7">
-              <div>
-                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3 ml-1">Equipment Name</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 outline-none transition-all placeholder:text-gray-300 font-semibold text-gray-700"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. MacBook Pro M1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3 ml-1">Category / Type</label>
-                <AdminSelect
-                  value={form.type}
-                  onChange={(val) => setForm({ ...form, type: val })}
-                  options={allCategories.map(cat => cat.name)}
-                  placeholder="Select Category"
-                  className="w-full"
-                  minWidth="w-full"
-                  buttonClassName="bg-gray-50/50 border-gray-100 px-6 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-3 ml-1">Room / Location</label>
-                <AdminSelect
-                  value={form.roomId}
-                  onChange={(val) => setForm({ ...form, roomId: val })}
-                  options={rooms.map(room => ({
-                    value: room.id,
-                    label: `${room.roomNumber} - ${room.building}`
-                  }))}
-                  placeholder="Select Room"
-                  className="w-full"
-                  minWidth="w-full"
-                  buttonClassName="bg-gray-50/50 border-gray-100 px-6 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full bg-[#1e2e4a] text-white py-5 rounded-2xl font-bold text-lg hover:bg-[#15325b] transition-all shadow-xl shadow-blue-900/10 active:scale-[0.98] flex items-center justify-center gap-3"
-                >
-                  {editingEquipment ? "Update Equipment" : "Confirm & Save"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Manage Categories Modal */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-md p-4 transition-all duration-300">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 max-h-[85vh] flex flex-col">
-            <div className="px-8 py-7 border-b border-gray-50 flex justify-between items-center bg-white">
-              <h2 className="text-xl font-black text-[#1e2e4a] tracking-tight text-center uppercase tracking-widest">Manage Categories</h2>
-              <button onClick={() => setShowCategoryModal(false)} className="text-gray-400 hover:text-[#1e2e4a] bg-gray-50 p-2 rounded-full hover:bg-gray-100 transition-colors"><X size={20} /></button>
-            </div>
-
-            <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
-              {/* Add New Category Section */}
-              <div className="mb-10">
-                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4 ml-1">New Category</label>
-                <form onSubmit={handleAddCategory} className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="e.g. Workstation"
-                    className="flex-1 bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 outline-none transition-all font-semibold text-gray-700"
-                  />
-                  <button type="submit" className="bg-[#1e2e4a] text-white px-6 py-3.5 rounded-2xl font-bold text-sm hover:bg-[#15325b] transition-all shadow-lg shadow-blue-900/10 active:scale-95">
-                    Add
+                {/* Actions */}
+                <div className="flex gap-2 text-gray-300 ml-2 shrink-0 z-20">
+                  <button
+                    onClick={() => openEditModal(item)}
+                    className="hover:text-blue-600 transition-colors"
+                    title="Edit"
+                  >
+                    <Edit size={16} />
                   </button>
-                </form>
-              </div>
-
-              {/* Existing Categories List */}
-              <div>
-                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4 ml-1">Active Categories</label>
-                <div className="space-y-3">
-                  {allCategories.map(cat => (
-                    <div key={cat.id} className="bg-gray-50/30 border border-gray-50 rounded-2xl shadow-sm hover:bg-white hover:border-gray-100 transition-all group overflow-hidden">
-                      <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setExpandedCategory(expandedCategory === cat.id ? null : cat.id)}>
-                        {editingCategory?.id === cat.id ? (
-                          <div className="flex-1 flex gap-2 mr-2" onClick={e => e.stopPropagation()}>
-                            <input
-                              type="text"
-                              value={editingCategory.name}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-                              className="flex-1 bg-white border-2 border-blue-500/50 rounded-xl px-3 py-2 text-sm font-bold outline-none"
-                              autoFocus
-                            />
-                            <button onClick={() => handleUpdateCategory(cat.id, editingCategory.name)} className="text-emerald-500 hover:bg-emerald-50 p-2 rounded-xl transition-colors"><Save size={18} /></button>
-                            <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-xl transition-colors"><X size={18} /></button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-500/30 shrink-0" />
-                            <span className="font-bold text-gray-700 flex-1">{cat.name}</span>
-                            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 rounded-md">
-                              {cat.subComponents?.length || 0} sub
-                            </span>
-                          </div>
-                        )}
-
-                        {editingCategory?.id !== cat.id && (
-                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 ml-2" onClick={e => e.stopPropagation()}>
-                            <button
-                              onClick={() => setEditingCategory({ id: cat.id, name: cat.name })}
-                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
-                            >
-                              <Edit size={16} strokeWidth={2.5} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCategory(cat.id)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                            >
-                              <Trash2 size={16} strokeWidth={2.5} />
-                            </button>
-                            <button className={`p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-transform ${expandedCategory === cat.id ? 'rotate-180' : ''}`}>
-                              <ChevronDown size={16} strokeWidth={2.5} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Subcomponents Section */}
-                      {expandedCategory === cat.id && (
-                        <div className="px-5 pb-5 pt-1 border-t border-gray-100 bg-white">
-                          <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.1em] mt-3 mb-2 ml-1">Sub-Components</label>
-                          <form onSubmit={(e) => handleAddSubComponent(e, cat.id)} className="flex gap-2 mb-3">
-                            <input
-                              type="text"
-                              value={newSubComponentName}
-                              onChange={(e) => setNewSubComponentName(e.target.value)}
-                              placeholder="Add sub-component e.g. Mouse"
-                              className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/10 outline-none text-gray-700 font-semibold"
-                            />
-                            <button type="submit" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-2 rounded-xl text-sm font-bold transition-colors">
-                              <Plus size={16} strokeWidth={3} />
-                            </button>
-                          </form>
-
-                          <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                            {cat.subComponents && cat.subComponents.length > 0 ? (
-                              cat.subComponents.map(sub => (
-                                <div key={sub.id} className="flex items-center justify-between bg-gray-50/50 px-3 py-2 rounded-lg group/sub border border-transparent hover:border-gray-100">
-                                  <span className="text-sm font-semibold text-gray-600">- {sub.name}</span>
-                                  <button
-                                    onClick={() => handleDeleteSubComponent(sub.id)}
-                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-md opacity-0 group-hover/sub:opacity-100 transition-all"
-                                  >
-                                    <X size={14} strokeWidth={3} />
-                                  </button>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-xs text-center text-gray-400 py-3 italic bg-gray-50/50 rounded-lg">No sub-components added</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  <button
+                    onClick={() => showQR(item.id)}
+                    className="hover:text-[#1e2e4a] transition-colors"
+                    title="View QR Code"
+                  >
+                    <QrCode size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEquipment(item.id)}
+                    className="hover:text-red-500 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
-            </div>
+            ))}
+
+            {filteredEquipments.length === 0 && !loading && (
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-center text-gray-400">
+                <Box size={48} className="mb-4 opacity-20" />
+                <p>No equipment found.</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* QR Code Modal */}
-      {showQRModal && selectedQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/70 p-4 backdrop-blur-md transition-all duration-300">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-300 text-center">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-black text-[#1e2e4a] tracking-tight uppercase tracking-widest">Asset QR Code</h2>
-              <button onClick={() => setShowQRModal(false)} className="text-gray-400 hover:text-[#1e2e4a] bg-gray-50 p-2 rounded-full transition-colors font-bold"><X size={20} /></button>
-            </div>
+        {/* Pagination — pinned to the bottom of the viewport */}
+        {totalPages > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-100 flex justify-center items-center gap-1 py-3 flex-wrap">
+            <button
+              onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
+            >
+              <ChevronLeft size={20} />
+            </button>
 
-            <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 shadow-inner inline-block mb-8 group">
-              <img
-                src={selectedQR.qrCodeImage}
-                alt="QR Code"
-                className="w-48 h-48 object-contain mix-blend-multiply transition-transform group-hover:scale-105 duration-500"
-              />
-            </div>
+            {(() => {
+              const generatePages = () => {
+                const pages = [];
+                const addPage = (num, type = 'visible') => pages.push({ num, type });
+                const addEllipsis = () => pages.push({ num: '...', type: 'visible' });
 
-            <div className="bg-gray-50/50 p-6 rounded-2xl mb-8 text-left border border-gray-100">
-              <p className="font-black text-[#1e2e4a] text-xl leading-tight mb-4">{selectedQR.equipment.name}</p>
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) addPage(i);
+                } else {
+                  if (currentPage <= 4) {
+                    for (let i = 1; i <= 5; i++) addPage(i, i > 3 && i < 5 ? 'desktop-only' : 'visible');
+                    addEllipsis();
+                    addPage(totalPages);
+                  } else if (currentPage >= totalPages - 3) {
+                    addPage(1);
+                    addEllipsis();
+                    for (let i = totalPages - 4; i <= totalPages; i++) {
+                      addPage(i, i > totalPages - 4 && i < totalPages - 2 ? 'desktop-only' : 'visible');
+                    }
+                  } else {
+                    addPage(1);
+                    addEllipsis();
+                    addPage(currentPage - 1, 'desktop-only');
+                    addPage(currentPage);
+                    addPage(currentPage + 1, 'desktop-only');
+                    addEllipsis();
+                    addPage(totalPages);
+                  }
+                }
+                return pages;
+              };
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm text-gray-600 font-bold uppercase tracking-wider bg-white/50 p-2 rounded-lg">
-                  <Monitor size={16} className="text-blue-500" strokeWidth={2.5} />
-                  <span>Room: {selectedQR.equipment.room.roomNumber}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600 font-bold uppercase tracking-wider bg-white/50 p-2 rounded-lg">
-                  <Box size={16} className="text-orange-500" strokeWidth={2.5} />
-                  <span>SN: {selectedQR.equipment.serialNo || "NO SERIAL"}</span>
-                </div>
-              </div>
-            </div>
+              return generatePages().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page.num === 'number' && handlePageChange(page.num)}
+                  disabled={page.num === '...'}
+                  className={`flex items-center justify-center rounded-lg text-sm transition-all
+                    ${page.type === 'desktop-only' ? 'hidden md:flex' : 'flex'}
+                    ${page.num === '...' ? 'w-6 md:w-8 cursor-default text-gray-400' : 'w-8 h-8 md:w-9 md:h-9'}
+                    ${page.num === currentPage
+                      ? 'bg-[#1e2e4a] text-white shadow-md shadow-blue-900/10'
+                      : page.num === '...'
+                        ? ''
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  {page.num}
+                </button>
+              ));
+            })()}
 
             <button
-              onClick={printQR}
-              className="w-full py-4 bg-[#1e2e4a] text-white rounded-2xl font-bold hover:bg-[#15325b] flex items-center justify-center gap-3 shadow-xl shadow-blue-900/10 active:scale-95 transition-all"
+              onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
             >
-              <Printer size={20} strokeWidth={2.5} /> Print Asset Tag
+              <ChevronRight size={20} />
             </button>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Extracted Modals */}
+        <EquipmentFormModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleEquipmentSubmit}
+          isEditing={!!editingEquipment}
+          form={form}
+          setForm={setForm}
+          allCategories={allCategories}
+          rooms={rooms}
+        />
+
+        <CategoryManagerModal
+          isOpen={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+          allCategories={allCategories}
+          newCategoryName={newCategoryName}
+          setNewCategoryName={setNewCategoryName}
+          handleAddCategory={handleAddCategory}
+          editingCategory={editingCategory}
+          setEditingCategory={setEditingCategory}
+          handleUpdateCategory={handleUpdateCategory}
+          handleDeleteCategory={handleDeleteCategory}
+        />
+
+        <SubCategoryManagerModal
+          isOpen={showSubCategoryModal}
+          onClose={() => setShowSubCategoryModal(false)}
+          allCategories={allCategories}
+          selectedParentCategory={selectedParentCategory}
+          setSelectedParentCategory={setSelectedParentCategory}
+          newSubComponentName={newSubComponentName}
+          setNewSubComponentName={setNewSubComponentName}
+          handleAddSubComponent={handleAddSubComponent}
+          handleDeleteSubComponent={handleDeleteSubComponent}
+        />
+
+        <QRCodeModal
+          isOpen={showQRModal}
+          onClose={() => setShowQRModal(false)}
+          selectedQR={selectedQR}
+          onPrint={printQR}
+        />
+      </div>
     </AdminWrapper >
   );
 };

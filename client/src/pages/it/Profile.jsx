@@ -86,12 +86,11 @@ const ITProfile = () => {
                 try {
                     const parsed = JSON.parse(res.data.workingHoursJson);
                     setWorkHoursInputs(parsed);
-                } catch (e) {
-                    console.error("Error parsing working hours", e);
+                } catch {
+                    // Ignore JSON parsing errors for working hours
                 }
             }
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to load profile");
         } finally {
             setLoading(false);
@@ -122,8 +121,7 @@ const ITProfile = () => {
                 toast.success("Profile picture updated!");
                 await checkUser();
                 fetchProfile();
-            } catch (err) {
-                console.error(err);
+            } catch {
                 toast.error("Failed to update profile picture");
             } finally {
                 setUploading(false);
@@ -154,7 +152,6 @@ const ITProfile = () => {
             await checkUser();
             setIsEditing(false);
         } catch (err) {
-            console.error(err);
             toast.error(err.response?.data?.message || "Failed to update profile");
         } finally {
             setSaving(false);
@@ -170,7 +167,6 @@ const ITProfile = () => {
             await checkUser();
             closeEditFn(false);
         } catch (err) {
-            console.error(err);
             toast.error(err.response?.data?.message || `Failed to update ${field}`);
         }
     };
@@ -183,8 +179,7 @@ const ITProfile = () => {
             });
             await checkUser();
             toast.success("Preferences saved successfully");
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to save preferences");
         }
     }
@@ -201,8 +196,7 @@ const ITProfile = () => {
             });
             await checkUser();
             toast.success(newValue ? "Notifications enabled" : "Notifications disabled");
-        } catch (err) {
-            console.error(err);
+        } catch {
             setMyEmailEnabled(!newValue); // Revert
             toast.error("Failed to update preference");
         }

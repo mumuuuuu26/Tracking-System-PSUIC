@@ -103,6 +103,32 @@ app.use("/api", globalLimiter);
 app.use("/api/register", authLimiter);
 app.use("/api/login", authLimiter);
 
+// --- Server & Socket.io (created BEFORE routes so req.io is available to all controllers) ---
+const http = require("http");
+const { Server } = require("socket.io");
+const server = http.createServer(app);
+const extraOrigins = process.env.EXTRA_ORIGINS
+  ? process.env.EXTRA_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+  : [];
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+      ...extraOrigins,
+    ].filter(Boolean),
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
+
+// Attach io to every request BEFORE routes so controllers can call req.io.emit()
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 // --- Routes Mounting ---
 app.use("/api", authRoutes);
 app.use("/api", userRoutes);
@@ -127,29 +153,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const errorHandler = require("./middlewares/errorHandler");
 app.use(errorHandler);
 
-// --- Server & Socket.io ---
-const http = require("http");
-const { Server } = require("socket.io");
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "http://localhost:5173",
-      process.env.CLIENT_URL,
-      process.env.FRONTEND_URL,
-      "http://10.135.2.243:5173",
-      "http://10.135.2.243",
-      "http://172.20.10.2:5173",
-      "http://172.20.10.2"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  },
-});
-
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
+// Note: Server, Socket.io, and req.io middleware have been moved above the routes.
+// See the Routes Mounting section above.
 
 // 2. Health Check Endpoint (สำหรับ start-server-and-test)
 app.get("/health", (req, res) => {

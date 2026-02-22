@@ -42,8 +42,7 @@ const UserManagement = () => {
 
       const res = await listUsers({ role: roleParam });
       setUsers(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to load users");
     } finally {
       setLoading(false);
@@ -100,7 +99,6 @@ const UserManagement = () => {
       setAddUserForm({ name: "", email: "", role: "user" });
       loadUsers();
     } catch (err) {
-      console.error(err);
       toast.error(err.response?.data?.message || "Failed to add user");
     }
   };
@@ -112,8 +110,7 @@ const UserManagement = () => {
       toast.success("Role Updated Successfully");
       setIsEditRoleModalOpen(false);
       loadUsers();
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to update role");
     }
   };

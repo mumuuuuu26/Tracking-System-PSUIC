@@ -60,8 +60,8 @@ const Tickets = () => {
             } else {
                 setTickets([]);
             }
-        } catch (err) {
-            console.error(err);
+        } catch {
+            // Silent fail
         } finally {
             setLoading(false);
         }
@@ -73,8 +73,9 @@ const Tickets = () => {
 
     // Real-time updates
     useEffect(() => {
-        const handleNewTicket = (newTicket) => {
-            setTickets((prev) => [newTicket, ...prev]);
+        const handleNewTicket = () => {
+            // Reload from server so pagination and filters remain correct
+            loadTickets();
         };
 
         const handleUpdateTicket = (updatedTicket) => {
@@ -88,7 +89,7 @@ const Tickets = () => {
             socket.off("server:new-ticket", handleNewTicket);
             socket.off("server:update-ticket", handleUpdateTicket);
         };
-    }, []);
+    }, [loadTickets]);
 
     return (
         <ITWrapper>

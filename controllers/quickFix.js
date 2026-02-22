@@ -11,7 +11,7 @@ exports.list = async (req, res, next) => {
                 views: 'desc'
             }
         });
-        res.send(data);
+        res.json(data);
     } catch (err) {
         next(err);
     }
@@ -29,7 +29,7 @@ exports.create = async (req, res, next) => {
                 createdBy: req.user.username || req.user.name || req.user.email,
             },
         });
-        res.send(newFix);
+        res.json(newFix);
     } catch (err) {
         next(err);
     }
@@ -49,7 +49,7 @@ exports.update = async (req, res, next) => {
                 category,
             },
         });
-        res.send(updated);
+        res.json(updated);
     } catch (err) {
         next(err);
     }
@@ -61,7 +61,7 @@ exports.remove = async (req, res, next) => {
         const deleted = await prisma.quickFix.delete({
             where: { id: Number(id) }
         });
-        res.send(deleted);
+        res.json(deleted);
     } catch (err) {
         next(err);
     }
@@ -70,16 +70,23 @@ exports.remove = async (req, res, next) => {
 exports.read = async (req, res, next) => {
     try {
         const { id } = req.params;
-        // Increment view count
+
+        // [BUG FIX] Check existence before incrementing views to avoid phantom increments on non-existent records
+        const data = await prisma.quickFix.findUnique({
+            where: { id: Number(id) }
+        });
+
+        if (!data) {
+            return res.status(404).json({ message: "QuickFix not found" });
+        }
+
+        // Increment view count only if record exists
         await prisma.quickFix.update({
             where: { id: Number(id) },
             data: { views: { increment: 1 } }
         });
 
-        const data = await prisma.quickFix.findUnique({
-            where: { id: Number(id) }
-        });
-        res.send(data);
+        res.json(data);
     } catch (err) {
         next(err);
     }

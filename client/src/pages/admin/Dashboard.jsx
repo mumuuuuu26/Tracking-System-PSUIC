@@ -19,8 +19,8 @@ const Dashboard = () => {
         try {
             const res = await getDashboardStats();
             setStats(res.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
+            // Silent fail — stats remain at defaults
         }
     }, []);
 

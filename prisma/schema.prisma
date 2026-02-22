@@ -274,6 +274,14 @@ model QuickFix {
   updatedAt DateTime @updatedAt
 }
 
+// === [NEW] QUICK FIX CATEGORY MODEL ===
+model QuickFixCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model RolePermission {
   id              Int     @id @default(autoincrement())
   role            String  @unique // "admin", "it_support", "user"

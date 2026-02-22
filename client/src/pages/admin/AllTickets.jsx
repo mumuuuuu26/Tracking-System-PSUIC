@@ -67,8 +67,7 @@ const AllTickets = () => {
                 // Fallback if structure mismatches (shouldn't happen with our changes)
                 setTickets([])
             }
-        } catch (err) {
-            console.error(err)
+        } catch {
             toast.error('Failed to load tickets')
         } finally {
             setLoading(false)

@@ -29,8 +29,8 @@ const EquipmentDetail = () => {
     try {
       const res = await getEquipment(id);
       setEquipment(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Silent fail — equipment may load from location state
     } finally {
       setLoading(false);
     }
@@ -59,33 +59,33 @@ const EquipmentDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0d1b2a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d1b2a] text-gray-900 dark:text-white">
       {/* Header */}
       {/* Standard Header */}
-      <div className="bg-[#193C6C] px-4 py-4 flex items-center shadow-sm sticky top-0 z-10 -mx-4 md:-mx-6 mb-6">
+      <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0d1b2a] px-5 py-4 flex items-center shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-none border-b border-transparent dark:border-b-white/10 rounded-b-[2rem] sticky top-0 z-10 -mx-4 md:-mx-6 mb-6">
         <button
-          onClick={() => navigate("/user")}
+          onClick={() => navigate(-1)}
           className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} />
         </button>
-        <span className="text-lg font-bold text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+        <h1 className="text-base font-bold text-white absolute left-1/2 -translate-x-1/2 tracking-wide">
           Equipment Details
-        </span>
+        </h1>
       </div>
 
       {/* Equipment Info Card */}
       <div className="p-4">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[#1a2f4e] rounded-2xl shadow-sm dark:shadow-none overflow-hidden border border-gray-200 dark:border-blue-800/30 transition-colors">
           {/* Equipment Image/Icon Area */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-[#193C6C] dark:to-[#15325A] p-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <Monitor size={48} className="text-white/80" />
               <span
@@ -102,12 +102,12 @@ const EquipmentDetail = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b">
+          <div className="flex border-b border-gray-200 dark:border-blue-800/30">
             <button
               onClick={() => setActiveTab("info")}
               className={`flex-1 py-3 text-sm font-medium ${activeTab === "info"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500"
+                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400"
                 }`}
             >
               Information
@@ -115,8 +115,8 @@ const EquipmentDetail = () => {
             <button
               onClick={() => setActiveTab("history")}
               className={`flex-1 py-3 text-sm font-medium ${activeTab === "history"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500"
+                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400"
                 }`}
             >
               History
@@ -124,8 +124,8 @@ const EquipmentDetail = () => {
             <button
               onClick={() => setActiveTab("specs")}
               className={`flex-1 py-3 text-sm font-medium ${activeTab === "specs"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500"
+                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400"
                 }`}
             >
               Specifications
@@ -137,11 +137,11 @@ const EquipmentDetail = () => {
             {activeTab === "info" && (
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <MapPin className="text-gray-400 mt-1" size={20} />
+                  <MapPin className="text-gray-400 dark:text-blue-400/60 mt-1" size={20} />
                   <div>
-                    <p className="text-sm text-gray-600">Location</p>
-                    <p className="font-medium">{equipment?.room?.roomNumber}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-600 dark:text-blue-300/80">Location</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{equipment?.room?.roomNumber}</p>
+                    <p className="text-sm text-gray-500 dark:text-blue-400/60">
                       {equipment?.room?.building} • Floor{" "}
                       {equipment?.room?.floor}
                     </p>
@@ -149,20 +149,20 @@ const EquipmentDetail = () => {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="text-gray-400 mt-1" size={20} />
+                  <AlertCircle className="text-gray-400 dark:text-blue-400/60 mt-1" size={20} />
                   <div>
-                    <p className="text-sm text-gray-600">Serial Number</p>
-                    <p className="font-medium">
+                    <p className="text-sm text-gray-600 dark:text-blue-300/80">Serial Number</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
                       {equipment?.serialNo || "Not specified"}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Clock className="text-gray-400 mt-1" size={20} />
+                  <Clock className="text-gray-400 dark:text-blue-400/60 mt-1" size={20} />
                   <div>
-                    <p className="text-sm text-gray-600">Last Maintenance</p>
-                    <p className="font-medium">
+                    <p className="text-sm text-gray-600 dark:text-blue-300/80">Last Maintenance</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
                       {equipment?.lastMaintenance
                         ? dayjs(equipment.lastMaintenance).format("DD MMM YYYY")
                         : "No record"}
@@ -178,24 +178,24 @@ const EquipmentDetail = () => {
                   equipment.tickets.map((ticket) => (
                     <div
                       key={ticket.id}
-                      className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
+                      className="border border-gray-200 dark:border-blue-700/50 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-blue-800/20 transition-colors cursor-pointer"
                       onClick={() => navigate(`/user/ticket/${ticket.id}`)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           {getTicketStatusIcon(ticket.status)}
-                          <span className="font-medium text-sm">
+                          <span className="font-medium text-sm text-gray-900 dark:text-white">
                             #{String(ticket.id).padStart(4, "0")}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-blue-400/60">
                           {dayjs(ticket.createdAt).fromNow()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700 mb-1">
+                      <p className="text-sm text-gray-700 dark:text-blue-200 mb-1">
                         {ticket.title}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-blue-400/60">
                         <span>{ticket.category?.name}</span>
                         <span className="capitalize">
                           {ticket.status.replace("_", " ")}
@@ -204,8 +204,8 @@ const EquipmentDetail = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="mx-auto mb-2 text-gray-300" size={48} />
+                  <div className="text-center py-8 text-gray-500 dark:text-blue-400/60">
+                    <Clock className="mx-auto mb-2 text-gray-300 dark:text-blue-800" size={48} />
                     <p className="text-sm">No maintenance history</p>
                   </div>
                 )}
@@ -216,29 +216,29 @@ const EquipmentDetail = () => {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600 mb-1">Type</p>
-                    <p className="font-medium">{equipment?.type}</p>
+                    <p className="text-gray-600 dark:text-blue-300/80 mb-1">Type</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{equipment?.type}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 mb-1">Brand</p>
-                    <p className="font-medium">{equipment?.brand || "N/A"}</p>
+                    <p className="text-gray-600 dark:text-blue-300/80 mb-1">Brand</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{equipment?.brand || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 mb-1">Model</p>
-                    <p className="font-medium">{equipment?.model || "N/A"}</p>
+                    <p className="text-gray-600 dark:text-blue-300/80 mb-1">Model</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{equipment?.model || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 mb-1">Year</p>
-                    <p className="font-medium">{equipment?.year || "N/A"}</p>
+                    <p className="text-gray-600 dark:text-blue-300/80 mb-1">Year</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{equipment?.year || "N/A"}</p>
                   </div>
                 </div>
 
                 {equipment?.specifications && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm text-gray-600 mb-2">
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-blue-700/50">
+                    <p className="text-sm text-gray-600 dark:text-blue-300/80 mb-2">
                       Additional Specs
                     </p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-blue-200">
                       {equipment.specifications}
                     </p>
                   </div>
@@ -272,7 +272,7 @@ const EquipmentDetail = () => {
                 state: { equipmentType: equipment?.type },
               })
             }
-            className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition"
+            className="w-full bg-gray-100 dark:bg-[#1a2f4e] text-gray-700 dark:text-blue-300 border border-transparent dark:border-blue-700/50 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-[#1e3558] transition"
           >
             View Quick Fix Guide
           </button>

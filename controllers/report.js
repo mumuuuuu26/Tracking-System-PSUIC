@@ -258,8 +258,10 @@ exports.getITPerformance = async (req, res, next) => {
         const { startDate, endDate } = req.query;
 
         // Date Filter Logic
+        // [BUG FIX] Use completedAt (not updatedAt) — updatedAt changes on any update (notes, etc.)
+        // completedAt is set exactly once when the ticket is closed, making it the correct field for period filtering.
         const dateFilter = startDate && endDate ? {
-            updatedAt: {
+            completedAt: {
                 gte: new Date(startDate),
                 lte: new Date(new Date(endDate).setHours(23, 59, 59))
             }

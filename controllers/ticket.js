@@ -150,6 +150,7 @@ exports.update = async (req, res, next) => {
       assignedToId,
       adminNote,
       categoryId,
+      subComponent,
     } = validatedData;
 
     const checkTicket = await prisma.ticket.findFirst({
@@ -172,7 +173,7 @@ exports.update = async (req, res, next) => {
     if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (adminNote !== undefined) updateData.note = adminNote;
-    if (validatedData.subComponent !== undefined) updateData.subComponent = validatedData.subComponent;
+    if (subComponent !== undefined) updateData.subComponent = subComponent;
 
     if (status) {
       const now = new Date();
@@ -252,7 +253,6 @@ exports.list = async (req, res, next) => {
         category: true,
         assignedTo: true,
       },
-      orderBy: { createdAt: 'desc' }
     });
 
     const statusOrder = { 'not_start': 1, 'in_progress': 2, 'completed': 3 };
@@ -393,16 +393,6 @@ exports.remove = async (req, res, next) => {
 
     if (!checkTicket) {
       return res.status(404).json({ message: "Ticket not found" });
-    }
-
-    if (
-      req.user.role !== "admin" &&
-      req.user.role !== "it_support" &&
-      checkTicket.status !== "not_start"
-    ) {
-      return res.status(403).json({
-        message: "Access Denied: Cannot delete ticket that is being processed or completed."
-      });
     }
 
     await prisma.ticket.update({

@@ -14,8 +14,7 @@ const RoomAnalysis = ({ month, year, externalData, externalLoading }) => {
             setError(null);
             const res = await getRoomStats(month, year);
             setData(res.data || []);
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError("Failed to load room data");
         } finally {
             setLoading(false);

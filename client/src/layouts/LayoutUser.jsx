@@ -1,52 +1,43 @@
 import React from "react";
-import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { Home, User, CircleUser, Mail, Clock } from "lucide-react";
+import { Outlet, Navigate, useLocation, Link } from "react-router-dom";
+import { Home, User, Mail, Clock } from "lucide-react";
 import useAuthStore from "../store/auth-store";
-import Swal from "sweetalert2";
-
 import UserNavbar from "../components/user/UserNavbar";
 
 const LayoutUser = ({ children }) => {
   const { user, hasHydrated } = useAuthStore();
   const location = useLocation();
 
-  // Wait for hydration to finish before redirecting
   if (!hasHydrated) {
-    return <div>Loading...</div>; // Or return null / spinner
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0d1b2a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400" />
+      </div>
+    );
   }
 
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
+  if (!user) return <Navigate to="/login" />;
 
   const isActive = (path) => location.pathname === path;
 
-
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Desktop Navigation */}
+    <div className="bg-gray-50 dark:bg-[#0d1b2a]">
+      {/* Desktop sticky navbar */}
       <UserNavbar />
 
-      {/* Main Content */}
-      <main className="pb-32 md:pb-24 pt-0 md:pt-6">
-        <div className="max-w-[1920px] mx-auto flex items-start justify-center px-0 md:px-6 lg:px-8">
+      {/* Page content — no flex, no fixed height, just block flow */}
+      <div className="pb-28 lg:pb-6">
+        {children || <Outlet />}
+      </div>
 
-          {/* Content */}
-          <div className="flex-1 w-full min-w-0">
-            {children || <Outlet />}
-          </div>
-        </div>
-      </main>
-
-      {/* Floating Bottom Navigation */}
+      {/* Mobile bottom navigation — fixed */}
       <div className="fixed bottom-0 left-0 right-0 z-30 lg:hidden">
-        <nav className="bg-white border-t border-gray-100 pb-safe pt-3 px-6 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center justify-between max-w-md mx-auto">
-            <NavLink href="/user" icon={<Home size={24} />} label="Home" active={isActive("/user")} dataTestId="nav-home" />
-            <NavLink href="/user/report" icon={<Mail size={24} />} label="Activity" active={isActive("/user/report")} dataTestId="nav-report" />
-            <NavLink href="/user/history" icon={<Clock size={24} />} label="History" active={isActive("/user/history")} dataTestId="nav-history" />
-            <NavLink href="/user/profile" icon={<User size={24} />} label="Profile" active={isActive("/user/profile")} dataTestId="nav-profile" />
+        <nav className="bg-white dark:bg-[#0f1f3d] border-t border-gray-200 dark:border-blue-900/50 pt-2 pb-safe px-6 shadow-[0_-4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center justify-between max-w-md mx-auto h-[60px]">
+            <NavLink href="/user" icon={<Home size={20} />} label="Home" active={isActive("/user")} dataTestId="nav-home" />
+            <NavLink href="/user/report" icon={<Mail size={20} />} label="Activity" active={isActive("/user/report")} dataTestId="nav-report" />
+            <NavLink href="/user/history" icon={<Clock size={20} />} label="History" active={isActive("/user/history")} dataTestId="nav-history" />
+            <NavLink href="/user/profile" icon={<User size={20} />} label="Profile" active={isActive("/user/profile")} dataTestId="nav-profile" />
           </div>
         </nav>
       </div>
@@ -54,48 +45,25 @@ const LayoutUser = ({ children }) => {
   );
 };
 
-// Helper Component for Nav Links
-const NavLink = ({ href, icon, label, active, hasDot, badge, dataTestId }) => (
-  <a
-    href={href}
+const NavLink = ({ href, icon, label, active, dataTestId }) => (
+  <Link
+    to={href}
     data-testid={dataTestId}
-    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 w-16 relative ${active
-      ? "text-[#193C6C]"
-      : "text-gray-400 hover:text-gray-600"
+    className={`flex flex-col items-center justify-center pt-2 pb-1 rounded-xl transition-all duration-200 w-16 relative group h-full ${active ? "text-blue-600 dark:text-white" : "text-gray-400 hover:text-blue-600 dark:text-blue-400/50 dark:hover:text-blue-300"
       }`}
   >
-    <div className={`transition-transform duration-200 relative ${active ? "-translate-y-1" : ""}`}>
-      {icon}
-      {hasDot && (
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-      )}
-      {badge && (
-        <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border border-white">
-          {badge}
-        </span>
-      )}
+    {active && (
+      <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-blue-600 dark:bg-blue-400 rounded-b-full" />
+    )}
+    <div className={`transition-transform duration-200 ${active ? "scale-105" : ""}`}>
+      <div className={`p-1 rounded-xl transition-all duration-200 ${active ? "bg-blue-100 dark:bg-blue-600/30" : "group-hover:bg-gray-100 dark:group-hover:bg-blue-800/20"}`}>
+        {icon}
+      </div>
     </div>
-    <span className={`text-[10px] font-medium mt-1 ${active ? "font-bold" : ""}`}>
+    <span className={`text-[10px] mt-0.5 ${active ? "font-bold text-blue-600 dark:text-white tracking-wide" : "font-medium text-gray-500 dark:text-blue-400/50"}`}>
       {label}
     </span>
-  </a>
-)
-
-// Helper Component for Mobile Nav Links
-const MobileNavLink = ({ href, icon, label, active, onClick, isLogout }) => (
-  <a
-    href={href}
-    onClick={onClick}
-    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 ${isLogout
-      ? "text-red-600 hover:bg-red-50 font-medium"
-      : active
-        ? "bg-blue-50 text-blue-600 font-bold shadow-sm"
-        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium"
-      }`}
-  >
-    {icon}
-    {label}
-  </a>
+  </Link>
 );
 
 export default LayoutUser;

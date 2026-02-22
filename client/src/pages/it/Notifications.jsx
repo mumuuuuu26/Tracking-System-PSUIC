@@ -22,9 +22,8 @@ const Notifications = () => {
             setLoading(true);
             const res = await listNotifications();
             setNotifications(res.data);
-        } catch (err) {
-            console.error(err);
-            // toast.error("Failed to load notifications");
+        } catch {
+            // Silent fail
         } finally {
             setLoading(false);
         }
@@ -66,7 +65,7 @@ const Notifications = () => {
                 prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
             );
             // API call in background (don't await to block nav)
-            markRead(notification.id).catch(console.error);
+            markRead(notification.id).catch(() => { });
         }
 
         // 2. Navigate to ticket

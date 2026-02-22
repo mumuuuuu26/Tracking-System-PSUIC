@@ -58,7 +58,7 @@ const TicketDetail = () => {
             const res = await previewJob(id);
             setTicket(res.data);
             setLoading(false);
-        } catch (err) {
+        } catch {
             // Fallback to getTicket if preview fails or for compatibility
             await loadTicket();
         }
@@ -79,7 +79,7 @@ const TicketDetail = () => {
                 try {
                     const parsed = JSON.parse(ticket.checklist);
                     if (Array.isArray(parsed)) setChecklistItems(parsed);
-                } catch (e) {
+                } catch {
                     // Checklist JSON is malformed, ignore
                 }
             }
@@ -133,7 +133,7 @@ const TicketDetail = () => {
                 proof: proofImage
             });
             toast.success("Draft saved successfully!");
-        } catch (err) {
+        } catch {
             toast.error("Failed to save draft");
         }
     };
@@ -210,7 +210,7 @@ const TicketDetail = () => {
                         });
                         toast.success("Ticket closed successfully!");
                         loadTicket();
-                    } catch (err) {
+                    } catch {
                         toast.error("Failed to close ticket");
                     }
                 }

@@ -58,8 +58,8 @@ const ReportDashboard = () => {
             if (rRes.status === 'fulfilled') setRoomData(rRes.value.data || []);
             if (iRes.status === 'fulfilled') setItData(Array.isArray(iRes.value.data) ? iRes.value.data : []);
             if (sRes.status === 'fulfilled') setSubComponentData(Array.isArray(sRes.value.data) ? sRes.value.data : []); // [NEW]
-        } catch (err) {
-            console.error('Failed to fetch report data:', err);
+        } catch {
+            // Silent fail — individual tabs render their own error states
         } finally {
             setLoadingAll(false);
         }
@@ -346,8 +346,7 @@ const ReportDashboard = () => {
             }
 
             doc.save(`System_Report_${periodLabel.replace(' ', '_')}.pdf`);
-        } catch (err) {
-            console.error('PDF export failed:', err);
+        } catch {
             alert('Failed to generate PDF. Please try again.');
         } finally {
             setIsExportingPDF(false);
@@ -419,8 +418,7 @@ const ReportDashboard = () => {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(subRows.length ? subRows : [{ Note: 'No data' }]), 'Replaced Parts');
 
             XLSX.writeFile(wb, `System_Report_${periodLabel}.xlsx`);
-        } catch (err) {
-            console.error('Excel export failed:', err);
+        } catch {
             alert('Failed to generate Excel file. Please try again.');
         } finally {
             setIsExportingExcel(false);

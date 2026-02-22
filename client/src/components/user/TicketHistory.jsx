@@ -20,17 +20,14 @@ const TicketHistory = () => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            // Fetch Categories (Non-blocking)
             listCategories(token)
                 .then(res => setCategories(res.data))
-                .catch(err => console.error("Category Fetch Error:", err));
+                .catch(() => { /* handle error silently or via global toast */ });
 
-            // Fetch Tickets
             const ticketRes = await getTicketHistory({ categoryId: filters.categoryId });
             setTickets(ticketRes.data);
-        } catch (err) {
-            console.error("Ticket Fetch Error:", err);
-            // Optionally setTickets([]) or handle graphical error
+        } catch {
+            // error handled silently or via global toast
         } finally {
             setLoading(false);
         }
@@ -40,19 +37,16 @@ const TicketHistory = () => {
         loadData();
     }, [loadData]);
 
-
-
-
     return (
         <div className="space-y-6">
-            {/* Filter Bar */}
-            <div className="flex flex-row items-center gap-3">                {/* Category Pills */}
+            {/* Filter Pills */}
+            <div className="flex flex-row items-center gap-3">
                 <div className="flex-1 flex gap-2 overflow-x-auto w-full no-scrollbar pb-2">
                     <button
                         onClick={() => setFilters(prev => ({ ...prev, categoryId: "all" }))}
-                        className={`px-6 py-2 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${filters.categoryId === "all"
-                            ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
-                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                        className={`px-5 py-2 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${filters.categoryId === "all"
+                            ? "bg-blue-600 dark:bg-[#193C6C] text-white border-blue-400 dark:border-blue-500/60 shadow-md"
+                            : "bg-white dark:bg-[#1a2f4e] text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-700/40 hover:bg-blue-50 dark:hover:bg-[#1e3558]"
                             }`}
                     >
                         All
@@ -61,9 +55,9 @@ const TicketHistory = () => {
                         <button
                             key={cat.id}
                             onClick={() => setFilters(prev => ({ ...prev, categoryId: cat.id }))}
-                            className={`px-6 py-2 rounded-full text-sm font-bold border transition-all whitespace-nowrap ${filters.categoryId === cat.id
-                                ? "bg-[#193C6C] text-white border-[#193C6C] shadow-md"
-                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                            className={`px-5 py-2 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${filters.categoryId === cat.id
+                                ? "bg-blue-600 dark:bg-[#193C6C] text-white border-blue-400 dark:border-blue-500/60 shadow-md"
+                                : "bg-white dark:bg-[#1a2f4e] text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-700/40 hover:bg-blue-50 dark:hover:bg-[#1e3558]"
                                 }`}
                         >
                             {cat.name}
@@ -72,10 +66,10 @@ const TicketHistory = () => {
                 </div>
             </div>
 
-            {/* List */}
-            <div className="space-y-4 pb-20">
+            {/* Ticket List */}
+            <div className="space-y-2 pb-20">
                 {loading ? (
-                    <div className="text-center py-20 text-gray-400 animate-pulse">Loading history...</div>
+                    <div className="text-center py-20 text-gray-400 dark:text-blue-400/60 text-sm animate-pulse">Loading history...</div>
                 ) : tickets.length > 0 ? (
                     tickets.map((ticket) => (
                         <UserTicketCard
@@ -85,9 +79,11 @@ const TicketHistory = () => {
                         />
                     ))
                 ) : (
-                    <div className="text-center py-20 text-gray-400 flex flex-col items-center">
-                        <Search size={48} className="text-gray-200 mb-4" />
-                        <p>No tickets found in this category.</p>
+                    <div className="text-center py-20 flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-[#1a2f4e] border border-blue-100 dark:border-blue-800/40 flex items-center justify-center mx-auto mb-4 shadow-inner">
+                            <Search size={28} className="text-blue-500 dark:text-blue-400/80" />
+                        </div>
+                        <p className="text-gray-500 dark:text-blue-300/60 text-sm">No tickets found in this category.</p>
                     </div>
                 )}
             </div>

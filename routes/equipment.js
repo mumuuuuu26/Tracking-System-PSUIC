@@ -15,10 +15,11 @@ const {
 // Admin only
 router.post("/equipment", authCheck, adminCheck, create);
 router.get("/equipment", authCheck, list);
-router.get("/equipment/:id/qr", authCheck, generateQR);
 
-// Public (for QR scanning)
-router.get("/equipment/qr/:qrCode", getByQRCode);
+// [BUG FIX] Named routes MUST come before parameterized (:id) routes to prevent shadowing.
+// /equipment/qr/:qrCode must be declared before /equipment/:id and /equipment/:id/qr
+router.get("/equipment/qr/:qrCode", getByQRCode); // Public (for QR scanning)
+router.get("/equipment/:id/qr", authCheck, generateQR);
 router.get("/equipment/:id", authCheck, getById);
 router.put("/equipment/:id", authCheck, adminCheck, update);
 router.delete("/equipment/:id", authCheck, adminCheck, remove);

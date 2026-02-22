@@ -34,7 +34,6 @@ const Register = () => {
             toast.success('Register Success')
             navigate('/login')
         } catch (err) {
-            console.error(err)
             const errMsg = err.response?.data?.message
             // Check for array of errors from Zod
             const errErrors = err.response?.data?.errors?.[0]?.message

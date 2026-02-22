@@ -42,8 +42,7 @@ const ScanQR = () => {
           subComponents: equipmentData.categoryObj?.subComponents || []
         },
       });
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error("Invalid QR Code or Equipment not found");
       // If it was a file upload, we might need to restart if we stopped it.
       if (!scannerRef.current?.isScanning) {
@@ -79,8 +78,8 @@ const ScanQR = () => {
           () => { }
         );
       }
-    } catch (err) {
-      console.error("Error starting scanner", err);
+    } catch {
+      // Silent fail — scanner may not be available
     }
   }, [fetchEquipmentData]);
 
@@ -151,8 +150,7 @@ const ScanQR = () => {
 
       const result = await scannerRef.current.scanFile(resizedImage, true);
       await fetchEquipmentData(result);
-    } catch (err) {
-      console.error("File scan error", err);
+    } catch {
       toast.error("Could not read QR code. Please ensure it's clear.");
       startScanner(); // Always restart if file scan failed
     } finally {

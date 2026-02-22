@@ -18,7 +18,6 @@ const MonthlyReport = ({ month, year, externalData, externalLoading }) => {
             const res = await getMonthlyStats(month, year);
             setData(res.data);
         } catch (err) {
-            console.error(err);
             setError(err.response?.data?.message || err.message || "Failed to load report data");
         } finally {
             setLoading(false);

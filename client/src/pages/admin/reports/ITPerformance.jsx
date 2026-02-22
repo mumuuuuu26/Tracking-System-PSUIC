@@ -52,8 +52,8 @@ const ITPerformance = ({ month, year, externalData, externalLoading }) => {
             } else {
                 setAllStaff([]);
             }
-        } catch (err) {
-            console.error('Load performance data error:', err);
+        } catch {
+            // Silent fail
         } finally {
             setLoading(false);
         }

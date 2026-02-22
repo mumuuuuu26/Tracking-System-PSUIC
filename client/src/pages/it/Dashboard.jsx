@@ -68,8 +68,8 @@ const ITDashboard = () => {
 
       setTickets(allTickets);
 
-    } catch (err) {
-      console.error("Failed to load dashboard:", err);
+    } catch {
+      // Silent fail
     } finally {
       setLoading(false);
     }

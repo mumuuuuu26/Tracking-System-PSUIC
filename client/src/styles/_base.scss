@@ -2,14 +2,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 /* Reset & Global Styles */
+html {
+    overflow-y: auto !important;
+}
+
 body {
     font-family: var(--font-primary);
-    /* บังคับใช้ Poppins ทั้งเว็บ */
     background-color: var(--color-bg-body);
     color: var(--color-text-main);
     -webkit-font-smoothing: antialiased;
-    /* ทำให้ฟอนต์คมชัดบน Mac/iOS */
+    overflow-y: auto !important; /* Prevent SweetAlert2/modal libraries from locking scroll permanently */
 }
+
 
 /* บังคับหัวข้อทั้งหมดให้ใช้ Poppins ด้วย */
 h1,

@@ -15,7 +15,10 @@ export const listUsers = async (params = {}) => {
     })
 }
 
-
+// [BUG FIX] Added missing getUserById — backend has GET /users/:id but frontend had no matching function
+export const getUserById = async (id) => {
+    return await api.get('/users/' + id)
+}
 
 export const changeStatus = async (value) => {
     return await api.post('/users/change-status', value)
@@ -37,4 +40,3 @@ export const updateUser = async (id, form) => {
 export const removeUser = async (id) => {
     return await api.delete('/users/' + id)
 }
-

@@ -21,8 +21,7 @@ const AdminTicketDetail = () => {
             setLoading(true);
             const res = await getTicket(id);
             setTicket(res.data);
-        } catch (err) {
-            console.error("Failed to load ticket:", err);
+        } catch {
             toast.error("Failed to load ticket details");
         } finally {
             setLoading(false);

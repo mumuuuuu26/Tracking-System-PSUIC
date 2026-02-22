@@ -37,8 +37,7 @@ const Permission = () => {
                     manageEquipment: res.data.manageEquipment
                 });
             }
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to load permissions");
         }
     }, []);
@@ -55,8 +54,7 @@ const Permission = () => {
         try {
             await updatePermissions(selectedRole, permissions);
             toast.success("Permissions updated successfully");
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Failed to update permissions");
         }
     };

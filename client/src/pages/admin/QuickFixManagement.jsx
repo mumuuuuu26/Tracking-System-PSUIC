@@ -6,7 +6,8 @@ import {
     updateQuickFix,
     removeQuickFix,
 } from "../../api/quickFix";
-import { Trash2, Edit, Plus, X, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+import { listCategories } from "../../api/category";
+import { Trash2, Edit, Plus, X, ChevronDown, ChevronUp, ArrowLeft, Settings } from "lucide-react";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
@@ -14,14 +15,15 @@ import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
 
-const CATEGORIES = ["ACCOUNT & LOGIN", "COMPUTER", "PROJECTOR", "SOFTWARE", "OTHER"];
-
 const QuickFixManagement = () => {
     const navigate = useNavigate();
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editId, setEditId] = useState(null);
+
+    // Category Management State
+    const [categories, setCategories] = useState([]);
 
     // Filter State
     const [selectedCategory, setSelectedCategory] = useState("All Categories");
@@ -36,7 +38,17 @@ const QuickFixManagement = () => {
 
     useEffect(() => {
         loadData();
+        loadCategories();
     }, []);
+
+    const loadCategories = async () => {
+        try {
+            const res = await listCategories();
+            setCategories(res.data);
+        } catch {
+            // Silent fail
+        }
+    };
 
     useEffect(() => {
         if (selectedCategory === "All Categories") {
@@ -50,8 +62,8 @@ const QuickFixManagement = () => {
         try {
             const res = await listQuickFix();
             setData(res.data);
-        } catch (err) {
-            console.error(err);
+        } catch {
+            // Silent fail
         }
     };
 
@@ -78,8 +90,7 @@ const QuickFixManagement = () => {
             setForm({ title: "", description: "", image: "", category: "" });
             setEditId(null);
             loadData();
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error("Action failed");
         }
     };
@@ -110,8 +121,7 @@ const QuickFixManagement = () => {
                     await removeQuickFix(id);
                     toast.success("Deleted successfully");
                     loadData();
-                } catch (err) {
-                    console.error(err);
+                } catch {
                     toast.error("Delete Failed");
                 }
             }
@@ -154,7 +164,7 @@ const QuickFixManagement = () => {
                             <AdminSelect
                                 value={selectedCategory}
                                 onChange={setSelectedCategory}
-                                options={["All Categories", ...CATEGORIES]}
+                                options={["All Categories", ...categories.map(c => c.name)]}
                                 placeholder="All Categories"
                                 className="w-full"
                                 buttonClassName="!h-12 !py-0 !rounded-xl !text-sm font-bold flex items-center"
@@ -229,6 +239,8 @@ const QuickFixManagement = () => {
                         </p>
                     </div>
                 )}
+
+
                 {/* Modal - Bottom Sheet feel on mobile, Modal on desktop */}
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-sm p-4">
@@ -279,17 +291,17 @@ const QuickFixManagement = () => {
                                         {isFormCategoryOpen && (
                                             <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                                 <div className="p-2 flex flex-col gap-1 max-h-[200px] overflow-y-auto custom-scrollbar">
-                                                    {CATEGORIES.map(cat => (
+                                                    {categories.map(cat => (
                                                         <button
-                                                            key={cat}
+                                                            key={cat.id}
                                                             type="button"
                                                             onClick={() => {
-                                                                setForm({ ...form, category: cat });
+                                                                setForm({ ...form, category: cat.name });
                                                                 setIsFormCategoryOpen(false);
                                                             }}
-                                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${form.category === cat ? "bg-gray-100 text-[#1e2e4a] font-bold" : "text-gray-600 hover:bg-gray-50"}`}
+                                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center justify-between group ${form.category === cat.name ? "bg-gray-100 text-[#1e2e4a] font-bold" : "text-gray-600 hover:bg-gray-50"}`}
                                                         >
-                                                            <span>{cat}</span>
+                                                            <span>{cat.name}</span>
                                                         </button>
                                                     ))}
                                                 </div>
