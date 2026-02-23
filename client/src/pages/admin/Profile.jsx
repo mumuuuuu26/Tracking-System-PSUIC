@@ -12,10 +12,11 @@ import { currentUser } from "../../api/auth";
 import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import { getImageUrl } from "../../utils/imageUrl";
 import { confirmLogout } from "../../utils/sweetalert";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const AdminProfile = () => {
     const { token, checkUser } = useAuthStore();
@@ -90,7 +91,7 @@ const AdminProfile = () => {
         );
     if (!profile) return null;
 
-    const displayName = profile.name || (profile.email ? profile.email.split('@')[0] : "Admin");
+    const displayName = getUserDisplayName(profile, "Admin");
 
     return (
         <AdminWrapper>
@@ -108,18 +109,14 @@ const AdminProfile = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col items-center justify-center text-center">
                         <div className="relative w-28 h-28 mb-4 group">
                             <div className="w-full h-full rounded-full overflow-hidden border-4 border-blue-50">
-                                {profile.picture ? (
-                                    <img
-                                        src={getImageUrl(profile.picture)}
-                                        alt="Profile"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { e.target.src = '/default-profile.svg'; }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-[#1e2e4a] text-white text-4xl font-bold">
-                                        {displayName.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
+                                <ProfileAvatar
+                                    user={profile}
+                                    alt="Profile"
+                                    className="w-full h-full"
+                                    imageClassName="w-full h-full object-cover"
+                                    fallbackClassName="w-full h-full flex items-center justify-center bg-[#1e2e4a] text-white"
+                                    initialsClassName="text-3xl font-bold"
+                                />
                             </div>
                             <label
                                 htmlFor="profile-upload"

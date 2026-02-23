@@ -25,8 +25,9 @@ import ITWrapper from "../../components/it/ITWrapper"; // [NEW]
 import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { getImageUrl } from "../../utils/imageUrl";
 import { confirmLogout } from "../../utils/sweetalert";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const ITProfile = () => {
     const navigate = useNavigate();
@@ -218,7 +219,7 @@ const ITProfile = () => {
         );
     if (!profile) return null;
 
-    const displayName = profile.name || (profile.email ? profile.email.split('@')[0] : "IT Support");
+    const displayName = getUserDisplayName(profile, "IT Support");
 
     return (
         <ITWrapper>
@@ -281,21 +282,14 @@ const ITProfile = () => {
                         {/* Avatar Section */}
                         <div className="relative group mb-4">
                             <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden relative bg-white">
-                                {profile.picture ? (
-                                    <img
-                                        src={getImageUrl(profile.picture)}
-                                        alt="Profile"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0D8ABC&color=fff`;
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-[#1e2e4a] flex items-center justify-center text-3xl font-bold text-white">
-                                        {displayName.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
+                                <ProfileAvatar
+                                    user={profile}
+                                    alt="Profile"
+                                    className="w-full h-full"
+                                    imageClassName="w-full h-full object-cover"
+                                    fallbackClassName="w-full h-full bg-[#1e2e4a] flex items-center justify-center text-white"
+                                    initialsClassName="text-3xl font-bold"
+                                />
 
                                 {/* Image Upload Overlay */}
                                 <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">

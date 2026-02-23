@@ -13,6 +13,8 @@ import { listMyTickets } from "../../api/ticket";
 import UserWrapper from "../../components/user/UserWrapper";
 import UserTicketCard from "../../components/user/UserTicketCard";
 import useThemeStore from "../../store/themeStore";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const HomeUser = () => {
   const { user, checkUser } = useAuthStore();
@@ -67,45 +69,53 @@ const HomeUser = () => {
     );
   });
 
-  const displayName = user?.name || user?.username || user?.email || "User";
+  const displayName = getUserDisplayName(user, "User");
 
   return (
     <UserWrapper>
       <div className="pb-24 bg-gray-50 dark:bg-[#0d1b2a] min-h-screen">
 
         {/* === Hero Header === */}
-        <div className="relative bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0a2a4a] px-6 pt-12 pb-20 md:rounded-b-3xl md:mx-0 overflow-hidden shadow-sm dark:shadow-none border-b border-transparent dark:border-white/10 lg:hidden">
+        <div className="relative bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0a2a4a] px-4 sm:px-6 pt-10 sm:pt-12 pb-20 md:rounded-b-3xl md:mx-0 overflow-hidden shadow-sm dark:shadow-none border-b border-transparent dark:border-white/10 lg:hidden">
           {/* Background decorative circles */}
           <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-blue-400/20 dark:bg-blue-500/10 blur-2xl pointer-events-none"></div>
           <div className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-blue-300/10 dark:bg-blue-400/5 blur-xl pointer-events-none"></div>
 
-          <div className="max-w-5xl mx-auto flex items-center justify-between relative z-10">
-            <div className="flex flex-col">
-              <span className="text-blue-100 dark:text-blue-300/80 text-sm font-medium">Welcome back,</span>
-              <span className="text-white text-2xl font-bold mt-0.5 tracking-tight">{displayName}</span>
-              <span className="text-blue-200 dark:text-blue-300/60 text-xs mt-1">IT Helpdesk Ticketing System</span>
+          <div className="max-w-5xl mx-auto grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:gap-4 relative z-10">
+            <div className="min-w-0 flex flex-col">
+              <span className="text-blue-100 dark:text-blue-300/80 text-xs sm:text-sm font-medium">Welcome back,</span>
+              <span
+                className="text-white text-[1.15rem] sm:text-[1.85rem] font-bold mt-0.5 tracking-tight leading-tight break-all sm:break-words"
+                title={displayName}
+              >
+                {displayName}
+              </span>
+              <span className="text-blue-200 dark:text-blue-300/60 text-[11px] sm:text-xs mt-1">IT Helpdesk Ticketing System</span>
             </div>
             {/* Top Right Action Area */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="w-10 h-10 rounded-full bg-white/10 dark:bg-black/20 flex items-center justify-center text-white border border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all hover:scale-105 active:scale-95 shadow-sm"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 dark:bg-black/20 flex items-center justify-center text-white border border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all hover:scale-105 active:scale-95 shadow-sm"
                 title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
-                {isDarkMode ? <Sun size={18} className="text-blue-100" /> : <Moon size={18} className="text-blue-100" />}
+                {isDarkMode ? <Sun size={16} className="text-blue-100" /> : <Moon size={16} className="text-blue-100" />}
               </button>
 
               {/* Profile Avatar */}
               <div
                 onClick={() => navigate("/user/profile")}
-                className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/30 dark:border-blue-400/30 bg-blue-800/30 dark:bg-blue-700/30 flex items-center justify-center cursor-pointer hover:border-white/60 dark:hover:border-blue-400/60 transition-colors shadow-lg"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-white/30 dark:border-blue-400/30 bg-blue-800/30 dark:bg-blue-700/30 flex items-center justify-center cursor-pointer hover:border-white/60 dark:hover:border-blue-400/60 transition-colors shadow-lg"
               >
-                {user?.picture ? (
-                  <img src={user.picture} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-lg font-extrabold text-white">{displayName.charAt(0).toUpperCase()}</span>
-                )}
+                <ProfileAvatar
+                  user={user}
+                  alt="Profile"
+                  className="w-full h-full"
+                  imageClassName="w-full h-full object-cover"
+                  fallbackClassName="w-full h-full flex items-center justify-center bg-blue-800/30 dark:bg-blue-700/30 text-white"
+                  initialsClassName="text-base sm:text-lg font-extrabold text-white"
+                />
               </div>
             </div>
           </div>

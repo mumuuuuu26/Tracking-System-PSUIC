@@ -4,6 +4,8 @@ import { LogOut, User, Bell } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { confirmLogout } from "../../utils/sweetalert";
 import HeaderSection from "../ui/HeaderSection";
+import ProfileAvatar from "../common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const ITNavbar = () => {
     const { user, actionLogout } = useAuthStore();
@@ -11,6 +13,7 @@ const ITNavbar = () => {
     const navigate = useNavigate();
 
     const isActive = (path) => location.pathname === path;
+    const displayName = getUserDisplayName(user, "IT Officer");
 
     const navLinks = [
         { name: "Home", path: "/it" },
@@ -71,20 +74,17 @@ const ITNavbar = () => {
                     onClick={() => navigate("/it/profile")}
                     className="flex items-center gap-3 cursor-pointer group"
                 >
-                    {user?.picture ? (
-                        <img
-                            src={user.picture}
-                            alt="Profile"
-                            className="w-10 h-10 rounded-full border-2 border-white/20 object-cover shadow-sm group-hover:border-white transition-all"
-                        />
-                    ) : (
-                        <div className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-sm border-2 border-white/20 shadow-sm group-hover:scale-105 transition-all">
-                            {user?.name?.charAt(0) || "I"}
-                        </div>
-                    )}
+                    <ProfileAvatar
+                        user={user}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden shadow-sm group-hover:border-white transition-all"
+                        imageClassName="w-full h-full object-cover"
+                        fallbackClassName="w-full h-full bg-white/10 text-white flex items-center justify-center"
+                        initialsClassName="font-bold text-sm"
+                    />
                     <div className="hidden lg:block text-right">
                         <p className="text-sm font-bold text-white leading-none group-hover:text-blue-200 transition-colors">
-                            {user?.name?.split(' ')[0] || "IT Officer"}
+                            {displayName.split(" ")[0] || "IT Officer"}
                         </p>
                         <p className="text-[10px] text-blue-200 font-medium uppercase tracking-wider">
                             {user?.role ? user.role.replace(/_/g, " ") : "IT Support"}

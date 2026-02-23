@@ -12,10 +12,11 @@ import {
   rejectJob
 } from "../../api/it";
 import { currentUser } from "../../api/auth";
-import { getImageUrl } from "../../utils/imageUrl";
 import socket from "../../utils/socket";
 import DashboardDesktop from "./DashboardDesktop";
 import ITWrapper from "../../components/it/ITWrapper";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 
 
@@ -162,7 +163,7 @@ const ITDashboard = () => {
 
 
 
-  const displayName = profile?.name || (profile?.email ? profile.email.split('@')[0] : "IT Support");
+  const displayName = getUserDisplayName(profile, "IT Support");
 
   return (
     <>
@@ -192,11 +193,14 @@ const ITDashboard = () => {
               onClick={() => navigate("/it/profile")}
               className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/30 bg-white/10 flex items-center justify-center cursor-pointer hover:border-white transition-colors"
             >
-              {profile?.picture ? (
-                <img src={getImageUrl(profile.picture)} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.target.src = '/default-profile.png'; }} />
-              ) : (
-                <span className="text-lg font-bold text-white">{displayName.charAt(0).toUpperCase()}</span>
-              )}
+              <ProfileAvatar
+                user={profile}
+                alt="Profile"
+                className="w-full h-full"
+                imageClassName="w-full h-full object-cover"
+                fallbackClassName="w-full h-full bg-white/10 flex items-center justify-center text-white"
+                initialsClassName="text-base font-bold"
+              />
             </div>
           </div>
         </div>

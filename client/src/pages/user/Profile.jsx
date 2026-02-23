@@ -19,10 +19,11 @@ import { currentUser } from "../../api/auth";
 import { updateProfileImage, updateProfile } from "../../api/user";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
-import { getImageUrl } from "../../utils/imageUrl";
 import { confirmLogout } from "../../utils/sweetalert";
 import UserPageHeader from "../../components/user/UserPageHeader";
 import UserWrapper from "../../components/user/UserWrapper";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const Profile = () => {
   const { isDarkMode, toggleTheme } = useThemeStore();
@@ -109,8 +110,7 @@ const Profile = () => {
       </div>
     );
 
-  const displayName =
-    profile.name || (profile.email ? profile.email.split("@")[0] : "User");
+  const displayName = getUserDisplayName(profile, "User");
 
   const detailRows = [
     {
@@ -152,18 +152,14 @@ const Profile = () => {
           {/* Avatar */}
           <div className="relative w-24 h-24 mb-4 group z-10">
             <div className="w-full h-full rounded-full overflow-hidden border-2 border-blue-400/30 shadow-xl">
-              {profile.picture ? (
-                <img
-                  src={getImageUrl(profile.picture)}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.src = '/default-profile.svg'; }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-blue-100 dark:bg-[#193C6C] text-blue-600 dark:text-white text-4xl font-extrabold">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <ProfileAvatar
+                user={profile}
+                alt="Profile"
+                className="w-full h-full"
+                imageClassName="w-full h-full object-cover"
+                fallbackClassName="w-full h-full flex items-center justify-center bg-blue-100 dark:bg-[#193C6C] text-blue-600 dark:text-white"
+                initialsClassName="text-3xl font-extrabold"
+              />
             </div>
             <label
               htmlFor="profile-upload"

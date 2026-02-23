@@ -7,6 +7,8 @@ import Swal from "sweetalert2";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -200,22 +202,30 @@ const UserManagement = () => {
         {/* User Grid */}
         <div className="flex-1 min-h-0 overflow-y-auto pr-1">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {paginatedUsers.map((user) => (
-              <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between hover:shadow-md transition-shadow relative">
+            {paginatedUsers.map((user) => {
+              const displayName = getUserDisplayName(user, "User");
+              return (
+              <div
+                key={user.id}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between hover:shadow-md transition-shadow relative"
+              >
 
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Avatar */}
                   <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
-                    {user.picture ? (
-                      <img src={user.picture} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <img src={`https://ui-avatars.com/api/?name=${user.name || 'U'}&background=random`} alt="" className="w-full h-full object-cover" />
-                    )}
+                    <ProfileAvatar
+                      user={user}
+                      alt={`${displayName} profile`}
+                      className="w-full h-full"
+                      imageClassName="w-full h-full object-cover"
+                      fallbackClassName="w-full h-full flex items-center justify-center bg-[#1e2e4a] text-white"
+                      initialsClassName="text-lg font-bold"
+                    />
                   </div>
 
                   {/* Info */}
                   <div className="min-w-0">
-                    <h3 className="text-[#1e2e4a] text-base leading-tight truncate">{user.name || 'No Name'}</h3>
+                    <h3 className="text-[#1e2e4a] text-base leading-tight truncate">{displayName}</h3>
                     <p className="text-gray-400 text-xs mt-0.5 truncate uppercase">
                       {user.username || user.email || '-'}
                     </p>
@@ -249,7 +259,8 @@ const UserManagement = () => {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {paginatedUsers.length === 0 && !loading && (
@@ -461,4 +472,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
