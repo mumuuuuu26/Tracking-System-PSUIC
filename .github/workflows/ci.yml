@@ -12,6 +12,8 @@ jobs:
     env:
       CI: true
       NODE_NO_WARNINGS: "1"
+      HTTPS_ONLY: "false"
+      ENABLE_HTTPS_HEADERS: "false"
 
     services:
       mysql:
