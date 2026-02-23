@@ -28,10 +28,25 @@ const permissionRoutes = require("./routes/permission");
 
 app.set("trust proxy", 1);
 
+// HTTP-only deployment (current): avoid forcing HTTPS-specific headers.
+// Enable HTTPS-only headers later by setting ENABLE_HTTPS_HEADERS=true.
+const isHttpsHeadersEnabled = process.env.ENABLE_HTTPS_HEADERS === "true";
+
 // 2. Security Headers & Compression
 app.use(
   helmet({
     crossOriginResourcePolicy: false, // อนุญาตให้โหลดรูปภาพข้าม domain ได้ (จำเป็นสำหรับ uploads)
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        // On HTTP deployments this directive upgrades all resource URLs to https://
+        // and causes blank page if 443 is unavailable.
+        upgradeInsecureRequests: isHttpsHeadersEnabled ? [] : null,
+      },
+    },
+    hsts: isHttpsHeadersEnabled ? undefined : false,
+    crossOriginOpenerPolicy: isHttpsHeadersEnabled ? { policy: "same-origin" } : false,
+    originAgentCluster: isHttpsHeadersEnabled,
   }),
 );
 app.use(compression()); // บีบอัด Response ให้เล็กลง
