@@ -6,8 +6,17 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Resizer from "react-image-file-resizer";
 
-const ALLOWED_UPLOAD_EXTENSIONS = new Set(["jpg", "jpeg", "png"]);
-const ALLOWED_UPLOAD_MIME = new Set(["image/jpeg", "image/png"]);
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "heic", "heif"]);
+const ALLOWED_UPLOAD_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "image/heic-sequence",
+  "image/heif-sequence",
+]);
+const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
 
 const normalizeQrText = (rawText) => {
   if (!rawText) return "";
@@ -49,6 +58,236 @@ const normalizeQrText = (rawText) => {
   return trimmed;
 };
 
+const pushQrCandidate = (targetSet, value) => {
+  if (!value) return;
+  const normalized = String(value).trim();
+  if (!normalized) return;
+
+  targetSet.add(normalized);
+
+  const withoutQuotes = normalized.replace(/^["']|["']$/g, "").trim();
+  if (withoutQuotes && withoutQuotes !== normalized) {
+    targetSet.add(withoutQuotes);
+  }
+
+  try {
+    const decoded = decodeURIComponent(withoutQuotes);
+    if (decoded && decoded !== withoutQuotes) {
+      targetSet.add(decoded.trim());
+    }
+  } catch {
+    // Keep best-effort candidates only.
+  }
+};
+
+const collectQrLookupCandidates = (rawText) => {
+  const candidates = new Set();
+  const normalized = normalizeQrText(rawText);
+
+  pushQrCandidate(candidates, rawText);
+  pushQrCandidate(candidates, normalized);
+
+  const text = String(rawText || "").trim();
+  try {
+    const parsedUrl = new URL(text);
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const qrIndex = pathParts.findIndex((part) => part.toLowerCase() === "qr");
+    const equipmentIndex = pathParts.findIndex((part) => part.toLowerCase() === "equipment");
+
+    if (qrIndex >= 0 && pathParts[qrIndex + 1]) {
+      pushQrCandidate(candidates, pathParts[qrIndex + 1]);
+    }
+
+    if (equipmentIndex >= 0 && pathParts[equipmentIndex + 1]) {
+      pushQrCandidate(candidates, pathParts[equipmentIndex + 1]);
+    }
+
+    for (const key of QR_QUERY_PARAM_KEYS) {
+      pushQrCandidate(candidates, parsedUrl.searchParams.get(key));
+    }
+
+    if (pathParts.length > 0) {
+      pushQrCandidate(candidates, pathParts[pathParts.length - 1]);
+    }
+  } catch {
+    // Not a URL text, ignore.
+  }
+
+  return [...candidates];
+};
+
+const loadImageFromFile = (file) =>
+  new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.decoding = "async";
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(img);
+    };
+    img.onerror = (error) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    };
+    img.src = objectUrl;
+  });
+
+const getScaledDimensions = (width, height, maxDimension) => {
+  if (!maxDimension || (width <= maxDimension && height <= maxDimension)) {
+    return { width, height };
+  }
+
+  const scale = maxDimension / Math.max(width, height);
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+};
+
+const renderImageToCanvas = (img, maxDimension) => {
+  const widthSource = img.naturalWidth || img.width || 0;
+  const heightSource = img.naturalHeight || img.height || 0;
+  if (!widthSource || !heightSource) return null;
+
+  const { width, height } = getScaledDimensions(widthSource, heightSource, maxDimension);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+
+  context.drawImage(img, 0, 0, width, height);
+  return { canvas, context, width, height };
+};
+
+const applyImageFilter = (context, width, height, filterMode) => {
+  if (filterMode === "none") return;
+
+  const imageData = context.getImageData(0, 0, width, height);
+  const pixels = imageData.data;
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const luminance = Math.round(pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114);
+    let nextValue = luminance;
+
+    if (filterMode === "contrast") {
+      nextValue = Math.max(0, Math.min(255, Math.round((luminance - 128) * 1.5 + 128)));
+    } else if (filterMode === "threshold") {
+      nextValue = luminance > 145 ? 255 : 0;
+    }
+
+    pixels[i] = nextValue;
+    pixels[i + 1] = nextValue;
+    pixels[i + 2] = nextValue;
+  }
+
+  context.putImageData(imageData, 0, 0);
+};
+
+const canvasToJpegFile = (canvas, sourceFileName, suffix, quality) =>
+  new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          resolve(null);
+          return;
+        }
+        const safeName = String(sourceFileName || "qr-upload")
+          .replace(/\.[^.]+$/, "")
+          .replace(/[^\w.-]/g, "_");
+        resolve(new File([blob], `${safeName}-${suffix}.jpg`, { type: "image/jpeg" }));
+      },
+      "image/jpeg",
+      quality,
+    );
+  });
+
+const decodeQrWithPreprocessedImages = async (scanner, file) => {
+  const image = await loadImageFromFile(file);
+  const variants = [
+    { maxDimension: 2200, filterMode: "none", quality: 0.98, suffix: "original" },
+    { maxDimension: 1800, filterMode: "grayscale", quality: 0.97, suffix: "gray" },
+    { maxDimension: 1600, filterMode: "contrast", quality: 0.97, suffix: "contrast" },
+    { maxDimension: 1400, filterMode: "threshold", quality: 0.96, suffix: "threshold" },
+  ];
+
+  for (const variant of variants) {
+    const rendered = renderImageToCanvas(image, variant.maxDimension);
+    if (!rendered) continue;
+
+    applyImageFilter(rendered.context, rendered.width, rendered.height, variant.filterMode);
+    const transformedFile = await canvasToJpegFile(rendered.canvas, file.name, variant.suffix, variant.quality);
+    if (!transformedFile) continue;
+
+    try {
+      const decoded = await scanner.scanFile(transformedFile, false);
+      if (decoded) return decoded;
+    } catch {
+      // Keep trying with next transform variant.
+    }
+  }
+
+  return "";
+};
+
+const normalizeUploadImageFile = async (file) => {
+  if (!file) return file;
+
+  const mime = String(file.type || "").toLowerCase();
+  if (mime === "image/jpeg" || mime === "image/png") {
+    return file;
+  }
+
+  try {
+    const image = await loadImageFromFile(file);
+    const rendered = renderImageToCanvas(image, 2200);
+    if (!rendered) {
+      return file;
+    }
+
+    const converted = await canvasToJpegFile(rendered.canvas, file.name, "normalized", 0.97);
+    return converted || file;
+  } catch {
+    return file;
+  }
+};
+
+const decodeQrWithBarcodeDetector = async (file) => {
+  if (typeof window === "undefined" || typeof window.BarcodeDetector !== "function") {
+    return "";
+  }
+
+  try {
+    if (typeof window.BarcodeDetector.getSupportedFormats === "function") {
+      const supportedFormats = await window.BarcodeDetector.getSupportedFormats();
+      if (Array.isArray(supportedFormats) && supportedFormats.length > 0 && !supportedFormats.includes("qr_code")) {
+        return "";
+      }
+    }
+
+    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    const bitmap = await createImageBitmap(file);
+    try {
+      const detections = await detector.detect(bitmap);
+      for (const detection of detections || []) {
+        if (detection?.rawValue) {
+          return String(detection.rawValue).trim();
+        }
+      }
+    } finally {
+      if (typeof bitmap?.close === "function") {
+        bitmap.close();
+      }
+    }
+  } catch {
+    // Ignore and continue with next decoder.
+  }
+
+  return "";
+};
+
 const ScanQR = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -63,7 +302,7 @@ const ScanQR = () => {
   const isSecureContextRuntime =
     typeof window !== "undefined" ? window.isSecureContext : true;
   const uploadOnlyMode = !isSecureContextRuntime;
-  const uploadOnlyMessage = "HTTP mode: Upload JPG/PNG only.";
+  const uploadOnlyMessage = "HTTP mode: upload QR image.";
 
   const reportCameraError = useCallback((message) => {
     setCameraError(message);
@@ -75,15 +314,33 @@ const ScanQR = () => {
 
   const fetchEquipmentData = useCallback(async (rawQrText) => {
     if (!rawQrText || isFetchingRef.current) return;
-    const qrCode = normalizeQrText(rawQrText);
-    if (!qrCode) return;
+
+    const qrCandidates = collectQrLookupCandidates(rawQrText);
+    if (qrCandidates.length === 0) return;
 
     isFetchingRef.current = true;
     setLoading(true);
     try {
-      // Encode to keep route param valid even when QR text contains URL chars.
-      const res = await axios.get(`/api/equipment/qr/${encodeURIComponent(qrCode)}`);
-      const equipmentData = res.data;
+      let equipmentData = null;
+      let lastLookupError = null;
+
+      for (const qrCandidate of qrCandidates) {
+        try {
+          const res = await axios.get(`/api/equipment/qr/${encodeURIComponent(qrCandidate)}`);
+          equipmentData = res.data;
+          break;
+        } catch (error) {
+          lastLookupError = error;
+          const statusCode = error?.response?.status;
+          if (statusCode && ![400, 404].includes(statusCode)) {
+            break;
+          }
+        }
+      }
+
+      if (!equipmentData) {
+        throw lastLookupError || new Error("QR lookup failed.");
+      }
 
       // Stop scanning only after successful find
       if (scannerRef.current && scannerRef.current.isScanning) {
@@ -104,8 +361,13 @@ const ScanQR = () => {
           subComponents: equipmentData.categoryObj?.subComponents || []
         },
       });
-    } catch {
-      toast.error("Invalid QR Code or Equipment not found");
+    } catch (error) {
+      const statusCode = error?.response?.status;
+      if (statusCode === 404) {
+        toast.error("QR นี้ไม่พบอุปกรณ์ในระบบ");
+      } else {
+        toast.error("ไม่สามารถอ่าน QR หรือดึงข้อมูลอุปกรณ์ได้");
+      }
       // If it was a file upload, we might need to restart if we stopped it.
       if (!scannerRef.current?.isScanning) {
         if (startScannerRef.current) startScannerRef.current();
@@ -134,7 +396,8 @@ const ScanQR = () => {
 
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("reader", {
-          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
         });
       }
 
@@ -232,7 +495,7 @@ const ScanQR = () => {
     const isAllowedByExt = ALLOWED_UPLOAD_EXTENSIONS.has(fileExt || "");
 
     if (!isAllowedByMime && !isAllowedByExt) {
-      toast.error("Please upload JPG/PNG image only.");
+      toast.error("รองรับไฟล์ภาพ JPG, PNG, WEBP, HEIC");
       if (e.target) e.target.value = "";
       return;
     }
@@ -240,6 +503,8 @@ const ScanQR = () => {
     setLoading(true);
 
     try {
+      const normalizedFile = await normalizeUploadImageFile(file);
+
       // Stop camera temporarily to focus on file
       if (scannerRef.current && scannerRef.current.isScanning) {
         await scannerRef.current.stop().catch(() => { });
@@ -248,6 +513,7 @@ const ScanQR = () => {
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("reader", {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
         });
       }
 
@@ -257,7 +523,7 @@ const ScanQR = () => {
       // Attempt 1: decode original image first (best chance for high-quality QR).
       try {
         // Use showImage=false so decoding does not depend on a visible scanner container.
-        decodedText = await scannerRef.current.scanFile(file, false);
+        decodedText = await scannerRef.current.scanFile(normalizedFile, false);
       } catch (error) {
         scanError = error;
       }
@@ -265,21 +531,33 @@ const ScanQR = () => {
       // Attempt 2: fallback with resized image (helps very large photos from mobile).
       if (!decodedText) {
         try {
-          const resizedImage = await resizeFile(file, 1400, 1400, 92);
+          const resizedImage = await resizeFile(normalizedFile, 1400, 1400, 92);
           decodedText = await scannerRef.current.scanFile(resizedImage, false);
         } catch (error) {
           scanError = error;
         }
       }
 
+      // Attempt 3: Native BarcodeDetector (when available on browser).
       if (!decodedText) {
-        const isHeicLike =
-          /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
-        if (isHeicLike) {
-          toast.error("HEIC/HEIF is not supported here. Please convert to JPG/PNG.");
-        } else {
-          toast.error("Could not read QR code from this image. Please try a clearer JPG/PNG.");
+        try {
+          decodedText = await decodeQrWithBarcodeDetector(normalizedFile);
+        } catch (error) {
+          scanError = error;
         }
+      }
+
+      // Attempt 4: run additional preprocess variants through html5-qrcode.
+      if (!decodedText) {
+        try {
+          decodedText = await decodeQrWithPreprocessedImages(scannerRef.current, normalizedFile);
+        } catch (error) {
+          scanError = error;
+        }
+      }
+
+      if (!decodedText) {
+        toast.error("อ่าน QR จากรูปนี้ไม่สำเร็จ กรุณาใช้ภาพที่คมชัดขึ้น");
         throw scanError || new Error("Unable to decode QR from uploaded file.");
       }
 
@@ -294,28 +572,23 @@ const ScanQR = () => {
   };
 
   return (
-    <div className="fixed inset-0 text-white z-[9999] overflow-hidden font-sans bg-[radial-gradient(circle_at_top,_#1b2542_0%,_#0f1321_45%,_#05060a_100%)]">
-      <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-sky-400/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-12 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+    <div className="fixed inset-0 text-white z-[9999] overflow-hidden font-sans bg-[#102b63]">
 
       {/* Viewport - Full Feed */}
       <div
         id="reader"
         className={
           uploadOnlyMode
-            ? "absolute -left-[9999px] -top-[9999px] w-px h-px opacity-0 pointer-events-none overflow-hidden"
+            ? "absolute -left-[9999px] -top-[9999px] w-[360px] h-[360px] opacity-0 pointer-events-none overflow-hidden"
             : "absolute inset-0 w-full h-full [&>video]:object-cover [&>video]:h-full [&>video]:w-full"
         }
       ></div>
 
       {uploadOnlyMode && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
-          <div className="max-w-sm w-full rounded-3xl border border-white/15 bg-black/35 backdrop-blur-xl p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-            <div className="mx-auto mb-5 w-14 h-14 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center">
-              <ImageIcon size={24} className="text-amber-200" />
-            </div>
-            <p className="text-sm font-semibold tracking-[0.18em] uppercase text-white/85">Upload QR</p>
-            <p className="mt-3 text-sm text-amber-200">{uploadOnlyMessage}</p>
+        <div className="absolute inset-0 z-20 flex items-start justify-center px-6 pt-28">
+          <div className="max-w-sm w-full rounded-2xl border border-white/20 bg-[#0b214c]/75 p-6 text-center">
+            <p className="text-base font-normal text-white/95">Upload QR</p>
+            <p className="mt-2 text-sm font-normal text-white/75">{uploadOnlyMessage}</p>
           </div>
         </div>
       )}
@@ -336,7 +609,7 @@ const ScanQR = () => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-sm font-medium tracking-[0.2em] text-white/90 uppercase opacity-60">
+          <h1 className="text-base font-normal tracking-[0.1em] text-white/85 uppercase">
             {uploadOnlyMode ? "Upload QR..." : "Scanning..."}
           </h1>
           <div className="w-10" />
@@ -345,7 +618,7 @@ const ScanQR = () => {
 
       {cameraError && !uploadOnlyMode && (
         <div className="absolute top-20 left-0 right-0 z-40 px-6">
-          <div className="rounded-xl border border-amber-300/20 bg-black/65 px-4 py-3 text-center text-xs tracking-wide text-amber-200 backdrop-blur-sm">
+          <div className="rounded-xl border border-white/20 bg-[#0b214c]/80 px-4 py-3 text-center text-xs tracking-wide text-white/85">
             {cameraError}
           </div>
         </div>
@@ -381,7 +654,7 @@ const ScanQR = () => {
             >
               {flashOn ? <Flashlight size={24} /> : <FlashlightOff size={24} />}
             </button>
-            <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">Flash</span>
+            <span className="text-[10px] font-normal text-white/40 uppercase tracking-widest leading-tight">Flash</span>
           </div>
         )}
 
@@ -389,14 +662,20 @@ const ScanQR = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             className={`${
-              uploadOnlyMode ? "w-16 h-16 border-amber-300/35 bg-amber-300/10" : "w-14 h-14 border-white/10 bg-white/10"
+              uploadOnlyMode ? "w-16 h-16 border-white/30 bg-white/10" : "w-14 h-14 border-white/15 bg-white/10"
             } rounded-full border backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all shadow-lg`}
           >
             <ImageIcon size={24} />
-            <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleFileUpload} />
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
+              onChange={handleFileUpload}
+            />
           </button>
-          <span className="text-[10px] font-medium text-white/45 uppercase tracking-widest leading-tight">
-            {uploadOnlyMode ? "Upload" : "JPG / PNG"}
+          <span className="text-[10px] font-normal text-white/45 uppercase tracking-widest leading-tight">
+            {uploadOnlyMode ? "Upload" : "Gallery"}
           </span>
         </div>
       </div>
@@ -405,7 +684,7 @@ const ScanQR = () => {
       {loading && (
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center transition-all">
           <Loader2 className="animate-spin text-white mb-3" size={32} strokeWidth={3} />
-          <p className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-60">Identifying</p>
+          <p className="text-[10px] font-normal tracking-[0.3em] uppercase opacity-60">Identifying</p>
         </div>
       )}
 

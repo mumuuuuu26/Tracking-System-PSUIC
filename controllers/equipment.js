@@ -1,7 +1,120 @@
 // controllers/equipment.js
 const prisma = require("../config/prisma");
-const { logger } = require("../utils/logger");
 const QRCode = require("qrcode");
+
+const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
+const equipmentScanInclude = {
+  room: true,
+  tickets: {
+    where: { status: { not: "completed" }, isDeleted: false },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: {
+      category: true,
+      createdBy: { select: { name: true } },
+    },
+  },
+};
+
+const pushLookupCandidate = (targetSet, value) => {
+  if (!value) return;
+  const normalized = String(value).trim();
+  if (!normalized) return;
+
+  targetSet.add(normalized);
+
+  const withoutQuotes = normalized.replace(/^["']|["']$/g, "").trim();
+  if (withoutQuotes && withoutQuotes !== normalized) {
+    targetSet.add(withoutQuotes);
+  }
+
+  try {
+    const decoded = decodeURIComponent(withoutQuotes);
+    if (decoded && decoded !== withoutQuotes) {
+      targetSet.add(decoded.trim());
+    }
+  } catch {
+    // Ignore malformed URI component.
+  }
+};
+
+const collectQrLookupCandidates = (rawInput) => {
+  const candidates = new Set();
+  pushLookupCandidate(candidates, rawInput);
+
+  const text = String(rawInput || "").trim();
+  if (!text) return [];
+
+  try {
+    const parsedUrl = new URL(text);
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const qrIndex = pathParts.findIndex((part) => part.toLowerCase() === "qr");
+    const equipmentIndex = pathParts.findIndex((part) => part.toLowerCase() === "equipment");
+
+    if (qrIndex >= 0 && pathParts[qrIndex + 1]) {
+      pushLookupCandidate(candidates, pathParts[qrIndex + 1]);
+    }
+
+    if (equipmentIndex >= 0 && pathParts[equipmentIndex + 1]) {
+      pushLookupCandidate(candidates, pathParts[equipmentIndex + 1]);
+    }
+
+    for (const key of QR_QUERY_PARAM_KEYS) {
+      pushLookupCandidate(candidates, parsedUrl.searchParams.get(key));
+    }
+
+    if (pathParts.length > 0) {
+      pushLookupCandidate(candidates, pathParts[pathParts.length - 1]);
+    }
+  } catch {
+    // Not a URL string; raw candidate is already included.
+  }
+
+  return [...candidates];
+};
+
+const attachCategoryObject = async (equipment) => {
+  if (!equipment || !equipment.type) {
+    return equipment;
+  }
+
+  const category = await prisma.category.findUnique({
+    where: { name: equipment.type },
+    include: { subComponents: true },
+  });
+  if (category) {
+    equipment.categoryObj = category;
+  }
+
+  return equipment;
+};
+
+const findEquipmentByLookupCode = async (lookupCode) => {
+  const cleanedLookup = String(lookupCode || "").trim();
+  if (!cleanedLookup) return null;
+
+  let equipment = await prisma.equipment.findUnique({
+    where: { qrCode: cleanedLookup },
+    include: equipmentScanInclude,
+  });
+
+  if (!equipment) {
+    equipment = await prisma.equipment.findFirst({
+      where: { serialNo: cleanedLookup },
+      include: equipmentScanInclude,
+    });
+  }
+
+  if (!equipment && /^\d+$/.test(cleanedLookup)) {
+    equipment = await prisma.equipment.findUnique({
+      where: { id: parseInt(cleanedLookup, 10) },
+      include: equipmentScanInclude,
+    });
+  }
+
+  if (!equipment) return null;
+  return attachCategoryObject(equipment);
+};
 
 // 1. สร้างอุปกรณ์พร้อม Generate QR Code
 exports.create = async (req, res, next) => {
@@ -64,91 +177,14 @@ exports.list = async (req, res, next) => {
 // 3. ดึงข้อมูลอุปกรณ์จาก QR Code (สำหรับหน้า Scan QR ของ User)
 exports.getByQRCode = async (req, res, next) => {
   try {
-    const { qrCode } = req.params;
+    const lookupCandidates = collectQrLookupCandidates(req.params.qrCode);
 
-    // 1. Try exact QR Code match
-    let equipment = await prisma.equipment.findUnique({
-      where: { qrCode },
-      include: {
-        room: true,
-        tickets: {
-          where: { status: { not: "completed" }, isDeleted: false },
-          orderBy: { createdAt: "desc" },
-          take: 5,
-          include: {
-            category: true,
-            createdBy: { select: { name: true } },
-          },
-        },
-      },
-    });
-
-    // แนบ Category และ subComponents เข้าไปด้วยถ้าหา Type เจอ
-    if (equipment && equipment.type) {
-      const category = await prisma.category.findUnique({
-          where: { name: equipment.type },
-          include: { subComponents: true }
-      });
-      if (category) {
-          equipment.categoryObj = category;
-      }
-    }
-
-    // 2. Fallback: Try Serial Number
-    if (!equipment) {
-      equipment = await prisma.equipment.findFirst({
-        where: { serialNo: qrCode },
-        include: {
-          room: true,
-          tickets: {
-            where: { status: { not: "completed" }, isDeleted: false },
-            orderBy: { createdAt: "desc" },
-            take: 5,
-            include: {
-              category: true,
-              createdBy: { select: { name: true } },
-            },
-          },
-        },
-      });
-
-      if (equipment && equipment.type) {
-        const category = await prisma.category.findUnique({
-            where: { name: equipment.type },
-            include: { subComponents: true }
-        });
-        if (category) {
-            equipment.categoryObj = category;
-        }
-      }
-    }
-
-    // 3. Fallback: Try ID (if input is numeric)
-    if (!equipment && /^\d+$/.test(qrCode)) {
-      equipment = await prisma.equipment.findUnique({
-        where: { id: parseInt(qrCode) },
-        include: {
-          room: true,
-          tickets: {
-            where: { status: { not: "completed" }, isDeleted: false },
-            orderBy: { createdAt: "desc" },
-            take: 5,
-            include: {
-              category: true,
-              createdBy: { select: { name: true } },
-            },
-          },
-        },
-      });
-
-      if (equipment && equipment.type) {
-        const category = await prisma.category.findUnique({
-            where: { name: equipment.type },
-            include: { subComponents: true }
-        });
-        if (category) {
-            equipment.categoryObj = category;
-        }
+    let equipment = null;
+    for (const lookupCode of lookupCandidates) {
+      // eslint-disable-next-line no-await-in-loop
+      equipment = await findEquipmentByLookupCode(lookupCode);
+      if (equipment) {
+        break;
       }
     }
 
