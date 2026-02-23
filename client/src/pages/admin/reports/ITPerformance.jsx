@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { getITPerformance } from '../../../api/report';
 import { CheckCircle, Clock, TrendingUp, User, Users } from 'lucide-react';
 import AdminSelect from '../../../components/admin/AdminSelect';
+import ProfileAvatar from '../../../components/common/ProfileAvatar';
+import { getUserDisplayName } from '../../../utils/userIdentity';
 import dayjs from 'dayjs';
 
 const ITPerformance = ({ month, year, externalData, externalLoading }) => {
@@ -82,6 +84,7 @@ const ITPerformance = ({ month, year, externalData, externalLoading }) => {
 
     // Get current selected staff object
     const currentStaff = allStaff.find(s => s.id === selectedStaffId) || null;
+    const currentStaffDisplayName = currentStaff ? getUserDisplayName(currentStaff, `Staff ${currentStaff.id}`) : '';
 
 
 
@@ -121,7 +124,10 @@ const ITPerformance = ({ month, year, externalData, externalLoading }) => {
                     value={selectedStaffId}
                     onChange={handleStaffChange}
                     options={[
-                        ...allStaff.map(s => ({ value: s.id, label: s.name || s.email || `Staff ${s.id}` }))
+                        ...allStaff.map(s => ({
+                            value: s.id,
+                            label: getUserDisplayName(s, `Staff ${s.id}`)
+                        }))
                     ]}
                     placeholder="Select Staff"
                     icon={Users}
@@ -142,14 +148,17 @@ const ITPerformance = ({ month, year, externalData, externalLoading }) => {
                         <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
                             <div className="mb-3">
                                 <div className="w-16 h-16 rounded-full border border-gray-100 overflow-hidden bg-gray-50 mx-auto shadow-sm">
-                                    <img
-                                        src={currentStaff.picture || `https://ui-avatars.com/api/?name=${currentStaff.name}&background=random`}
-                                        alt="Profile"
-                                        className="w-full h-full object-cover"
+                                    <ProfileAvatar
+                                        user={currentStaff}
+                                        alt={`${currentStaffDisplayName} profile`}
+                                        className="w-full h-full"
+                                        imageClassName="w-full h-full object-cover"
+                                        fallbackClassName="w-full h-full flex items-center justify-center bg-[#1e2e4a] text-white"
+                                        initialsClassName="text-base font-bold"
                                     />
                                 </div>
                             </div>
-                            <h3 className="text-base font-bold text-gray-900">{currentStaff.name || currentStaff.email}</h3>
+                            <h3 className="text-base font-bold text-gray-900">{currentStaffDisplayName}</h3>
                             <p className="text-gray-500 text-xs mb-4">
                                 {currentStaff.role ? currentStaff.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'IT Support'}
                             </p>

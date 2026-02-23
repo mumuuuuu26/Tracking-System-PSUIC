@@ -4,7 +4,7 @@ import EquipmentAnalysis from './EquipmentAnalysis';
 import ITPerformance from './ITPerformance';
 import RoomAnalysis from './RoomAnalysis';
 import { Activity, Server, FileText, TableProperties, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import ErrorBoundary from '../../../components/common/ErrorBoundary';
 import AdminWrapper from "../../../components/admin/AdminWrapper";
@@ -15,11 +15,33 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx/dist/xlsx.mini.min.js';
 
+const VALID_TABS = ['monthly', 'performance', 'room', 'equipment'];
+
 const ReportDashboard = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('monthly');
-    const [month, setMonth] = useState(dayjs().month() + 1);
-    const [year, setYear] = useState(dayjs().year());
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const currentMonth = dayjs().month() + 1;
+    const currentYear = dayjs().year();
+    const maxYear = currentYear + 10;
+    const parseTab = useCallback(
+        (value) => (VALID_TABS.includes(value) ? value : 'monthly'),
+        []
+    );
+
+    const parseMonth = useCallback((value) => {
+        const num = Number(value);
+        return Number.isInteger(num) && num >= 1 && num <= 12 ? num : currentMonth;
+    }, [currentMonth]);
+
+    const parseYear = useCallback((value) => {
+        const num = Number(value);
+        return Number.isInteger(num) && num >= 2024 && num <= maxYear ? num : currentYear;
+    }, [currentYear, maxYear]);
+
+    const [activeTab, setActiveTab] = useState(() => parseTab(searchParams.get('tab')));
+    const [month, setMonth] = useState(() => parseMonth(searchParams.get('month')));
+    const [year, setYear] = useState(() => parseYear(searchParams.get('year')));
     const [isExportingPDF, setIsExportingPDF] = useState(false);
     const [isExportingExcel, setIsExportingExcel] = useState(false);
 
@@ -37,6 +59,28 @@ const ReportDashboard = () => {
         { id: 'room', label: 'Floor & Room', icon: <Server size={18} /> },
         { id: 'equipment', label: 'Equipment', icon: <Server size={18} /> },
     ];
+
+    const updateSearchParams = useCallback((updates = {}) => {
+        const params = new URLSearchParams(searchParams);
+        const nextTab = updates.tab ?? activeTab;
+        const nextMonth = Number(updates.month ?? month);
+        const nextYear = Number(updates.year ?? year);
+
+        params.set('tab', parseTab(nextTab));
+        params.set('month', String(parseMonth(nextMonth)));
+        params.set('year', String(parseYear(nextYear)));
+        setSearchParams(params, { replace: true });
+    }, [activeTab, month, parseMonth, parseTab, parseYear, searchParams, setSearchParams, year]);
+
+    useEffect(() => {
+        const nextTab = parseTab(searchParams.get('tab'));
+        const nextMonth = parseMonth(searchParams.get('month'));
+        const nextYear = parseYear(searchParams.get('year'));
+
+        setActiveTab((prev) => (prev === nextTab ? prev : nextTab));
+        setMonth((prev) => (prev === nextMonth ? prev : nextMonth));
+        setYear((prev) => (prev === nextYear ? prev : nextYear));
+    }, [parseMonth, parseTab, parseYear, searchParams]);
 
     // Fetch ALL data whenever month/year changes
     const fetchAllData = useCallback(async () => {
@@ -442,7 +486,10 @@ const ReportDashboard = () => {
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    updateSearchParams({ tab: tab.id });
+                                }}
                                 className={`
                                         flex items-center gap-2 px-3 py-1.5 rounded-md font-bold text-xs transition-all
                                         ${activeTab === tab.id
@@ -461,13 +508,21 @@ const ReportDashboard = () => {
                     <div className="flex items-center gap-2">
                         <AdminSelect
                             value={year}
-                            onChange={setYear}
+                            onChange={(value) => {
+                                const nextYear = Number(value);
+                                setYear(nextYear);
+                                updateSearchParams({ year: nextYear });
+                            }}
                             options={Array.from({ length: (dayjs().year() + 10) - 2024 + 1 }, (_, i) => 2024 + i)}
                             className="min-w-[90px]"
                         />
                         <AdminSelect
                             value={month}
-                            onChange={setMonth}
+                            onChange={(value) => {
+                                const nextMonth = Number(value);
+                                setMonth(nextMonth);
+                                updateSearchParams({ month: nextMonth });
+                            }}
                             options={Array.from({ length: 12 }, (_, i) => ({
                                 value: i + 1,
                                 label: dayjs().month(i).format('MMMM')
