@@ -27,11 +27,20 @@ if errorlevel 1 goto :err_npm
 where npx >nul 2>&1
 if errorlevel 1 goto :err_npx
 
+if not "%APPDATA%"=="" (
+  set "PATH=%APPDATA%\npm;%PATH%"
+)
+
 where pm2 >nul 2>&1
 if errorlevel 1 (
   echo [INFO] pm2 not found. Installing globally...
   call npm install -g pm2
   if errorlevel 1 goto :err_pm2_install
+  if not "%APPDATA%"=="" (
+    set "PATH=%APPDATA%\npm;%PATH%"
+  )
+  where pm2 >nul 2>&1
+  if errorlevel 1 goto :err_pm2_path
 )
 
 if not exist "uploads" mkdir "uploads"
@@ -145,6 +154,11 @@ exit /b 1
 
 :err_pm2_install
 echo [ERROR] Failed to install pm2 globally.
+exit /b 1
+
+:err_pm2_path
+echo [ERROR] pm2 installed but not found in PATH.
+echo [HINT] Run this once: set PATH=%%APPDATA%%\npm;%%PATH%%
 exit /b 1
 
 :err_mysql_start
