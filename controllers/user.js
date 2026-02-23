@@ -323,58 +323,67 @@ exports.removeUser = async (req, res, next) => {
     const { id } = req.params;
     const userId = parseInt(id);
 
-    // 1. Unassign tickets assigned TO this user (IT Support role)
-    // We set assignedToId = null and status = pending so other staff can pick it up
-    await prisma.ticket.updateMany({
-      where: { assignedToId: userId },
-      data: { assignedToId: null, status: 'not_start' }
-    });
-
-    // 3. Delete all Notifications belonging to this user
-    await prisma.notification.deleteMany({
-      where: { userId: userId }
-    });
-
-    // 4. Delete Personal Tasks
-    await prisma.personalTask.deleteMany({
-      where: { userId: userId }
-    });
-
-    // 5. Nullify Activity Logs (Keep history but remove link to user)
-    await prisma.activityLog.updateMany({
-      where: { updatedById: userId },
-      data: { updatedById: null }
-    });
-
-
-    // 7. Delete Tickets CREATED by this user
-    // First, find these ticket IDs to clean up related notifications (which might not cascade)
-    const userTickets = await prisma.ticket.findMany({
-      where: { createdById: userId },
-      select: { id: true }
-    });
-    const ticketIds = userTickets.map(t => t.id);
-
-    if (ticketIds.length > 0) {
-      await prisma.notification.deleteMany({
-        where: { ticketId: { in: ticketIds } }
-      });
+    // Prevent deleting oneself
+    if (req.user && req.user.id === userId) {
+      return res.status(400).json({ message: "You cannot delete your own account." });
     }
 
-    // Prisma schema has onDelete: Cascade for Ticket->Image, Ticket->ActivityLog
-    // So this will clean up most associated ticket data automatically.
-    await prisma.ticket.deleteMany({
-      where: { createdById: userId }
+    // Execute everything in a transaction to ensure database consistency
+    await prisma.$transaction(async (tx) => {
+      // 1. Unassign tickets assigned TO this user (IT Support role)
+      // We set assignedToId = null and status = pending so other staff can pick it up
+      await tx.ticket.updateMany({
+        where: { assignedToId: userId },
+        data: { assignedToId: null, status: 'not_start' }
+      });
+
+      // 2. Delete all Notifications belonging to this user
+      await tx.notification.deleteMany({
+        where: { userId: userId }
+      });
+
+      // 3. Delete Personal Tasks
+      await tx.personalTask.deleteMany({
+        where: { userId: userId }
+      });
+
+      // 4. Nullify Activity Logs (Keep history but remove link to user)
+      await tx.activityLog.updateMany({
+        where: { updatedById: userId },
+        data: { updatedById: null }
+      });
+
+      // 5. Delete Tickets CREATED by this user
+      const userTickets = await tx.ticket.findMany({
+        where: { createdById: userId },
+        select: { id: true }
+      });
+      const ticketIds = userTickets.map(t => t.id);
+
+      if (ticketIds.length > 0) {
+        await tx.notification.deleteMany({
+          where: { ticketId: { in: ticketIds } }
+        });
+
+        // Prisma has Cascade for Images, ActivityLogs, so deleting tickets will clean them up.
+        await tx.ticket.deleteMany({
+          where: { createdById: userId }
+        });
+      }
+
+      // 6. Finally, Delete the User
+      await tx.user.delete({
+        where: { id: userId }
+      });
     });
 
-    // 8. Finally, Delete the User
-    await prisma.user.delete({
-      where: { id: userId }
-    });
-
-    res.json({ message: "User and all associated data permanently deleted" });
+    res.json({ message: "User deleted successfully" });
 
   } catch (err) {
+    if (err.code === 'P2003') {
+      // Foreign key constraint failed
+      return res.status(400).json({ message: "Cannot delete user due to existing dependent records in the database." });
+    }
     next(err);
   }
 };

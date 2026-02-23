@@ -81,8 +81,9 @@ const UserManagement = () => {
           await removeUser(id);
           toast.success("User Deleted");
           loadUsers();
-        } catch {
-          toast.error("Delete Failed");
+        } catch (err) {
+          console.error("Delete Error:", err);
+          toast.error(err.response?.data?.message || "Delete Failed");
         }
       }
     });

@@ -69,7 +69,7 @@ const Register = () => {
                                 className="w-full border border-white/20 bg-white/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-white placeholder-white/40"
                                 type="email"
                                 name="email"
-                                placeholder="name@psu.ac.th"
+                                placeholder="name@gmail.com"
                                 onChange={hdlChange}
                                 required
                             />

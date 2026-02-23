@@ -1,0 +1,16 @@
+pwd
+ls -la
+cd app/server
+pwd
+ls -la
+ls -la config
+ls -la controllers
+ls -la routes
+ls -la scripts
+ls -la prisma
+ls -la client
+cd client/dist
+pwd
+ls -la
+ls -la assets
+bye

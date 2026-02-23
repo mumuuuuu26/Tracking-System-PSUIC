@@ -1,0 +1,24 @@
+-mkdir app
+-mkdir app/server
+cd app/server
+
+lcd /Users/mumu/Desktop/server
+
+put package.json
+put package-lock.json
+put server.js
+put ecosystem.config.js
+put babel.config.js
+
+put -r config
+put -r controllers
+put -r middlewares
+put -r routes
+put -r utils
+put -r prisma
+put -r scripts
+
+-mkdir client
+put -r client/dist client
+
+bye

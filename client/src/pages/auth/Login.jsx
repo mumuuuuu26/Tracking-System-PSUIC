@@ -144,7 +144,7 @@ const Login = () => {
                     type="email"
                     name="email"
                     onChange={hdlChange}
-                    placeholder="name@psu.ac.th"
+                    placeholder="name@gmail.com"
                     required
                     aria-label="Email"
                   />
