@@ -16,6 +16,7 @@ jobs:
       ENABLE_HTTPS_HEADERS: "false"
       TLS_KEY_FILE: ""
       TLS_CERT_FILE: ""
+      VITE_DEV_HTTPS: "false"
 
     services:
       mysql:
