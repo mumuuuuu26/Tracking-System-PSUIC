@@ -6,6 +6,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Resizer from "react-image-file-resizer";
 
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(["jpg", "jpeg", "png"]);
+const ALLOWED_UPLOAD_MIME = new Set(["image/jpeg", "image/png"]);
+
 const normalizeQrText = (rawText) => {
   if (!rawText) return "";
   const trimmed = String(rawText).trim();
@@ -57,6 +60,11 @@ const ScanQR = () => {
   const startScannerRef = useRef(null);
   const cameraToastShownRef = useRef(false);
   const isFetchingRef = useRef(false);
+  const isSecureContextRuntime =
+    typeof window !== "undefined" ? window.isSecureContext : true;
+  const uploadOnlyMode = !isSecureContextRuntime;
+  const uploadOnlyMessage =
+    "Camera scan is disabled on HTTP. Please upload QR image in JPG/PNG format.";
 
   const reportCameraError = useCallback((message) => {
     setCameraError(message);
@@ -111,6 +119,11 @@ const ScanQR = () => {
 
   const startScanner = useCallback(async () => {
     try {
+      if (uploadOnlyMode) {
+        reportCameraError(uploadOnlyMessage);
+        return;
+      }
+
       if (!window.isSecureContext) {
         reportCameraError("Camera requires HTTPS (or localhost). Please use Gallery for now.");
         return;
@@ -156,7 +169,7 @@ const ScanQR = () => {
 
       reportCameraError("Unable to start camera scanner. Please check browser camera permission.");
     }
-  }, [fetchEquipmentData, reportCameraError]);
+  }, [fetchEquipmentData, reportCameraError, uploadOnlyMessage, uploadOnlyMode]);
 
   useEffect(() => {
     startScannerRef.current = startScanner;
@@ -164,7 +177,11 @@ const ScanQR = () => {
 
   useEffect(() => {
     mountedRef.current = true;
-    startScanner();
+    if (!uploadOnlyMode) {
+      startScanner();
+    } else {
+      setCameraError(uploadOnlyMessage);
+    }
 
     return () => {
       mountedRef.current = false;
@@ -174,9 +191,10 @@ const ScanQR = () => {
         }
       }
     };
-  }, [startScanner]);
+  }, [startScanner, uploadOnlyMessage, uploadOnlyMode]);
 
   const toggleFlash = async () => {
+    if (uploadOnlyMode) return;
     if (!scannerRef.current) return;
     try {
       await scannerRef.current.applyVideoConstraints({
@@ -207,6 +225,19 @@ const ScanQR = () => {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const fileExt = String(file.name || "")
+      .split(".")
+      .pop()
+      ?.toLowerCase();
+    const isAllowedByMime = ALLOWED_UPLOAD_MIME.has(String(file.type || "").toLowerCase());
+    const isAllowedByExt = ALLOWED_UPLOAD_EXTENSIONS.has(fileExt || "");
+
+    if (!isAllowedByMime && !isAllowedByExt) {
+      toast.error("Please upload JPG/PNG image only.");
+      if (e.target) e.target.value = "";
+      return;
+    }
 
     setLoading(true);
 
@@ -243,11 +274,12 @@ const ScanQR = () => {
       }
 
       if (!decodedText) {
-        const isHeicLike = /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
+        const isHeicLike =
+          /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
         if (isHeicLike) {
-          toast.error("HEIC/HEIF may fail. Please convert image to JPG/PNG then try again.");
+          toast.error("HEIC/HEIF is not supported here. Please convert to JPG/PNG.");
         } else {
-          toast.error("Could not read QR code from this image. Try a clearer JPG/PNG.");
+          toast.error("Could not read QR code from this image. Please try a clearer JPG/PNG.");
         }
         throw scanError || new Error("Unable to decode QR from uploaded file.");
       }
@@ -265,12 +297,33 @@ const ScanQR = () => {
   return (
     <div className="fixed inset-0 bg-black text-white z-[9999] overflow-hidden font-sans">
       {/* Viewport - Full Feed */}
-      <div id="reader" className="absolute inset-0 w-full h-full [&>video]:object-cover [&>video]:h-full [&>video]:w-full"></div>
+      <div
+        id="reader"
+        className={
+          uploadOnlyMode
+            ? "hidden"
+            : "absolute inset-0 w-full h-full [&>video]:object-cover [&>video]:h-full [&>video]:w-full"
+        }
+      ></div>
+
+      {uploadOnlyMode && (
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          <div className="max-w-sm w-full rounded-2xl border border-white/15 bg-white/10 backdrop-blur-sm p-6 text-center">
+            <p className="text-sm font-semibold tracking-wide uppercase text-white/80">Upload QR</p>
+            <p className="mt-3 text-xs text-white/70 leading-relaxed">
+              Temporary HTTP mode is active. Camera scan is hidden for compatibility.
+            </p>
+            <p className="mt-2 text-xs text-amber-200">Please use JPG/PNG images only.</p>
+          </div>
+        </div>
+      )}
 
       {/* Overlay Mask - Very subtle to indicate scanning */}
-      <div className="absolute inset-0 pointer-events-none z-10">
-        <div className="w-full h-full shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] bg-black/10" />
-      </div>
+      {!uploadOnlyMode && (
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <div className="w-full h-full shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] bg-black/10" />
+        </div>
+      )}
 
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 pt-safe-top z-40">
@@ -281,7 +334,9 @@ const ScanQR = () => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-sm font-medium tracking-[0.2em] text-white/90 uppercase opacity-60">Scanning...</h1>
+          <h1 className="text-sm font-medium tracking-[0.2em] text-white/90 uppercase opacity-60">
+            {uploadOnlyMode ? "Upload QR..." : "Scanning..."}
+          </h1>
           <div className="w-10" />
         </div>
       </div>
@@ -295,27 +350,38 @@ const ScanQR = () => {
       )}
 
       {/* Scan Zone Indicators (Subtle edges) */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
-        <div className="relative w-[80%] aspect-square max-w-[300px]">
-          <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white/40 rounded-tl-lg"></div>
-          <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white/40 rounded-tr-lg"></div>
-          <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white/40 rounded-bl-lg"></div>
-          <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white/40 rounded-br-lg"></div>
+      {!uploadOnlyMode && (
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
+          <div className="relative w-[80%] aspect-square max-w-[300px]">
+            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white/40 rounded-tl-lg"></div>
+            <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white/40 rounded-tr-lg"></div>
+            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white/40 rounded-bl-lg"></div>
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white/40 rounded-br-lg"></div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bottom Controls */}
-      <div className="absolute bottom-12 left-0 right-0 px-12 flex justify-around items-center z-50 pointer-events-auto pb-safe-bottom">
-        <div className="flex flex-col items-center gap-2">
-          <button
-            onClick={toggleFlash}
-            className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all border duration-300 ${flashOn ? "bg-white text-black border-white shadow-xl scale-110" : "bg-white/10 border-white/10"
+      <div
+        className={`absolute bottom-12 left-0 right-0 ${
+          uploadOnlyMode ? "px-6 justify-center" : "px-12 justify-around"
+        } flex items-center z-50 pointer-events-auto pb-safe-bottom`}
+      >
+        {!uploadOnlyMode && (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={toggleFlash}
+              className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all border duration-300 ${
+                flashOn
+                  ? "bg-white text-black border-white shadow-xl scale-110"
+                  : "bg-white/10 border-white/10"
               }`}
-          >
-            {flashOn ? <Flashlight size={24} /> : <FlashlightOff size={24} />}
-          </button>
-          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">Flash</span>
-        </div>
+            >
+              {flashOn ? <Flashlight size={24} /> : <FlashlightOff size={24} />}
+            </button>
+            <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">Flash</span>
+          </div>
+        )}
 
         <div className="flex flex-col items-center gap-2">
           <button
@@ -323,9 +389,9 @@ const ScanQR = () => {
             className="w-14 h-14 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"
           >
             <ImageIcon size={24} />
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+            <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleFileUpload} />
           </button>
-          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">Gallery</span>
+          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">JPG / PNG</span>
         </div>
       </div>
 
