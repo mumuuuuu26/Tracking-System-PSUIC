@@ -302,7 +302,6 @@ const ScanQR = () => {
   const isSecureContextRuntime =
     typeof window !== "undefined" ? window.isSecureContext : true;
   const uploadOnlyMode = !isSecureContextRuntime;
-  const uploadOnlyMessage = "HTTP mode: upload QR image.";
 
   const reportCameraError = useCallback((message) => {
     setCameraError(message);
@@ -455,7 +454,10 @@ const ScanQR = () => {
   }, [startScanner, uploadOnlyMode]);
 
   const toggleFlash = async () => {
-    if (uploadOnlyMode) return;
+    if (uploadOnlyMode) {
+      toast.info("Camera requires HTTPS. Please use Gallery.");
+      return;
+    }
     if (!scannerRef.current) return;
     try {
       await scannerRef.current.applyVideoConstraints({
@@ -572,9 +574,7 @@ const ScanQR = () => {
   };
 
   return (
-    <div className="fixed inset-0 text-white z-[9999] overflow-hidden font-sans bg-[#102b63]">
-
-      {/* Viewport - Full Feed */}
+    <div className="fixed inset-0 z-[9999] overflow-hidden font-sans text-white bg-black">
       <div
         id="reader"
         className={
@@ -584,88 +584,71 @@ const ScanQR = () => {
         }
       ></div>
 
-      {uploadOnlyMode && (
-        <div className="absolute inset-0 z-20 flex items-start justify-center px-6 pt-28">
-          <div className="max-w-sm w-full rounded-2xl border border-white/20 bg-[#0b214c]/75 p-6 text-center">
-            <p className="text-base font-normal text-white/95">Upload QR</p>
-            <p className="mt-2 text-sm font-normal text-white/75">{uploadOnlyMessage}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Overlay Mask - Very subtle to indicate scanning */}
       {!uploadOnlyMode && (
         <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="w-full h-full shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] bg-black/10" />
+          <div className="w-full h-full bg-black/10 shadow-[inset_0_0_120px_rgba(0,0,0,0.75)]" />
         </div>
       )}
 
-      {/* Header */}
       <div className="absolute top-0 left-0 right-0 pt-safe-top z-40">
         <div className="px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/15 transition-all active:scale-95"
+            className="w-12 h-12 rounded-full bg-[#0f121a]/70 border border-white/20 flex items-center justify-center transition-all active:scale-95"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={22} />
           </button>
-          <h1 className="text-base font-normal tracking-[0.1em] text-white/85 uppercase">
-            {uploadOnlyMode ? "Upload QR..." : "Scanning..."}
+          <h1 className="text-sm sm:text-base font-normal tracking-[0.34em] text-white/65 uppercase">
+            Scanning...
           </h1>
-          <div className="w-10" />
+          <div className="w-12" />
         </div>
       </div>
 
-      {cameraError && !uploadOnlyMode && (
+      {cameraError && (
         <div className="absolute top-20 left-0 right-0 z-40 px-6">
-          <div className="rounded-xl border border-white/20 bg-[#0b214c]/80 px-4 py-3 text-center text-xs tracking-wide text-white/85">
+          <div className="rounded-xl border border-white/20 bg-black/65 px-4 py-3 text-center text-xs tracking-wide text-white/90">
             {cameraError}
           </div>
         </div>
       )}
 
-      {/* Scan Zone Indicators (Subtle edges) */}
-      {!uploadOnlyMode && (
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
-          <div className="relative w-[80%] aspect-square max-w-[300px]">
-            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white/40 rounded-tl-lg"></div>
-            <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white/40 rounded-tr-lg"></div>
-            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white/40 rounded-bl-lg"></div>
-            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white/40 rounded-br-lg"></div>
-          </div>
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
+        <div className="relative w-[78%] aspect-square max-w-[300px] mt-10">
+          <div className="absolute top-0 left-0 w-10 h-10 border-t-[3px] border-l-[3px] border-[#8f97a8] rounded-tl-lg"></div>
+          <div className="absolute top-0 right-0 w-10 h-10 border-t-[3px] border-r-[3px] border-[#8f97a8] rounded-tr-lg"></div>
+          <div className="absolute bottom-0 left-0 w-10 h-10 border-b-[3px] border-l-[3px] border-[#8f97a8] rounded-bl-lg"></div>
+          <div className="absolute bottom-0 right-0 w-10 h-10 border-b-[3px] border-r-[3px] border-[#8f97a8] rounded-br-lg"></div>
         </div>
-      )}
+      </div>
 
-      {/* Bottom Controls */}
+      <div className="absolute bottom-0 left-0 right-0 h-64 pointer-events-none bg-gradient-to-t from-black/85 via-black/25 to-transparent z-30" />
+
       <div
-        className={`absolute bottom-12 left-0 right-0 ${
-          uploadOnlyMode ? "px-6 justify-center" : "px-12 justify-around"
-        } flex items-center z-50 pointer-events-auto pb-safe-bottom`}
+        className="absolute bottom-12 left-0 right-0 px-12 flex items-center justify-around z-50 pointer-events-auto pb-safe-bottom"
       >
-        {!uploadOnlyMode && (
-          <div className="flex flex-col items-center gap-2">
-            <button
-              onClick={toggleFlash}
-              className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md transition-all border duration-300 ${
-                flashOn
-                  ? "bg-white text-black border-white shadow-xl scale-110"
-                  : "bg-white/10 border-white/10"
-              }`}
-            >
-              {flashOn ? <Flashlight size={24} /> : <FlashlightOff size={24} />}
-            </button>
-            <span className="text-[10px] font-normal text-white/40 uppercase tracking-widest leading-tight">Flash</span>
-          </div>
-        )}
+        <div className="flex flex-col items-center gap-2">
+          <button
+            onClick={toggleFlash}
+            className={`w-16 h-16 rounded-full flex items-center justify-center border backdrop-blur-sm transition-all duration-300 ${
+              uploadOnlyMode
+                ? "bg-white/5 border-white/15 text-white/45"
+                : flashOn
+                  ? "bg-white text-black border-white shadow-xl scale-105"
+                  : "bg-white/10 border-white/20 text-white"
+            }`}
+          >
+            {flashOn && !uploadOnlyMode ? <Flashlight size={26} /> : <FlashlightOff size={26} />}
+          </button>
+          <span className="text-[10px] font-normal text-white/55 uppercase tracking-[0.32em] leading-tight pl-1">Flash</span>
+        </div>
 
         <div className="flex flex-col items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className={`${
-              uploadOnlyMode ? "w-16 h-16 border-white/30 bg-white/10" : "w-14 h-14 border-white/15 bg-white/10"
-            } rounded-full border backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all shadow-lg`}
+            className="w-16 h-16 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-all shadow-lg"
           >
-            <ImageIcon size={24} />
+            <ImageIcon size={26} />
             <input
               type="file"
               ref={fileInputRef}
@@ -674,17 +657,20 @@ const ScanQR = () => {
               onChange={handleFileUpload}
             />
           </button>
-          <span className="text-[10px] font-normal text-white/45 uppercase tracking-widest leading-tight">
-            {uploadOnlyMode ? "Upload" : "Gallery"}
-          </span>
+          <span className="text-[10px] font-normal text-white/55 uppercase tracking-[0.24em] leading-tight pl-1">Gallery</span>
         </div>
       </div>
 
-      {/* Subtle Loading Overlay (Doesn't block view) */}
+      {uploadOnlyMode && (
+        <div className="absolute bottom-[138px] left-0 right-0 z-40 text-center px-6">
+          <p className="text-[11px] tracking-[0.06em] text-white/45">HTTP mode: camera is disabled, use Gallery.</p>
+        </div>
+      )}
+
       {loading && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center transition-all">
+        <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center transition-all">
           <Loader2 className="animate-spin text-white mb-3" size={32} strokeWidth={3} />
-          <p className="text-[10px] font-normal tracking-[0.3em] uppercase opacity-60">Identifying</p>
+          <p className="text-[11px] font-normal tracking-[0.26em] uppercase opacity-70">Identifying</p>
         </div>
       )}
 
