@@ -10,10 +10,20 @@ const ScanQR = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
   const mountedRef = useRef(true);
   const startScannerRef = useRef(null);
+  const cameraToastShownRef = useRef(false);
+
+  const reportCameraError = useCallback((message) => {
+    setCameraError(message);
+    if (!cameraToastShownRef.current) {
+      toast.warn(message);
+      cameraToastShownRef.current = true;
+    }
+  }, []);
 
   const fetchEquipmentData = useCallback(async (qrCode) => {
     if (!qrCode) return;
@@ -55,6 +65,16 @@ const ScanQR = () => {
 
   const startScanner = useCallback(async () => {
     try {
+      if (!window.isSecureContext) {
+        reportCameraError("Camera requires HTTPS (or localhost). Please use Gallery for now.");
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        reportCameraError("This browser does not support camera access for scanning.");
+        return;
+      }
+
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("reader", {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
@@ -77,11 +97,20 @@ const ScanQR = () => {
           },
           () => { }
         );
+        setCameraError("");
+      } else {
+        reportCameraError("No camera device was found. Please use Gallery.");
       }
-    } catch {
-      // Silent fail — scanner may not be available
+    } catch (error) {
+      const rawMessage = typeof error === "string" ? error : error?.message || "";
+      if (rawMessage.toLowerCase().includes("secure context")) {
+        reportCameraError("Camera requires HTTPS (or localhost). Please use Gallery for now.");
+        return;
+      }
+
+      reportCameraError("Unable to start camera scanner. Please check browser camera permission.");
     }
-  }, [fetchEquipmentData]);
+  }, [fetchEquipmentData, reportCameraError]);
 
   useEffect(() => {
     startScannerRef.current = startScanner;
@@ -181,6 +210,14 @@ const ScanQR = () => {
           <div className="w-10" />
         </div>
       </div>
+
+      {cameraError && (
+        <div className="absolute top-20 left-0 right-0 z-40 px-6">
+          <div className="rounded-xl border border-amber-300/20 bg-black/65 px-4 py-3 text-center text-xs tracking-wide text-amber-200 backdrop-blur-sm">
+            {cameraError}
+          </div>
+        </div>
+      )}
 
       {/* Scan Zone Indicators (Subtle edges) */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">

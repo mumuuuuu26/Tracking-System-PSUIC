@@ -177,12 +177,24 @@ app.get("/health", (req, res) => {
 });
 
 // 3. บอกให้ Server รู้จักโฟลเดอร์หน้าเว็บ (ที่ Build แล้ว)
-app.use(express.static(path.join(__dirname, "client/dist")));
+const clientDistPath = path.join(__dirname, "client/dist");
+app.use(
+  express.static(clientDistPath, {
+    // Let the SPA fallback below serve index.html with strict no-store headers.
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".html")) {
+        res.setHeader("Cache-Control", "no-store");
+      }
+    },
+  }),
+);
 
 // 4. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
 app.get(/.*/, (req, res) => {
     // ป้องกันไม่ให้ไปแย่ง Route ของ API
     if (!req.originalUrl.startsWith('/api')) {
+        res.setHeader("Cache-Control", "no-store");
         res.sendFile(path.join(__dirname, "client/dist", "index.html"));
     } else {
         // กรณีเป็น API ที่ไม่เจอให้ตอบ 404
