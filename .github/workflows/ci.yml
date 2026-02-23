@@ -14,6 +14,8 @@ jobs:
       NODE_NO_WARNINGS: "1"
       HTTPS_ONLY: "false"
       ENABLE_HTTPS_HEADERS: "false"
+      TLS_KEY_FILE: ""
+      TLS_CERT_FILE: ""
 
     services:
       mysql:
@@ -56,6 +58,10 @@ jobs:
         SECRET=test_secret
         CLIENT_URL=http://localhost:5173
         FRONTEND_URL=http://localhost:5173
+        HTTPS_ONLY=false
+        ENABLE_HTTPS_HEADERS=false
+        TLS_KEY_FILE=
+        TLS_CERT_FILE=
         DATABASE_URL=mysql://root:password@127.0.0.1:3306/ticket_system_test
         MAIL_USER=mock@test.com
         MAIL_PASS=mock_pass
@@ -82,6 +88,7 @@ jobs:
 
     - name: Run Backend Tests
       run: |
+        set +e
         set -o pipefail
         npm test 2>&1 | tee backend-test.log
         test_exit=${PIPESTATUS[0]}

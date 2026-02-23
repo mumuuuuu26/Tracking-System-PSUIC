@@ -45,14 +45,18 @@ const parseTrustProxy = (value) => {
 };
 const resolvePathFromRoot = (filePath) =>
   path.isAbsolute(filePath) ? filePath : path.join(__dirname, filePath);
+const isCi = ["1", "true"].includes(String(process.env.CI).toLowerCase());
+const isTestLikeRuntime = process.env.NODE_ENV === "test" || isCi;
+const shouldAttemptNativeHttps =
+  !isTestLikeRuntime || isTrue(process.env.ALLOW_NATIVE_HTTPS_IN_TEST);
 
 const httpsOnly = isTrue(process.env.HTTPS_ONLY);
 const tlsKeyFile = process.env.TLS_KEY_FILE;
 const tlsCertFile = process.env.TLS_CERT_FILE;
-const hasTlsFiles = Boolean(tlsKeyFile && tlsCertFile);
+const hasTlsPair = Boolean(tlsKeyFile && tlsCertFile);
 
 let tlsOptions = null;
-if (hasTlsFiles) {
+if (shouldAttemptNativeHttps && hasTlsPair) {
   const absoluteTlsKeyPath = resolvePathFromRoot(tlsKeyFile);
   const absoluteTlsCertPath = resolvePathFromRoot(tlsCertFile);
   if (!fs.existsSync(absoluteTlsKeyPath)) {
