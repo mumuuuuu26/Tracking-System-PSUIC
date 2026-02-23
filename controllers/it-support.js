@@ -3,6 +3,61 @@ const { saveImage } = require("../utils/uploadImage");
 const { listGoogleEvents } = require("./googleCalendar");
 const { logger } = require("../utils/logger");
 
+const mapGoogleSyncError = (err) => {
+  const message = String(err?.rawMessage || err?.message || "");
+  const normalized = message.toLowerCase();
+
+  if (err?.code === "GOOGLE_CALENDAR_NOT_CONFIGURED") {
+    return {
+      status: 503,
+      body: {
+        message:
+          "Google Calendar is not configured on this server yet. Please ask admin to set GOOGLE_PROJECT_ID, GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, and restart backend.",
+        missingKeys: err.missingKeys || [],
+      },
+    };
+  }
+
+  if (
+    normalized.includes("requested entity was not found") ||
+    normalized.includes("google api failed: not found")
+  ) {
+    return {
+      status: 400,
+      body: {
+        message:
+          "Calendar ID not found. Please verify Calendar ID in Google Calendar settings.",
+      },
+    };
+  }
+
+  if (
+    normalized.includes("caller does not have permission") ||
+    normalized.includes("insufficient permission") ||
+    normalized.includes("forbidden")
+  ) {
+    return {
+      status: 400,
+      body: {
+        message:
+          "Google Calendar permission denied. Share the target calendar with the service account email and grant 'Make changes to events'.",
+      },
+    };
+  }
+
+  if (normalized.includes("invalid_grant") || normalized.includes("invalid jwt")) {
+    return {
+      status: 503,
+      body: {
+        message:
+          "Google credentials are invalid on server (service account key is malformed or expired).",
+      },
+    };
+  }
+
+  return null;
+};
+
 // Get dashboard statistics
 exports.previewJob = async (req, res, next) => {
     try {
@@ -596,6 +651,10 @@ exports.syncGoogleCalendar = async (req, res, next) => {
 
         res.json({ message: `Synced ${count} events from Google Calendar`, count });
     } catch (err) {
+        const mapped = mapGoogleSyncError(err);
+        if (mapped) {
+            return res.status(mapped.status).json(mapped.body);
+        }
         next(err);
     }
 };
@@ -628,6 +687,13 @@ exports.testGoogleSync = async (req, res, next) => {
         });
 
     } catch (err) {
+        const mapped = mapGoogleSyncError(err);
+        if (mapped) {
+            return res.status(mapped.status).json({
+                success: false,
+                ...mapped.body,
+            });
+        }
         next(err);
     }
 };

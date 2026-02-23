@@ -31,6 +31,8 @@ const Schedule = () => {
     const [calendarId, setCalendarId] = useState("");
     const [savedCalendarId, setSavedCalendarId] = useState("");
     const [serviceEmail, setServiceEmail] = useState("");
+    const [googleServerReady, setGoogleServerReady] = useState(true);
+    const [googleServerMissingKeys, setGoogleServerMissingKeys] = useState([]);
 
     const loadSchedule = React.useCallback(async () => {
         try {
@@ -51,6 +53,12 @@ const Schedule = () => {
                 setCalendarId(res.data.googleCalendarId || "");
                 setSavedCalendarId(res.data.googleCalendarId || ""); // This triggers the useEffect below
                 setServiceEmail(res.data.serviceAccountEmail || "");
+                setGoogleServerReady(Boolean(res.data.googleCalendarConfigured));
+                setGoogleServerMissingKeys(
+                    Array.isArray(res.data.googleCalendarMissingKeys)
+                        ? res.data.googleCalendarMissingKeys
+                        : []
+                );
             }
         } catch {
             // Silent fail — calendarId stays empty
@@ -66,9 +74,7 @@ const Schedule = () => {
             await syncGoogleCalendar();
             loadSchedule();
         } catch (err) {
-            if (err.response?.status !== 400) {
-                toast.error(err.response?.data?.message || "Sync failed");
-            }
+            toast.error(err.response?.data?.message || "Sync failed");
         } finally {
             setSyncing(false);
         }
@@ -106,6 +112,12 @@ const Schedule = () => {
             await updateProfile({ googleCalendarId: calendarId });
             setSavedCalendarId(calendarId);
 
+            if (!googleServerReady) {
+                setShowSettings(false);
+                toast.warning("Calendar ID saved, but server Google credentials are not configured yet.");
+                return;
+            }
+
             // 2. Explicitly Sync to get event count for feedback
             const res = await syncGoogleCalendar();
 
@@ -114,12 +126,17 @@ const Schedule = () => {
             loadSchedule();
         } catch (err) {
             const msg = err.response?.data?.message || "Failed to save settings";
+            const missingKeys = err.response?.data?.missingKeys;
+            const footer =
+                err.response?.status === 503 && Array.isArray(missingKeys) && missingKeys.length > 0
+                    ? `Server missing: ${missingKeys.join(", ")}`
+                    : 'Check that you shared the calendar with the Service Email.';
             // Check if it's a sync error or save error
             Swal.fire({
                 icon: "error",
                 title: "Connection Failed",
                 text: msg,
-                footer: "Check that you shared the calendar with the Service Email."
+                footer
             });
         } finally {
             setSyncing(false);
@@ -338,18 +355,27 @@ const Schedule = () => {
                                 </p>
                                 <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-blue-200">
                                     <code className="text-xs font-mono text-gray-600 flex-1 break-all">
-                                        {serviceEmail || "Loading email..."}
+                                        {serviceEmail || "Service email is not configured on server"}
                                     </code>
                                     <button
                                         onClick={() => {
                                             navigator.clipboard.writeText(serviceEmail);
                                             toast.success("Copied to clipboard!");
                                         }}
-                                        className="text-blue-600 font-bold text-xs hover:bg-blue-50 px-2 py-1 rounded"
+                                        disabled={!serviceEmail}
+                                        className="text-blue-600 font-bold text-xs hover:bg-blue-50 px-2 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         COPY
                                     </button>
                                 </div>
+                                {!googleServerReady && (
+                                    <p className="text-[11px] text-red-600 mt-2">
+                                        Server Google config is incomplete
+                                        {googleServerMissingKeys.length > 0
+                                            ? `: ${googleServerMissingKeys.join(", ")}`
+                                            : "."}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Step 2: Input ID */}

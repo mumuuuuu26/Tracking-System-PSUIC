@@ -3,6 +3,7 @@ const { logger } = require("../utils/logger");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
+const { getMissingGoogleCredentialKeys } = require("./googleCalendar");
 
 // Validation Schemas
 const registerSchema = z.object({
@@ -137,10 +138,13 @@ exports.currentUser = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Return user data + service account email for calendar sharing instructions
+    const missingGoogleKeys = getMissingGoogleCredentialKeys();
+    // Return user data + Google Calendar config status for IT connection setup
     res.json({
       ...user,
-      serviceAccountEmail: process.env.GOOGLE_CLIENT_EMAIL
+      serviceAccountEmail: process.env.GOOGLE_CLIENT_EMAIL || "",
+      googleCalendarConfigured: missingGoogleKeys.length === 0,
+      googleCalendarMissingKeys: missingGoogleKeys,
     });
   } catch (err) {
     next(err);

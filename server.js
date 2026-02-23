@@ -1,5 +1,9 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
+const { isIP } = require("node:net");
 require("./config/env");
 const app = express();
 const morgan = require("morgan");
@@ -25,12 +29,48 @@ const permissionRoutes = require("./routes/permission");
 
 // --- Middleware Setup ---
 
+const isTrue = (value) => String(value).toLowerCase() === "true";
+const parseTrustProxy = (value) => {
+  if (value === undefined || value === "") {
+    return 1;
+  }
+  if (value === "true") {
+    return 1;
+  }
+  if (value === "false") {
+    return false;
+  }
+  const numericValue = Number(value);
+  return Number.isNaN(numericValue) ? value : numericValue;
+};
+const resolvePathFromRoot = (filePath) =>
+  path.isAbsolute(filePath) ? filePath : path.join(__dirname, filePath);
 
-app.set("trust proxy", 1);
+const httpsOnly = isTrue(process.env.HTTPS_ONLY);
+const tlsKeyFile = process.env.TLS_KEY_FILE;
+const tlsCertFile = process.env.TLS_CERT_FILE;
+const hasTlsFiles = Boolean(tlsKeyFile && tlsCertFile);
 
-// HTTP-only deployment (current): avoid forcing HTTPS-specific headers.
-// Enable HTTPS-only headers later by setting ENABLE_HTTPS_HEADERS=true.
-const isHttpsHeadersEnabled = process.env.ENABLE_HTTPS_HEADERS === "true";
+let tlsOptions = null;
+if (hasTlsFiles) {
+  const absoluteTlsKeyPath = resolvePathFromRoot(tlsKeyFile);
+  const absoluteTlsCertPath = resolvePathFromRoot(tlsCertFile);
+  if (!fs.existsSync(absoluteTlsKeyPath)) {
+    throw new Error(`[HTTPS] TLS_KEY_FILE not found: ${absoluteTlsKeyPath}`);
+  }
+  if (!fs.existsSync(absoluteTlsCertPath)) {
+    throw new Error(`[HTTPS] TLS_CERT_FILE not found: ${absoluteTlsCertPath}`);
+  }
+  tlsOptions = {
+    key: fs.readFileSync(absoluteTlsKeyPath),
+    cert: fs.readFileSync(absoluteTlsCertPath),
+  };
+}
+const isNativeHttpsServer = Boolean(tlsOptions);
+const isHttpsHeadersEnabled =
+  isTrue(process.env.ENABLE_HTTPS_HEADERS) || httpsOnly || isNativeHttpsServer;
+
+app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY));
 
 // 2. Security Headers & Compression
 app.use(
@@ -56,6 +96,39 @@ const { logger, stream } = require("./utils/logger");
 const logFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
 app.use(morgan(logFormat, { stream }));
 
+if (httpsOnly && !isNativeHttpsServer) {
+  logger.warn(
+    "HTTPS_ONLY is enabled without TLS files. Ensure HTTPS is terminated at the reverse proxy.",
+  );
+}
+
+if (httpsOnly) {
+  app.use((req, res, next) => {
+    const forwardedProto = String(req.get("x-forwarded-proto") || "")
+      .split(",")[0]
+      .trim()
+      .toLowerCase();
+    const isSecureRequest = req.secure || forwardedProto === "https";
+
+    if (isSecureRequest) {
+      return next();
+    }
+
+    const hostHeader = req.get("host");
+    if (!hostHeader) {
+      return res.status(400).send("HTTPS Required");
+    }
+
+    const configuredHttpsPort = Number(process.env.HTTPS_PORT || process.env.PORT || 443);
+    const hostWithoutPort = hostHeader.replace(/:\d+$/, "");
+    const httpsHost = configuredHttpsPort === 443
+      ? hostWithoutPort
+      : `${hostWithoutPort}:${configuredHttpsPort}`;
+
+    return res.redirect(301, `https://${httpsHost}${req.originalUrl}`);
+  });
+}
+
 
 // 4. Body Parser
 app.use(express.json({ limit: "20mb" }));
@@ -64,6 +137,7 @@ app.use(express.json({ limit: "20mb" }));
 // อนุญาตเฉพาะ Frontend ของเราเท่านั้น เพื่อความปลอดภัย
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://localhost:5173",
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
   /https?:\/\/.*\.ngrok-free\.app/
@@ -85,7 +159,6 @@ const absoluteUploadDir = path.isAbsolute(uploadDir)
   : path.join(__dirname, uploadDir);
 
 // Ensure upload directory exists
-const fs = require("fs");
 if (!fs.existsSync(absoluteUploadDir)) {
   fs.mkdirSync(absoluteUploadDir, { recursive: true });
 }
@@ -93,6 +166,59 @@ if (!fs.existsSync(absoluteUploadDir)) {
 app.use("/uploads", express.static(absoluteUploadDir));
 
 // --- Rate Limiting Strategy ---
+const sanitizeRateLimitIp = (rawIp) => {
+  if (!rawIp) return "";
+
+  let candidate = String(rawIp).trim();
+  if (!candidate) return "";
+
+  // In case an upstream mistakenly forwards comma-separated values here,
+  // keep only the first hop.
+  if (candidate.includes(",")) {
+    candidate = candidate.split(",")[0].trim();
+  }
+
+  // [IPv6]:port
+  const bracketedIpv6 = candidate.match(/^\[([^[\]]+)\](?::\d+)?$/);
+  if (bracketedIpv6) {
+    return bracketedIpv6[1];
+  }
+
+  // IPv4 or IPv4-mapped IPv6 with optional :port
+  const ipv4Mapped = candidate.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/i);
+  if (ipv4Mapped) {
+    return `::ffff:${ipv4Mapped[1]}`;
+  }
+  const ipv4 = candidate.match(/^(\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/);
+  if (ipv4) {
+    return ipv4[1];
+  }
+
+  // Pure IPv6 without port
+  if (isIP(candidate)) {
+    return candidate;
+  }
+
+  // Generic fallback: if tail looks like :port and head is a valid IP, strip port.
+  const lastColon = candidate.lastIndexOf(":");
+  if (lastColon > -1) {
+    const maybePort = candidate.slice(lastColon + 1);
+    const maybeIp = candidate.slice(0, lastColon);
+    if (/^\d+$/.test(maybePort) && isIP(maybeIp)) {
+      return maybeIp;
+    }
+  }
+
+  return candidate;
+};
+
+const buildRateLimitKey = (req) => {
+  const normalizedIp =
+    sanitizeRateLimitIp(req.ip) ||
+    sanitizeRateLimitIp(req.socket?.remoteAddress) ||
+    "unknown";
+  return rateLimit.ipKeyGenerator(normalizedIp);
+};
 
 // Global Limiter: กันยิงรัวๆ ทั่วไป
 const globalLimiter = rateLimit({
@@ -100,6 +226,8 @@ const globalLimiter = rateLimit({
   max: 3000, // เพิ่มเป็น 3000 เพื่อรองรับ user 100+ คนใช้งานพร้อมกัน (เฉลี่ย 1 request/3วิ ต่อ user)
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: buildRateLimitKey,
+  validate: { ip: false },
   message: { message: "Too many requests, please try again later." },
 });
 
@@ -107,6 +235,8 @@ const globalLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 นาที
   max: 100, // 100 ครั้งต่อนาที (Increased for testing reliability)
+  keyGenerator: buildRateLimitKey,
+  validate: { ip: false },
   message: { message: "Too many login attempts, please try again later." },
 });
 
@@ -119,9 +249,10 @@ app.use("/api/register", authLimiter);
 app.use("/api/login", authLimiter);
 
 // --- Server & Socket.io (created BEFORE routes so req.io is available to all controllers) ---
-const http = require("http");
 const { Server } = require("socket.io");
-const server = http.createServer(app);
+const server = isNativeHttpsServer
+  ? https.createServer(tlsOptions, app)
+  : http.createServer(app);
 const extraOrigins = process.env.EXTRA_ORIGINS
   ? process.env.EXTRA_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
   : [];
@@ -130,6 +261,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:5173",
+      "https://localhost:5173",
       process.env.CLIENT_URL,
       process.env.FRONTEND_URL,
       ...extraOrigins,
@@ -204,6 +336,9 @@ app.get(/.*/, (req, res) => {
 
 // --- Start Server & Graceful Shutdown ---
 const PORT = process.env.PORT || 5002;
+const HTTP_REDIRECT_PORT = Number(process.env.HTTP_REDIRECT_PORT || 0);
+const serverProtocol = isNativeHttpsServer ? "https" : "http";
+let httpRedirectServer = null;
 
 const startServer = async () => {
   try {
@@ -223,11 +358,29 @@ const startServer = async () => {
 
     server.listen(PORT, "0.0.0.0", () => {
       logger.info(
-        `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
+        `Server running in ${process.env.NODE_ENV || "development"} mode at ${serverProtocol}://0.0.0.0:${PORT}`,
       );
     });
 
     server.setTimeout(30000);
+
+    if (httpsOnly && isNativeHttpsServer && HTTP_REDIRECT_PORT > 0) {
+      const httpsPort = Number(PORT);
+      httpRedirectServer = http.createServer((req, res) => {
+        const hostHeader = String(req.headers.host || "localhost");
+        const hostWithoutPort = hostHeader.replace(/:\d+$/, "");
+        const redirectHost = httpsPort === 443 ? hostWithoutPort : `${hostWithoutPort}:${httpsPort}`;
+        const destination = `https://${redirectHost}${req.url || "/"}`;
+        res.writeHead(301, { Location: destination });
+        res.end();
+      });
+
+      httpRedirectServer.listen(HTTP_REDIRECT_PORT, "0.0.0.0", () => {
+        logger.info(
+          `HTTP redirect server listening on http://0.0.0.0:${HTTP_REDIRECT_PORT} -> https://0.0.0.0:${PORT}`,
+        );
+      });
+    }
 
   } catch (error) {
     logger.error("Server failed to start:", error);
@@ -241,10 +394,18 @@ if (require.main === module) {
 
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server
 process.on("SIGTERM", async () => {
-  logger.info("SIGTERM signal received: closing HTTP server");
+  logger.info("SIGTERM signal received: closing web server");
   const prisma = require("./config/prisma");
   server.close(async () => {
-    logger.info("HTTP server closed");
+    logger.info(`${serverProtocol.toUpperCase()} server closed`);
+    if (httpRedirectServer) {
+      await new Promise((resolve) => {
+        httpRedirectServer.close(() => {
+          logger.info("HTTP redirect server closed");
+          resolve();
+        });
+      });
+    }
     try {
       await prisma.$disconnect();
       logger.info("Prisma disconnected");

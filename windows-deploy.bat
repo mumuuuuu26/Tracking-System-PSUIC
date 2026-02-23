@@ -89,6 +89,13 @@ echo [3/7] Validating production environment...
 call npm run validate:env:prod
 if errorlevel 1 goto :err_validate_env
 
+echo [INFO] Checking Google Calendar integration readiness...
+call npm run check:google:prod
+if errorlevel 1 (
+  echo [WARN] Google Calendar integration is not ready.
+  echo [WARN] IT Schedule sync will fail until GOOGLE_* in .env.production is fixed.
+)
+
 echo [4/7] Checking database readiness...
 call npm run preflight:db:prod
 if errorlevel 1 goto :err_preflight_db

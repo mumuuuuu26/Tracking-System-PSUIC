@@ -4,31 +4,58 @@ const { logger } = require('../utils/logger');
 // Load credentials from environment variables or a JSON file
 // For this implementation, we'll assume they are in env vars or we'll mock if missing
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+const GOOGLE_REQUIRED_ENV_KEYS = ['GOOGLE_PROJECT_ID', 'GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY'];
+
+const getMissingGoogleCredentialKeys = () =>
+    GOOGLE_REQUIRED_ENV_KEYS.filter((key) => {
+        const value = process.env[key];
+        return !value || String(value).trim().length === 0;
+    });
+
+const isGoogleCredentialsConfigured = () => getMissingGoogleCredentialKeys().length === 0;
+
+const buildGoogleConfigError = () => {
+    const missingKeys = getMissingGoogleCredentialKeys();
+    const error = new Error(
+        `Google Calendar is not configured on server. Missing: ${missingKeys.join(', ')}`,
+    );
+    error.code = 'GOOGLE_CALENDAR_NOT_CONFIGURED';
+    error.statusCode = 503;
+    error.missingKeys = missingKeys;
+    return error;
+};
+
+const normalizePrivateKey = (privateKey) => {
+    if (!privateKey) return '';
+
+    let normalized = String(privateKey);
+    // Strip leading/trailing quotes (single or double) if present
+    normalized = normalized.replace(/^["']|["']$/g, '');
+    // Convert escaped newlines to real newlines
+    normalized = normalized.replace(/\\n/g, '\n');
+    // Remove carriage returns
+    normalized = normalized.replace(/\r/g, '');
+    return normalized;
+};
 
 const getAuthClient = () => {
-    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-    if (privateKey) {
-        // Strip leading/trailing quotes (single or double) if present
-        privateKey = privateKey.replace(/^["']|["']$/g, '');
-        
-        // Handle escaped newlines or real newlines
-        // If it was a JSON string content, it might have \n chars. 
-        // If it was a multiline string, it has real newlines.
-        // We replace literal \n with real newlines just in case.
-        privateKey = privateKey.replace(/\\n/g, '\n'); 
-        
-        // Remove carriage returns to be safe
-        privateKey = privateKey.replace(/\r/g, '');
+    const missingKeys = getMissingGoogleCredentialKeys();
+    if (missingKeys.length > 0) {
+        logger.warn(
+            `[GoogleCalendar] Missing credentials: ${missingKeys.join(', ')}. Calendar sync is disabled.`,
+        );
+        return null;
     }
 
+    const privateKey = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
     const credentials = {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
         private_key: privateKey,
         project_id: process.env.GOOGLE_PROJECT_ID,
     };
 
-    if (!credentials.client_email || !credentials.private_key) {
-        logger.warn('Google Credentials missing. Calendar sync will be mocked.');
+    if (!credentials.client_email || !credentials.private_key || !credentials.project_id) {
+        logger.warn('[GoogleCalendar] Credentials are incomplete after normalization.');
         return null;
     }
 
@@ -139,11 +166,11 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
     try {
         const auth = getAuthClient();
         if (!auth) {
-            logger.warn("Google Calendar Auth Failed: Missing Credentials");
-            throw new Error("Missing Google API Credentials in Server Environment");
+            logger.warn('[GoogleCalendar] Auth failed: missing or invalid credentials');
+            throw buildGoogleConfigError();
         }
 
-    const targetCalendarId = calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary';
+        const targetCalendarId = calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary';
         
         if (!targetCalendarId || typeof targetCalendarId !== 'string' || !targetCalendarId.trim()) {
             throw new Error("Invalid Calendar ID provided");
@@ -175,10 +202,17 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
             return allEvents;
         } catch (apiError) {
             logger.error('Google API Error Details:', apiError.message);
-            throw new Error(`Google API Failed: ${apiError.message}`);
+            const wrappedError = new Error(`Google API Failed: ${apiError.message}`);
+            wrappedError.code = 'GOOGLE_CALENDAR_API_ERROR';
+            wrappedError.statusCode = Number(apiError?.code) || 502;
+            wrappedError.rawMessage = apiError.message;
+            throw wrappedError;
         }
     } catch (error) {
         logger.error('Error listing Google Calendar events:', error);
         throw error; // Propagate error to controller
     }
 };
+
+exports.getMissingGoogleCredentialKeys = getMissingGoogleCredentialKeys;
+exports.isGoogleCredentialsConfigured = isGoogleCredentialsConfigured;
