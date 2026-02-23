@@ -9,6 +9,7 @@ put package-lock.json
 put server.js
 put ecosystem.config.js
 put babel.config.js
+put windows-deploy.bat
 
 put -r config
 put -r controllers
