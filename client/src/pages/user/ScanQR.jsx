@@ -364,9 +364,9 @@ const ScanQR = () => {
     } catch (error) {
       const statusCode = error?.response?.status;
       if (statusCode === 404) {
-        toast.error("QR นี้ไม่พบอุปกรณ์ในระบบ");
+        toast.error("This QR code was not found in the system.");
       } else {
-        toast.error("ไม่สามารถอ่าน QR หรือดึงข้อมูลอุปกรณ์ได้");
+        toast.error("Unable to read QR or fetch equipment data.");
       }
       // If it was a file upload, we might need to restart if we stopped it.
       if (!scannerRef.current?.isScanning) {
@@ -495,7 +495,7 @@ const ScanQR = () => {
     const isAllowedByExt = ALLOWED_UPLOAD_EXTENSIONS.has(fileExt || "");
 
     if (!isAllowedByMime && !isAllowedByExt) {
-      toast.error("รองรับไฟล์ภาพ JPG, PNG, WEBP, HEIC");
+      toast.error("Supported image formats: JPG, PNG, WEBP, HEIC.");
       if (e.target) e.target.value = "";
       return;
     }
@@ -557,7 +557,7 @@ const ScanQR = () => {
       }
 
       if (!decodedText) {
-        toast.error("อ่าน QR จากรูปนี้ไม่สำเร็จ กรุณาใช้ภาพที่คมชัดขึ้น");
+        toast.error("Could not read QR from this image. Please try a clearer image.");
         throw scanError || new Error("Unable to decode QR from uploaded file.");
       }
 
