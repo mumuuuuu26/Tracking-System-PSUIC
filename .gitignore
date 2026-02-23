@@ -34,6 +34,9 @@ Thumbs.db
 # Generated
 /generated/prisma
 *.local
+/certs/*.pem
+/certs/*.crt
+/certs/*.key
 
 # Ignore uploads folder content but keep the folder itself
 uploads/*

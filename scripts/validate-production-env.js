@@ -1,4 +1,5 @@
 require("../config/env");
+const fs = require("fs");
 const path = require("path");
 
 const requiredVars = [
@@ -32,6 +33,18 @@ function isValidUrl(value) {
   } catch {
     return false;
   }
+}
+
+function isHttpsUrl(value) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isEnabled(value) {
+  return String(value || "").toLowerCase() === "true";
 }
 
 function fail(message) {
@@ -71,6 +84,42 @@ function main() {
 
   if (!isValidUrl(process.env.FRONTEND_URL)) {
     fail(`FRONTEND_URL is not a valid URL: "${process.env.FRONTEND_URL}"`);
+  }
+
+  if (isEnabled(process.env.HTTPS_ONLY)) {
+    if (!isHttpsUrl(process.env.CLIENT_URL)) {
+      fail("HTTPS_ONLY=true requires CLIENT_URL to use https://");
+    }
+    if (!isHttpsUrl(process.env.FRONTEND_URL)) {
+      fail("HTTPS_ONLY=true requires FRONTEND_URL to use https://");
+    }
+
+    const hasTlsKey = isTruthy(process.env.TLS_KEY_FILE);
+    const hasTlsCert = isTruthy(process.env.TLS_CERT_FILE);
+
+    if (hasTlsKey !== hasTlsCert) {
+      fail("TLS_KEY_FILE and TLS_CERT_FILE must be set together when using native TLS.");
+    }
+
+    if (hasTlsKey && hasTlsCert) {
+      const absoluteKeyPath = path.isAbsolute(process.env.TLS_KEY_FILE)
+        ? process.env.TLS_KEY_FILE
+        : path.resolve(process.cwd(), process.env.TLS_KEY_FILE);
+      const absoluteCertPath = path.isAbsolute(process.env.TLS_CERT_FILE)
+        ? process.env.TLS_CERT_FILE
+        : path.resolve(process.cwd(), process.env.TLS_CERT_FILE);
+
+      if (!fs.existsSync(absoluteKeyPath)) {
+        fail(`TLS key file not found: "${absoluteKeyPath}"`);
+      }
+      if (!fs.existsSync(absoluteCertPath)) {
+        fail(`TLS cert file not found: "${absoluteCertPath}"`);
+      }
+    } else {
+      warn(
+        "HTTPS_ONLY=true without TLS files. Make sure HTTPS is terminated at reverse proxy and forwards X-Forwarded-Proto=https.",
+      );
+    }
   }
 
   if (!path.isAbsolute(process.env.UPLOAD_DIR)) {

@@ -26,7 +26,7 @@ Before running the project, ensure you have the following installed:
 | :--- | :--- | :--- |
 | `PORT` | Server port | `5002` |
 | `SECRET` | JWT Secret Key | `your_secret_key` |
-| `CLIENT_URL` | Frontend URL for CORS | `http://localhost:5173` |
+| `CLIENT_URL` | Frontend URL for CORS | `https://localhost:5173` |
 | `DATABASE_URL` | MySQL Connection String | `mysql://user:pass@localhost:3306/db_name` |
 | `MAIL_USER` | Email for sending notifications | `example@gmail.com` |
 | `MAIL_PASS` | Email App Password | `xxxx xxxx xxxx xxxx` |
@@ -58,6 +58,17 @@ npm run seed
 Runs with `nodemon` for auto-reload.
 ```bash
 npm run dev
+```
+
+### Development (HTTPS only)
+Generate local TLS cert + enable HTTPS-only config:
+```bash
+npm run https:setup
+npm run dev
+```
+Health check:
+```bash
+curl -k https://localhost:5002/health
 ```
 
 ### Production (PM2)
@@ -109,7 +120,7 @@ k6 run tests/load/load-test.js
 ## API Documentation
 
 Swagger UI is available at:
-`http://localhost:5002/api-docs`
+`https://localhost:5002/api-docs` (when HTTPS is enabled)
 (Make sure the server is running)
 
 ## Security Features

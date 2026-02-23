@@ -26,8 +26,13 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `PORT` | Port for the backend API | `5002` |
 | `SECRET` | Secret key for JWT Token generation | `my_super_secure_secret_key` |
 | `NODE_ENV` | Environment mode | `production` |
-| `CLIENT_URL` | URL of the Frontend (CORS Policy) | `http://10.135.2.243` |
-| `FRONTEND_URL` | Used in email links | `http://10.135.2.243` |
+| `CLIENT_URL` | URL of the Frontend (CORS Policy) | `https://10.135.2.243` |
+| `FRONTEND_URL` | Used in email links | `https://10.135.2.243` |
+| `HTTPS_ONLY` | Force app to accept HTTPS only | `true` |
+| `ENABLE_HTTPS_HEADERS` | Enable HSTS/CSP upgrade headers | `true` |
+| `TRUST_PROXY` | Trust reverse-proxy HTTPS headers | `1` |
+| `TLS_KEY_FILE` | TLS private key path (Node native TLS) | `/etc/ssl/private/app.key` |
+| `TLS_CERT_FILE` | TLS certificate path (Node native TLS) | `/etc/ssl/certs/app.crt` |
 
 ### Database
 | Variable | Description | Example |
