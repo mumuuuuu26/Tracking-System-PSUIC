@@ -10,40 +10,11 @@ export default defineConfig({
         manualChunks(id) {
           const normalizedId = id.split("?")[0].replace(/\\/g, "/");
 
+          // Let Vite handle app-code chunking for React lazy routes.
+          // Custom chunk names are applied only to node_modules to avoid
+          // circular chunk imports that can cause blank screen at runtime.
           if (!normalizedId.includes("/node_modules/")) {
-            if (
-              normalizedId.includes("/src/pages/user/") ||
-              normalizedId.includes("/src/layouts/LayoutUser") ||
-              normalizedId.includes("/src/components/user/")
-            ) {
-              return "route-user";
-            }
-            if (
-              normalizedId.includes("/src/pages/admin/") ||
-              normalizedId.includes("/src/layouts/LayoutAdmin") ||
-              normalizedId.includes("/src/components/admin/")
-            ) {
-              return "route-admin";
-            }
-            if (
-              normalizedId.includes("/src/pages/it/") ||
-              normalizedId.includes("/src/layouts/LayoutIT") ||
-              normalizedId.includes("/src/components/it/")
-            ) {
-              return "route-it";
-            }
-            if (normalizedId.includes("/src/pages/auth/")) {
-              return "route-auth";
-            }
-            if (
-              normalizedId.includes("/src/App.jsx") ||
-              normalizedId.includes("/src/main.jsx") ||
-              normalizedId.includes("/src/routes/") ||
-              normalizedId.includes("/src/layouts/Layout.jsx")
-            ) {
-              return "route-core";
-            }
-            return "route-shared";
+            return;
           }
 
           const [, packagePath = ""] = normalizedId.split("node_modules/");
