@@ -16,7 +16,7 @@
     "test": "cross-env NODE_ENV=test jest --runInBand --openHandlesTimeout=10000",
     "test:e2e": "npm run seed:e2e && cross-env NODE_ENV=test node scripts/run-playwright.js test",
     "seed:e2e": "cross-env NODE_ENV=test node scripts/seed-e2e.js",
-    "test:e2e:ci": "cross-env NODE_ENV=test npm run seed:e2e && start-server-and-test start:test http://localhost:5002/health test:e2e",
+    "test:e2e:ci": "cross-env NODE_ENV=test npm run test:e2e",
     "smoke:predeploy": "node scripts/smoke-predeploy.js",
     "smoke:predeploy:ci": "cross-env NODE_ENV=test node scripts/smoke-predeploy.js",
     "start": "cross-env NODE_ENV=production node server.js",
