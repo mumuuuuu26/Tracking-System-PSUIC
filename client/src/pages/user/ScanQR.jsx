@@ -256,7 +256,8 @@ const ScanQR = () => {
 
       // Attempt 1: decode original image first (best chance for high-quality QR).
       try {
-        decodedText = await scannerRef.current.scanFile(file, true);
+        // Use showImage=false so decoding does not depend on a visible scanner container.
+        decodedText = await scannerRef.current.scanFile(file, false);
       } catch (error) {
         scanError = error;
       }
@@ -265,7 +266,7 @@ const ScanQR = () => {
       if (!decodedText) {
         try {
           const resizedImage = await resizeFile(file, 1400, 1400, 92);
-          decodedText = await scannerRef.current.scanFile(resizedImage, true);
+          decodedText = await scannerRef.current.scanFile(resizedImage, false);
         } catch (error) {
           scanError = error;
         }
@@ -293,22 +294,28 @@ const ScanQR = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black text-white z-[9999] overflow-hidden font-sans">
+    <div className="fixed inset-0 text-white z-[9999] overflow-hidden font-sans bg-[radial-gradient(circle_at_top,_#1b2542_0%,_#0f1321_45%,_#05060a_100%)]">
+      <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-sky-400/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-12 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+
       {/* Viewport - Full Feed */}
       <div
         id="reader"
         className={
           uploadOnlyMode
-            ? "hidden"
+            ? "absolute -left-[9999px] -top-[9999px] w-px h-px opacity-0 pointer-events-none overflow-hidden"
             : "absolute inset-0 w-full h-full [&>video]:object-cover [&>video]:h-full [&>video]:w-full"
         }
       ></div>
 
       {uploadOnlyMode && (
-        <div className="absolute inset-0 flex items-center justify-center px-6">
-          <div className="max-w-sm w-full rounded-2xl border border-white/15 bg-white/10 backdrop-blur-sm p-6 text-center">
-            <p className="text-sm font-semibold tracking-wide uppercase text-white/80">Upload QR</p>
-            <p className="mt-3 text-xs text-amber-200">{uploadOnlyMessage}</p>
+        <div className="absolute inset-0 z-20 flex items-center justify-center px-6">
+          <div className="max-w-sm w-full rounded-3xl border border-white/15 bg-black/35 backdrop-blur-xl p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+            <div className="mx-auto mb-5 w-14 h-14 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center">
+              <ImageIcon size={24} className="text-amber-200" />
+            </div>
+            <p className="text-sm font-semibold tracking-[0.18em] uppercase text-white/85">Upload QR</p>
+            <p className="mt-3 text-sm text-amber-200">{uploadOnlyMessage}</p>
           </div>
         </div>
       )}
@@ -325,7 +332,7 @@ const ScanQR = () => {
         <div className="px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/10 transition-all active:scale-95"
+            className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/15 transition-all active:scale-95"
           >
             <ArrowLeft size={20} />
           </button>
@@ -381,12 +388,16 @@ const ScanQR = () => {
         <div className="flex flex-col items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-14 h-14 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all"
+            className={`${
+              uploadOnlyMode ? "w-16 h-16 border-amber-300/35 bg-amber-300/10" : "w-14 h-14 border-white/10 bg-white/10"
+            } rounded-full border backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all shadow-lg`}
           >
             <ImageIcon size={24} />
             <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleFileUpload} />
           </button>
-          <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest leading-tight">JPG / PNG</span>
+          <span className="text-[10px] font-medium text-white/45 uppercase tracking-widest leading-tight">
+            {uploadOnlyMode ? "Upload" : "JPG / PNG"}
+          </span>
         </div>
       </div>
 
