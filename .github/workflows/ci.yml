@@ -81,7 +81,22 @@ jobs:
         DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
 
     - name: Run Backend Tests
-      run: npm test
+      run: |
+        set -o pipefail
+        npm test 2>&1 | tee backend-test.log
+        test_exit=${PIPESTATUS[0]}
+        if [ "$test_exit" -ne 0 ]; then
+          summary=$(grep -E "FAIL |Expected:|Received:|Can't reach database|PrismaClient|Error:" backend-test.log | head -n 8 | tr '\n' ' ')
+          if [ -z "$summary" ]; then
+            summary="npm test failed. See backend-test.log in this step output."
+          fi
+          summary=${summary//'%'/'%25'}
+          summary=${summary//$'\r'/'%0D'}
+          summary=${summary//$'\n'/'%0A'}
+          echo "::error title=Run Backend Tests failed::$summary"
+          tail -n 120 backend-test.log
+          exit "$test_exit"
+        fi
       env:
         NODE_ENV: test
         DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
