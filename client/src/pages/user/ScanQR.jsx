@@ -63,8 +63,7 @@ const ScanQR = () => {
   const isSecureContextRuntime =
     typeof window !== "undefined" ? window.isSecureContext : true;
   const uploadOnlyMode = !isSecureContextRuntime;
-  const uploadOnlyMessage =
-    "Camera scan is disabled on HTTP. Please upload QR image in JPG/PNG format.";
+  const uploadOnlyMessage = "HTTP mode: Upload JPG/PNG only.";
 
   const reportCameraError = useCallback((message) => {
     setCameraError(message);
@@ -120,7 +119,6 @@ const ScanQR = () => {
   const startScanner = useCallback(async () => {
     try {
       if (uploadOnlyMode) {
-        reportCameraError(uploadOnlyMessage);
         return;
       }
 
@@ -169,7 +167,7 @@ const ScanQR = () => {
 
       reportCameraError("Unable to start camera scanner. Please check browser camera permission.");
     }
-  }, [fetchEquipmentData, reportCameraError, uploadOnlyMessage, uploadOnlyMode]);
+  }, [fetchEquipmentData, reportCameraError, uploadOnlyMode]);
 
   useEffect(() => {
     startScannerRef.current = startScanner;
@@ -180,7 +178,7 @@ const ScanQR = () => {
     if (!uploadOnlyMode) {
       startScanner();
     } else {
-      setCameraError(uploadOnlyMessage);
+      setCameraError("");
     }
 
     return () => {
@@ -191,7 +189,7 @@ const ScanQR = () => {
         }
       }
     };
-  }, [startScanner, uploadOnlyMessage, uploadOnlyMode]);
+  }, [startScanner, uploadOnlyMode]);
 
   const toggleFlash = async () => {
     if (uploadOnlyMode) return;
@@ -310,10 +308,7 @@ const ScanQR = () => {
         <div className="absolute inset-0 flex items-center justify-center px-6">
           <div className="max-w-sm w-full rounded-2xl border border-white/15 bg-white/10 backdrop-blur-sm p-6 text-center">
             <p className="text-sm font-semibold tracking-wide uppercase text-white/80">Upload QR</p>
-            <p className="mt-3 text-xs text-white/70 leading-relaxed">
-              Temporary HTTP mode is active. Camera scan is hidden for compatibility.
-            </p>
-            <p className="mt-2 text-xs text-amber-200">Please use JPG/PNG images only.</p>
+            <p className="mt-3 text-xs text-amber-200">{uploadOnlyMessage}</p>
           </div>
         </div>
       )}
@@ -341,7 +336,7 @@ const ScanQR = () => {
         </div>
       </div>
 
-      {cameraError && (
+      {cameraError && !uploadOnlyMode && (
         <div className="absolute top-20 left-0 right-0 z-40 px-6">
           <div className="rounded-xl border border-amber-300/20 bg-black/65 px-4 py-3 text-center text-xs tracking-wide text-amber-200 backdrop-blur-sm">
             {cameraError}
