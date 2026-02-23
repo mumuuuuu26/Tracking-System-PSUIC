@@ -47,6 +47,10 @@ function isEnabled(value) {
   return String(value || "").toLowerCase() === "true";
 }
 
+function isNonNegativeInteger(value) {
+  return /^\d+$/.test(String(value || ""));
+}
+
 function fail(message) {
   console.error(`[ENV CHECK] ${message}`);
   process.exit(1);
@@ -131,6 +135,22 @@ function main() {
   if (!path.isAbsolute(process.env.UPLOAD_BACKUP_DIR)) {
     fail(
       `UPLOAD_BACKUP_DIR must be an absolute path in production (got "${process.env.UPLOAD_BACKUP_DIR}").`,
+    );
+  }
+
+  if (isTruthy(process.env.UPLOAD_BACKUP_MODE)) {
+    const backupMode = String(process.env.UPLOAD_BACKUP_MODE).trim().toLowerCase();
+    if (!["incremental", "differential"].includes(backupMode)) {
+      fail(`UPLOAD_BACKUP_MODE must be "incremental" or "differential" (got "${process.env.UPLOAD_BACKUP_MODE}")`);
+    }
+  }
+
+  if (
+    isTruthy(process.env.UPLOAD_BACKUP_FULL_INTERVAL_DAYS) &&
+    !isNonNegativeInteger(process.env.UPLOAD_BACKUP_FULL_INTERVAL_DAYS)
+  ) {
+    fail(
+      `UPLOAD_BACKUP_FULL_INTERVAL_DAYS must be a non-negative integer (got "${process.env.UPLOAD_BACKUP_FULL_INTERVAL_DAYS}")`,
     );
   }
 

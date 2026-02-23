@@ -50,6 +50,8 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `UPLOAD_QUALITY` | Output quality 1-100 (if `sharp` available) | `82` |
 | `UPLOAD_TARGET_FORMAT` | `webp`, `jpeg`, `png`, or `original` | `webp` |
 | `UPLOAD_BACKUP_DIR` | Absolute persistent path for upload backups | `/srv/psuic/backups/uploads` |
+| `UPLOAD_BACKUP_MODE` | Upload backup strategy: `incremental` or `differential` | `incremental` |
+| `UPLOAD_BACKUP_FULL_INTERVAL_DAYS` | Differential mode only: create new full baseline every N days (`0` = disable auto refresh) | `7` |
 | `UPLOAD_BACKUP_RETENTION_DAYS` | Keep upload backups for N days | `14` |
 | `UPLOAD_ORPHAN_RETENTION_HOURS` | Keep unreferenced upload files for N hours before delete | `24` |
 | `DB_BACKUP_CRON` | Cron for DB backup job | `"0 3 * * *"` |
@@ -195,7 +197,7 @@ Use the provided deployment scripts:
 **3. "Disk Full"**
 -   Logs are automatically rotated and kept for 30 days (`logs/`).
 -   DB backups are kept for 7 days (`backups/`).
--   Upload backups are kept by `UPLOAD_BACKUP_RETENTION_DAYS` (default 14 days).
+-   Upload backups run as incremental/differential snapshots (not full copy every day), and are kept by `UPLOAD_BACKUP_RETENTION_DAYS` (default 14 days).
 -   Orphan upload files are cleaned by scheduler (`npm run uploads:cleanup`).
 -   Manual maintenance commands:
     - `npm run uploads:backup`
