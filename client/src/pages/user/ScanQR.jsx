@@ -6,6 +6,46 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Resizer from "react-image-file-resizer";
 
+const normalizeQrText = (rawText) => {
+  if (!rawText) return "";
+  const trimmed = String(rawText).trim();
+  if (!trimmed) return "";
+
+  // Direct code (our generated QR format) should pass through quickly.
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const qrIndex = pathParts.findIndex((part) => part === "qr");
+    if (qrIndex >= 0 && pathParts[qrIndex + 1]) {
+      return decodeURIComponent(pathParts[qrIndex + 1]);
+    }
+
+    const queryCandidates = [
+      url.searchParams.get("qr"),
+      url.searchParams.get("qrcode"),
+      url.searchParams.get("code"),
+      url.searchParams.get("equipment"),
+      url.searchParams.get("id"),
+    ].filter(Boolean);
+
+    if (queryCandidates.length > 0) {
+      return String(queryCandidates[0]).trim();
+    }
+
+    if (pathParts.length > 0) {
+      return decodeURIComponent(pathParts[pathParts.length - 1]);
+    }
+  } catch {
+    // If parsing URL fails, fallback to original text.
+  }
+
+  return trimmed;
+};
+
 const ScanQR = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -16,6 +56,7 @@ const ScanQR = () => {
   const mountedRef = useRef(true);
   const startScannerRef = useRef(null);
   const cameraToastShownRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   const reportCameraError = useCallback((message) => {
     setCameraError(message);
@@ -25,12 +66,16 @@ const ScanQR = () => {
     }
   }, []);
 
-  const fetchEquipmentData = useCallback(async (qrCode) => {
+  const fetchEquipmentData = useCallback(async (rawQrText) => {
+    if (!rawQrText || isFetchingRef.current) return;
+    const qrCode = normalizeQrText(rawQrText);
     if (!qrCode) return;
 
+    isFetchingRef.current = true;
     setLoading(true);
     try {
-      const res = await axios.get(`/api/equipment/qr/${qrCode}`);
+      // Encode to keep route param valid even when QR text contains URL chars.
+      const res = await axios.get(`/api/equipment/qr/${encodeURIComponent(qrCode)}`);
       const equipmentData = res.data;
 
       // Stop scanning only after successful find
@@ -59,6 +104,7 @@ const ScanQR = () => {
         if (startScannerRef.current) startScannerRef.current();
       }
     } finally {
+      isFetchingRef.current = false;
       if (mountedRef.current) setLoading(false);
     }
   }, [navigate]);
@@ -90,7 +136,7 @@ const ScanQR = () => {
           {
             fps: 15, // Higher FPS for smoother feel
             // REMOVED qrbox to allow scanning the ENTIRE screen as requested
-            aspectRatio: window.innerWidth / window.innerHeight
+            // aspectRatio is removed to avoid stretching the camera stream which breaks QR code recognition on mobile
           },
           (decodedText) => {
             fetchEquipmentData(decodedText);
@@ -142,14 +188,14 @@ const ScanQR = () => {
     }
   };
 
-  const resizeFile = (file) =>
+  const resizeFile = (file, maxWidth = 1000, maxHeight = 1000, quality = 96) =>
     new Promise((resolve) => {
       Resizer.imageFileResizer(
         file,
-        800, // Max width
-        800, // Max height
+        maxWidth,
+        maxHeight,
         "JPEG",
-        100,
+        quality,
         0,
         (uri) => {
           resolve(uri);
@@ -165,24 +211,53 @@ const ScanQR = () => {
     setLoading(true);
 
     try {
-      // 1. Resize image first for MUCH faster QR decoding
-      const resizedImage = await resizeFile(file);
-
       // Stop camera temporarily to focus on file
       if (scannerRef.current && scannerRef.current.isScanning) {
         await scannerRef.current.stop().catch(() => { });
       }
 
       if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode("reader");
+        scannerRef.current = new Html5Qrcode("reader", {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        });
       }
 
-      const result = await scannerRef.current.scanFile(resizedImage, true);
-      await fetchEquipmentData(result);
+      let decodedText = "";
+      let scanError = null;
+
+      // Attempt 1: decode original image first (best chance for high-quality QR).
+      try {
+        decodedText = await scannerRef.current.scanFile(file, true);
+      } catch (error) {
+        scanError = error;
+      }
+
+      // Attempt 2: fallback with resized image (helps very large photos from mobile).
+      if (!decodedText) {
+        try {
+          const resizedImage = await resizeFile(file, 1400, 1400, 92);
+          decodedText = await scannerRef.current.scanFile(resizedImage, true);
+        } catch (error) {
+          scanError = error;
+        }
+      }
+
+      if (!decodedText) {
+        const isHeicLike = /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
+        if (isHeicLike) {
+          toast.error("HEIC/HEIF may fail. Please convert image to JPG/PNG then try again.");
+        } else {
+          toast.error("Could not read QR code from this image. Try a clearer JPG/PNG.");
+        }
+        throw scanError || new Error("Unable to decode QR from uploaded file.");
+      }
+
+      await fetchEquipmentData(decodedText);
     } catch {
-      toast.error("Could not read QR code. Please ensure it's clear.");
       startScanner(); // Always restart if file scan failed
     } finally {
+      // Allow selecting the same file again after a failed attempt.
+      if (e.target) e.target.value = "";
       if (mountedRef.current) setLoading(false);
     }
   };

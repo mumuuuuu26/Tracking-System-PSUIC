@@ -37,11 +37,12 @@ function Ensure-Command([string]$CommandName) {
 }
 
 function Ensure-IisModules([string]$AppCmdPath) {
-    $modules = & $AppCmdPath list modules
-    if ($modules -notmatch "RewriteModule") {
+    # Read as one string; using -match/-notmatch on arrays can produce false positives.
+    $globalModules = (& $AppCmdPath list config /section:system.webServer/globalModules | Out-String)
+    if ($globalModules -notmatch "RewriteModule") {
         throw "IIS URL Rewrite is missing. Install from https://www.iis.net/downloads/microsoft/url-rewrite"
     }
-    if (($modules -notmatch "ApplicationRequestRouting") -and ($modules -notmatch "ARR")) {
+    if (($globalModules -notmatch "ApplicationRequestRouting") -and ($globalModules -notmatch "ARR")) {
         throw "IIS Application Request Routing (ARR) is missing. Install from https://www.iis.net/downloads/microsoft/application-request-routing"
     }
 }
@@ -130,10 +131,6 @@ function Write-RewriteConfig([string]$SitePath, [string]$Backend) {
 <configuration>
   <system.webServer>
     <rewrite>
-      <allowedServerVariables>
-        <add name="HTTP_X_FORWARDED_PROTO" />
-        <add name="HTTP_X_FORWARDED_HOST" />
-      </allowedServerVariables>
       <rules>
         <rule name="Redirect HTTP to HTTPS" stopProcessing="true">
           <match url="(.*)" />
@@ -144,10 +141,6 @@ function Write-RewriteConfig([string]$SitePath, [string]$Backend) {
         </rule>
         <rule name="Reverse Proxy to Node" stopProcessing="true">
           <match url="(.*)" />
-          <serverVariables>
-            <set name="HTTP_X_FORWARDED_PROTO" value="https" />
-            <set name="HTTP_X_FORWARDED_HOST" value="{HTTP_HOST}" />
-          </serverVariables>
           <action type="Rewrite" url="$Backend/{R:1}" appendQueryString="true" />
         </rule>
       </rules>
