@@ -106,6 +106,7 @@ const HomeUser = () => {
               {/* Profile Avatar */}
               <div
                 onClick={() => navigate("/user/profile")}
+                data-testid="home-profile-avatar"
                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-white/30 dark:border-blue-400/30 bg-blue-800/30 dark:bg-blue-700/30 flex items-center justify-center cursor-pointer hover:border-white/60 dark:hover:border-blue-400/60 transition-colors shadow-lg"
               >
                 <ProfileAvatar

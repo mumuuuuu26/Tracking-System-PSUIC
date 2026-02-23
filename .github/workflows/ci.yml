@@ -178,8 +178,23 @@ jobs:
 
     - name: Run E2E Tests
       run: |
+        set +e
+        set -o pipefail
         unset NO_COLOR
-        npm run test:e2e:ci
+        npm run test:e2e:ci 2>&1 | tee e2e-test.log
+        e2e_exit=${PIPESTATUS[0]}
+        if [ "$e2e_exit" -ne 0 ]; then
+          summary=$(grep -E "Error:|Failed|failed|Timeout|expect\\(|\\bnot to\\b|\\bto be\\b|\\bto have\\b|\\breceived\\b|\\bexpected\\b" e2e-test.log | head -n 12 | tr '\n' ' ')
+          if [ -z "$summary" ]; then
+            summary="E2E tests failed. See e2e-test.log in this step output."
+          fi
+          summary=${summary//'%'/'%25'}
+          summary=${summary//$'\r'/'%0D'}
+          summary=${summary//$'\n'/'%0A'}
+          echo "::error title=Run E2E Tests failed::$summary"
+          tail -n 200 e2e-test.log
+          exit "$e2e_exit"
+        fi
       env:
         DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
         PORT: 5002

@@ -140,9 +140,14 @@ test.describe('User Workflow', () => {
         await page.goto('/user'); 
         await waitForAppReady(page);
         
-        const profileSelector = page.locator('div.w-12.h-12.cursor-pointer').first(); 
-        await expect(profileSelector).toBeVisible();
-        await profileSelector.click();
+        const homeProfileAvatar = page.getByTestId('home-profile-avatar').first();
+        if (await homeProfileAvatar.isVisible()) {
+            await homeProfileAvatar.click();
+        } else {
+            const bottomNavProfile = page.locator('[data-testid="nav-profile"]:visible').first();
+            await expect(bottomNavProfile).toBeVisible();
+            await bottomNavProfile.click();
+        }
 
         // Verify navigation to profile page
         await page.waitForURL('**/user/profile');
