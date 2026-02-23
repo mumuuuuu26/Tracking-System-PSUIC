@@ -18,6 +18,9 @@ if not exist ".env.production" goto :err_env
 for /f "usebackq tokens=1,* delims==" %%A in (`findstr /B "DATABASE_URL=" ".env.production"`) do if /I "%%A"=="DATABASE_URL" set "DATABASE_URL=%%B"
 if not defined DATABASE_URL goto :err_database_url
 
+for /f "usebackq tokens=1,* delims==" %%A in (`findstr /B "PORT=" ".env.production"`) do if /I "%%A"=="PORT" set "APP_PORT=%%B"
+if not defined APP_PORT set "APP_PORT=5002"
+
 where node >nul 2>&1
 if errorlevel 1 goto :err_node
 
@@ -114,8 +117,8 @@ if errorlevel 1 goto :err_pm2_run
 call pm2 save >nul
 call pm2 status
 
-echo [HEALTH] Checking http://127.0.0.1:5002/health ...
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:5002/health -TimeoutSec 8; if ($r.Content.Trim() -eq 'OK') { exit 0 } else { exit 1 } } catch { exit 1 }"
+echo [HEALTH] Checking http://127.0.0.1:%APP_PORT%/health ...
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:%APP_PORT%/health -TimeoutSec 8; if ($r.Content.Trim() -eq 'OK') { exit 0 } else { exit 1 } } catch { exit 1 }"
 if errorlevel 1 goto :err_health
 
 echo ============================================
