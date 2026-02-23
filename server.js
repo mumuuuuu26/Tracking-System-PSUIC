@@ -83,6 +83,9 @@ app.use(
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
+        // QR upload flow uses browser blob URLs (URL.createObjectURL) for local image decode.
+        // Allow blob images while keeping CSP strict to self/data/blob only.
+        imgSrc: ["'self'", "data:", "blob:"],
         // On HTTP deployments this directive upgrades all resource URLs to https://
         // and causes blank page if 443 is unavailable.
         upgradeInsecureRequests: isHttpsHeadersEnabled ? [] : null,
