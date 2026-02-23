@@ -10,6 +10,11 @@ put server.js
 put ecosystem.config.js
 put babel.config.js
 put windows-deploy.bat
+put windows-http80-setup.bat
+put windows-http80-setup.ps1
+put windows-runtime-check.bat
+put windows-iis-https-proxy.bat
+put windows-iis-https-proxy.ps1
 
 put -r config
 put -r controllers
