@@ -17,6 +17,8 @@ put windows-http80-setup.ps1
 put windows-runtime-check.bat
 put windows-cutover-prod.bat
 put windows-cutover-prod.ps1
+put windows-enable-pm2-startup.bat
+put windows-enable-pm2-startup.ps1
 put windows-iis-https-proxy.bat
 put windows-iis-https-proxy.ps1
 
