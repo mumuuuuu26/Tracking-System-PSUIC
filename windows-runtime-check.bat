@@ -3,6 +3,9 @@ setlocal EnableExtensions
 
 cd /d "%~dp0"
 
+for /f "usebackq tokens=1,* delims==" %%A in (`findstr /B "PORT=" ".env.production"`) do if /I "%%A"=="PORT" set "APP_PORT=%%B"
+if not defined APP_PORT set "APP_PORT=5002"
+
 echo ============================================
 echo Tracking System Runtime Check
 echo ============================================
@@ -14,17 +17,17 @@ if errorlevel 1 goto :err_pm2
 echo.
 
 echo [2/6] Local health endpoint
-powershell -NoProfile -Command "(Invoke-WebRequest -UseBasicParsing http://127.0.0.1/health -TimeoutSec 8).Content"
+powershell -NoProfile -Command "(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:%APP_PORT%/health -TimeoutSec 8).Content"
 if errorlevel 1 goto :err_health_local
 echo.
 
-echo [3/6] LAN health endpoint (10.135.2.226)
-powershell -NoProfile -Command "(Invoke-WebRequest -UseBasicParsing http://10.135.2.226/health -TimeoutSec 8).Content"
+echo [3/6] LAN health endpoint (10.135.2.226:%APP_PORT%)
+powershell -NoProfile -Command "(Invoke-WebRequest -UseBasicParsing http://10.135.2.226:%APP_PORT%/health -TimeoutSec 8).Content"
 if errorlevel 1 goto :err_health_lan
 echo.
 
-echo [4/6] Listening ports 80 and 5002
-netstat -ano | findstr /R /C:":80 .*LISTENING" /C:":5002 .*LISTENING"
+echo [4/6] Listening port %APP_PORT%
+netstat -ano | findstr /R /C:":%APP_PORT% .*LISTENING"
 echo.
 
 echo [5/6] Firewall rule TrackingSystem80
@@ -32,7 +35,7 @@ netsh advfirewall firewall show rule name="TrackingSystem80"
 echo.
 
 echo [6/6] Frontend root status
-curl -I http://127.0.0.1/
+curl -I http://127.0.0.1:%APP_PORT%/
 if errorlevel 1 goto :err_root
 echo.
 

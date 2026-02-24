@@ -97,10 +97,17 @@ Write-Step "Updating .env.production for HTTP on port 80"
 Set-EnvValue -FilePath $envPath -Key "PORT" -Value "80"
 Set-EnvValue -FilePath $envPath -Key "CLIENT_URL" -Value "http://$ServerHost"
 Set-EnvValue -FilePath $envPath -Key "FRONTEND_URL" -Value "http://$ServerHost"
+Set-EnvValue -FilePath $envPath -Key "HTTPS_ONLY" -Value "false"
+Set-EnvValue -FilePath $envPath -Key "ENABLE_HTTPS_HEADERS" -Value "false"
+Set-EnvValue -FilePath $envPath -Key "TLS_KEY_FILE" -Value ""
+Set-EnvValue -FilePath $envPath -Key "TLS_CERT_FILE" -Value ""
+Set-EnvValue -FilePath $envPath -Key "HTTP_REDIRECT_PORT" -Value ""
 
 Write-Info "Updated: PORT=80"
 Write-Info "Updated: CLIENT_URL=http://$ServerHost"
 Write-Info "Updated: FRONTEND_URL=http://$ServerHost"
+Write-Info "Updated: HTTPS_ONLY=false"
+Write-Info "Updated: ENABLE_HTTPS_HEADERS=false"
 
 Write-Step "Restarting backend with PM2"
 Push-Location $AppDir

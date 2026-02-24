@@ -50,3 +50,5 @@ test-results/
 /prisma/temp.prisma
 /temp_prisma/
 /test-*.js
+/.deploy-state/
+/prisma/client-cache/

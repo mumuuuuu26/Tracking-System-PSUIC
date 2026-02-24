@@ -1,6 +1,13 @@
 const prisma = require("../config/prisma");
+const shouldSkipDbConnect = ["1", "true"].includes(
+  String(process.env.TEST_SKIP_DB_CONNECT).toLowerCase(),
+);
 
 beforeAll(async () => {
+  if (shouldSkipDbConnect) {
+    return;
+  }
+
   try {
     await prisma.$connect();
   } catch (err) {
@@ -11,7 +18,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.$disconnect().catch(() => {});
+  if (!shouldSkipDbConnect) {
+    await prisma.$disconnect().catch(() => {});
+  }
 
   try {
     const { logger } = require("../utils/logger");

@@ -62,7 +62,7 @@ const Schedule = () => {
     }, []);
 
     const performSync = React.useCallback(async () => {
-        if (!savedCalendarId) return;
+        if (!savedCalendarId || !googleServerReady) return;
 
         try {
             setSyncing(true);
@@ -73,7 +73,7 @@ const Schedule = () => {
         } finally {
             setSyncing(false);
         }
-    }, [loadSchedule, savedCalendarId]);
+    }, [googleServerReady, loadSchedule, savedCalendarId]);
 
     useEffect(() => {
         loadProfile();

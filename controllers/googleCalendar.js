@@ -35,6 +35,20 @@ const normalizePrivateKey = (privateKey) => {
     normalized = normalized.replace(/\\n/g, '\n');
     // Remove carriage returns
     normalized = normalized.replace(/\r/g, '');
+
+    // If .env was malformed (e.g. GOOGLE_PRIVATE_KEY and next KEY ended up on one line),
+    // keep only the PEM block to avoid breaking Google auth parsing.
+    const beginMarker = "-----BEGIN PRIVATE KEY-----";
+    const endMarker = "-----END PRIVATE KEY-----";
+    const beginIndex = normalized.indexOf(beginMarker);
+    const endIndex = normalized.indexOf(endMarker);
+    if (beginIndex !== -1 && endIndex !== -1 && endIndex > beginIndex) {
+        normalized = normalized.slice(beginIndex, endIndex + endMarker.length);
+    }
+
+    if (!normalized.endsWith('\n')) {
+        normalized = `${normalized}\n`;
+    }
     return normalized;
 };
 
@@ -202,10 +216,23 @@ exports.listGoogleEvents = async (timeMin, timeMax, calendarId = 'primary') => {
             return allEvents;
         } catch (apiError) {
             logger.error('Google API Error Details:', apiError.message);
-            const wrappedError = new Error(`Google API Failed: ${apiError.message}`);
+            const apiMessage =
+                apiError?.message ||
+                apiError?.response?.data?.error?.message ||
+                "Unknown Google API error";
+            const wrappedError = new Error(`Google API Failed: ${apiMessage}`);
             wrappedError.code = 'GOOGLE_CALENDAR_API_ERROR';
-            wrappedError.statusCode = Number(apiError?.code) || 502;
-            wrappedError.rawMessage = apiError.message;
+            const responseStatus = Number(apiError?.response?.status);
+            const numericCode = Number(apiError?.code);
+            wrappedError.statusCode =
+                Number.isInteger(responseStatus) && responseStatus > 0
+                    ? responseStatus
+                    : Number.isInteger(numericCode) && numericCode > 0
+                    ? numericCode
+                    : 502;
+            wrappedError.rawCode = apiError?.code;
+            wrappedError.rawStatus = apiError?.response?.status;
+            wrappedError.rawMessage = apiMessage;
             throw wrappedError;
         }
     } catch (error) {

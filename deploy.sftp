@@ -13,6 +13,8 @@ put windows-deploy.bat
 put windows-http80-setup.bat
 put windows-http80-setup.ps1
 put windows-runtime-check.bat
+put windows-cutover-prod.bat
+put windows-cutover-prod.ps1
 put windows-iis-https-proxy.bat
 put windows-iis-https-proxy.ps1
 

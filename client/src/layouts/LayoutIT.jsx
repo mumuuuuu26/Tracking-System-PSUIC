@@ -20,7 +20,7 @@ const LayoutIT = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d1b2a] overflow-x-hidden">
 
 
       {/* Desktop Header (Visible on Desktop) */}
@@ -35,19 +35,12 @@ const LayoutIT = () => {
 
       {/* Floating Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-        <nav className="bg-white border-t border-gray-100 pb-safe pt-2 px-2 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]">
-          <div className="flex items-end justify-between w-full max-w-lg mx-auto relative">
-            <NavLink href="/it" icon={<Home size={22} />} label="Home" active={isActive("/it")} />
-
-            <NavLink href="/it/tickets" icon={<FileText size={22} />} label="Ticket" active={isActive("/it/tickets") || isActive("/it/history")} />
-
-            <NavLink href="/it/schedule" icon={<Calendar size={22} />} label="Schedule" active={isActive("/it/schedule")} />
-
-            {/* New Tools */}
-
-
-
-            <NavLink href="/it/profile" icon={<User size={22} />} label="Profile" active={isActive("/it/profile")} />
+        <nav className="bg-white dark:bg-[#0f1f3d] border-t border-gray-200 dark:border-blue-900/50 pt-2 pb-safe px-6 shadow-[0_-4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center justify-between max-w-md mx-auto h-[60px]">
+            <NavLink href="/it" icon={<Home size={20} />} label="Home" active={isActive("/it")} />
+            <NavLink href="/it/tickets" icon={<FileText size={20} />} label="Ticket" active={isActive("/it/tickets") || isActive("/it/history")} />
+            <NavLink href="/it/schedule" icon={<Calendar size={20} />} label="Schedule" active={isActive("/it/schedule")} />
+            <NavLink href="/it/profile" icon={<User size={20} />} label="Profile" active={isActive("/it/profile")} />
           </div>
         </nav>
       </div>
@@ -55,22 +48,24 @@ const LayoutIT = () => {
   );
 };
 
-// Helper Component for Nav Links
 const NavLink = ({ href, icon, label, active }) => (
   <Link
     to={href}
-    className={`flex-1 flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${active
-      ? "text-blue-600"
-      : "text-gray-400 hover:text-gray-600"
+    className={`flex flex-col items-center justify-center pt-2 pb-1 rounded-xl transition-all duration-200 w-16 relative group h-full ${active ? "text-blue-600 dark:text-white" : "text-gray-400 hover:text-blue-600 dark:text-blue-400/50 dark:hover:text-blue-300"
       }`}
   >
-    <div className={`transition-transform duration-200 ${active ? "-translate-y-1" : ""}`}>
-      {icon}
+    {active && (
+      <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-blue-600 dark:bg-blue-400 rounded-b-full" />
+    )}
+    <div className={`transition-transform duration-200 ${active ? "scale-105" : ""}`}>
+      <div className={`p-1 rounded-xl transition-all duration-200 ${active ? "bg-blue-100 dark:bg-blue-600/30" : "group-hover:bg-gray-100 dark:group-hover:bg-blue-800/20"}`}>
+        {icon}
+      </div>
     </div>
-    <span className={`text-[9px] font-medium mt-1 truncate w-full text-center ${active ? "opacity-100 font-bold" : "opacity-70"}`}>
+    <span className={`text-[10px] mt-0.5 ${active ? "font-bold text-blue-600 dark:text-white tracking-wide" : "font-medium text-gray-500 dark:text-blue-400/50"}`}>
       {label}
     </span>
   </Link>
-)
+);
 
 export default LayoutIT;

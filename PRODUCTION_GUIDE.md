@@ -26,10 +26,10 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `PORT` | Port for the backend API | `5002` |
 | `SECRET` | Secret key for JWT Token generation | `my_super_secure_secret_key` |
 | `NODE_ENV` | Environment mode | `production` |
-| `CLIENT_URL` | URL of the Frontend (CORS Policy) | `https://10.135.2.243` |
-| `FRONTEND_URL` | Used in email links | `https://10.135.2.243` |
-| `HTTPS_ONLY` | Force app to accept HTTPS only | `true` |
-| `ENABLE_HTTPS_HEADERS` | Enable HSTS/CSP upgrade headers | `true` |
+| `CLIENT_URL` | URL of the Frontend (CORS Policy) | `http://10.135.2.243` |
+| `FRONTEND_URL` | Used in email links | `http://10.135.2.243` |
+| `HTTPS_ONLY` | Force app to accept HTTPS only (optional) | `false` |
+| `ENABLE_HTTPS_HEADERS` | Enable HSTS/CSP upgrade headers (optional) | `false` |
 | `TRUST_PROXY` | Trust reverse-proxy HTTPS headers | `1` |
 | `TLS_KEY_FILE` | TLS private key path (Node native TLS) | `/etc/ssl/private/app.key` |
 | `TLS_CERT_FILE` | TLS certificate path (Node native TLS) | `/etc/ssl/certs/app.crt` |
@@ -180,8 +180,15 @@ This validates required env keys, checks DB connectivity, and verifies upload st
 
 ### Updating the System
 Use the provided deployment scripts:
--   **Windows**: Double-click `scripts/deploy.bat`
--   **Linux/Mac**: Run `./scripts/deploy.sh`
+-   **Windows**: Run `windows-deploy.bat` in `C:\xampp\htdocs\app\server`
+-   **Linux/Mac**: Follow your platform deploy script/runbook
+
+### One-Step Data Cutover (Local DB -> Server DB, Windows)
+Run in `C:\xampp\htdocs\app\server`:
+```bat
+windows-cutover-prod.bat
+```
+This script imports SQL dump, updates `.env.production` to use server MySQL, runs deploy, and executes runtime checks.
 
 ### Common Issues
 
@@ -207,3 +214,8 @@ Use the provided deployment scripts:
 **4. "Server not responding"**
 -   Run `pm2 status` to see if app is running.
 -   Run `pm2 logs` to see real-time error messages.
+
+**5. "prisma generate failed (binaries.prisma.sh / cert chain / firewall redirect)"**
+-   Production deploy now uses SQL migration mode (`npm run migrate:sql:prod`) and does **not** call `prisma migrate deploy` on server.
+-   `scripts/prisma-generate-safe.js` runs in offline-safe mode by default and validates existing generated client without downloading Prisma engines.
+-   If schema changed and server cannot reach Prisma binaries, generate client on a machine with internet and upload `node_modules/.prisma/client` to the server, then rerun deploy.

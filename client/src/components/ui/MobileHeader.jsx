@@ -1,8 +1,9 @@
 import React from "react";
+import { HEADER_CONFIG } from "../../config/headerConfig";
 
 const MobileHeader = ({ children, className = "" }) => {
     return (
-        <div className={`bg-[#193C6C] px-4 pt-8 pb-10 sticky top-0 z-50 lg:hidden shadow-md rounded-b-[2.5rem] ${className}`}>
+        <div className={`${HEADER_CONFIG.wrapperClasses} ${className}`}>
             {children}
         </div>
     );

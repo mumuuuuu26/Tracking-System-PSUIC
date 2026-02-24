@@ -2,6 +2,14 @@ const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 require("../config/env");
+const dotenv = require("dotenv");
+
+if (!process.env.DATABASE_URL) {
+  const productionEnvPath = path.join(__dirname, "../.env.production");
+  if (fs.existsSync(productionEnvPath)) {
+    dotenv.config({ path: productionEnvPath, override: false, quiet: true });
+  }
+}
 
 let logger = console;
 try {
@@ -61,8 +69,19 @@ function cleanupOldBackups() {
   }
 }
 
+function resolveMysqldumpCommand() {
+  if (process.platform === "win32") {
+    const xamppDump = "C:\\xampp\\mysql\\bin\\mysqldump.exe";
+    if (fs.existsSync(xamppDump)) {
+      return xamppDump;
+    }
+  }
+  return "mysqldump";
+}
+
 function runMysqldump(connection, filePath) {
   return new Promise((resolve, reject) => {
+    const mysqldumpCmd = resolveMysqldumpCommand();
     const args = [
       "--single-transaction",
       "--quick",
@@ -76,7 +95,7 @@ function runMysqldump(connection, filePath) {
       connection.database,
     ];
 
-    const child = spawn("mysqldump", args, {
+    const child = spawn(mysqldumpCmd, args, {
       env: {
         ...process.env,
         ...(connection.password ? { MYSQL_PWD: connection.password } : {}),

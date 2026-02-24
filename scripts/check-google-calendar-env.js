@@ -3,15 +3,35 @@ const { google } = require("googleapis");
 
 const REQUIRED_KEYS = ["GOOGLE_PROJECT_ID", "GOOGLE_CLIENT_EMAIL", "GOOGLE_PRIVATE_KEY"];
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
+const CERT_CHAIN_HINTS = [
+  "self-signed certificate",
+  "unable to verify the first certificate",
+  "unable to get local issuer certificate",
+  "certificate in certificate chain",
+];
 
 const isTruthy = (value) => Boolean(value && String(value).trim().length > 0);
 
 const normalizePrivateKey = (value) => {
   if (!value) return "";
-  return String(value)
+  let normalized = String(value)
     .replace(/^["']|["']$/g, "")
     .replace(/\\n/g, "\n")
     .replace(/\r/g, "");
+
+  const beginMarker = "-----BEGIN PRIVATE KEY-----";
+  const endMarker = "-----END PRIVATE KEY-----";
+  const beginIndex = normalized.indexOf(beginMarker);
+  const endIndex = normalized.indexOf(endMarker);
+  if (beginIndex !== -1 && endIndex !== -1 && endIndex > beginIndex) {
+    normalized = normalized.slice(beginIndex, endIndex + endMarker.length);
+  }
+
+  if (!normalized.endsWith("\n")) {
+    normalized = `${normalized}\n`;
+  }
+
+  return normalized;
 };
 
 const maskEmail = (email) => {
@@ -51,9 +71,20 @@ async function main() {
     scopes: SCOPES,
   });
 
+  const isCertChainBlocked = (error) => {
+    const text = String(error?.message || "").toLowerCase();
+    return CERT_CHAIN_HINTS.some((hint) => text.includes(hint));
+  };
+
   try {
     await auth.getClient();
   } catch (error) {
+    if (isCertChainBlocked(error)) {
+      console.error(
+        "[GOOGLE CHECK] Auth failed: outbound HTTPS is intercepted by self-signed cert chain on this network.",
+      );
+      process.exit(1);
+    }
     console.error(`[GOOGLE CHECK] Auth failed: ${error.message}`);
     process.exit(1);
   }
@@ -75,6 +106,12 @@ async function main() {
     console.log(`[GOOGLE CHECK] Calendar access OK (${calendarId}), sample events: ${sampleCount}`);
     console.log("[GOOGLE CHECK] Google Calendar integration is ready.");
   } catch (error) {
+    if (isCertChainBlocked(error)) {
+      console.error(
+        `[GOOGLE CHECK] Calendar access failed for "${calendarId}": outbound HTTPS is intercepted by self-signed cert chain on this network.`,
+      );
+      process.exit(1);
+    }
     console.error(`[GOOGLE CHECK] Calendar access failed for "${calendarId}": ${error.message}`);
     process.exit(1);
   }

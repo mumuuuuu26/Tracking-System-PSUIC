@@ -114,7 +114,7 @@ const History = () => {
                             placeholder="All Categories"
                             icon={Filter}
                             minWidth="md:w-64 w-full"
-                            buttonClassName="py-3 rounded-xl border-gray-200 text-sm md:text-base font-bold text-[#1e2e4a] h-full"
+                            buttonClassName="py-3 rounded-xl border-gray-200 dark:border-blue-800/40 text-sm md:text-base font-bold text-[#1e2e4a] dark:text-white h-full"
                         />
                     </div>
                 </div>

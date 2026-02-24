@@ -1,37 +1,56 @@
+const fs = require("fs");
+const path = require("path");
+const dotenv = require("dotenv");
+
+const envPath = path.join(__dirname, ".env.production");
+let envFromFile = {};
+
+if (fs.existsSync(envPath)) {
+  envFromFile = dotenv.parse(fs.readFileSync(envPath));
+}
+
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+const readEnv = (key, fallback) => {
+  if (hasOwn(process.env, key)) return process.env[key];
+  if (hasOwn(envFromFile, key)) return envFromFile[key];
+  return fallback;
+};
+
+const appPort = String(readEnv("PORT", "5002"));
 const sharedProductionEnv = {
   NODE_ENV: "production",
-  PORT: process.env.PORT || 5002,
-  DATABASE_URL: process.env.DATABASE_URL,
-  SECRET: process.env.SECRET,
-  CLIENT_URL: process.env.CLIENT_URL,
-  FRONTEND_URL: process.env.FRONTEND_URL,
-  EXTRA_ORIGINS: process.env.EXTRA_ORIGINS || "",
-  HTTPS_ONLY: process.env.HTTPS_ONLY || "false",
-  ENABLE_HTTPS_HEADERS: process.env.ENABLE_HTTPS_HEADERS || "false",
-  TLS_KEY_FILE: process.env.TLS_KEY_FILE || "",
-  TLS_CERT_FILE: process.env.TLS_CERT_FILE || "",
-  HTTPS_PORT: process.env.HTTPS_PORT || process.env.PORT || 5002,
-  HTTP_REDIRECT_PORT: process.env.HTTP_REDIRECT_PORT || "",
-  TRUST_PROXY: process.env.TRUST_PROXY || "1",
-  UPLOAD_DIR: process.env.UPLOAD_DIR || "uploads",
-  UPLOAD_BACKUP_DIR: process.env.UPLOAD_BACKUP_DIR || "backups/uploads",
-  UPLOAD_ALLOWED_MIME: process.env.UPLOAD_ALLOWED_MIME || "image/jpeg,image/png,image/webp",
-  UPLOAD_MAX_BYTES: process.env.UPLOAD_MAX_BYTES || "5242880",
-  UPLOAD_MAX_WIDTH: process.env.UPLOAD_MAX_WIDTH || "1920",
-  UPLOAD_MAX_HEIGHT: process.env.UPLOAD_MAX_HEIGHT || "1920",
-  UPLOAD_QUALITY: process.env.UPLOAD_QUALITY || "82",
-  UPLOAD_TARGET_FORMAT: process.env.UPLOAD_TARGET_FORMAT || "webp",
-  UPLOAD_ORPHAN_RETENTION_HOURS: process.env.UPLOAD_ORPHAN_RETENTION_HOURS || "24",
-  UPLOAD_BACKUP_RETENTION_DAYS: process.env.UPLOAD_BACKUP_RETENTION_DAYS || "14",
-  UPLOAD_BACKUP_CRON: process.env.UPLOAD_BACKUP_CRON || "20 3 * * *",
-  UPLOAD_CLEANUP_CRON: process.env.UPLOAD_CLEANUP_CRON || "50 3 * * *",
-  DB_BACKUP_CRON: process.env.DB_BACKUP_CRON || "0 3 * * *",
-  MAIL_USER: process.env.MAIL_USER,
-  MAIL_PASS: process.env.MAIL_PASS,
-  GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID,
-  GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL,
-  GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID,
-  GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
+  PORT: appPort,
+  DATABASE_URL: readEnv("DATABASE_URL"),
+  SECRET: readEnv("SECRET"),
+  CLIENT_URL: readEnv("CLIENT_URL"),
+  FRONTEND_URL: readEnv("FRONTEND_URL"),
+  EXTRA_ORIGINS: readEnv("EXTRA_ORIGINS", ""),
+  HTTPS_ONLY: readEnv("HTTPS_ONLY", "false"),
+  ENABLE_HTTPS_HEADERS: readEnv("ENABLE_HTTPS_HEADERS", "false"),
+  TLS_KEY_FILE: readEnv("TLS_KEY_FILE", ""),
+  TLS_CERT_FILE: readEnv("TLS_CERT_FILE", ""),
+  HTTPS_PORT: readEnv("HTTPS_PORT", appPort),
+  HTTP_REDIRECT_PORT: readEnv("HTTP_REDIRECT_PORT", ""),
+  TRUST_PROXY: readEnv("TRUST_PROXY", "1"),
+  UPLOAD_DIR: readEnv("UPLOAD_DIR", "uploads"),
+  UPLOAD_BACKUP_DIR: readEnv("UPLOAD_BACKUP_DIR", "backups/uploads"),
+  UPLOAD_ALLOWED_MIME: readEnv("UPLOAD_ALLOWED_MIME", "image/jpeg,image/png,image/webp"),
+  UPLOAD_MAX_BYTES: readEnv("UPLOAD_MAX_BYTES", "5242880"),
+  UPLOAD_MAX_WIDTH: readEnv("UPLOAD_MAX_WIDTH", "1920"),
+  UPLOAD_MAX_HEIGHT: readEnv("UPLOAD_MAX_HEIGHT", "1920"),
+  UPLOAD_QUALITY: readEnv("UPLOAD_QUALITY", "82"),
+  UPLOAD_TARGET_FORMAT: readEnv("UPLOAD_TARGET_FORMAT", "webp"),
+  UPLOAD_ORPHAN_RETENTION_HOURS: readEnv("UPLOAD_ORPHAN_RETENTION_HOURS", "24"),
+  UPLOAD_BACKUP_RETENTION_DAYS: readEnv("UPLOAD_BACKUP_RETENTION_DAYS", "14"),
+  UPLOAD_BACKUP_CRON: readEnv("UPLOAD_BACKUP_CRON", "20 3 * * *"),
+  UPLOAD_CLEANUP_CRON: readEnv("UPLOAD_CLEANUP_CRON", "50 3 * * *"),
+  DB_BACKUP_CRON: readEnv("DB_BACKUP_CRON", "0 3 * * *"),
+  MAIL_USER: readEnv("MAIL_USER"),
+  MAIL_PASS: readEnv("MAIL_PASS"),
+  GOOGLE_PROJECT_ID: readEnv("GOOGLE_PROJECT_ID"),
+  GOOGLE_CLIENT_EMAIL: readEnv("GOOGLE_CLIENT_EMAIL"),
+  GOOGLE_CALENDAR_ID: readEnv("GOOGLE_CALENDAR_ID"),
+  GOOGLE_PRIVATE_KEY: readEnv("GOOGLE_PRIVATE_KEY"),
 };
 
 module.exports = {
