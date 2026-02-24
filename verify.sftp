@@ -1,6 +1,6 @@
 pwd
 ls -la
-cd app/server
+cd /C:/xampp/htdocs/app/server
 pwd
 ls -la
 ls -la config

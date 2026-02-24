@@ -1,6 +1,8 @@
--mkdir app
--mkdir app/server
-cd app/server
+-mkdir /C:/xampp
+-mkdir /C:/xampp/htdocs
+-mkdir /C:/xampp/htdocs/app
+-mkdir /C:/xampp/htdocs/app/server
+cd /C:/xampp/htdocs/app/server
 
 lcd /Users/mumu/Desktop/server
 
