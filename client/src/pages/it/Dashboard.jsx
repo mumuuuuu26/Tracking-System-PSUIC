@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import {
   Moon,
   Sun,
+  CheckCircle,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -222,28 +225,29 @@ const ITDashboard = () => {
           </div>
         </div>
 
-        <div className="mt-4 -mt-10 relative z-10 text-gray-900 dark:text-white px-4">
+        <div className="max-w-5xl mx-auto w-full px-5 -mt-10 relative z-10 lg:hidden">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-[320px] mx-auto">
+            <StatItem count={stats.pending} label="All Ticket" />
+            <StatItem count={stats.inProgress} label="In Progress" />
+            <StatItem count={stats.completed} label="Completed" />
+          </div>
+        </div>
+
+        <div className="mt-4 relative z-10 text-gray-900 dark:text-white px-4">
           <div className="flex flex-col gap-6">
-            {/* Floating Stats Card */}
-            <div className="w-full">
-              <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-sm dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-6 flex justify-between items-center text-center">
-                <StatItem count={stats.pending} label="Booking" />
-                <StatItem count={stats.inProgress} label="In progress" />
-                <StatItem count={stats.completed} label="Completed" />
-              </div>
-            </div>
 
             {/* New Tickets Section */}
+            <div className="w-full flex items-center justify-between mb-2 px-2 mt-4">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white tracking-tight">New Tickets</h2>
+              <button
+                onClick={() => navigate("/it/tickets")}
+                className="text-sm font-medium text-[#1e2e4a] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                View All →
+              </button>
+            </div>
+
             <div className="w-full">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">New Tickets</h2>
-                <button
-                  onClick={() => navigate("/it/tickets")}
-                  className="text-sm font-medium text-[#1e2e4a] dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                >
-                  View All →
-                </button>
-              </div>
 
               <div className="space-y-4">
                 {newTickets.length > 0 ? newTickets.slice(0, 3).map((ticket) => (
@@ -360,9 +364,13 @@ const ITDashboard = () => {
 };
 
 const StatItem = ({ count, label }) => (
-  <div className="flex flex-col items-center gap-1 min-w-[60px]">
-    <span className="text-2xl font-bold text-blue-900 dark:text-white">{count}</span>
-    <span className="text-xs text-blue-600/80 dark:text-blue-300/70 font-bold">{label}</span>
+  <div className="group flex flex-col items-center gap-2">
+    <div className="w-full aspect-square bg-white dark:bg-[#1a2f4e] border border-gray-100 dark:border-blue-700/40 rounded-[1.25rem] flex items-center justify-center shadow-md dark:shadow-lg transition-all duration-200 active:scale-95 group-hover:bg-blue-50 dark:group-hover:bg-[#1e3558]">
+      <span className="text-3xl font-bold text-[#1e2e4a] dark:text-blue-300 leading-none">{count}</span>
+    </div>
+    <span className="text-[11px] font-semibold text-[#1e2e4a] dark:text-blue-300/80 text-center leading-tight whitespace-nowrap">
+      {label}
+    </span>
   </div>
 );
 

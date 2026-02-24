@@ -16,7 +16,7 @@ const DashboardDesktop = ({
     // Stats Card Data
     const statCards = [
         {
-            label: "Booking",
+            label: "All Ticket",
             value: stats.pending,
             icon: <AlertCircle size={24} />,
             bgIcon: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
