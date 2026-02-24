@@ -7,9 +7,13 @@ REM Run this file inside C:\xampp\htdocs\app\server after SFTP upload.
 cd /d "%~dp0"
 if errorlevel 1 goto :err_cd
 
+set "PM2_HOME=%CD%\.pm2"
+if not exist "%PM2_HOME%" mkdir "%PM2_HOME%"
+
 echo ============================================
 echo Tracking System Windows Deploy
 echo Project root: %CD%
+echo PM2_HOME: %PM2_HOME%
 echo ============================================
 
 if not exist "package.json" goto :err_pkg
@@ -171,6 +175,15 @@ if errorlevel 1 (
 )
 call pm2 save >nul
 call pm2 status
+
+echo [8/8] Configuring PM2 auto-resurrect on startup...
+call powershell -NoProfile -ExecutionPolicy Bypass -File ".\windows-enable-pm2-startup.ps1" -AppDir "%CD%" >nul 2>&1
+if errorlevel 1 (
+  echo [WARN] Could not configure PM2 startup task automatically.
+  echo [WARN] Run as Administrator: .\windows-enable-pm2-startup.bat
+) else (
+  echo [INFO] PM2 startup task configured.
+)
 
 echo [HEALTH] Checking http://127.0.0.1:%APP_PORT%/health ...
 powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:%APP_PORT%/health -TimeoutSec 8; if ($r.Content.Trim() -eq 'OK') { exit 0 } else { exit 1 } } catch { exit 1 }"

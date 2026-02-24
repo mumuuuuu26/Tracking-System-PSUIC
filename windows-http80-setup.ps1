@@ -58,6 +58,7 @@ if ([string]::IsNullOrWhiteSpace($AppDir)) {
 }
 
 $envPath = Join-Path $AppDir ".env.production"
+$pm2Home = Join-Path $AppDir ".pm2"
 
 Write-Step "Validating prerequisites"
 Ensure-Admin
@@ -71,6 +72,10 @@ if (-not (Test-Path $envPath)) {
 }
 
 $env:Path = "$env:APPDATA\npm;$env:Path"
+$env:PM2_HOME = $pm2Home
+if (-not (Test-Path $pm2Home)) {
+    New-Item -ItemType Directory -Path $pm2Home -Force | Out-Null
+}
 
 if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
     throw "pm2 not found in PATH. Install first: npm install -g pm2"
@@ -102,6 +107,7 @@ Set-EnvValue -FilePath $envPath -Key "ENABLE_HTTPS_HEADERS" -Value "false"
 Set-EnvValue -FilePath $envPath -Key "TLS_KEY_FILE" -Value ""
 Set-EnvValue -FilePath $envPath -Key "TLS_CERT_FILE" -Value ""
 Set-EnvValue -FilePath $envPath -Key "HTTP_REDIRECT_PORT" -Value ""
+Set-EnvValue -FilePath $envPath -Key "PM2_HOME" -Value "C:/xampp/htdocs/app/server/.pm2"
 
 Write-Info "Updated: PORT=80"
 Write-Info "Updated: CLIENT_URL=http://$ServerHost"

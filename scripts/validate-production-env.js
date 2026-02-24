@@ -20,6 +20,7 @@ const optionalButRecommended = [
   "GOOGLE_CLIENT_EMAIL",
   "GOOGLE_CALENDAR_ID",
   "GOOGLE_PRIVATE_KEY",
+  "OFFSITE_BACKUP_DIR",
 ];
 
 function isTruthy(value) {
@@ -151,6 +152,38 @@ function main() {
   ) {
     fail(
       `UPLOAD_BACKUP_FULL_INTERVAL_DAYS must be a non-negative integer (got "${process.env.UPLOAD_BACKUP_FULL_INTERVAL_DAYS}")`,
+    );
+  }
+
+  if (isTruthy(process.env.OFFSITE_BACKUP_DIR) && !path.isAbsolute(process.env.OFFSITE_BACKUP_DIR)) {
+    fail(
+      `OFFSITE_BACKUP_DIR must be an absolute path when configured (got "${process.env.OFFSITE_BACKUP_DIR}").`,
+    );
+  }
+
+  if (
+    isTruthy(process.env.OFFSITE_BACKUP_RETENTION_DAYS) &&
+    !isNonNegativeInteger(process.env.OFFSITE_BACKUP_RETENTION_DAYS)
+  ) {
+    fail(
+      `OFFSITE_BACKUP_RETENTION_DAYS must be a non-negative integer (got "${process.env.OFFSITE_BACKUP_RETENTION_DAYS}")`,
+    );
+  }
+
+  if (isTruthy(process.env.LOG_ROTATE_MAX_MB) && !isNonNegativeInteger(process.env.LOG_ROTATE_MAX_MB)) {
+    fail(`LOG_ROTATE_MAX_MB must be a non-negative integer (got "${process.env.LOG_ROTATE_MAX_MB}")`);
+  }
+
+  if (isTruthy(process.env.LOG_RETENTION_DAYS) && !isNonNegativeInteger(process.env.LOG_RETENTION_DAYS)) {
+    fail(`LOG_RETENTION_DAYS must be a non-negative integer (got "${process.env.LOG_RETENTION_DAYS}")`);
+  }
+
+  if (
+    isTruthy(process.env.GOOGLE_SYNC_MIN_INTERVAL_MS) &&
+    !isNonNegativeInteger(process.env.GOOGLE_SYNC_MIN_INTERVAL_MS)
+  ) {
+    fail(
+      `GOOGLE_SYNC_MIN_INTERVAL_MS must be a non-negative integer (got "${process.env.GOOGLE_SYNC_MIN_INTERVAL_MS}")`,
     );
   }
 

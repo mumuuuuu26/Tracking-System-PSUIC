@@ -37,8 +37,10 @@
     "logs:clean": "rm -rf logs/*",
     "uploads:clean": "rm -rf uploads/*",
     "uploads:backup": "node scripts/backup-uploads.js",
+    "backup:offsite": "node scripts/sync-offsite-backups.js",
     "uploads:backup:archive": "bash scripts/backup-uploads.sh",
     "uploads:cleanup": "node scripts/cleanup-uploads.js",
+    "logs:rotate": "node scripts/rotate-runtime-logs.js",
     "uploads:migrate:room-images": "node scripts/migrate-room-images.js",
     "studio": "npx prisma studio"
   },

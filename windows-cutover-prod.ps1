@@ -289,11 +289,17 @@ Set-EnvValue -FilePath $envPath -Key "TLS_KEY_FILE" -Value ""
 Set-EnvValue -FilePath $envPath -Key "TLS_CERT_FILE" -Value ""
 Set-EnvValue -FilePath $envPath -Key "HTTP_REDIRECT_PORT" -Value ""
 Set-EnvValue -FilePath $envPath -Key "DATABASE_URL" -Value "`"$databaseUrl`""
+Set-EnvValue -FilePath $envPath -Key "PM2_HOME" -Value "C:/xampp/htdocs/app/server/.pm2"
 Set-EnvValue -FilePath $envPath -Key "UPLOAD_DIR" -Value "C:/xampp/htdocs/app/server/uploads"
 Set-EnvValue -FilePath $envPath -Key "UPLOAD_BACKUP_DIR" -Value "C:/xampp/htdocs/app/server/backups/uploads"
+Set-EnvValue -FilePath $envPath -Key "LOG_ROTATE_MAX_MB" -Value "20"
+Set-EnvValue -FilePath $envPath -Key "LOG_RETENTION_DAYS" -Value "14"
+Set-EnvValue -FilePath $envPath -Key "LOG_ROTATE_CRON" -Value "`"15 * * * *`""
+Set-EnvValue -FilePath $envPath -Key "GOOGLE_SYNC_MIN_INTERVAL_MS" -Value "300000"
 
 New-Item -ItemType Directory -Path (Join-Path $AppDir "uploads") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $AppDir "backups\uploads") -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $AppDir ".pm2") -Force | Out-Null
 
 Write-Step "Running backend deploy flow"
 Push-Location $AppDir
@@ -301,6 +307,7 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($env:APPDATA)) {
         $env:Path = "$env:APPDATA\npm;$env:Path"
     }
+    $env:PM2_HOME = Join-Path $AppDir ".pm2"
 
     $pm2Cmd = Get-Command pm2 -ErrorAction SilentlyContinue
     if (-not $pm2Cmd) {
@@ -360,6 +367,19 @@ try {
         & pm2 start ecosystem.config.js --only db-backup-cron --env production | Out-Null
     }
     & pm2 save | Out-Null
+
+    $startupTaskScript = Join-Path $AppDir "windows-enable-pm2-startup.ps1"
+    if (Test-Path $startupTaskScript) {
+        try {
+            Write-Step "Configuring PM2 auto-resurrect startup task"
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $startupTaskScript -AppDir $AppDir | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                Write-Info "PM2 startup task configuration returned non-zero exit code. Please run windows-enable-pm2-startup.bat as Administrator."
+            }
+        } catch {
+            Write-Info "PM2 startup task setup skipped: $($_.Exception.Message)"
+        }
+    }
 
     Write-Step "Running windows-runtime-check.bat"
     cmd.exe /c "`"$runtimeCheckBat`""

@@ -12,6 +12,29 @@ import ITWrapper from "../../components/it/ITWrapper";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
+const AUTO_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
+const AUTO_SYNC_STORAGE_PREFIX = "it_google_sync_last_success:";
+
+const getSyncStorageKey = (calendarId) => `${AUTO_SYNC_STORAGE_PREFIX}${String(calendarId || "").trim()}`;
+
+const readLastSyncAt = (calendarId) => {
+    try {
+        const raw = window.localStorage.getItem(getSyncStorageKey(calendarId));
+        const value = Number.parseInt(String(raw || ""), 10);
+        return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch {
+        return 0;
+    }
+};
+
+const writeLastSyncAt = (calendarId, timestampMs) => {
+    try {
+        window.localStorage.setItem(getSyncStorageKey(calendarId), String(timestampMs));
+    } catch {
+        // Ignore localStorage write errors in private mode.
+    }
+};
+
 const Schedule = () => {
     const navigate = useNavigate();
 
@@ -61,15 +84,35 @@ const Schedule = () => {
         }
     }, []);
 
-    const performSync = React.useCallback(async () => {
+    const performSync = React.useCallback(async ({ force = false, silent = false } = {}) => {
         if (!savedCalendarId || !googleServerReady) return;
+
+        const now = Date.now();
+        const lastSyncedAt = readLastSyncAt(savedCalendarId);
+        const elapsedMs = now - lastSyncedAt;
+        const canAutoSync = force || lastSyncedAt === 0 || elapsedMs >= AUTO_SYNC_MIN_INTERVAL_MS;
+
+        if (!canAutoSync) {
+            if (!silent) {
+                const retryAfterSec = Math.ceil((AUTO_SYNC_MIN_INTERVAL_MS - elapsedMs) / 1000);
+                toast.info(`Google sync was run recently. Retry in ${retryAfterSec}s.`);
+            }
+            return null;
+        }
 
         try {
             setSyncing(true);
-            await syncGoogleCalendar();
-            loadSchedule();
+            const res = await syncGoogleCalendar({ force });
+            if (!res?.data?.skipped) {
+                writeLastSyncAt(savedCalendarId, Date.now());
+            }
+            await loadSchedule();
+            return res;
         } catch (err) {
-            toast.error(err.response?.data?.message || "Sync failed");
+            if (!silent) {
+                toast.error(err.response?.data?.message || "Sync failed");
+            }
+            return null;
         } finally {
             setSyncing(false);
         }
@@ -88,10 +131,9 @@ const Schedule = () => {
 
     useEffect(() => {
         if (savedCalendarId) {
-            performSync();
+            performSync({ force: false, silent: true });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [savedCalendarId]);
+    }, [savedCalendarId, performSync]);
 
     const handleSaveSettings = async () => {
         if (!calendarId) {
@@ -110,11 +152,17 @@ const Schedule = () => {
                 return;
             }
 
-            const res = await syncGoogleCalendar();
+            const res = await performSync({ force: true, silent: true });
+            if (!res) {
+                throw new Error("Sync request did not complete");
+            }
 
             setShowSettings(false);
-            toast.success(`Connected! Synced ${res.data.count} events.`);
-            loadSchedule();
+            if (res.data?.skipped) {
+                toast.info("Calendar was recently synced. Please wait before syncing again.");
+            } else {
+                toast.success(`Connected! Synced ${res.data.count} events.`);
+            }
         } catch (err) {
             const msg = err.response?.data?.message || "Failed to save settings";
             const missingKeys = err.response?.data?.missingKeys;

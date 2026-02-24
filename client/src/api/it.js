@@ -50,8 +50,9 @@ export const getPublicSchedule = async () => {
     return await api.get('/it/public-schedule');
 };
 
-export const syncGoogleCalendar = async () => {
-    return await api.post('/it/google-sync', {})
+export const syncGoogleCalendar = async (options = {}) => {
+    const force = Boolean(options.force);
+    return await api.post('/it/google-sync', { force });
 };
 
 export const testGoogleSync = async () => {

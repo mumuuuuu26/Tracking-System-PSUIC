@@ -14,6 +14,26 @@ const ticketUserSelect = {
     role: true,
 };
 
+const DEFAULT_GOOGLE_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
+const googleSyncLastRunByUser = new Map();
+
+const parsePositiveInt = (value, fallback) => {
+    const parsed = Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const GOOGLE_SYNC_MIN_INTERVAL_MS = parsePositiveInt(
+    process.env.GOOGLE_SYNC_MIN_INTERVAL_MS,
+    DEFAULT_GOOGLE_SYNC_MIN_INTERVAL_MS,
+);
+
+const parseBoolean = (value) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value !== "string") return false;
+    return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+};
+
 // Get dashboard statistics
 exports.previewJob = async (req, res, next) => {
     try {
@@ -596,16 +616,36 @@ exports.syncGoogleCalendar = async (req, res, next) => {
     const userId = req.user?.id;
     try {
         const googleCalendarId = req.user.googleCalendarId; // Use custom calendar ID
+        const forceSync = parseBoolean(req.body?.force);
         logger.info(`[Sync] User ${userId} requesting sync for calendar: ${googleCalendarId}`);
 
         if (!googleCalendarId) {
             return res.status(400).json({ message: "No Google Calendar ID configured." });
         }
 
+        if (!forceSync) {
+            const now = Date.now();
+            const lastSyncedAt = googleSyncLastRunByUser.get(userId) || 0;
+            const elapsedMs = now - lastSyncedAt;
+            if (lastSyncedAt > 0 && elapsedMs < GOOGLE_SYNC_MIN_INTERVAL_MS) {
+                const retryAfterSec = Math.ceil((GOOGLE_SYNC_MIN_INTERVAL_MS - elapsedMs) / 1000);
+                logger.info(
+                    `[Sync] User ${userId} sync skipped due to cooldown (${retryAfterSec}s remaining).`,
+                );
+                return res.json({
+                    message: "Google Calendar was synced recently. Please retry later.",
+                    count: 0,
+                    skipped: true,
+                    retryAfterSec,
+                });
+            }
+        }
+
         const { syncUserCalendar } = require("../utils/syncService");
         const count = await syncUserCalendar(userId, googleCalendarId);
+        googleSyncLastRunByUser.set(userId, Date.now());
 
-        res.json({ message: `Synced ${count} events from Google Calendar`, count });
+        res.json({ message: `Synced ${count} events from Google Calendar`, count, skipped: false });
     } catch (err) {
         const mapped = mapGoogleSyncError(err);
         if (mapped) {

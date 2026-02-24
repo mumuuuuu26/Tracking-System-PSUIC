@@ -56,7 +56,14 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `UPLOAD_ORPHAN_RETENTION_HOURS` | Keep unreferenced upload files for N hours before delete | `24` |
 | `DB_BACKUP_CRON` | Cron for DB backup job | `"0 3 * * *"` |
 | `UPLOAD_BACKUP_CRON` | Cron for upload backup job | `"20 3 * * *"` |
+| `OFFSITE_BACKUP_DIR` | Optional absolute path for offsite mirror backup (SMB/NAS/another disk) | `D:/offsite/tracking-backups` |
+| `OFFSITE_BACKUP_RETENTION_DAYS` | Retention of mirrored backups | `30` |
+| `OFFSITE_BACKUP_CRON` | Cron for offsite mirror sync | `"40 3 * * *"` |
 | `UPLOAD_CLEANUP_CRON` | Cron for upload orphan cleanup job | `"50 3 * * *"` |
+| `LOG_ROTATE_MAX_MB` | Rotate `out.log`/`error.log`/PM2 logs when file exceeds this size | `20` |
+| `LOG_RETENTION_DAYS` | Keep rotated log archives for N days | `14` |
+| `LOG_ROTATE_CRON` | Cron for runtime log rotation | `"15 * * * *"` |
+| `GOOGLE_SYNC_MIN_INTERVAL_MS` | Minimum interval between sync calls per user | `300000` |
 
 ### Email Notifications (SMTP)
 | Variable | Description | Example |
@@ -168,6 +175,11 @@ pm2 save
 pm2 startup
 ```
 
+On Windows, configure reboot restore task once (run as Administrator):
+```bat
+windows-enable-pm2-startup.bat
+```
+
 Before restart/update in production, run:
 ```bash
 npm run preflight:prod
@@ -202,12 +214,15 @@ This script imports SQL dump, updates `.env.production` to use server MySQL, run
 -   **Check**: confirm the service account email has "Make Changes" permission on the target Google Calendar.
 
 **3. "Disk Full"**
--   Logs are automatically rotated and kept for 30 days (`logs/`).
+-   Runtime logs (`logs/out.log`, `logs/error.log`, PM2 logs) are rotated by scheduler (`LOG_ROTATE_*`).
 -   DB backups are kept for 7 days (`backups/`).
 -   Upload backups run as incremental/differential snapshots (not full copy every day), and are kept by `UPLOAD_BACKUP_RETENTION_DAYS` (default 14 days).
+-   Optional offsite backup mirror runs when `OFFSITE_BACKUP_DIR` is configured.
 -   Orphan upload files are cleaned by scheduler (`npm run uploads:cleanup`).
 -   Manual maintenance commands:
+    - `npm run logs:rotate`
     - `npm run uploads:backup`
+    - `npm run backup:offsite`
     - `npm run uploads:cleanup`
     - `npm run uploads:migrate:room-images` (one-time migration for old Room base64 images)
 

@@ -45,12 +45,20 @@ function main() {
 
   const uploadDir = process.env.UPLOAD_DIR;
   const uploadBackupDir = process.env.UPLOAD_BACKUP_DIR;
+  const offsiteBackupDir = String(process.env.OFFSITE_BACKUP_DIR || "").trim();
 
   ensureAbsolutePath("UPLOAD_DIR", uploadDir);
   ensureAbsolutePath("UPLOAD_BACKUP_DIR", uploadBackupDir);
 
   verifyWritableDirectory(uploadDir, "UPLOAD_DIR");
   verifyWritableDirectory(uploadBackupDir, "UPLOAD_BACKUP_DIR");
+
+  if (offsiteBackupDir.length > 0) {
+    ensureAbsolutePath("OFFSITE_BACKUP_DIR", offsiteBackupDir);
+    verifyWritableDirectory(offsiteBackupDir, "OFFSITE_BACKUP_DIR");
+  } else {
+    console.log("[STORAGE READY] OFFSITE_BACKUP_DIR not set (offsite sync disabled).");
+  }
 
   console.log("[STORAGE READY] Storage preflight passed.");
 }
