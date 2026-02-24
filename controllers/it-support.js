@@ -2,60 +2,16 @@ const prisma = require("../config/prisma");
 const { saveImage } = require("../utils/uploadImage");
 const { listGoogleEvents } = require("./googleCalendar");
 const { logger } = require("../utils/logger");
+const { mapGoogleSyncError } = require("../utils/googleSyncErrorMapper");
 
-const mapGoogleSyncError = (err) => {
-  const message = String(err?.rawMessage || err?.message || "");
-  const normalized = message.toLowerCase();
-
-  if (err?.code === "GOOGLE_CALENDAR_NOT_CONFIGURED") {
-    return {
-      status: 503,
-      body: {
-        message:
-          "Google Calendar is not configured on this server yet. Please ask admin to set GOOGLE_PROJECT_ID, GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, and restart backend.",
-        missingKeys: err.missingKeys || [],
-      },
-    };
-  }
-
-  if (
-    normalized.includes("requested entity was not found") ||
-    normalized.includes("google api failed: not found")
-  ) {
-    return {
-      status: 400,
-      body: {
-        message:
-          "Calendar ID not found. Please verify Calendar ID in Google Calendar settings.",
-      },
-    };
-  }
-
-  if (
-    normalized.includes("caller does not have permission") ||
-    normalized.includes("insufficient permission") ||
-    normalized.includes("forbidden")
-  ) {
-    return {
-      status: 400,
-      body: {
-        message:
-          "Google Calendar permission denied. Share the target calendar with the service account email and grant 'Make changes to events'.",
-      },
-    };
-  }
-
-  if (normalized.includes("invalid_grant") || normalized.includes("invalid jwt")) {
-    return {
-      status: 503,
-      body: {
-        message:
-          "Google credentials are invalid on server (service account key is malformed or expired).",
-      },
-    };
-  }
-
-  return null;
+const ticketUserSelect = {
+    id: true,
+    name: true,
+    username: true,
+    email: true,
+    phoneNumber: true,
+    picture: true,
+    role: true,
 };
 
 // Get dashboard statistics
@@ -227,7 +183,7 @@ exports.acceptJob = async (req, res, next) => {
     const ticket = await prisma.ticket.findUnique({
       where: { id: parseInt(id) },
       include: { 
-          createdBy: true 
+          createdBy: { select: ticketUserSelect } 
       },
     });
 
@@ -274,8 +230,8 @@ exports.acceptJob = async (req, res, next) => {
         },
       },
       include: {
-        createdBy: true,
-        assignedTo: true
+        createdBy: { select: ticketUserSelect },
+        assignedTo: { select: ticketUserSelect }
       }
     });
 
@@ -345,7 +301,7 @@ exports.rejectJob = async (req, res, next) => {
         },
       },
       include: {
-          createdBy: true
+          createdBy: { select: ticketUserSelect }
       }
     });
 
@@ -500,9 +456,9 @@ exports.closeJob = async (req, res, next) => {
           : undefined,
       },
       include: {
-        createdBy: true,
+        createdBy: { select: ticketUserSelect },
         category: true,
-        assignedTo: true,
+        assignedTo: { select: ticketUserSelect },
         room: true
       },
     });
@@ -637,8 +593,8 @@ exports.getPublicSchedule = async (req, res, next) => {
 };
 
 exports.syncGoogleCalendar = async (req, res, next) => {
+    const userId = req.user?.id;
     try {
-        const userId = req.user.id;
         const googleCalendarId = req.user.googleCalendarId; // Use custom calendar ID
         logger.info(`[Sync] User ${userId} requesting sync for calendar: ${googleCalendarId}`);
 
@@ -655,13 +611,16 @@ exports.syncGoogleCalendar = async (req, res, next) => {
         if (mapped) {
             return res.status(mapped.status).json(mapped.body);
         }
-        next(err);
+        logger.error(`[Sync] Unexpected google sync error for user ${userId}: ${err?.stack || err}`);
+        return res.status(502).json({
+            message: "Google Calendar sync failed due to an upstream service/network issue.",
+        });
     }
 };
 
 exports.testGoogleSync = async (req, res, next) => {
+    const userId = req.user?.id;
     try {
-        const userId = req.user.id;
         const googleCalendarId = req.user.googleCalendarId;
         
         if (!googleCalendarId) {
@@ -694,6 +653,10 @@ exports.testGoogleSync = async (req, res, next) => {
                 ...mapped.body,
             });
         }
-        next(err);
+        logger.error(`[TestSync] Unexpected google sync error for user ${userId}: ${err?.stack || err}`);
+        return res.status(502).json({
+            success: false,
+            message: "Google Calendar sync failed due to an upstream service/network issue.",
+        });
     }
 };

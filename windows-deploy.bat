@@ -27,8 +27,37 @@ if errorlevel 1 goto :err_node
 where npm >nul 2>&1
 if errorlevel 1 goto :err_npm
 
-where npx >nul 2>&1
-if errorlevel 1 goto :err_npx
+echo [0/8] Repairing .env.production file structure...
+call npm run fix:env:file:prod
+if errorlevel 1 goto :err_env_file_fix
+
+echo [0/8] Validating .env.production file structure...
+call npm run validate:env:file:prod
+if errorlevel 1 goto :err_env_file
+
+set "DEPLOY_STATE_DIR=.deploy-state"
+if not exist "%DEPLOY_STATE_DIR%" mkdir "%DEPLOY_STATE_DIR%"
+set "LOCK_HASH_FILE=%DEPLOY_STATE_DIR%\package-lock.sha256"
+set "RUN_NPM_CI=0"
+
+for /f %%H in ('powershell -NoProfile -Command "(Get-FileHash -LiteralPath package-lock.json -Algorithm SHA256).Hash.ToLowerInvariant()"') do set "CURRENT_LOCK_HASH=%%H"
+if not defined CURRENT_LOCK_HASH goto :err_lock_hash
+
+if not exist "node_modules" (
+  echo [INFO] node_modules not found. npm ci is required.
+  set "RUN_NPM_CI=1"
+) else if not exist "%LOCK_HASH_FILE%" (
+  echo [INFO] No previous package-lock hash found. npm ci is required.
+  set "RUN_NPM_CI=1"
+) else (
+  set /p PREV_LOCK_HASH=<"%LOCK_HASH_FILE%"
+  if /I not "%PREV_LOCK_HASH%"=="%CURRENT_LOCK_HASH%" (
+    echo [INFO] package-lock.json changed. npm ci is required.
+    set "RUN_NPM_CI=1"
+  ) else (
+    echo [INFO] package-lock.json unchanged. Skipping npm ci.
+  )
+)
 
 if not "%APPDATA%"=="" (
   set "PATH=%APPDATA%\npm;%PATH%"
@@ -71,21 +100,36 @@ goto :deps
 echo [WARN] MySQL service (MySQLXampp/MySQL) not found. Ensure DB is already running.
 
 :deps
+if /I "%RUN_NPM_CI%"=="1" goto :deps_install
+
+echo [1/8] Installing dependencies with npm ci...
+echo [INFO] Skipped (no dependency changes).
+goto :deps_generate
+
+:deps_install
 call pm2 describe tracking-system-backend >nul 2>&1
-if errorlevel 1 goto :deps_install
+if errorlevel 1 goto :deps_install_run
 echo [INFO] Stopping tracking-system-backend temporarily for clean npm ci...
 call pm2 stop tracking-system-backend >nul
 
-:deps_install
-echo [1/7] Installing dependencies with npm ci...
+:deps_install_run
+echo [1/8] Installing dependencies with npm ci...
+set "PRISMA_SKIP_POSTINSTALL_GENERATE=1"
 call npm ci
+set "PRISMA_SKIP_POSTINSTALL_GENERATE="
 if errorlevel 1 goto :err_npm_ci
+>"%LOCK_HASH_FILE%" echo %CURRENT_LOCK_HASH%
 
-echo [2/7] Generating Prisma client...
-call npx --no-install prisma generate
+:deps_generate
+
+echo [2/8] Generating Prisma client (safe mode)...
+if not defined PRISMA_ALLOW_INSECURE_TLS_FALLBACK (
+  set "PRISMA_ALLOW_INSECURE_TLS_FALLBACK=true"
+)
+call node scripts\prisma-generate-safe.js
 if errorlevel 1 goto :err_prisma_generate
 
-echo [3/7] Validating production environment...
+echo [3/8] Validating production environment...
 call npm run validate:env:prod
 if errorlevel 1 goto :err_validate_env
 
@@ -96,19 +140,19 @@ if errorlevel 1 (
   echo [WARN] IT Schedule sync will fail until GOOGLE_* in .env.production is fixed.
 )
 
-echo [4/7] Checking database readiness...
+echo [4/8] Checking database readiness...
 call npm run preflight:db:prod
 if errorlevel 1 goto :err_preflight_db
 
-echo [5/7] Checking storage readiness...
+echo [5/8] Checking storage readiness...
 call npm run preflight:storage:prod
 if errorlevel 1 goto :err_preflight_storage
 
-echo [6/7] Applying Prisma migrations...
-call npx --no-install prisma migrate deploy
+echo [6/8] Applying migrations (SQL mode, no Prisma engine download)...
+call npm run migrate:sql:prod
 if errorlevel 1 goto :err_migrate
 
-echo [7/7] Restarting backend with PM2...
+echo [7/8] Restarting backend with PM2...
 call pm2 describe tracking-system-backend >nul 2>&1
 if errorlevel 1 goto :pm2_start
 
@@ -121,6 +165,10 @@ call pm2 start ecosystem.config.js --env production
 if errorlevel 1 goto :err_pm2_run
 
 :pm2_done
+call pm2 start db-backup-cron --update-env >nul 2>&1
+if errorlevel 1 (
+  call pm2 start ecosystem.config.js --only db-backup-cron --env production >nul 2>&1
+)
 call pm2 save >nul
 call pm2 status
 
@@ -158,8 +206,18 @@ exit /b 1
 echo [ERROR] npm is not available in PATH.
 exit /b 1
 
-:err_npx
-echo [ERROR] npx is not available in PATH.
+:err_env_file
+echo [ERROR] .env.production has invalid structure.
+echo [HINT] Ensure each KEY=VALUE is on its own line, especially GOOGLE_PRIVATE_KEY.
+exit /b 1
+
+:err_env_file_fix
+echo [ERROR] Auto-fix for .env.production failed.
+echo [HINT] Check malformed GOOGLE_PRIVATE_KEY or duplicated keys in .env.production.
+exit /b 1
+
+:err_lock_hash
+echo [ERROR] Failed to read package-lock.json hash.
 exit /b 1
 
 :err_pm2_install
@@ -180,7 +238,7 @@ echo [ERROR] npm ci failed.
 exit /b 1
 
 :err_prisma_generate
-echo [ERROR] npx prisma generate failed.
+echo [ERROR] Safe Prisma generate failed.
 exit /b 1
 
 :err_validate_env
@@ -196,7 +254,7 @@ echo [ERROR] preflight:storage:prod failed.
 exit /b 1
 
 :err_migrate
-echo [ERROR] npx prisma migrate deploy failed.
+echo [ERROR] SQL migration apply failed.
 exit /b 1
 
 :err_pm2_run

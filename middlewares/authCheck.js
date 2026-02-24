@@ -5,19 +5,27 @@ const { logger } = require("../utils/logger");
 
 exports.authCheck = async (req, res, next) => {
   try {
-    //code
+    const jwtSecret = String(process.env.SECRET || "").trim();
+    if (!jwtSecret) {
+      logger.error("[authCheck] SECRET is missing in server environment");
+      return res.status(503).json({ message: "Server authentication is not configured" });
+    }
+
     const headerToken = req.headers.authorization;
     if (!headerToken) {
-      return res.status(401).json({ message: "No Token, Authorization " });
+      return res.status(401).json({ message: "Authorization token is required" });
     }
-
-    const token = headerToken.split(" ")[1];
+    const tokenParts = String(headerToken).trim().split(" ");
+    if (tokenParts.length !== 2 || tokenParts[0].toLowerCase() !== "bearer") {
+      return res.status(401).json({ message: "Invalid Authorization header format" });
+    }
+    const token = tokenParts[1];
 
     if (!token) {
-      return res.status(401).json({ message: "No Token" });
+      return res.status(401).json({ message: "Authorization token is required" });
     }
 
-    const decode = jwt.verify(token, process.env.SECRET);
+    const decode = jwt.verify(token, jwtSecret);
 
     req.user = decode;
 
@@ -27,8 +35,14 @@ exports.authCheck = async (req, res, next) => {
       },
     });
 
-    if (!user || !user.enabled) {
-      return res.status(400).json({ message: "This account cannot access" });
+    if (!user) {
+      logger.warn(`[authCheck] token user not found in DB (id=${req.user?.id})`);
+      return res.status(401).json({ message: "Session is invalid. Please log in again." });
+    }
+
+    if (!user.enabled) {
+      logger.warn(`[authCheck] disabled user attempted access (id=${user.id}, email=${user.email})`);
+      return res.status(403).json({ message: "This account is disabled" });
     }
 
     req.user = user; // Attach full user data to request
@@ -71,4 +85,3 @@ exports.itCheck = async (req, res, next) => {
     res.status(500).json({ message: "Error IT access denied" });
   }
 };
-

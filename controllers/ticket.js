@@ -24,6 +24,15 @@ const updateTicketSchema = z.object({
   subComponent: z.string().nullable().optional(),
 });
 
+const ticketUserSelect = {
+  id: true,
+  name: true,
+  username: true,
+  email: true,
+  phoneNumber: true,
+  picture: true,
+  role: true,
+};
 
 exports.create = async (req, res, next) => {
   try {
@@ -74,7 +83,7 @@ exports.create = async (req, res, next) => {
         room: true,
         equipment: true,
         category: true,
-        createdBy: true,
+        createdBy: { select: ticketUserSelect },
         images: true
       },
     });
@@ -199,8 +208,8 @@ exports.update = async (req, res, next) => {
       where: { id: parseInt(id) },
       data: updateData,
       include: {
-        createdBy: true,
-        assignedTo: true,
+        createdBy: { select: ticketUserSelect },
+        assignedTo: { select: ticketUserSelect },
         room: true,
         equipment: true,
       },
@@ -258,7 +267,7 @@ exports.list = async (req, res, next) => {
         room: true,
         equipment: true,
         category: true,
-        assignedTo: true,
+        assignedTo: { select: ticketUserSelect },
       },
     });
 
@@ -296,7 +305,7 @@ exports.history = async (req, res, next) => {
         category: true,
         room: true,
         equipment: true,
-        assignedTo: true,
+        assignedTo: { select: ticketUserSelect },
         createdBy: { select: { name: true } }
       },
       orderBy: { createdAt: 'desc' }
@@ -320,8 +329,8 @@ exports.read = async (req, res, next) => {
         room: true,
         equipment: true,
         category: true,
-        createdBy: true,
-        assignedTo: true,
+        createdBy: { select: ticketUserSelect },
+        assignedTo: { select: ticketUserSelect },
         logs: { orderBy: { createdAt: 'desc' } },
         images: true,
         notification: true
@@ -368,8 +377,8 @@ exports.listAll = async (req, res, next) => {
             room: true,
             equipment: true,
             category: true,
-            createdBy: true,
-            assignedTo: true
+            createdBy: { select: ticketUserSelect },
+            assignedTo: { select: ticketUserSelect }
         },
         orderBy: [
             { status: 'desc' }, 
@@ -417,7 +426,7 @@ exports.listByEquipment = async (req, res, next) => {
     const { id } = req.params;
     const tickets = await prisma.ticket.findMany({
       where: { equipmentId: parseInt(id), isDeleted: false },
-      include: { createdBy: true, category: true },
+      include: { createdBy: { select: ticketUserSelect }, category: true },
       orderBy: { createdAt: 'desc' }
     });
     res.json(tickets);
@@ -425,4 +434,3 @@ exports.listByEquipment = async (req, res, next) => {
     next(err);
   }
 };
-
