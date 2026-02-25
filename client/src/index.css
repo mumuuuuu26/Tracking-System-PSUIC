@@ -5,6 +5,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent browser-default yellow highlight rings/tap highlight across pages */
+a,
+button,
+[role="button"],
+input,
+textarea,
+select {
+    -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.35);
+    outline-offset: 2px;
+}
+
 /* React Datepicker Custom Styling - Neutral Grayscale Theme */
 .react-datepicker {
     font-family: inherit !important;

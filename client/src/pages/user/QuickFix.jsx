@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { listQuickFix, readQuickFix } from "../../api/quickFix";
 import { listCategories } from "../../api/category";
 import { Search, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
@@ -59,8 +60,14 @@ const QuickFix = () => {
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [openId, setOpenId] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
     const filterRef = useRef(null);
+    const openId = useMemo(() => {
+        const topic = searchParams.get("topic");
+        if (!topic) return null;
+        const parsed = Number(topic);
+        return Number.isNaN(parsed) ? topic : parsed;
+    }, [searchParams]);
 
     // Close filter dropdown on outside click
     useEffect(() => {
@@ -103,12 +110,15 @@ const QuickFix = () => {
     useEffect(() => { filterItems(); }, [filterItems]);
 
     const toggleAccordion = async (id) => {
-        if (openId === id) {
-            setOpenId(null);
+        const shouldClose = String(openId) === String(id);
+        const nextParams = new URLSearchParams(searchParams);
+        if (shouldClose) {
+            nextParams.delete("topic");
         } else {
-            setOpenId(id);
+            nextParams.set("topic", String(id));
             try { await readQuickFix(id); } catch { /* silent */ }
         }
+        setSearchParams(nextParams, { replace: true });
     };
 
     return (
@@ -136,7 +146,7 @@ const QuickFix = () => {
                         <div className="relative shadow-sm rounded-xl" ref={filterRef}>
                             <button
                                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                className="h-full w-32 sm:w-40 px-4 rounded-xl bg-white dark:bg-[#1a2f4e] border border-gray-300 dark:border-blue-700/50 text-gray-600 dark:text-blue-200 text-sm flex items-center justify-between gap-2 transition-colors"
+                                className="h-full w-32 sm:w-40 px-4 rounded-xl bg-white dark:bg-[#1a2f4e] border border-gray-300 dark:border-blue-700/50 text-gray-600 dark:text-blue-200 text-sm flex items-center justify-between gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200/70 dark:focus-visible:ring-blue-500/40"
                             >
                                 <span className="truncate">{selectedCategory === "All" ? "Filter" : selectedCategory}</span>
                                 <ChevronDown size={16} className={`text-gray-400 dark:text-blue-400/60 shrink-0 transition-transform duration-200 ${isFilterOpen ? "rotate-180" : ""}`} />
@@ -190,21 +200,16 @@ const QuickFix = () => {
                                 {/* Accordion Header */}
                                 <button
                                     onClick={() => toggleAccordion(item.id)}
-                                    className="w-full text-left p-5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-blue-800/20 transition-colors"
+                                    className="w-full text-left p-5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-blue-800/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200/70 dark:focus-visible:ring-blue-500/40"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700/40 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold flex-shrink-0 text-sm cursor-pointer">
-                                            ?
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            {item.category && (
-                                                <span className="bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400/80 border border-blue-200 dark:border-blue-800/40 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide inline-block mb-1.5 cursor-pointer">
-                                                    {item.category}
-                                                </span>
-                                            )}
-                                            <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-base break-words pr-4 leading-snug">{item.title}</h3>
-                                            <p className="text-xs text-gray-400 dark:text-blue-400/40 mt-1">{item.views} views</p>
-                                        </div>
+                                    <div className="flex-1 min-w-0">
+                                        {item.category && (
+                                            <span className="bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400/80 border border-blue-200 dark:border-blue-800/40 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide inline-block mb-1.5">
+                                                {item.category}
+                                            </span>
+                                        )}
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-base break-words pr-4 leading-snug">{item.title}</h3>
+                                        <p className="text-xs text-gray-400 dark:text-blue-400/40 mt-1">{item.views} views</p>
                                     </div>
                                     {openId === item.id ? (
                                         <ChevronUp className="text-blue-500 dark:text-blue-400 flex-shrink-0 ml-2" size={18} />
