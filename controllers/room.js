@@ -1,18 +1,32 @@
 // controllers/room.js
 const prisma = require("../config/prisma");
 
+const normalizeRoomNumber = (value) =>
+  String(value ?? "").replace(/^room\s*/i, "").trim();
+
+const normalizeBuilding = (value) => String(value ?? "").trim();
+
+const normalizeFloor = (value) => {
+  const cleaned = String(value ?? "")
+    .replace(/^floor\s*/i, "")
+    .replace(/^fl\.?\s*/i, "")
+    .trim();
+  const parsed = Number.parseInt(cleaned, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 // สร้างห้อง
 exports.create = async (req, res, next) => {
   try {
     const { roomNumber, building, floor } = req.body;
 
-    const normalizedRoomNumber = String(roomNumber || "").trim();
-    const normalizedBuilding = String(building || "").trim();
+    const normalizedRoomNumber = normalizeRoomNumber(roomNumber);
+    const normalizedBuilding = normalizeBuilding(building);
     if (!normalizedRoomNumber || !normalizedBuilding) {
       return res.status(400).json({ message: "Room number and building are required" });
     }
 
-    const parsedFloor = Number.parseInt(floor, 10);
+    const parsedFloor = normalizeFloor(floor);
     if (!Number.isFinite(parsedFloor)) {
       return res.status(400).json({ message: "Invalid floor value" });
     }
@@ -43,7 +57,12 @@ exports.list = async (req, res, next) => {
       orderBy: { roomNumber: "asc" },
     });
 
-    res.json(rooms);
+    const normalizedRooms = rooms.map((room) => ({
+      ...room,
+      roomNumber: normalizeRoomNumber(room.roomNumber),
+    }));
+
+    res.json(normalizedRooms);
   } catch (err) {
     next(err);
   }
@@ -60,13 +79,13 @@ exports.update = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid room id" });
     }
 
-    const normalizedRoomNumber = String(roomNumber || "").trim();
-    const normalizedBuilding = String(building || "").trim();
+    const normalizedRoomNumber = normalizeRoomNumber(roomNumber);
+    const normalizedBuilding = normalizeBuilding(building);
     if (!normalizedRoomNumber || !normalizedBuilding) {
       return res.status(400).json({ message: "Room number and building are required" });
     }
 
-    const parsedFloor = Number.parseInt(floor, 10);
+    const parsedFloor = normalizeFloor(floor);
     if (!Number.isFinite(parsedFloor)) {
       return res.status(400).json({ message: "Invalid floor value" });
     }

@@ -9,6 +9,7 @@ import ITPageHeader from "../../components/it/ITPageHeader";
 import ITWrapper from "../../components/it/ITWrapper";
 import { getUserDisplayName } from "../../utils/userIdentity";
 import { normalizeTicketStatus, toTicketStatusLabel } from "../../utils/ticketStatus";
+import { toFloorDisplay, toRoomDisplay, toRoomFloorDisplay } from "../../utils/roomDisplay";
 
 const STATUS_OPTIONS = [
     { value: "all", label: "All" },
@@ -194,7 +195,7 @@ const Tickets = () => {
             .sort((a, b) => Number(a) - Number(b))
             .map((floor) => ({
                 value: floor,
-                label: `Floor ${floor}`,
+                label: toFloorDisplay(floor),
             })),
     ];
 
@@ -206,7 +207,7 @@ const Tickets = () => {
         { value: "", label: "All Rooms" },
         ...visibleRooms.map((room) => ({
             value: String(room.id),
-            label: `Room ${room.roomNumber}`,
+            label: toRoomDisplay(room.roomNumber),
         })),
     ];
 
@@ -381,7 +382,7 @@ const TicketCard = ({ ticket, navigate }) => {
                     {ticket.description || ticket.title || "No description provided"}
                 </p>
                 <span className="text-blue-600 dark:text-blue-400/80 text-xs font-semibold bg-blue-50 dark:bg-blue-900/50 inline-block px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600/40">
-                    Floor {ticket.room?.floor || "-"} · Room {ticket.room?.roomNumber || "-"}
+                    {toRoomFloorDisplay(ticket.room)}
                 </span>
             </div>
 

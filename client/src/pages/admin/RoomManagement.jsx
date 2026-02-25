@@ -5,6 +5,16 @@ import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import { toFloorDisplay, toRoomDisplay } from "../../utils/roomDisplay";
+
+const normalizeRoomInput = (value) =>
+    String(value ?? "").replace(/^room\s*/i, "").trim();
+
+const normalizeFloorInput = (value) =>
+    String(value ?? "")
+        .replace(/^floor\s*/i, "")
+        .replace(/^fl\.?\s*/i, "")
+        .trim();
 
 const RoomManagement = () => {
     const navigate = useNavigate();
@@ -59,21 +69,27 @@ const RoomManagement = () => {
         setIsEditMode(true);
         setCurrentRoomId(room.id);
         setFormData({
-            roomNumber: room.roomNumber,
+            roomNumber: normalizeRoomInput(room.roomNumber),
             building: room.building,
-            floor: room.floor
+            floor: normalizeFloorInput(room.floor)
         });
         setIsModalOpen(true);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const payload = {
+            roomNumber: normalizeRoomInput(formData.roomNumber),
+            building: String(formData.building ?? "").trim(),
+            floor: normalizeFloorInput(formData.floor),
+        };
+
         try {
             if (isEditMode) {
-                await updateRoom(currentRoomId, formData);
+                await updateRoom(currentRoomId, payload);
                 toast.success("Room updated successfully");
             } else {
-                await createRoom(formData);
+                await createRoom(payload);
                 toast.success("Room created successfully");
             }
             setIsModalOpen(false);
@@ -139,9 +155,9 @@ const RoomManagement = () => {
                         <div key={room.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                             <div className="flex justify-between items-start gap-3">
                                 <div className="min-w-0">
-                                    <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight break-words">{room.roomNumber}</h3>
+                                    <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight break-words">{toRoomDisplay(room.roomNumber)}</h3>
                                     <p className="text-gray-400 text-xs font-medium mt-1">
-                                        {room.building || "-"} • {room.floor ?? "-"}
+                                        {room.building || "-"} • {toFloorDisplay(room.floor)}
                                     </p>
                                 </div>
 

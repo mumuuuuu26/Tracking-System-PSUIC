@@ -36,15 +36,21 @@ if (-not (Test-Path $pm2Home)) {
     New-Item -ItemType Directory -Path $pm2Home -Force | Out-Null
 }
 
-$startupScript = @"
-`$ErrorActionPreference = 'Stop'
-`$env:PM2_HOME = '$pm2Home'
-Set-Location '$AppDir'
-& '$pm2Path' resurrect
+$resurrectScriptPath = Join-Path $AppDir "pm2-resurrect.cmd"
+$resurrectScript = @"
+@echo off
+setlocal EnableExtensions
+cd /d "$AppDir"
+set "PM2_HOME=$pm2Home"
+call "$pm2Path" resurrect
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" exit /b %RC%
+call "$pm2Path" save >nul 2>&1
+exit /b 0
 "@
+Set-Content -Path $resurrectScriptPath -Value $resurrectScript -Encoding Ascii
 
-$encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($startupScript))
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCommand"
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$resurrectScriptPath`""
 $triggers = @(
     New-ScheduledTaskTrigger -AtStartup,
     New-ScheduledTaskTrigger -AtLogOn
@@ -58,3 +64,4 @@ Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $triggers -P
 Write-Info "Scheduled task created/updated: $taskName"
 Write-Info "PM2 home: $pm2Home"
 Write-Info "PM2 command: $pm2Path"
+Write-Info "Resurrect script: $resurrectScriptPath"

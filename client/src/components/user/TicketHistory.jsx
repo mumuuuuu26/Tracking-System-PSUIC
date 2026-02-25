@@ -6,6 +6,7 @@ import { listCategories } from "../../api/category";
 import { listRooms } from "../../api/room";
 import { useNavigate } from "react-router-dom";
 import UserTicketCard from "./UserTicketCard";
+import { toFloorDisplay, toRoomDisplay } from "../../utils/roomDisplay";
 
 // ─── Inline custom dropdown (dark themed, always opens below) ───────────────
 const DarkSelect = ({ options, value, onChange, placeholder, testId }) => {
@@ -116,7 +117,7 @@ const TicketHistory = () => {
             .sort((a, b) => Number(a) - Number(b))
             .map((floor) => ({
                 value: floor,
-                label: `Floor ${floor}`,
+                label: toFloorDisplay(floor),
             })),
     ];
 
@@ -128,7 +129,7 @@ const TicketHistory = () => {
         { value: "", label: "All Rooms" },
         ...visibleRooms.map((r) => ({
             value: String(r.id),
-            label: `Room ${r.roomNumber}`,
+            label: toRoomDisplay(r.roomNumber),
         })),
     ];
 

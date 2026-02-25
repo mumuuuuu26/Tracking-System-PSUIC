@@ -1,5 +1,6 @@
 import React from "react";
 import { Star } from "lucide-react";
+import { toRoomFloorDisplay } from "../../utils/roomDisplay";
 
 /**
  * UserTicketCard Component
@@ -75,7 +76,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
                     {ticket.description || "-"}
                 </h4>
                 <span className="text-blue-600 dark:text-blue-400/80 text-xs font-semibold bg-blue-50 dark:bg-blue-900/50 inline-block px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600/40">
-                    Floor {ticket.room?.floor || "-"} · Room {ticket.room?.roomNumber || "-"}
+                    {toRoomFloorDisplay(ticket.room)}
                 </span>
             </div>
 
