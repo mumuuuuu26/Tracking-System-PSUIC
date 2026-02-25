@@ -73,15 +73,5 @@ module.exports = {
       max_memory_restart: "500M",
       env_production: sharedProductionEnv,
     },
-    {
-      name: "db-backup-cron",
-      script: "./scripts/backup_db.js",
-      instances: 1,
-      exec_mode: "fork",
-      cron_restart: "0 2 * * *",
-      autorestart: false,
-      watch: false,
-      env_production: sharedProductionEnv,
-    },
   ],
 };

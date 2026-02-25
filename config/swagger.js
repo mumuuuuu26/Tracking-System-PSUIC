@@ -1,41 +1,25 @@
-const swaggerJsdoc = require("swagger-jsdoc");
+const fs = require("fs");
+const path = require("path");
+const options = require("./swagger-options");
 
-const options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "IT Tracking System API",
-      version: "1.0.0",
-      description: "API Documentation for IT Support and Asset Tracking System",
-      contact: {
-        name: "IT Support Team",
-        email: "support@example.com",
-      },
-    },
-    servers: [
-      {
-        url: `http://localhost:${process.env.PORT || 5002}/api`,
-        description: "Development Server",
-      },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
-      },
-    },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-  },
-  apis: ["./routes/*.js"], // Path to the API docs
+const isProduction = process.env.NODE_ENV === "production";
+const useDynamicInProduction = String(process.env.SWAGGER_DYNAMIC_IN_PROD || "").toLowerCase() === "true";
+const staticSpecPath = path.join(__dirname, "swagger-static.json");
+
+const buildDynamicSpec = () => {
+  // Lazy import to avoid loading swagger-jsdoc on production startup by default.
+  const swaggerJsdoc = require("swagger-jsdoc");
+  return swaggerJsdoc(options);
 };
 
-const swaggerSpec = swaggerJsdoc(options);
+if (isProduction && !useDynamicInProduction) {
+  if (fs.existsSync(staticSpecPath)) {
+    module.exports = JSON.parse(fs.readFileSync(staticSpecPath, "utf8"));
+    return;
+  }
+  // Fallback only when static file is missing.
+  // eslint-disable-next-line no-console
+  console.warn(`[Swagger] ${staticSpecPath} not found, falling back to dynamic generation.`);
+}
 
-module.exports = swaggerSpec;
+module.exports = buildDynamicSpec();

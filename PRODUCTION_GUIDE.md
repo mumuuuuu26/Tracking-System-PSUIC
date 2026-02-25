@@ -183,8 +183,14 @@ windows-enable-pm2-startup.bat
 Before restart/update in production, run:
 ```bash
 npm run preflight:prod
+npm run check:frontend:dist
 ```
 This validates required env keys, checks DB connectivity, and verifies upload storage write permissions before migration/restart.
+
+API docs behavior in production:
+- `/api-docs` uses static spec file `config/swagger-static.json` (no runtime Swagger parsing).
+- Regenerate static spec after route annotation updates:
+  - `npm run swagger:generate:static`
 
 ---
 

@@ -12,6 +12,8 @@
     "validate:env:file:prod": "node scripts/validate-production-env-file.js",
     "validate:env:prod": "node -e \"process.env.NODE_ENV='production';require('./scripts/validate-production-env.js')\"",
     "check:google:prod": "node -e \"process.env.NODE_ENV='production';require('./scripts/check-google-calendar-env.js')\"",
+    "check:frontend:dist": "node scripts/check-frontend-dist.js",
+    "swagger:generate:static": "node scripts/generate-swagger-static.js",
     "preflight:prod": "npm run validate:env:prod && npm run preflight:db:prod && npm run preflight:storage:prod",
     "prisma:migrate:prod": "node -e \"process.env.NODE_ENV='production';require('./scripts/apply-prisma-sql-migrations.js')\"",
     "migrate:sql:prod": "node -e \"process.env.NODE_ENV='production';require('./scripts/apply-prisma-sql-migrations.js')\"",

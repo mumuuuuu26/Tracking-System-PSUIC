@@ -362,10 +362,12 @@ try {
     } else {
         Invoke-CommandOrThrow -Command { pm2 start ecosystem.config.js --env production } -ErrorMessage "PM2 start failed."
     }
-    & pm2 start db-backup-cron --update-env | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        & pm2 start ecosystem.config.js --only db-backup-cron --env production | Out-Null
+    & pm2 describe db-backup-cron | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        & pm2 delete db-backup-cron | Out-Null
+        Write-Info "Removed legacy PM2 app: db-backup-cron"
     }
+    Write-Info "Backup policy: backend scheduler runs DB backup via DB_BACKUP_CRON."
     & pm2 save | Out-Null
 
     $startupTaskScript = Join-Path $AppDir "windows-enable-pm2-startup.ps1"

@@ -25,7 +25,6 @@ pm2 logs
 To view logs for a specific app:
 ```bash
 pm2 logs tracking-system-backend
-pm2 logs db-backup-cron
 ```
 
 ## 🔄 Checking Status
@@ -36,7 +35,9 @@ pm2 list
 ```
 
 ## 💾 Backup Status
-The system is configured to backup the database **Daily at 2:00 AM**.
+The backend scheduler runs database backup based on `DB_BACKUP_CRON` (default: `0 3 * * *`).
 - Backups are stored in: `backups/`
 - Old backups (older than 7 days) are automatically deleted.
-- Check backup process execution: `pm2 logs db-backup-cron`
+- Check backup execution from backend logs:
+  - `pm2 logs tracking-system-backend --lines 200`
+  - Find lines like `[Scheduler] Starting database backup...` and `Backup successful: ...`

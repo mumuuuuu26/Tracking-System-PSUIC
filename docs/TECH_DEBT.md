@@ -2,15 +2,11 @@
 
 Updated: 2026-02-24
 
-## P1 - Deprecated `url.parse` warning (DEP0169)
-- Symptom: Node prints `DEP0169` in runtime logs.
-- Current impact: No runtime outage, but deprecated API may be removed in future Node versions.
-- Likely source: Third-party dependency (no direct `url.parse` usage found in project code).
-- Next sprint action:
-  1. Run backend with `node --trace-deprecation server.js` in staging.
-  2. Identify exact package/file emitting `url.parse`.
-  3. Upgrade or replace dependency.
-  4. Re-test auth, proxy, and route parsing.
+## P2 - Keep static OpenAPI spec up-to-date
+- DEP0169 from Swagger dynamic parsing was removed from production startup by loading static spec (`config/swagger-static.json`) in production mode.
+- Ongoing task:
+  1. Regenerate static spec after API annotation changes: `npm run swagger:generate:static`.
+  2. Commit updated `config/swagger-static.json` with route doc changes.
 
 ## P2 - Google sync call burst control monitoring
 - Added client+server cooldown in this patch.

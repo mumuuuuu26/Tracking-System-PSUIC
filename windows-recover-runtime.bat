@@ -36,11 +36,15 @@ if errorlevel 1 (
 )
 if errorlevel 1 goto :err_pm2_run
 
-echo [2/6] Ensuring db-backup-cron process...
-call pm2 start db-backup-cron --update-env >nul 2>&1
-if errorlevel 1 (
-  call pm2 start ecosystem.config.js --only db-backup-cron --env production >nul 2>&1
+echo [2/6] Backup policy cleanup (scheduler in backend)...
+call pm2 describe db-backup-cron >nul 2>&1
+if not errorlevel 1 (
+  call pm2 delete db-backup-cron >nul 2>&1
+  echo [INFO] Removed legacy PM2 app: db-backup-cron
+) else (
+  echo [INFO] Legacy PM2 app db-backup-cron not found.
 )
+echo [INFO] Backups are handled by backend scheduler using DB_BACKUP_CRON.
 call pm2 save >nul
 
 echo [3/6] Local health endpoint

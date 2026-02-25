@@ -15,15 +15,8 @@ echo.
 echo [0/8] Frontend bundle files
 if not exist "client\dist\index.html" goto :err_frontend_missing
 if not exist "client\dist\assets" goto :err_frontend_missing
-powershell -NoProfile -Command "$f = Get-ChildItem 'client/dist/assets' -Filter 'Dashboard-*.js' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { exit 2 }; if ((Get-Content $f.FullName -Raw).Contains('All Ticket')) { exit 0 } else { exit 2 }"
-set "FRONTEND_CHECK_CODE=%ERRORLEVEL%"
-if not "%FRONTEND_CHECK_CODE%"=="0" if not "%FRONTEND_CHECK_CODE%"=="2" goto :err_frontend_check
-if "%FRONTEND_CHECK_CODE%"=="2" (
-  echo [WARN] Dashboard UI marker "All Ticket" not found in latest Dashboard chunk.
-  echo [WARN] UI may still be old build.
-) else (
-  echo [INFO] Dashboard UI marker "All Ticket" found.
-)
+node scripts\check-frontend-dist.js
+if errorlevel 1 goto :err_frontend_check
 echo.
 
 echo [1/8] PM2 status
@@ -31,41 +24,52 @@ pm2 status
 if errorlevel 1 goto :err_pm2
 echo.
 
-echo [2/8] Local health endpoint
+echo [2/8] Backup scheduler policy
+for /f "usebackq tokens=1,* delims==" %%A in (`findstr /B "DB_BACKUP_CRON=" ".env.production"`) do if /I "%%A"=="DB_BACKUP_CRON" set "DB_BACKUP_CRON=%%B"
+if not defined DB_BACKUP_CRON set "DB_BACKUP_CRON=0 3 * * *"
+call pm2 describe db-backup-cron >nul 2>&1
+if not errorlevel 1 (
+  echo [WARN] Legacy PM2 app db-backup-cron still exists. Backup should run via backend scheduler.
+) else (
+  echo [INFO] Backups are handled by backend scheduler (DB_BACKUP_CRON=%DB_BACKUP_CRON%).
+)
+echo.
+
+echo [3/8] Local health endpoint
 powershell -NoProfile -Command "(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:%APP_PORT%/health -TimeoutSec 8).Content"
 if errorlevel 1 goto :err_health_local
 echo.
 
-echo [3/8] LAN health endpoint (10.135.2.226:%APP_PORT%)
+echo [4/8] LAN health endpoint (10.135.2.226:%APP_PORT%)
 powershell -NoProfile -Command "(Invoke-WebRequest -UseBasicParsing http://10.135.2.226:%APP_PORT%/health -TimeoutSec 8).Content"
 if errorlevel 1 goto :err_health_lan
 echo.
 
-echo [4/8] Listening port %APP_PORT%
+echo [5/8] Listening port %APP_PORT%
 netstat -ano | findstr /R /C:":%APP_PORT% .*LISTENING"
 echo.
 
-echo [5/8] Firewall rule TrackingSystem80
+echo [6/8] Firewall rule TrackingSystem80
 netsh advfirewall firewall show rule name="TrackingSystem80"
 echo.
 
-echo [6/8] Frontend root status
+echo [7/8] Frontend root status
 curl -I http://127.0.0.1:%APP_PORT%/
 if errorlevel 1 goto :err_root
 echo.
 
-echo [7/8] PM2 startup task status
+echo [8/8] PM2 startup task status
 schtasks /Query /TN "TrackingSystem-PM2-Resurrect"
 if errorlevel 1 echo [WARN] Startup task not found. Run windows-enable-pm2-startup.bat as Administrator.
 echo.
 
-echo [8/8] Latest Dashboard chunk
-for /f %%F in ('dir /b /o-d "client\dist\assets\Dashboard-*.js" 2^>nul') do (
-  echo [INFO] Latest Dashboard chunk: %%F
-  goto :after_dashboard_chunk
+echo [INFO] Latest frontend entry chunk
+for /f %%F in ('dir /b /o-d "client\dist\assets\index-*.js" 2^>nul') do (
+  echo [INFO] Latest entry chunk: %%F
+  goto :after_index_chunk
 )
-echo [WARN] No Dashboard chunk found in client\dist\assets
-:after_dashboard_chunk
+echo [WARN] No index-* entry chunk found in client\dist\assets
+:after_index_chunk
 echo.
 
 echo ============================================
@@ -83,7 +87,7 @@ echo [HINT] Upload client\dist from your Mac workspace before runtime check.
 exit /b 1
 
 :err_frontend_check
-echo [ERROR] Frontend bundle marker check failed unexpectedly.
+echo [ERROR] Frontend bundle integrity check failed.
 exit /b 1
 
 :err_health_local

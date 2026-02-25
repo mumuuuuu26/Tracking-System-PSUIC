@@ -35,15 +35,9 @@ where npm >nul 2>&1
 if errorlevel 1 goto :err_npm
 
 set "DIST_CHECK_CODE=0"
-powershell -NoProfile -Command "if (-not (Test-Path 'client/dist/index.html')) { exit 11 }; if (-not (Test-Path 'client/dist/assets')) { exit 12 }; $f = Get-ChildItem 'client/dist/assets' -Filter 'Dashboard-*.js' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { exit 2 }; if ((Get-Content $f.FullName -Raw).Contains('All Ticket')) { exit 0 } else { exit 2 }"
+node scripts\check-frontend-dist.js
 set "DIST_CHECK_CODE=%ERRORLEVEL%"
-if "%DIST_CHECK_CODE%"=="11" goto :err_client_dist_missing
-if "%DIST_CHECK_CODE%"=="12" goto :err_client_dist_missing
-if not "%DIST_CHECK_CODE%"=="0" if not "%DIST_CHECK_CODE%"=="2" goto :err_client_dist_check
-if "%DIST_CHECK_CODE%"=="2" (
-  echo [WARN] Dashboard UI marker "All Ticket" was not found in latest Dashboard chunk.
-  echo [WARN] Frontend may still be an old build. Continue for backend-only recovery.
-)
+if not "%DIST_CHECK_CODE%"=="0" goto :err_client_dist_check
 
 echo [0/8] Repairing .env.production file structure...
 call npm run fix:env:file:prod
@@ -183,10 +177,12 @@ call pm2 start ecosystem.config.js --env production
 if errorlevel 1 goto :err_pm2_run
 
 :pm2_done
-call pm2 start db-backup-cron --update-env >nul 2>&1
-if errorlevel 1 (
-  call pm2 start ecosystem.config.js --only db-backup-cron --env production >nul 2>&1
+call pm2 describe db-backup-cron >nul 2>&1
+if not errorlevel 1 (
+  echo [INFO] Removing legacy PM2 app: db-backup-cron
+  call pm2 delete db-backup-cron >nul 2>&1
 )
+echo [INFO] Backup policy: backend scheduler runs DB backup using DB_BACKUP_CRON.
 call pm2 save >nul
 call pm2 status
 
@@ -240,7 +236,8 @@ echo [HINT] Use: sftp -b deploy.sftp psuic@10.135.2.226
 exit /b 1
 
 :err_client_dist_check
-echo [ERROR] Frontend bundle verification failed unexpectedly.
+echo [ERROR] Frontend bundle integrity check failed.
+echo [HINT] Ensure client\dist is uploaded completely and matches current build output.
 exit /b 1
 
 :err_env_file
