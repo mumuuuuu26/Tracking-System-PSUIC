@@ -4,11 +4,12 @@ import mkcert from "vite-plugin-mkcert";
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const isTestMode = mode === "test" || process.env.VITEST === "true";
-  const isCi = ["1", "true"].includes(String(process.env.CI).toLowerCase());
-  const useHttpsDevServer = process.env.VITE_DEV_HTTPS === "true" && !isTestMode && !isCi;
+  const env = globalThis.process?.env ?? {};
+  const isTestMode = mode === "test" || env.VITEST === "true";
+  const isCi = ["1", "true"].includes(String(env.CI).toLowerCase());
+  const useHttpsDevServer = env.VITE_DEV_HTTPS === "true" && !isTestMode && !isCi;
   const backendProxyTarget =
-    process.env.VITE_BACKEND_PROXY_TARGET ||
+    env.VITE_BACKEND_PROXY_TARGET ||
     (useHttpsDevServer ? "https://localhost:5002" : "http://localhost:5002");
 
   return {

@@ -104,6 +104,9 @@ These files are excluded from version control (`.gitignore`).
   - Run E2E locally: `npm run test:e2e`
   - Selector contract guard: `npm run check:e2e:selectors`
   - E2E selector guideline: `docs/TEST_GUIDELINES.md`
+- **Backend Tests**:
+  - Full test suite (requires MySQL reachable at test DATABASE_URL): `npm test`
+  - Unit-only tests (no DB required): `npm run test:unit`
 
 ## Performance & Load Testing
 
