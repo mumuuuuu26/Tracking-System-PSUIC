@@ -51,10 +51,9 @@ exit /b 0
 Set-Content -Path $resurrectScriptPath -Value $resurrectScript -Encoding Ascii
 
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$resurrectScriptPath`""
-$triggers = @(
-    New-ScheduledTaskTrigger -AtStartup,
-    New-ScheduledTaskTrigger -AtLogOn
-)
+$startupTrigger = New-ScheduledTaskTrigger -AtStartup
+$logonTrigger = New-ScheduledTaskTrigger -AtLogOn
+$triggers = @($startupTrigger, $logonTrigger)
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 
