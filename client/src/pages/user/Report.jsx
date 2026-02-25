@@ -155,6 +155,7 @@ const Report = () => {
                             <button
                                 key={opt.value}
                                 type="button"
+                                data-testid={`user-report-filter-status-${opt.value}`}
                                 onClick={() => setFilterStatus(opt.value)}
                                 className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterStatus === opt.value
                                     ? "bg-[#1e2e4a] text-white border-transparent"

@@ -144,6 +144,7 @@ const TicketHistory = () => {
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 <button
                     type="button"
+                    data-testid="user-history-filter-category-all"
                     onClick={() => setFilterCategoryId("all")}
                     className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === "all"
                         ? "bg-[#1e2e4a] text-white border-transparent"
@@ -156,6 +157,7 @@ const TicketHistory = () => {
                     <button
                         key={cat.id}
                         type="button"
+                        data-testid={`user-history-filter-category-${cat.id}`}
                         onClick={() => setFilterCategoryId(String(cat.id))}
                         className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === String(cat.id)
                             ? "bg-[#1e2e4a] text-white border-transparent"
@@ -196,7 +198,7 @@ const TicketHistory = () => {
             )}
 
             {/* Ticket List */}
-            <div className="space-y-4" data-testid="ticket-table pb-20">
+            <div className="space-y-4 pb-20" data-testid="ticket-table">
                 {loading ? (
                     <div className="text-center py-20 text-blue-400/60 text-sm animate-pulse">Loading history...</div>
                 ) : filteredTickets.length > 0 ? (

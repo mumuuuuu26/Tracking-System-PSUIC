@@ -102,6 +102,8 @@ These files are excluded from version control (`.gitignore`).
 - **CI Pipeline**: Runs backend tests, smoke tests, frontend tests, and Playwright E2E.
 - **E2E Tests**: Playwright tests are available for local and CI execution.
   - Run E2E locally: `npm run test:e2e`
+  - Selector contract guard: `npm run check:e2e:selectors`
+  - E2E selector guideline: `docs/TEST_GUIDELINES.md`
 
 ## Performance & Load Testing
 
