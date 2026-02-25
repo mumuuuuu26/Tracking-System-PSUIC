@@ -176,7 +176,7 @@ const Report = () => {
                         <div
                             ref={statusScrollRef}
                             onWheel={handleStatusWheel}
-                            className="flex gap-2 overflow-x-auto no-scrollbar pb-1 touch-pan-x"
+                            className="flex gap-2 overflow-x-auto no-scrollbar pb-1 touch-pan-x lg:flex-wrap lg:overflow-visible lg:touch-auto"
                         >
                             {statusOptions.map((opt) => (
                                 <button

@@ -155,7 +155,7 @@ const TicketHistory = () => {
                 <div
                     ref={categoryScrollRef}
                     onWheel={handleCategoryWheel}
-                    className="flex gap-2 overflow-x-auto no-scrollbar pb-1 touch-pan-x"
+                    className="flex gap-2 overflow-x-auto no-scrollbar pb-1 touch-pan-x lg:flex-wrap lg:overflow-visible lg:touch-auto"
                 >
                     <button
                         type="button"
