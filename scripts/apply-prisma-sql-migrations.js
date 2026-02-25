@@ -74,8 +74,13 @@ function buildMysqlArgs(connection, database, batchMode) {
   return args;
 }
 
-function runMysql(mysqlCmd, connection, database, sql, batchMode = false) {
-  const result = spawnSync(mysqlCmd, buildMysqlArgs(connection, database, batchMode), {
+function runMysqlExec(mysqlCmd, connection, database, sql, { batchMode = false, force = false } = {}) {
+  const args = buildMysqlArgs(connection, database, batchMode);
+  if (force) {
+    args.push("--force");
+  }
+
+  const result = spawnSync(mysqlCmd, args, {
     input: sql,
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
@@ -84,11 +89,26 @@ function runMysql(mysqlCmd, connection, database, sql, batchMode = false) {
   if (result.error) {
     throw new Error(`Failed to run mysql command: ${result.error.message}`);
   }
+
+  return result;
+}
+
+function runMysql(mysqlCmd, connection, database, sql, batchMode = false) {
+  const result = runMysqlExec(mysqlCmd, connection, database, sql, { batchMode, force: false });
   if (result.status !== 0) {
     throw new Error((result.stderr || result.stdout || "mysql command failed").trim());
   }
 
   return String(result.stdout || "");
+}
+
+function runMysqlForce(mysqlCmd, connection, database, sql) {
+  const result = runMysqlExec(mysqlCmd, connection, database, sql, { batchMode: false, force: true });
+  return {
+    status: Number(result.status || 0),
+    stdout: String(result.stdout || ""),
+    stderr: String(result.stderr || ""),
+  };
 }
 
 function isTrue(value) {
@@ -162,6 +182,103 @@ function migrationChecksum(sqlContent) {
   return crypto.createHash("sha256").update(sqlContent).digest("hex");
 }
 
+function extractCreateTableNames(sqlContent) {
+  const names = new Set();
+  const createTableRegex = /CREATE\s+TABLE\s+`([^`]+)`/gi;
+  let match = createTableRegex.exec(sqlContent);
+
+  while (match) {
+    if (match[1]) {
+      names.add(match[1]);
+    }
+    match = createTableRegex.exec(sqlContent);
+  }
+
+  return Array.from(names);
+}
+
+function getExistingTableNames(mysqlCmd, connection, tableNames) {
+  if (!tableNames.length) return new Set();
+
+  const tableSchema = sqlEscape(connection.database.toLowerCase());
+  const quotedNames = tableNames
+    .map((name) => `'${sqlEscape(name.toLowerCase())}'`)
+    .join(", ");
+
+  const sql = `
+SELECT LOWER(table_name)
+FROM information_schema.tables
+WHERE LOWER(table_schema) = '${tableSchema}'
+  AND LOWER(table_name) IN (${quotedNames});
+`;
+
+  const output = runMysql(mysqlCmd, connection, connection.database, sql, true);
+  return new Set(
+    output
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean),
+  );
+}
+
+function isAlreadyExistsError(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return (
+    message.includes("already exists") ||
+    message.includes("error 1050") ||
+    message.includes("duplicate key name") ||
+    message.includes("duplicate column name")
+  );
+}
+
+function isSchemaDriftError(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return (
+    message.includes("already exists") ||
+    message.includes("error 1050") ||
+    message.includes("error 1060") ||
+    message.includes("error 1061") ||
+    message.includes("error 1091") ||
+    message.includes("duplicate") ||
+    message.includes("can't drop") ||
+    message.includes("doesn't exist")
+  );
+}
+
+function shouldAutoBaselineInitMigration() {
+  if (isTrue(process.env.MIGRATE_SQL_AUTO_BASELINE_INIT)) {
+    return true;
+  }
+  return process.env.NODE_ENV === "test";
+}
+
+function shouldAllowIdempotentRetry() {
+  if (isTrue(process.env.MIGRATE_SQL_IDEMPOTENT_RETRY)) {
+    return true;
+  }
+  return process.env.NODE_ENV === "test";
+}
+
+function extractMysqlErrorLines(stderr, stdout) {
+  return `${stderr}\n${stdout}`
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^ERROR \d+/i.test(line));
+}
+
+function isIgnorableIdempotentError(line) {
+  const value = String(line || "").toLowerCase();
+  return (
+    value.includes("already exists") ||
+    value.includes("duplicate key name") ||
+    value.includes("duplicate column name") ||
+    value.includes("can't drop") ||
+    value.includes("doesn't exist") ||
+    value.includes("duplicate foreign key constraint name") ||
+    value.includes("errno: 121")
+  );
+}
+
 function normalizeSqlForFlavor(sqlContent, flavor) {
   if (flavor !== "mariadb") {
     return sqlContent;
@@ -210,6 +327,106 @@ function applyMigration(mysqlCmd, connection, migration, flavor) {
   markMigrationApplied(mysqlCmd, connection, migration.name, checksum);
 }
 
+function tryBaselineInitMigration(mysqlCmd, connection, migration, migrationError) {
+  if (!shouldAutoBaselineInitMigration()) {
+    return false;
+  }
+  if (!isAlreadyExistsError(migrationError)) {
+    return false;
+  }
+
+  const sqlContent = fs.readFileSync(migration.migrationPath, "utf8");
+  const requiredTables = extractCreateTableNames(sqlContent);
+  if (!requiredTables.length) {
+    return false;
+  }
+
+  const existingTables = getExistingTableNames(mysqlCmd, connection, requiredTables);
+  const missingTables = requiredTables.filter(
+    (tableName) => !existingTables.has(String(tableName).toLowerCase()),
+  );
+
+  if (missingTables.length > 0) {
+    return false;
+  }
+
+  const checksum = migrationChecksum(sqlContent);
+  markMigrationApplied(mysqlCmd, connection, migration.name, checksum);
+  console.log(`[MIGRATE SQL] Init baseline marked: ${migration.name}`);
+  return true;
+}
+
+function applyInitMigrationIdempotent(mysqlCmd, connection, migration, flavor) {
+  const sqlContent = fs.readFileSync(migration.migrationPath, "utf8");
+  const normalizedSql = normalizeSqlForFlavor(sqlContent, flavor).trim();
+
+  if (normalizedSql.length > 0) {
+    const result = runMysqlForce(mysqlCmd, connection, connection.database, `${normalizedSql}\n`);
+    const errorLines = extractMysqlErrorLines(result.stderr, result.stdout);
+    const nonIgnorable = errorLines.filter((line) => !isIgnorableIdempotentError(line));
+
+    if (nonIgnorable.length > 0) {
+      throw new Error(nonIgnorable[0]);
+    }
+
+    if (result.status !== 0 && errorLines.length === 0) {
+      throw new Error((result.stderr || result.stdout || "mysql command failed").trim());
+    }
+  }
+
+  const requiredTables = extractCreateTableNames(sqlContent);
+  const existingTables = getExistingTableNames(mysqlCmd, connection, requiredTables);
+  const missingTables = requiredTables.filter(
+    (tableName) => !existingTables.has(String(tableName).toLowerCase()),
+  );
+
+  if (missingTables.length > 0) {
+    throw new Error(
+      `Init migration idempotent apply incomplete; missing table(s): ${missingTables.join(", ")}`,
+    );
+  }
+
+  const checksum = migrationChecksum(sqlContent);
+  markMigrationApplied(mysqlCmd, connection, migration.name, checksum);
+  console.log(`[MIGRATE SQL] Init migration applied in idempotent mode: ${migration.name}`);
+}
+
+function applyMigrationIdempotent(mysqlCmd, connection, migration, flavor) {
+  const sqlContent = fs.readFileSync(migration.migrationPath, "utf8");
+  const normalizedSql = normalizeSqlForFlavor(sqlContent, flavor).trim();
+
+  if (normalizedSql.length > 0) {
+    const result = runMysqlForce(mysqlCmd, connection, connection.database, `${normalizedSql}\n`);
+    const errorLines = extractMysqlErrorLines(result.stderr, result.stdout);
+    const nonIgnorable = errorLines.filter((line) => !isIgnorableIdempotentError(line));
+
+    if (nonIgnorable.length > 0) {
+      throw new Error(nonIgnorable[0]);
+    }
+
+    if (result.status !== 0 && errorLines.length === 0) {
+      throw new Error((result.stderr || result.stdout || "mysql command failed").trim());
+    }
+  }
+
+  const createTableNames = extractCreateTableNames(sqlContent);
+  if (createTableNames.length > 0) {
+    const existingTables = getExistingTableNames(mysqlCmd, connection, createTableNames);
+    const missingTables = createTableNames.filter(
+      (tableName) => !existingTables.has(String(tableName).toLowerCase()),
+    );
+    if (missingTables.length > 0) {
+      throw new Error(
+        `Idempotent migration apply incomplete; missing table(s): ${missingTables.join(", ")}`,
+      );
+    }
+  }
+
+  const checksum = migrationChecksum(sqlContent);
+  markMigrationApplied(mysqlCmd, connection, migration.name, checksum);
+  console.log(`[MIGRATE SQL] Migration applied in idempotent mode: ${migration.name}`);
+}
+
 function main() {
   const connection = parseMysqlUrl(process.env.DATABASE_URL);
   const mysqlCmd = resolveMysqlCommand();
@@ -243,9 +460,30 @@ function main() {
     return;
   }
 
-  for (const migration of pending) {
+  const isInitBaselineCandidate = pending.length > 0 && applied.size === 0;
+
+  for (let index = 0; index < pending.length; index += 1) {
+    const migration = pending[index];
     console.log(`[MIGRATE SQL] Applying: ${migration.name}`);
-    applyMigration(mysqlCmd, connection, migration, flavor);
+    try {
+      applyMigration(mysqlCmd, connection, migration, flavor);
+    } catch (error) {
+      const canAttemptInitBaseline = isInitBaselineCandidate && index === 0;
+      if (canAttemptInitBaseline && tryBaselineInitMigration(mysqlCmd, connection, migration, error)) {
+        continue;
+      }
+      if (canAttemptInitBaseline && shouldAutoBaselineInitMigration() && isAlreadyExistsError(error)) {
+        console.log(`[MIGRATE SQL] Init migration conflict detected, retrying in idempotent mode: ${migration.name}`);
+        applyInitMigrationIdempotent(mysqlCmd, connection, migration, flavor);
+        continue;
+      }
+      if (shouldAllowIdempotentRetry() && isSchemaDriftError(error)) {
+        console.log(`[MIGRATE SQL] Drift conflict detected, retrying in idempotent mode: ${migration.name}`);
+        applyMigrationIdempotent(mysqlCmd, connection, migration, flavor);
+        continue;
+      }
+      throw error;
+    }
   }
 
   console.log(`[MIGRATE SQL] Applied ${pending.length} migration(s) successfully.`);
