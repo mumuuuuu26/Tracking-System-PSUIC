@@ -6,6 +6,7 @@ import ITPageHeader from "../../components/it/ITPageHeader";
 import ITWrapper from "../../components/it/ITWrapper";
 import { getTicket } from "../../api/ticket";
 import { acceptJob, closeJob, saveDraft, previewJob, rejectJob } from "../../api/it";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -242,6 +243,8 @@ const TicketDetail = () => {
         </div>
     );
 
+    const ticketReporterName = getUserDisplayName(ticket.createdBy, ticket.createdById ? `User #${ticket.createdById}` : "User");
+
     const steps = [
         { label: "NOT START", status: "not_start", active: true },
         { label: "IN PROGRESS", status: "in_progress", active: ["in_progress", "completed", "rejected"].includes(ticket.status) },
@@ -275,7 +278,7 @@ const TicketDetail = () => {
                 {/* Mobile Header */}
                 <ITPageHeader title="Ticket Details" />
 
-                <div className="max-w-4xl mx-auto mt-6">
+                <div className="max-w-4xl mx-auto mt-5">
                     {/* Header with Back Button - HIDDEN on Mobile as ITPageHeader takes over */}
                     <div className="px-6 pb-4 hidden lg:block">
                         <div className="flex items-center justify-between mb-2">
@@ -291,7 +294,7 @@ const TicketDetail = () => {
                     </div>
 
                     {/* Status Pipeline - Redesigned for Lines */}
-                    <div className="mt-6 mb-8">
+                    <div className="mt-4 mb-6">
                         <div className="relative flex items-center justify-between px-8 z-0">
                             {/* Background Line */}
                             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 dark:bg-blue-900/40 -z-10 mx-10"></div>
@@ -319,10 +322,10 @@ const TicketDetail = () => {
                             ))}
                         </div>
                     </div>
-                    <div className="px-6 space-y-6">
+                    <div className="px-5 sm:px-6 space-y-5">
                         {/* User & Ticket Info Card */}
-                        <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-6">
-                            <div className="flex items-start justify-between mb-6 gap-4">
+                        <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-5 sm:p-6">
+                            <div className="flex items-start justify-between mb-5 gap-4">
                                 <div className="flex items-center gap-4 min-w-0">
                                     <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full overflow-hidden shrink-0">
                                         {ticket.createdBy?.picture ? (
@@ -334,7 +337,9 @@ const TicketDetail = () => {
                                         )}
                                     </div>
                                     <div className="min-w-0">
-                                        <h2 className="font-bold text-gray-900 dark:text-white text-lg truncate">{ticket.createdBy?.name || ticket.createdBy?.username || ticket.createdBy?.email || "Unknown User"}</h2>
+                                        <h2 className="font-bold text-gray-900 dark:text-white text-lg truncate">
+                                            {ticketReporterName}
+                                        </h2>
                                         <p className="text-gray-400 dark:text-blue-300/60 text-sm capitalize truncate">{ticket.createdBy?.role || "User"}</p>
                                     </div>
                                 </div>
@@ -344,11 +349,11 @@ const TicketDetail = () => {
                             </div>
 
                             <div className="space-y-3">
-                                <div>
-                                    <label className="text-[10px] font-bold text-blue-500 dark:text-blue-300 uppercase tracking-widest block mb-0.5">Location</label>
-                                    <p className="font-bold text-gray-800 dark:text-white text-sm">Floor {ticket.room?.floor}, {ticket.room?.roomNumber}</p>
-                                </div>
-                                <div className="flex justify-between items-end">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-blue-500 dark:text-blue-300 uppercase tracking-widest block mb-0.5">Location</label>
+                                        <p className="font-bold text-gray-800 dark:text-white text-sm">Floor {ticket.room?.floor}, {ticket.room?.roomNumber}</p>
+                                    </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-blue-500 dark:text-blue-300 uppercase tracking-widest block mb-0.5">Category</label>
                                         <p className="font-bold text-gray-800 dark:text-white text-sm">
@@ -356,6 +361,8 @@ const TicketDetail = () => {
                                             {ticket.subComponent ? ` (${ticket.subComponent})` : ""}
                                         </p>
                                     </div>
+                                </div>
+                                <div className="flex justify-end">
                                     <span className="text-xs text-gray-400 dark:text-blue-300/60">{dayjs(ticket.createdAt).format('D MMM YY, HH:mm A')}</span>
                                 </div>
                             </div>
@@ -363,8 +370,8 @@ const TicketDetail = () => {
 
                         {/* Description */}
                         <div>
-                            <h3 className="font-bold text-gray-900 dark:text-white mb-3 uppercase text-sm tracking-wide">Description</h3>
-                            <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-6 mb-8">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2.5 text-sm tracking-wide">Description</h3>
+                            <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-5 sm:p-6">
                                 <p className="text-gray-600 dark:text-blue-200/90 text-sm leading-relaxed mb-4">
                                     {ticket.description}
                                 </p>
@@ -392,11 +399,11 @@ const TicketDetail = () => {
                         <div className={`${(ticket.status === 'not_start' && selectedStatus !== 'completed') ? 'hidden' : ''} transition-opacity`}>
 
                             {/* Checklist */}
-                            <h3 className="font-bold text-gray-900 dark:text-white mb-3 uppercase text-sm tracking-wide flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2.5 text-sm tracking-wide flex items-center justify-between">
                                 <span>Checklist</span>
                                 <span className="text-xs text-gray-400 dark:text-blue-300/60 lowercase font-normal">{checklistItems.filter(i => i.checked).length}/{checklistItems.length} completed</span>
                             </h3>
-                            <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-6 mb-8">
+                            <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-5 sm:p-6 mb-6">
                                 <div className="space-y-3 mb-4">
                                     {checklistItems.map((item) => (
                                         <div key={item.id} className="flex items-center gap-3 group">
@@ -445,8 +452,8 @@ const TicketDetail = () => {
                                 )}
                             </div>
 
-                            <h3 className="font-bold text-gray-900 dark:text-white mb-3 uppercase text-sm tracking-wide">IT Notes & Proof</h3>
-                            <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-6 mb-8">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2.5 text-sm tracking-wide">IT Notes & Proof</h3>
+                            <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-5 sm:p-6 mb-6">
 
                                 {(selectedStatus === 'completed' || ticket.status === 'in_progress') && ticket.status !== 'rejected' ? (
                                     <>
@@ -482,7 +489,7 @@ const TicketDetail = () => {
                                 {/* Display existing notes if completed */}
                                 {(ticket.status === 'completed' || ticket.status === 'rejected') && (
                                     <div className="space-y-3">
-                                        <div className={`p-4 rounded-xl border text-sm ${ticket.status === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/40 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/40 text-red-800 dark:text-red-300'}`}>
+                                        <div className={`p-4 rounded-xl border text-sm ${ticket.status === 'completed' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/40 text-green-800 dark:text-green-300' : 'bg-rose-50 dark:bg-rose-900/15 border-transparent text-rose-700 dark:text-rose-200'}`}>
                                             <span className="font-bold block mb-1">{ticket.status === 'rejected' ? 'Rejection Reason:' : 'Diagnosis / Notes:'}</span>
                                             {ticket.note ? ticket.note.replace('REJECTED: ', '') : "No notes provided."}
                                         </div>
@@ -515,7 +522,7 @@ const TicketDetail = () => {
                         {/* Status Section - Moved inside for consistent spacing */}
                         {(ticket.status !== 'not_start' && ticket.status !== 'rejected') && (
                             <div className="">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-3 uppercase text-sm tracking-wide">Status</h3>
+                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2.5 text-sm tracking-wide">Status</h3>
 
                                 <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-6 mb-6">
                                     <div className="relative">
@@ -590,17 +597,17 @@ const TicketDetail = () => {
 
                         {/* Show Accept Button ONLY if Not Start (Preview Mode) */}
                         {ticket.status === 'not_start' && (
-                            <div className="mt-6 flex flex-col items-center">
+                            <div className="mt-4 flex flex-col items-center">
                                 <div className="flex gap-4 w-full justify-center">
                                     <button
                                         onClick={handleUpdateStatus}
-                                        className="flex-1 bg-[#193C6C] dark:bg-blue-600 text-white font-bold py-4 rounded-3xl shadow-lg shadow-blue-100 dark:shadow-blue-900/30 hover:opacity-90 transition text-base"
+                                        className="flex-1 bg-[#193C6C] dark:bg-blue-600 text-white font-semibold py-3 rounded-2xl shadow-md shadow-blue-100 dark:shadow-blue-900/20 hover:opacity-90 transition text-[0.95rem]"
                                     >
                                         Accept
                                     </button>
                                     <button
                                         onClick={() => setShowRejectModal(true)}
-                                        className="flex-1 bg-white dark:bg-red-900/20 text-red-500 dark:text-red-300 border border-red-200 dark:border-red-800/40 font-bold py-4 rounded-3xl hover:bg-red-50 dark:hover:bg-red-900/30 transition text-base"
+                                        className="flex-1 bg-[#c76572] text-white font-semibold py-3 rounded-2xl hover:bg-[#b85a66] transition text-[0.95rem]"
                                     >
                                         Reject
                                     </button>
@@ -615,14 +622,14 @@ const TicketDetail = () => {
                     {
                         showRejectModal && (
                             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                                <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200 border border-gray-100 dark:border-blue-800/40">
-                                    <h3 className="text-xl font-bold mb-2 text-center text-gray-800 dark:text-white">Reject Ticket?</h3>
-                                    <p className="text-gray-500 dark:text-blue-300/70 text-center mb-4 text-sm leading-relaxed">
-                                        Please provide a reason for <br className="hidden sm:block" /> rejecting this ticket.
+                                <div className="bg-white dark:bg-[#1a2f4e] rounded-2xl p-4 w-full max-w-[20rem] shadow-xl animate-in fade-in zoom-in duration-200 border border-gray-100 dark:border-blue-800/30">
+                                    <h3 className="text-lg font-semibold mb-1 text-center text-gray-800 dark:text-white whitespace-nowrap">Reject Ticket?</h3>
+                                    <p className="text-gray-500 dark:text-blue-300/70 text-center mb-3 text-xs whitespace-nowrap overflow-hidden text-ellipsis">
+                                        Please provide rejection reason.
                                     </p>
                                     <textarea
-                                        className="w-full bg-gray-50 dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-xl p-3 text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-blue-300/50 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 outline-none mb-4"
-                                        rows="3"
+                                        className="w-full bg-gray-50 dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg p-2.5 text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-blue-400/40 focus:outline-none focus:ring-0 focus:border-gray-300 dark:focus:border-blue-700/60 mb-3"
+                                        rows="2"
                                         placeholder="Reason for rejection..."
                                         value={rejectReason}
                                         onChange={(e) => setRejectReason(e.target.value)}
@@ -630,13 +637,13 @@ const TicketDetail = () => {
                                     <div className="flex gap-3">
                                         <button
                                             onClick={() => setShowRejectModal(false)}
-                                            className="flex-1 bg-gray-100 dark:bg-blue-900/20 text-gray-700 dark:text-blue-200 py-3 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-blue-900/30 transition"
+                                            className="flex-1 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-white/20 transition"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handleReject}
-                                            className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-lg shadow-red-200 dark:shadow-red-900/30 transition"
+                                            className="flex-1 bg-[#c76572] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#b85a66] transition"
                                         >
                                             Reject
                                         </button>

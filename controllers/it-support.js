@@ -3,6 +3,7 @@ const { saveImage } = require("../utils/uploadImage");
 const { listGoogleEvents } = require("./googleCalendar");
 const { logger } = require("../utils/logger");
 const { mapGoogleSyncError } = require("../utils/googleSyncErrorMapper");
+const { getStatusVariants, getStatusWhere, normalizeTicketEntity, normalizeTicketStatus } = require("../utils/ticketStatus");
 
 const ticketUserSelect = {
     id: true,
@@ -63,7 +64,7 @@ exports.previewJob = async (req, res, next) => {
             return res.status(404).json({ message: "Ticket not found" });
         }
 
-        res.json(ticket);
+        res.json(normalizeTicketEntity(ticket));
     } catch (err) {
         next(err);
     }
@@ -87,8 +88,8 @@ exports.getStats = async (req, res, next) => {
           where: {
             isDeleted: false,
             OR: [
-              { assignedToId: null, status: "not_start" },
-              { assignedToId: req.user.id, status: "not_start" },
+              { assignedToId: null, status: getStatusWhere("not_start") },
+              { assignedToId: req.user.id, status: getStatusWhere("not_start") },
             ],
           },
         }),
@@ -96,7 +97,7 @@ exports.getStats = async (req, res, next) => {
         prisma.ticket.count({
           where: {
             assignedToId: req.user.id,
-            status: "in_progress",
+            status: getStatusWhere("in_progress"),
             isDeleted: false,
           },
         }),
@@ -104,7 +105,7 @@ exports.getStats = async (req, res, next) => {
         prisma.ticket.count({
           where: {
             assignedToId: req.user.id,
-            status: "completed",
+            status: getStatusWhere("completed"),
             isDeleted: false,
             updatedAt: { gte: today, lt: tomorrow },
           },
@@ -122,14 +123,14 @@ exports.getStats = async (req, res, next) => {
           where: {
             OR: [{ assignedToId: req.user.id }, { assignedToId: null }],
             urgency: { in: ["High"] },
-            status: { not: "completed" },
+            status: { notIn: getStatusVariants("completed") },
             isDeleted: false,
           },
         }),
 
         // [BUG FIX] Moved completed count into Promise.all to avoid extra DB round-trip
         prisma.ticket.count({
-          where: { assignedToId: req.user.id, status: "completed", isDeleted: false },
+          where: { assignedToId: req.user.id, status: getStatusWhere("completed"), isDeleted: false },
         }),
       ]);
 
@@ -156,7 +157,7 @@ exports.getMyTasks = async (req, res, next) => {
           { assignedToId: req.user.id },
           {
             assignedToId: null,
-            status: "not_start",
+            status: getStatusWhere("not_start"),
           },
         ],
       },
@@ -186,7 +187,7 @@ exports.getMyTasks = async (req, res, next) => {
       orderBy: [{ urgency: "desc" }, { createdAt: "asc" }],
     });
 
-    res.json(tasks);
+    res.json(tasks.map(normalizeTicketEntity));
   } catch (err) {
     next(err);
   }
@@ -221,7 +222,7 @@ exports.acceptJob = async (req, res, next) => {
         .json({ message: "Ticket already assigned to another IT" });
     }
 
-    if (ticket.status === 'rejected') {
+    if (normalizeTicketStatus(ticket.status) === 'rejected') {
         return res.status(400).json({ message: "Cannot accept a rejected ticket." });
     }
 
@@ -300,10 +301,12 @@ exports.rejectJob = async (req, res, next) => {
     if (existingTicket.isDeleted) {
       return res.status(404).json({ message: "Ticket not found" });
     }
-    if (existingTicket.status === 'rejected') {
+    const existingStatus = normalizeTicketStatus(existingTicket.status);
+
+    if (existingStatus === 'rejected') {
       return res.status(400).json({ message: "Ticket is already rejected." });
     }
-    if (existingTicket.status === 'completed') {
+    if (existingStatus === 'completed') {
       return res.status(400).json({ message: "Cannot reject a completed ticket." });
     }
 
@@ -311,6 +314,7 @@ exports.rejectJob = async (req, res, next) => {
       where: { id: parseInt(id) },
       data: {
         status: "rejected", 
+        assignedToId: req.user.id,
         note: `REJECTED: ${reason}`, // Save rejection reason in note for visibility
         logs: {
           create: {
@@ -392,7 +396,8 @@ exports.saveDraft = async (req, res, next) => {
         return res.status(404).json({ message: "Ticket not found" });
     }
 
-    if (existingTicket.status === 'rejected' || existingTicket.status === 'completed') {
+    const existingStatus = normalizeTicketStatus(existingTicket.status);
+    if (existingStatus === 'rejected' || existingStatus === 'completed') {
         return res.status(400).json({ message: "Cannot edit a finalized ticket." });
     }
 
@@ -424,10 +429,11 @@ exports.closeJob = async (req, res, next) => {
     if (!existingTicket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
-    if (existingTicket.status === 'completed') {
+    const existingStatus = normalizeTicketStatus(existingTicket.status);
+    if (existingStatus === 'completed') {
       return res.status(400).json({ message: "Ticket is already completed." });
     }
-    if (existingTicket.status === 'rejected') {
+    if (existingStatus === 'rejected') {
       return res.status(400).json({ message: "Cannot close a rejected ticket." });
     }
 
@@ -540,7 +546,7 @@ exports.getHistory = async (req, res, next) => {
     const history = await prisma.ticket.findMany({
       where: {
         assignedToId: req.user.id, // [BUG FIX] Scope to the current IT user only, not all completed tickets
-        status: "completed",
+        status: getStatusWhere("completed"),
         isDeleted: false,
       },
       include: {
@@ -566,7 +572,7 @@ exports.getHistory = async (req, res, next) => {
       orderBy: { updatedAt: "desc" },
     });
 
-    res.json(history);
+    res.json(history.map(normalizeTicketEntity));
   } catch (err) {
     next(err);
   }

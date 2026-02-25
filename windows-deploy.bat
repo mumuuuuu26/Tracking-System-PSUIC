@@ -19,6 +19,9 @@ echo ============================================
 if not exist "package.json" goto :err_pkg
 if not exist ".env.production" goto :err_env
 
+if not exist "client\dist\index.html" goto :err_client_dist_missing
+if not exist "client\dist\assets" goto :err_client_dist_missing
+
 for /f "usebackq tokens=1,* delims==" %%A in (`findstr /B "DATABASE_URL=" ".env.production"`) do if /I "%%A"=="DATABASE_URL" set "DATABASE_URL=%%B"
 if not defined DATABASE_URL goto :err_database_url
 
@@ -30,6 +33,17 @@ if errorlevel 1 goto :err_node
 
 where npm >nul 2>&1
 if errorlevel 1 goto :err_npm
+
+set "DIST_CHECK_CODE=0"
+powershell -NoProfile -Command "if (-not (Test-Path 'client/dist/index.html')) { exit 11 }; if (-not (Test-Path 'client/dist/assets')) { exit 12 }; $f = Get-ChildItem 'client/dist/assets' -Filter 'Dashboard-*.js' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if (-not $f) { exit 2 }; if ((Get-Content $f.FullName -Raw).Contains('All Ticket')) { exit 0 } else { exit 2 }"
+set "DIST_CHECK_CODE=%ERRORLEVEL%"
+if "%DIST_CHECK_CODE%"=="11" goto :err_client_dist_missing
+if "%DIST_CHECK_CODE%"=="12" goto :err_client_dist_missing
+if not "%DIST_CHECK_CODE%"=="0" if not "%DIST_CHECK_CODE%"=="2" goto :err_client_dist_check
+if "%DIST_CHECK_CODE%"=="2" (
+  echo [WARN] Dashboard UI marker "All Ticket" was not found in latest Dashboard chunk.
+  echo [WARN] Frontend may still be an old build. Continue for backend-only recovery.
+)
 
 echo [0/8] Repairing .env.production file structure...
 call npm run fix:env:file:prod
@@ -217,6 +231,16 @@ exit /b 1
 
 :err_npm
 echo [ERROR] npm is not available in PATH.
+exit /b 1
+
+:err_client_dist_missing
+echo [ERROR] Frontend bundle missing: client\dist\index.html or client\dist\assets not found.
+echo [HINT] Upload client\dist from your Mac workspace first.
+echo [HINT] Use: sftp -b deploy.sftp psuic@10.135.2.226
+exit /b 1
+
+:err_client_dist_check
+echo [ERROR] Frontend bundle verification failed unexpectedly.
 exit /b 1
 
 :err_env_file

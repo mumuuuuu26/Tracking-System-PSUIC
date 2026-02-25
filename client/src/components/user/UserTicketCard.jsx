@@ -53,7 +53,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
         <div
             onClick={onClick}
             data-testid="ticket-row"
-            className="bg-white dark:bg-[#1a2f4e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/30 relative overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-[0_4px_20px_rgba(25,60,108,0.4)] cursor-pointer mb-4 group"
+            className="bg-white dark:bg-[#1a2f4e] rounded-2xl p-5 border border-gray-200 dark:border-gray-700/30 relative overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-[0_4px_20px_rgba(25,60,108,0.4)] cursor-pointer group"
         >
             {/* Subtle glow effect on hover */}
             <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-blue-50 dark:from-blue-600/5 to-transparent pointer-events-none"></div>

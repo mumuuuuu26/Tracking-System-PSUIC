@@ -29,7 +29,7 @@ const LayoutAdmin = () => {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans">
+        <div className="admin-theme min-h-screen bg-gray-50 font-sans">
             {/* Reusable Admin Navbar */}
             <AdminNavbar />
 

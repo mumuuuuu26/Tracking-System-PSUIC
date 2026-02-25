@@ -139,12 +139,16 @@ exports.currentUser = async (req, res, next) => {
     }
 
     const missingGoogleKeys = getMissingGoogleCredentialKeys();
+    const emailNotificationsConfigured = Boolean(
+      process.env.MAIL_USER && process.env.MAIL_PASS,
+    );
     // Return user data + Google Calendar config status for IT connection setup
     res.json({
       ...user,
       serviceAccountEmail: process.env.GOOGLE_CLIENT_EMAIL || "",
       googleCalendarConfigured: missingGoogleKeys.length === 0,
       googleCalendarMissingKeys: missingGoogleKeys,
+      emailNotificationsConfigured,
     });
   } catch (err) {
     next(err);

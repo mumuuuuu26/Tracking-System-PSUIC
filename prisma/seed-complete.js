@@ -40,9 +40,9 @@ async function main() {
         update: {},
         create: {
             name: 'new_ticket_it',
-            subject: 'New Ticket Alert: {{title}}',
-            body: 'A new ticket has been created by ranges {{createdBy}}. Please check the dashboard.',
-            variables: JSON.stringify(['title', 'createdBy', 'ticketId']),
+            subject: 'New Ticket #{{ticketId}}: {{title}}',
+            body: 'A new ticket has been submitted by {{reporterName}}. Urgency: {{urgency}}. Room: {{room}}. <br><a href="{{link}}">Open Ticket</a>',
+            variables: JSON.stringify(['ticketId', 'title', 'reporterName', 'urgency', 'room', 'link']),
             isEnabled: true
         }
     });

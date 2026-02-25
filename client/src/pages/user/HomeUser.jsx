@@ -171,7 +171,7 @@ const HomeUser = () => {
           </div>
 
           {/* Ticket List */}
-          <div className="grid grid-cols-1 gap-0 md:grid-cols-2 md:gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
             {filteredTickets.slice(0, 6).map((ticket) => (
               <UserTicketCard
                 key={ticket.id}

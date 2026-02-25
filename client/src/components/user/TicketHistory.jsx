@@ -23,27 +23,27 @@ const DarkSelect = ({ options, value, onChange, placeholder, testId }) => {
     const selected = options.find((o) => o.value === value);
 
     return (
-        <div className="relative w-full" ref={ref}>
+        <div className="relative w-full min-w-0" ref={ref}>
             <button
                 type="button"
                 data-testid={testId}
                 onClick={() => setOpen((v) => !v)}
-                className={`w-full px-4 py-3 bg-white dark:bg-[#1a2f4e] rounded-xl flex items-center justify-between cursor-pointer transition-all text-sm border ${open
+                className={`w-full min-h-[46px] px-3 py-3 bg-white dark:bg-[#1a2f4e] rounded-xl flex items-center justify-between cursor-pointer transition-all text-[13px] md:text-sm border ${open
                     ? "border-gray-400 dark:border-blue-700/70"
                     : "border-gray-300 dark:border-blue-700/50"
                     }`}
             >
-                <span className={selected ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-blue-400/50"}>
+                <span className={`${selected ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-blue-400/50"} block flex-1 min-w-0 text-left pr-2 leading-5 whitespace-normal break-words`}>
                     {selected ? selected.label : placeholder}
                 </span>
                 <ChevronDown
                     size={16}
-                    className={`text-gray-400 dark:text-blue-400/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    className={`shrink-0 text-gray-400 dark:text-blue-400/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
                 />
             </button>
 
             {open && (
-                <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-[#152540] border border-gray-200 dark:border-blue-700/50 rounded-2xl shadow-xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
+                <div className="absolute top-full left-0 mt-2 z-50 min-w-full w-max max-w-[calc(100vw-3rem)] bg-white dark:bg-[#152540] border border-gray-200 dark:border-blue-700/50 rounded-2xl shadow-xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top">
                     <div className="max-h-60 overflow-y-auto p-2">
                         {options.map((opt) => {
                             const isSel = opt.value === value;
@@ -59,7 +59,7 @@ const DarkSelect = ({ options, value, onChange, placeholder, testId }) => {
                                         : "text-gray-700 dark:text-blue-200 hover:bg-gray-50 dark:hover:bg-blue-800/40"
                                         }`}
                                 >
-                                    <span className={`text-sm ${isSel ? "font-bold" : "font-medium"}`}>
+                                    <span className={`text-[13px] md:text-sm leading-5 whitespace-normal break-words ${isSel ? "font-bold" : "font-medium"}`}>
                                         {opt.label}
                                     </span>
 
@@ -82,11 +82,8 @@ const TicketHistory = () => {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [filters, setFilters] = useState({
-        categoryId: "all"
-    });
-
-    const [searchTerm, setSearchTerm] = useState("");
+    const [filterCategoryId, setFilterCategoryId] = useState("all");
+    const [filterFloor, setFilterFloor] = useState("");
     const [filterRoomId, setFilterRoomId] = useState("");
 
     const loadData = useCallback(async () => {
@@ -100,90 +97,95 @@ const TicketHistory = () => {
             setCategories(catRes.data);
             setRooms(roomRes.data);
 
-            const ticketRes = await getTicketHistory({ categoryId: filters.categoryId });
+            const ticketRes = await getTicketHistory({ categoryId: filterCategoryId });
             setTickets(ticketRes.data);
         } catch {
             // error handled silently or via global toast
         } finally {
             setLoading(false);
         }
-    }, [token, filters.categoryId]);
+    }, [token, filterCategoryId]);
 
     useEffect(() => {
         loadData();
     }, [loadData]);
 
+    const floorOptions = [
+        { value: "", label: "All Floors" },
+        ...Array.from(new Set(rooms.map((r) => String(r.floor)).filter(Boolean)))
+            .sort((a, b) => Number(a) - Number(b))
+            .map((floor) => ({
+                value: floor,
+                label: `Floor ${floor}`,
+            })),
+    ];
+
+    const visibleRooms = filterFloor
+        ? rooms.filter((r) => String(r.floor) === filterFloor)
+        : rooms;
+
     const roomOptions = [
         { value: "", label: "All Rooms" },
-        ...rooms.map((r) => ({
+        ...visibleRooms.map((r) => ({
             value: String(r.id),
-            label: `${r.roomNumber} (F${r.floor})`,
+            label: `Room ${r.roomNumber}`,
         })),
     ];
 
     const filteredTickets = tickets.filter((t) => {
-        if (filterRoomId && String(t.room?.id) !== filterRoomId) return false;
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            return (
-                (t.title?.toLowerCase() || "").includes(term) ||
-                (t.description?.toLowerCase() || "").includes(term) ||
-                (t.category?.name?.toLowerCase() || "").includes(term)
-            );
-        }
+        if (filterFloor && String(t.room?.floor ?? "") !== filterFloor) return false;
+        if (filterRoomId && String(t.room?.id ?? "") !== filterRoomId) return false;
         return true;
     });
 
     return (
         <div className="space-y-4">
-            {/* Search and Room Filter */}
-            <div className="flex items-center gap-3">
-                <div className="relative shadow-sm rounded-xl flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-blue-400/60 w-4 h-4" />
-                    <input
-                        type="text"
-                        placeholder="Search history tickets..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 rounded-xl bg-white dark:bg-[#1a2f4e] border border-gray-300 dark:border-blue-700/50 text-gray-900 dark:text-white text-sm placeholder-gray-400 dark:placeholder-blue-400/40 outline-none transition-colors"
-                    />
-                </div>
-                {/* Room Filter */}
-                <div className="w-[140px] md:w-[180px] shrink-0">
-                    <DarkSelect
-                        options={roomOptions}
-                        value={filterRoomId}
-                        onChange={setFilterRoomId}
-                        placeholder="All Rooms"
-                    />
-                </div>
-            </div>
-
-            {/* Filter Pills */}
-            <div className="flex flex-col gap-3">
-                <div className="flex-1 flex gap-2 overflow-x-auto w-full no-scrollbar pb-1">
+            {/* Category (scroll chips) */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button
+                    type="button"
+                    onClick={() => setFilterCategoryId("all")}
+                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === "all"
+                        ? "bg-[#1e2e4a] text-white border-transparent"
+                        : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
+                        }`}
+                >
+                    All Categories
+                </button>
+                {categories.map((cat) => (
                     <button
-                        onClick={() => setFilters(prev => ({ ...prev, categoryId: "all" }))}
-                        className={`px-5 py-2.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${filters.categoryId === "all"
-                            ? "bg-[#1e2e4a] dark:bg-[#193C6C] text-white border-transparent shadow-md"
-                            : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-300 border-gray-200 dark:border-blue-700/40 hover:bg-gray-50 dark:hover:bg-[#1e3558]"
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setFilterCategoryId(String(cat.id))}
+                        className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === String(cat.id)
+                            ? "bg-[#1e2e4a] text-white border-transparent"
+                            : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
                             }`}
                     >
-                        All
+                        {cat.name}
                     </button>
-                    {categories.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setFilters(prev => ({ ...prev, categoryId: cat.id }))}
-                            className={`px-5 py-2.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${filters.categoryId === cat.id
-                                ? "bg-[#1e2e4a] dark:bg-[#193C6C] text-white border-transparent shadow-md"
-                                : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-300 border-gray-200 dark:border-blue-700/40 hover:bg-gray-50 dark:hover:bg-[#1e3558]"
-                                }`}
-                        >
-                            {cat.name}
-                        </button>
-                    ))}
-                </div>
+                ))}
+            </div>
+
+            {/* Floor + Room */}
+            <div className="grid grid-cols-2 gap-3 items-start">
+                <DarkSelect
+                    options={floorOptions}
+                    value={filterFloor}
+                    onChange={(value) => {
+                        setFilterFloor(value);
+                        setFilterRoomId("");
+                    }}
+                    placeholder="All Floors"
+                    testId="history-filter-floor"
+                />
+                <DarkSelect
+                    options={roomOptions}
+                    value={filterRoomId}
+                    onChange={setFilterRoomId}
+                    placeholder="All Rooms"
+                    testId="history-filter-room"
+                />
             </div>
 
             {/* Result count */}
@@ -194,7 +196,7 @@ const TicketHistory = () => {
             )}
 
             {/* Ticket List */}
-            <div className="space-y-0" data-testid="ticket-table pb-20">
+            <div className="space-y-4" data-testid="ticket-table pb-20">
                 {loading ? (
                     <div className="text-center py-20 text-blue-400/60 text-sm animate-pulse">Loading history...</div>
                 ) : filteredTickets.length > 0 ? (

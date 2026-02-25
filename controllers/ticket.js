@@ -1,7 +1,21 @@
 const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 const { saveImage } = require("../utils/uploadImage");
+const { getStatusWhere, normalizeTicketEntity } = require("../utils/ticketStatus");
 const { z } = require("zod");
+
+const EMAIL_ADDRESS_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const sanitizeForEmail = (value, fallback = "N/A") => {
+  const raw = value === undefined || value === null ? "" : String(value).trim();
+  const normalized = raw || fallback;
+  return normalized
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
 
 // --- Validation Schemas ---
 const createTicketSchema = z.object({
@@ -88,8 +102,8 @@ exports.create = async (req, res, next) => {
       },
     });
 
-    // Fetch IT/admin users ONCE — shared for both email and DB notifications
-    const itUsers = await prisma.user.findMany({
+    // Fetch IT/admin users once. DB notifications stay unchanged, but email is IT-only.
+    const notificationUsers = await prisma.user.findMany({
       where: {
         OR: [{ role: "it_support" }, { role: "admin" }],
         enabled: true,
@@ -97,35 +111,78 @@ exports.create = async (req, res, next) => {
       select: {
         id: true,
         email: true,
+        role: true,
         isEmailEnabled: true,
         notificationEmail: true
       },
     });
 
-    // Email notification
-    if (itUsers.length > 0) {
+    // Email notification: send only to IT notification emails (no admin, no account-email fallback)
+    if (notificationUsers.length > 0) {
       try {
-        const emails = itUsers
-          .filter(u => u.isEmailEnabled !== false)
-          .map(u => u.notificationEmail && u.notificationEmail.includes("@") ? u.notificationEmail : u.email)
-          .filter(email => email && email.includes("@"));
+        const emails = [
+          ...new Set(
+            notificationUsers
+              .filter(
+                (u) =>
+                  u.role === "it_support" &&
+                  u.isEmailEnabled !== false &&
+                  typeof u.notificationEmail === "string" &&
+                  EMAIL_ADDRESS_REGEX.test(u.notificationEmail.trim())
+              )
+              .map((u) => u.notificationEmail.trim().toLowerCase())
+          ),
+        ];
 
         if (emails.length > 0) {
           const { sendEmailNotification } = require("../utils/sendEmailHelper");
+          const frontendBaseUrl = (process.env.FRONTEND_URL || "").replace(/\/+$/, "");
+          const createdAt = newTicket.createdAt
+            ? new Date(newTicket.createdAt).toLocaleString("th-TH", {
+                timeZone: process.env.APP_TIMEZONE || "Asia/Bangkok",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "N/A";
+
           await sendEmailNotification(
             "new_ticket_it",
             emails,
             {
-              ticketId: newTicket.id,
-              title: title,
-              urgency: newTicket.urgency,
-              description: description,
-              room: newTicket.room?.roomNumber || "N/A",
-              equipment: newTicket.equipment?.name || "N/A",
-              category: newTicket.category?.name || "N/A",
-              createdBy: newTicket.createdBy?.name || newTicket.createdBy?.email,
-              link: `${process.env.FRONTEND_URL}/it/ticket/${newTicket.id}`
+              ticketId: sanitizeForEmail(newTicket.id),
+              title: sanitizeForEmail(title),
+              description: sanitizeForEmail(description),
+              urgency: sanitizeForEmail(newTicket.urgency),
+              status: sanitizeForEmail(newTicket.status),
+              category: sanitizeForEmail(newTicket.category?.name),
+              subComponent: sanitizeForEmail(newTicket.subComponent),
+              room: sanitizeForEmail(newTicket.room?.roomNumber),
+              building: sanitizeForEmail(newTicket.room?.building),
+              floor: sanitizeForEmail(newTicket.room?.floor),
+              equipment: sanitizeForEmail(newTicket.equipment?.name),
+              equipmentType: sanitizeForEmail(newTicket.equipment?.type),
+              reporterName: sanitizeForEmail(newTicket.createdBy?.name),
+              reporterEmail: sanitizeForEmail(newTicket.createdBy?.email),
+              reporterPhone: sanitizeForEmail(newTicket.createdBy?.phoneNumber),
+              createdAt: sanitizeForEmail(createdAt),
+              createdBy: sanitizeForEmail(newTicket.createdBy?.name || newTicket.createdBy?.email),
+              reporter: sanitizeForEmail(newTicket.createdBy?.name || newTicket.createdBy?.email),
+              link: sanitizeForEmail(
+                frontendBaseUrl
+                  ? `${frontendBaseUrl}/it/ticket/${newTicket.id}`
+                  : `/it/ticket/${newTicket.id}`
+              ),
             }
+          );
+          logger.info(
+            `📨 New ticket email sent to IT notification list (${emails.length} recipient(s)) for ticket #${newTicket.id}`
+          );
+        } else {
+          logger.warn(
+            `⚠️ No IT notificationEmail recipient configured for ticket #${newTicket.id}. Email notification skipped.`
           );
         }
       } catch (emailError) {
@@ -133,10 +190,10 @@ exports.create = async (req, res, next) => {
       }
     }
 
-    // Database Notifications — reuse the same itUsers list fetched above
-    if (itUsers.length > 0) {
+    // Database Notifications — keep admin + IT in-app notifications
+    if (notificationUsers.length > 0) {
       await prisma.notification.createMany({
-        data: itUsers.map((user) => ({
+        data: notificationUsers.map((user) => ({
           userId: user.id,
           ticketId: newTicket.id,
           title: "New Ticket Created",
@@ -271,8 +328,9 @@ exports.list = async (req, res, next) => {
       },
     });
 
-    const statusOrder = { 'not_start': 1, 'in_progress': 2, 'completed': 3 };
-    const sortedTickets = tickets.sort((a, b) => {
+    const normalizedTickets = tickets.map(normalizeTicketEntity);
+    const statusOrder = { 'not_start': 1, 'in_progress': 2, 'completed': 3, 'rejected': 4 };
+    const sortedTickets = normalizedTickets.sort((a, b) => {
       const orderA = statusOrder[a.status] || 99;
       const orderB = statusOrder[b.status] || 99;
       return orderA !== orderB ? orderA - orderB : new Date(b.createdAt) - new Date(a.createdAt);
@@ -291,7 +349,7 @@ exports.history = async (req, res, next) => {
 
     const where = {
       createdById: userId,
-      status: { in: ['completed', 'rejected'] },
+      status: { in: ['completed', 'complete', 'done', 'closed', 'resolved', 'rejected', 'reject', 'declined', 'cancelled', 'canceled'] },
       isDeleted: false
     };
 
@@ -311,7 +369,7 @@ exports.history = async (req, res, next) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(allTickets);
+    res.json(allTickets.map(normalizeTicketEntity));
   } catch (err) {
     next(err);
   }
@@ -339,7 +397,7 @@ exports.read = async (req, res, next) => {
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
-    res.json(ticket);
+    res.json(normalizeTicketEntity(ticket));
   } catch (err) {
     next(err);
   }
@@ -347,14 +405,15 @@ exports.read = async (req, res, next) => {
 
 exports.listAll = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, search, status } = req.query;
+    const { page = 1, limit = 10, search, status, floor, roomId } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
 
     const where = { isDeleted: false };
 
-    if (status && status !== 'all' && status !== 'All') {
-      where.status = status;
+    const statusWhere = getStatusWhere(status);
+    if (statusWhere) {
+      where.status = statusWhere;
     } // No else - if 'all', we don't apply any status filter, showing everything including rejected
 
     if (search) {
@@ -366,6 +425,23 @@ exports.listAll = async (req, res, next) => {
         { assignedTo: { name: { contains: search } } },
         { assignedTo: { email: { contains: search } } }
       ];
+    }
+
+    if (roomId !== undefined && roomId !== null && roomId !== "") {
+      const parsedRoomId = Number.parseInt(roomId, 10);
+      if (!Number.isNaN(parsedRoomId)) {
+        where.roomId = parsedRoomId;
+      }
+    }
+
+    if (floor !== undefined && floor !== null && floor !== "") {
+      const parsedFloor = Number.parseInt(floor, 10);
+      if (!Number.isNaN(parsedFloor)) {
+        where.room = {
+          ...(where.room || {}),
+          floor: parsedFloor
+        };
+      }
     }
 
     const [tickets, total] = await prisma.$transaction([
@@ -390,7 +466,7 @@ exports.listAll = async (req, res, next) => {
     ]);
 
     res.json({
-      data: tickets,
+      data: tickets.map(normalizeTicketEntity),
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / take)
@@ -429,7 +505,7 @@ exports.listByEquipment = async (req, res, next) => {
       include: { createdBy: { select: ticketUserSelect }, category: true },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(tickets);
+    res.json(tickets.map(normalizeTicketEntity));
   } catch (err) {
     next(err);
   }

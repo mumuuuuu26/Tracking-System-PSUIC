@@ -28,9 +28,49 @@ async function main() {
         },
         {
             name: 'new_ticket_it',
-            subject: 'New Ticket Alert: {{title}}',
-            body: 'A new ticket has been created by {{reporter}}. Room: {{room}}. Urgency: {{urgency}}.<br><a href="{{link}}">View Ticket</a>',
-            variables: JSON.stringify(['title', 'reporter', 'room', 'urgency', 'link', 'id']),
+            subject: 'New Ticket #{{ticketId}}: {{title}}',
+            body: `
+                <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;max-width:640px">
+                    <h2 style="margin:0 0 12px;color:#1e3a5f;">New Ticket Created</h2>
+                    <p style="margin:0 0 16px;">A new ticket was submitted and requires IT review.</p>
+                    <table style="border-collapse:collapse;width:100%;margin-bottom:16px;">
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;width:38%;"><b>Ticket ID</b></td><td style="padding:8px;border:1px solid #e5e7eb;">#{{ticketId}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Title</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{title}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Description</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{description}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Status</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{status}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Urgency</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{urgency}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Category / Subcomponent</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{category}} / {{subComponent}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Room / Location</b></td><td style="padding:8px;border:1px solid #e5e7eb;">Room {{room}}, Floor {{floor}}, {{building}}</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Equipment</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{equipment}} ({{equipmentType}})</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Reporter</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{reporterName}} ({{reporterEmail}} / {{reporterPhone}})</td></tr>
+                        <tr><td style="padding:8px;border:1px solid #e5e7eb;"><b>Created At</b></td><td style="padding:8px;border:1px solid #e5e7eb;">{{createdAt}}</td></tr>
+                    </table>
+                    <p style="margin:16px 0 0;">
+                        <a href="{{link}}" style="display:inline-block;background:#1f4b85;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">
+                            Open Ticket
+                        </a>
+                    </p>
+                </div>
+            `,
+            variables: JSON.stringify([
+                'ticketId',
+                'title',
+                'description',
+                'status',
+                'urgency',
+                'category',
+                'subComponent',
+                'room',
+                'floor',
+                'building',
+                'equipment',
+                'equipmentType',
+                'reporterName',
+                'reporterEmail',
+                'reporterPhone',
+                'createdAt',
+                'link'
+            ]),
             isEnabled: true
         }
     ];

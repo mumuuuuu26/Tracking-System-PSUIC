@@ -1,6 +1,8 @@
 import React from "react";
-import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Eye, CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import ITHeader from "../../components/it/ITHeader";
+import { normalizeTicketStatus, toTicketStatusLabel } from "../../utils/ticketStatus";
+import { getUserDisplayName } from "../../utils/userIdentity";
 
 const DashboardDesktop = ({
     tickets = [],
@@ -11,13 +13,13 @@ const DashboardDesktop = ({
 }) => {
 
     // Filter for New Tickets (Not Started)
-    const newTickets = tickets.filter(t => t.status === "not_start");
+    const newTickets = tickets.filter((t) => normalizeTicketStatus(t.status) === "not_start");
 
     // Stats Card Data
     const statCards = [
         {
-            label: "All Ticket",
-            value: stats.pending,
+            label: "Not Start",
+            value: stats.notStart,
             icon: <AlertCircle size={24} />,
             bgIcon: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
             borderColor: "border-red-100 dark:border-red-800/30"
@@ -35,6 +37,13 @@ const DashboardDesktop = ({
             icon: <CheckCircle size={24} />,
             bgIcon: "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
             borderColor: "border-green-100 dark:border-green-800/30"
+        },
+        {
+            label: "Rejected",
+            value: stats.rejected,
+            icon: <XCircle size={24} />,
+            bgIcon: "bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400",
+            borderColor: "border-rose-100 dark:border-rose-800/30"
         }
     ];
 
@@ -48,11 +57,11 @@ const DashboardDesktop = ({
             />
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 shrink-0">
                 {statCards.map((stat, idx) => (
                     <div key={idx} className={`bg-white dark:bg-[#1a2f4e] px-6 py-5 rounded-[1.5rem] shadow-sm dark:shadow-lg flex items-center justify-between h-28 border border-transparent dark:border-blue-800/30 hover:border-gray-200 dark:hover:border-blue-700/50 transition-all`}>
                         <div className="flex flex-col justify-center">
-                            <p className="text-[#1e2e4a] dark:text-white text-3xl font-bold mb-1">{stat.value}</p>
+                            <p className="text-[#1e2e4a] dark:text-white text-3xl font-medium mb-1">{stat.value}</p>
                             <span className="text-gray-400 dark:text-blue-300/60 text-xs font-medium uppercase tracking-wide">{stat.label}</span>
                         </div>
                         <div className={`w-12 h-12 rounded-full ${stat.bgIcon} flex items-center justify-center shrink-0`}>
@@ -93,7 +102,7 @@ const DashboardDesktop = ({
                                     }
                                     return new Date(a.createdAt) - new Date(b.createdAt);
                                 })
-                                .slice(0, 3)
+                                .slice(0, 5)
                                 .map((ticket) => (
                                     <TicketCard
                                         key={ticket.id}
@@ -120,6 +129,7 @@ const DashboardDesktop = ({
 // Sub-components
 const TicketCard = ({ ticket, onAccept, onReject, onClick }) => {
     const dateObj = new Date(ticket.createdAt);
+    const reporterName = getUserDisplayName(ticket.createdBy, ticket.createdById ? `User #${ticket.createdById}` : "User");
 
     // Format Date: "14 Feb 26"
     const dateStr = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
@@ -144,7 +154,7 @@ const TicketCard = ({ ticket, onAccept, onReject, onClick }) => {
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="px-3 py-1.5 rounded-xl text-xs font-bold border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 bg-white dark:bg-red-900/10">
-                        {ticket.status === 'not_start' ? 'Not Started' : ticket.status}
+                        {toTicketStatusLabel(ticket.status)}
                     </span>
                     <button
                         onClick={(e) => { e.stopPropagation(); onClick(); }}
@@ -176,7 +186,7 @@ const TicketCard = ({ ticket, onAccept, onReject, onClick }) => {
                     <span>{dateStr}</span>
                 </div>
                 <div className="font-bold text-[#1e2e4a] dark:text-white">
-                    {ticket.requester?.name || "Unknown User"}
+                    {reporterName}
                 </div>
             </div>
 

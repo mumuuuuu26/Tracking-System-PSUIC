@@ -61,3 +61,14 @@
 .react-datepicker__triangle {
     display: none !important;
 }
+
+/* Admin typography normalization:
+   keep hierarchy but avoid overly heavy weights across all admin pages/components */
+.admin-theme .font-black,
+.admin-theme .font-extrabold {
+    font-weight: 700 !important;
+}
+
+.admin-theme .font-bold {
+    font-weight: 600 !important;
+}

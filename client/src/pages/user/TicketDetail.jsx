@@ -114,6 +114,8 @@ const TicketDetail = () => {
   const timelineSteps = getTimelineSteps();
   const beforeImage = ticket?.images?.find(img => img.type === "before")?.url;
   const afterImage = ticket?.images?.find(img => img.type === "after")?.url;
+  const shouldShowItNotesAndProof = ticket?.status === "completed" && Boolean(ticket?.note || ticket?.proof);
+  const resolvedNote = ticket?.note ? ticket.note.replace(/^REJECTED:\s*/i, "") : "";
 
   return (
     <div className="bg-gray-50 dark:bg-[#0d1b2a] pb-20 font-sans text-gray-900 dark:text-white min-h-screen">
@@ -251,6 +253,40 @@ const TicketDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* IT Notes & Proof */}
+        {shouldShowItNotesAndProof && (
+          <div>
+            <h3 className="font-bold text-gray-500 dark:text-blue-300/80 text-xs tracking-wider uppercase mb-4">
+              IT Notes & Proof
+            </h3>
+            <div className="bg-white dark:bg-[#1a2f4e] rounded-2xl border border-gray-200 dark:border-blue-800/30 p-4 shadow-sm dark:shadow-none transition-colors space-y-4">
+              <div className="rounded-xl bg-gray-50 dark:bg-[#0d1b2a] border border-gray-100 dark:border-blue-800/30 p-3">
+                <p className="text-[11px] tracking-wider uppercase text-blue-600 dark:text-blue-300/80 font-semibold mb-2">
+                  IT Notes
+                </p>
+                <p className="text-sm text-gray-700 dark:text-blue-100 leading-relaxed">
+                  {resolvedNote || "No IT notes provided."}
+                </p>
+              </div>
+
+              {ticket?.proof && (
+                <div>
+                  <p className="text-[11px] tracking-wider uppercase text-blue-600 dark:text-blue-300/80 font-semibold mb-2">
+                    Proof Image
+                  </p>
+                  <div className="rounded-2xl overflow-hidden border border-blue-100 dark:border-blue-800/30 bg-gray-50 dark:bg-[#0d1b2a]">
+                    <img
+                      src={ticket.proof}
+                      alt="IT proof of fix"
+                      className="w-full h-48 object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Photos */}
         <div>
