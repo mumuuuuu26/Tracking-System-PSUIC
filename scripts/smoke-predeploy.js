@@ -35,6 +35,16 @@ async function cleanup(resources) {
   const userIds = [resources.adminUserId, resources.itUserId, resources.userId].filter(Boolean);
   const ticketIds = [resources.ticketId].filter(Boolean);
   const notificationIds = [resources.notificationId].filter(Boolean);
+  const hasTrackedResources =
+    userIds.length > 0 ||
+    ticketIds.length > 0 ||
+    notificationIds.length > 0 ||
+    Boolean(resources.roomId) ||
+    Boolean(resources.categoryId);
+
+  if (!hasTrackedResources) {
+    return;
+  }
 
   try {
     await prisma.notification.deleteMany({
@@ -63,6 +73,10 @@ async function cleanup(resources) {
       await prisma.user.deleteMany({ where: { id: { in: userIds } } });
     }
   } catch (cleanupError) {
+    if (/Can't reach database server/i.test(String(cleanupError?.message || cleanupError))) {
+      console.warn("[SMOKE] Cleanup skipped: database is unreachable.");
+      return;
+    }
     console.error(`[SMOKE] Cleanup warning: ${cleanupError.message}`);
   }
 }
