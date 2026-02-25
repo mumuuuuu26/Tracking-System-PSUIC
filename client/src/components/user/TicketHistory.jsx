@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getTicketHistory } from "../../api/ticket";
 import { listCategories } from "../../api/category";
@@ -82,6 +82,7 @@ const TicketHistory = () => {
     const [categories, setCategories] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
+    const categoryScrollRef = useRef(null);
 
     const [filterCategoryId, setFilterCategoryId] = useState("all");
     const [filterFloor, setFilterFloor] = useState("");
@@ -139,35 +140,73 @@ const TicketHistory = () => {
         return true;
     });
 
+    const handleCategoryWheel = (e) => {
+        const el = categoryScrollRef.current;
+        if (!el || el.scrollWidth <= el.clientWidth) return;
+        if (Math.abs(e.deltaY) < 1 && Math.abs(e.deltaX) < 1) return;
+        e.preventDefault();
+        el.scrollLeft += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    };
+
+    const scrollCategories = (offset) => {
+        const el = categoryScrollRef.current;
+        if (!el) return;
+        el.scrollBy({ left: offset, behavior: "smooth" });
+    };
+
     return (
         <div className="space-y-4">
             {/* Category (scroll chips) */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button
-                    type="button"
-                    data-testid="user-history-filter-category-all"
-                    onClick={() => setFilterCategoryId("all")}
-                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === "all"
-                        ? "bg-[#1e2e4a] text-white border-transparent"
-                        : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
-                        }`}
+            <div className="relative">
+                <div
+                    ref={categoryScrollRef}
+                    onWheel={handleCategoryWheel}
+                    className="flex gap-2 overflow-x-auto no-scrollbar pb-1 pr-14 lg:pr-16 touch-pan-x"
                 >
-                    All Categories
-                </button>
-                {categories.map((cat) => (
                     <button
-                        key={cat.id}
                         type="button"
-                        data-testid={`user-history-filter-category-${cat.id}`}
-                        onClick={() => setFilterCategoryId(String(cat.id))}
-                        className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === String(cat.id)
+                        data-testid="user-history-filter-category-all"
+                        onClick={() => setFilterCategoryId("all")}
+                        className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === "all"
                             ? "bg-[#1e2e4a] text-white border-transparent"
                             : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
                             }`}
                     >
-                        {cat.name}
+                        All Categories
                     </button>
-                ))}
+                    {categories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            type="button"
+                            data-testid={`user-history-filter-category-${cat.id}`}
+                            onClick={() => setFilterCategoryId(String(cat.id))}
+                            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterCategoryId === String(cat.id)
+                                ? "bg-[#1e2e4a] text-white border-transparent"
+                                : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
+                                }`}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+                <div className="hidden lg:flex absolute right-0 top-0 h-10 items-center gap-1 pl-2 bg-gradient-to-l from-gray-50 dark:from-[#0d1b2a] to-transparent">
+                    <button
+                        type="button"
+                        onClick={() => scrollCategories(-220)}
+                        className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
+                        aria-label="Scroll categories left"
+                    >
+                        <ChevronLeft size={14} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => scrollCategories(220)}
+                        className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
+                        aria-label="Scroll categories right"
+                    >
+                        <ChevronRight size={14} />
+                    </button>
+                </div>
             </div>
 
             {/* Floor + Room */}

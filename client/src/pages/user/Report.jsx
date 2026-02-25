@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { listMyTickets } from "../../api/ticket";
 import { listRooms } from "../../api/room";
 import { useNavigate } from "react-router-dom";
@@ -80,6 +80,7 @@ const Report = () => {
     const [tickets, setTickets] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
+    const statusScrollRef = useRef(null);
 
     const [filterStatus, setFilterStatus] = useState("all");
     const [filterFloor, setFilterFloor] = useState("");
@@ -143,29 +144,79 @@ const Report = () => {
         return true;
     });
 
+    const handleStatusWheel = (e) => {
+        const el = statusScrollRef.current;
+        if (!el || el.scrollWidth <= el.clientWidth) return;
+        if (Math.abs(e.deltaY) < 1 && Math.abs(e.deltaX) < 1) return;
+        e.preventDefault();
+        el.scrollLeft += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    };
+
+    const scrollStatuses = (offset) => {
+        const el = statusScrollRef.current;
+        if (!el) return;
+        el.scrollBy({ left: offset, behavior: "smooth" });
+    };
+
     return (
         <UserWrapper>
             <div className="pb-24 bg-gray-50 dark:bg-[#0d1b2a] min-h-screen">
                 <UserPageHeader title="Activity" titleTestId="report-page" />
 
-                <div className="max-w-md md:max-w-2xl mx-auto px-6 mt-6 space-y-4">
+                <div className="max-w-5xl mx-auto pt-8 px-6 mb-6 hidden lg:block">
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-700/30 border border-blue-200 dark:border-blue-700/40 flex items-center justify-center text-blue-600 dark:text-blue-300 transition-colors">
+                            <FileText size={20} />
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight transition-colors">Activity</h1>
+                    </div>
+                    <p className="text-gray-500 dark:text-blue-400/60 text-sm ml-14 transition-colors">
+                        Track your reported tickets and progress in one place
+                    </p>
+                </div>
+
+                <div className="max-w-5xl mx-auto px-6 mt-6 space-y-4">
 
                     {/* Status (scroll chips) */}
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                        {statusOptions.map((opt) => (
+                    <div className="relative">
+                        <div
+                            ref={statusScrollRef}
+                            onWheel={handleStatusWheel}
+                            className="flex gap-2 overflow-x-auto no-scrollbar pb-1 pr-14 lg:pr-16 touch-pan-x"
+                        >
+                            {statusOptions.map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    data-testid={`user-report-filter-status-${opt.value}`}
+                                    onClick={() => setFilterStatus(opt.value)}
+                                    className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterStatus === opt.value
+                                        ? "bg-[#1e2e4a] text-white border-transparent"
+                                        : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
+                                        }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="hidden lg:flex absolute right-0 top-0 h-10 items-center gap-1 pl-2 bg-gradient-to-l from-gray-50 dark:from-[#0d1b2a] to-transparent">
                             <button
-                                key={opt.value}
                                 type="button"
-                                data-testid={`user-report-filter-status-${opt.value}`}
-                                onClick={() => setFilterStatus(opt.value)}
-                                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filterStatus === opt.value
-                                    ? "bg-[#1e2e4a] text-white border-transparent"
-                                    : "bg-white dark:bg-[#1a2f4e] text-[#1e2e4a] dark:text-blue-200 border-gray-300 dark:border-blue-700/50"
-                                    }`}
+                                onClick={() => scrollStatuses(-220)}
+                                className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
+                                aria-label="Scroll statuses left"
                             >
-                                {opt.label}
+                                <ChevronLeft size={14} />
                             </button>
-                        ))}
+                            <button
+                                type="button"
+                                onClick={() => scrollStatuses(220)}
+                                className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
+                                aria-label="Scroll statuses right"
+                            >
+                                <ChevronRight size={14} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Floor + Room */}
