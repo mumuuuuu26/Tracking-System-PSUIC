@@ -20,6 +20,8 @@ const smtpTlsRejectUnauthorized = parseBoolean(
 );
 
 const mailConfigured = Boolean(process.env.MAIL_USER && process.env.MAIL_PASS);
+const shouldAttemptSmtp =
+  process.env.NODE_ENV !== "test" && process.env.DISABLE_SMTP !== "true";
 
 if (!mailConfigured) {
   logger.warn("⚠️ WARNING: Email configuration is missing!");
@@ -43,7 +45,7 @@ const transporter = nodemailer.createTransport({
   socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 20000),
 });
 
-if (mailConfigured) {
+if (mailConfigured && shouldAttemptSmtp) {
   transporter.verify((error) => {
     if (error) {
       logger.error(`❌ Email service error: ${error.message}`);
@@ -53,6 +55,8 @@ if (mailConfigured) {
       );
     }
   });
+} else if (mailConfigured && !shouldAttemptSmtp) {
+  logger.info("ℹ️ SMTP verify skipped in test/disabled mode.");
 }
 
 module.exports = transporter;

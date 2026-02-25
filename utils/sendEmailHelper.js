@@ -70,6 +70,13 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
             return;
         }
 
+        if (process.env.NODE_ENV === "test" && process.env.EMAIL_SEND_IN_TEST !== "true") {
+            logger.info(
+                `ℹ️ Email send skipped in test mode for template '${templateName}'.`,
+            );
+            return;
+        }
+
         const dbTemplate = await prisma.emailTemplate.findUnique({
             where: { name: templateName }
         });
