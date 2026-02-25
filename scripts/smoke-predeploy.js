@@ -11,7 +11,14 @@ function assert(condition, message) {
   }
 }
 
-async function createUser({ email, password, role, name }) {
+async function createUser({
+  email,
+  password,
+  role,
+  name,
+  isEmailEnabled = false,
+  notificationEmail = null,
+}) {
   const passwordHash = await bcrypt.hash(password, 10);
   return prisma.user.create({
     data: {
@@ -20,6 +27,8 @@ async function createUser({ email, password, role, name }) {
       role,
       name,
       enabled: true,
+      isEmailEnabled,
+      notificationEmail,
     },
   });
 }
@@ -148,6 +157,8 @@ async function main() {
       password: passwords.it,
       role: 'it_support',
       name: 'Smoke IT',
+      isEmailEnabled: true,
+      notificationEmail: emails.it,
     });
     resources.itUserId = itSupport.id;
 

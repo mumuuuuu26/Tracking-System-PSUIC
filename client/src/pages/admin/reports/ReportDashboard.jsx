@@ -11,11 +11,24 @@ import AdminWrapper from "../../../components/admin/AdminWrapper";
 import AdminHeader from "../../../components/admin/AdminHeader";
 import AdminSelect from "../../../components/admin/AdminSelect";
 import { getMonthlyStats, getEquipmentStats, getITPerformance, getRoomStats, getSubComponentStats } from '../../../api/report';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx/dist/xlsx.mini.min.js';
 
 const VALID_TABS = ['monthly', 'performance', 'room', 'equipment'];
+
+const loadPdfDeps = async () => {
+    const [jspdfModule, autoTableModule] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+    ]);
+
+    const jsPDF = jspdfModule.jsPDF ?? jspdfModule.default;
+    const autoTable = autoTableModule.default ?? autoTableModule.autoTable ?? autoTableModule;
+    return { jsPDF, autoTable };
+};
+
+const loadXlsxDeps = async () => {
+    const module = await import('xlsx/dist/xlsx.mini.min.js');
+    return module.default ?? module;
+};
 
 const ReportDashboard = () => {
     const navigate = useNavigate();
@@ -117,6 +130,7 @@ const ReportDashboard = () => {
     const exportAllAsPDF = async () => {
         setIsExportingPDF(true);
         try {
+            const { jsPDF, autoTable } = await loadPdfDeps();
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const periodLabel = dayjs(`${year}-${String(month).padStart(2, '0')}-01`).format('MMMM YYYY');
             const pageW = doc.internal.pageSize.getWidth();
@@ -398,9 +412,10 @@ const ReportDashboard = () => {
     };
 
     // ---- Unified Excel Export (multi-sheet workbook) ----
-    const exportAllAsExcel = () => {
+    const exportAllAsExcel = async () => {
         setIsExportingExcel(true);
         try {
+            const XLSX = await loadXlsxDeps();
             const periodLabel = dayjs(`${year}-${String(month).padStart(2, '0')}-01`).format('MMMM_YYYY');
             const wb = XLSX.utils.book_new();
 
