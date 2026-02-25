@@ -1,30 +1,15 @@
 // controllers/room.js
 const prisma = require("../config/prisma");
-const { saveImage, deleteImageByUrl } = require("../utils/uploadImage");
-
-const isBase64Image = (value) => typeof value === "string" && value.trim().startsWith("data:image/");
-
-const normalizeRoomImageInput = async (imageUrl) => {
-  if (typeof imageUrl === "undefined") return undefined;
-  if (imageUrl === null) return null;
-  if (typeof imageUrl !== "string") return null;
-
-  const normalized = imageUrl.trim();
-  if (!normalized) return null;
-
-  if (isBase64Image(normalized)) {
-    return saveImage(normalized, { scope: "room-image" });
-  }
-
-  return normalized;
-};
 
 // สร้างห้อง
 exports.create = async (req, res, next) => {
   try {
-    const { roomNumber, building, floor, imageUrl } = req.body;
-    if (typeof imageUrl !== "undefined" && imageUrl !== null && typeof imageUrl !== "string") {
-      return res.status(400).json({ message: "Invalid room image payload" });
+    const { roomNumber, building, floor } = req.body;
+
+    const normalizedRoomNumber = String(roomNumber || "").trim();
+    const normalizedBuilding = String(building || "").trim();
+    if (!normalizedRoomNumber || !normalizedBuilding) {
+      return res.status(400).json({ message: "Room number and building are required" });
     }
 
     const parsedFloor = Number.parseInt(floor, 10);
@@ -32,17 +17,11 @@ exports.create = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid floor value" });
     }
 
-    const normalizedImageUrl = await normalizeRoomImageInput(imageUrl);
-    if (isBase64Image(imageUrl) && !normalizedImageUrl) {
-      return res.status(400).json({ message: "Invalid room image data" });
-    }
-
     const room = await prisma.room.create({
       data: {
-        roomNumber,
-        building,
+        roomNumber: normalizedRoomNumber,
+        building: normalizedBuilding,
         floor: parsedFloor,
-        imageUrl: normalizedImageUrl ?? null,
       },
     });
 
@@ -74,9 +53,17 @@ exports.list = async (req, res, next) => {
 exports.update = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { roomNumber, building, floor, imageUrl } = req.body;
-    if (typeof imageUrl !== "undefined" && imageUrl !== null && typeof imageUrl !== "string") {
-      return res.status(400).json({ message: "Invalid room image payload" });
+    const { roomNumber, building, floor } = req.body;
+
+    const roomId = Number.parseInt(id, 10);
+    if (!Number.isFinite(roomId)) {
+      return res.status(400).json({ message: "Invalid room id" });
+    }
+
+    const normalizedRoomNumber = String(roomNumber || "").trim();
+    const normalizedBuilding = String(building || "").trim();
+    if (!normalizedRoomNumber || !normalizedBuilding) {
+      return res.status(400).json({ message: "Room number and building are required" });
     }
 
     const parsedFloor = Number.parseInt(floor, 10);
@@ -84,45 +71,20 @@ exports.update = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid floor value" });
     }
 
-    const roomId = Number.parseInt(id, 10);
-    const existingRoom = await prisma.room.findUnique({
-      where: { id: roomId },
-      select: { imageUrl: true },
-    });
-    if (!existingRoom) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-
-    const normalizedImageUrl = await normalizeRoomImageInput(imageUrl);
-    if (isBase64Image(imageUrl) && !normalizedImageUrl) {
-      return res.status(400).json({ message: "Invalid room image data" });
-    }
-
-    const data = {
-      roomNumber,
-      building,
-      floor: parsedFloor,
-    };
-
-    if (typeof normalizedImageUrl !== "undefined") {
-      data.imageUrl = normalizedImageUrl;
-    }
-
     const updated = await prisma.room.update({
       where: { id: roomId },
-      data,
+      data: {
+        roomNumber: normalizedRoomNumber,
+        building: normalizedBuilding,
+        floor: parsedFloor,
+      },
     });
-
-    if (
-      existingRoom.imageUrl &&
-      existingRoom.imageUrl !== updated.imageUrl &&
-      existingRoom.imageUrl.startsWith("/uploads/")
-    ) {
-      deleteImageByUrl(existingRoom.imageUrl);
-    }
 
     res.json(updated);
   } catch (err) {
+    if (err?.code === "P2025") {
+      return res.status(404).json({ message: "Room not found" });
+    }
     next(err);
   }
 };
@@ -132,25 +94,19 @@ exports.remove = async (req, res, next) => {
   try {
     const { id } = req.params;
     const roomId = Number.parseInt(id, 10);
-
-    const existingRoom = await prisma.room.findUnique({
-      where: { id: roomId },
-      select: { imageUrl: true },
-    });
-    if (!existingRoom) {
-      return res.status(404).json({ message: "Room not found" });
+    if (!Number.isFinite(roomId)) {
+      return res.status(400).json({ message: "Invalid room id" });
     }
 
     await prisma.room.delete({
       where: { id: roomId },
     });
 
-    if (existingRoom.imageUrl?.startsWith("/uploads/")) {
-      deleteImageByUrl(existingRoom.imageUrl);
-    }
-
     res.json({ message: "Room deleted successfully" });
   } catch (err) {
+    if (err?.code === "P2025") {
+      return res.status(404).json({ message: "Room not found" });
+    }
     next(err);
   }
 };

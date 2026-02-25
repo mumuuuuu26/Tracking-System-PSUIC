@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, MapPin, MoreVertical, Plus, Edit, Trash2, X, Image, ArrowLeft } from "lucide-react";
+import { Search, MapPin, Plus, Edit, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
-import { getImageUrl } from "../../utils/imageUrl";
 
 const RoomManagement = () => {
     const navigate = useNavigate();
@@ -40,9 +39,9 @@ const RoomManagement = () => {
     useEffect(() => {
         const lowerTerm = searchTerm.toLowerCase();
         setFilteredRooms(rooms.filter(room =>
-            room.roomNumber.toLowerCase().includes(lowerTerm) ||
-            room.building.toLowerCase().includes(lowerTerm) ||
-            room.floor.toString().includes(lowerTerm)
+            String(room.roomNumber ?? "").toLowerCase().includes(lowerTerm) ||
+            String(room.building ?? "").toLowerCase().includes(lowerTerm) ||
+            String(room.floor ?? "").includes(lowerTerm)
         ));
     }, [searchTerm, rooms]);
 
@@ -52,7 +51,7 @@ const RoomManagement = () => {
 
     const openCreateModal = () => {
         setIsEditMode(false);
-        setFormData({ roomNumber: "", building: "", floor: "", imageUrl: "" });
+        setFormData({ roomNumber: "", building: "", floor: "" });
         setIsModalOpen(true);
     };
 
@@ -62,8 +61,7 @@ const RoomManagement = () => {
         setFormData({
             roomNumber: room.roomNumber,
             building: room.building,
-            floor: room.floor,
-            imageUrl: room.imageUrl || ""
+            floor: room.floor
         });
         setIsModalOpen(true);
     };
@@ -138,50 +136,35 @@ const RoomManagement = () => {
                 {/* Room List - Horizontal Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredRooms.map((room) => (
-                        <div key={room.id} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex gap-4 group">
-                            {/* Room Image */}
-                            <div className="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
-                                <img
-                                    src={room.imageUrl ? getImageUrl(room.imageUrl) : "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=300&h=200"}
-                                    alt={`Room ${room.roomNumber}`}
-                                    className="w-full h-full object-cover"
-                                />
+                        <div key={room.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start gap-3">
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight break-words">{room.roomNumber}</h3>
+                                    <p className="text-gray-400 text-xs font-medium mt-1">
+                                        {room.building || "-"} • {room.floor ?? "-"}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shrink-0">
+                                    <button
+                                        onClick={() => openEditModal(room)}
+                                        className="p-1.5 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    >
+                                        <Edit size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(room.id)}
+                                        className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Details */}
-                            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-                                <div>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-bold text-[#1e2e4a] text-lg leading-tight">Room {room.roomNumber}</h3>
-                                            <p className="text-gray-400 text-xs font-medium mt-1">
-                                                {room.building} • Floor {room.floor}
-                                            </p>
-                                        </div>
-
-                                        {/* Actions - Visible on hover/mobile */}
-                                        <div className="flex flex-col gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
-                                            <button
-                                                onClick={() => openEditModal(room)}
-                                                className="p-1.5 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(room.id)}
-                                                className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-green-50 text-green-600 tracking-wide uppercase">
-                                        ACTIVE
-                                    </span>
-                                </div>
+                            <div className="mt-4">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-green-50 text-green-600 tracking-wide uppercase">
+                                    ACTIVE
+                                </span>
                             </div>
                         </div>
                     ))}
@@ -254,51 +237,6 @@ const RoomManagement = () => {
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-[#1e2e4a]/20 focus:border-[#1e2e4a] outline-none transition-all placeholder-gray-400 font-medium text-gray-800"
                                             placeholder="3"
                                         />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Room Image</label>
-                                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative group bg-gray-50">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                    if (file.size > 5 * 1024 * 1024) {
-                                                        toast.error("Image too large (max 5MB)");
-                                                        return;
-                                                    }
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setFormData({ ...formData, imageUrl: reader.result });
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                        />
-                                        {formData.imageUrl ? (
-                                            <div className="relative h-40 w-full rounded-lg overflow-hidden shadow-sm">
-                                                <img
-                                                    src={formData.imageUrl?.startsWith("data:") ? formData.imageUrl : getImageUrl(formData.imageUrl)}
-                                                    alt="Preview"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <p className="text-white font-medium text-sm">Click to change</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="py-8 flex flex-col items-center text-gray-400">
-                                                <div className="w-12 h-12 rounded-full bg-white text-gray-400 flex items-center justify-center mb-2 shadow-sm border border-gray-100">
-                                                    <Image size={24} />
-                                                </div>
-                                                <span className="text-sm font-bold text-gray-500">Click to upload image</span>
-                                                <span className="text-[10px] text-gray-400 mt-1">PNG, JPG up to 5MB</span>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
