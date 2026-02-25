@@ -329,19 +329,9 @@ exports.rejectJob = async (req, res, next) => {
       }
     });
 
-    // Send Email to User
-    if (ticket.createdBy?.email) {
-        const { sendEmailNotification } = require("../utils/sendEmailHelper");
-        await sendEmailNotification(
-            "ticket_rejected",
-            ticket.createdBy.email,
-            {
-                id: ticket.id,
-                title: ticket.title,
-                reason: reason
-            }
-        );
-    }
+    // Email policy (2026-02-25):
+    // Send email only for new ticket creation (IT notification recipients).
+    // Do not send lifecycle emails on rejected/completed actions.
 
     // System Notification
     await prisma.notification.create({
@@ -489,21 +479,9 @@ exports.closeJob = async (req, res, next) => {
       },
     });
 
-    // Send Email to User
-    if (ticket.createdBy?.email) {
-        const { sendEmailNotification } = require("../utils/sendEmailHelper");
-        await sendEmailNotification(
-            "ticket_resolved_user",
-            ticket.createdBy.email,
-            {
-                id: ticket.id,
-                title: ticket.title,
-                room: ticket.room?.roomNumber || "N/A",
-                resolver: ticket.assignedTo?.name || "IT Team",
-                link: `${process.env.FRONTEND_URL}/user/ticket/${ticket.id}`
-            }
-        );
-    }
+    // Email policy (2026-02-25):
+    // Send email only for new ticket creation (IT notification recipients).
+    // Do not send lifecycle emails on rejected/completed actions.
 
     // Update IT performance metrics — increment on CLOSE (not on accept)
     if (ticket.assignedToId) {

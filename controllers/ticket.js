@@ -272,22 +272,9 @@ exports.update = async (req, res, next) => {
       },
     });
 
-    if (status === "completed" && updatedTicket.createdBy?.email) {
-      const { sendEmailNotification } = require("../utils/sendEmailHelper");
-      try {
-        await sendEmailNotification(
-          "ticket_resolved_user",
-          updatedTicket.createdBy.email,
-          {
-            id: updatedTicket.id,
-            title: updatedTicket.title,
-            room: updatedTicket.room?.roomNumber || "N/A",
-            resolver: updatedTicket.assignedTo?.name || "IT Team",
-            link: `${process.env.FRONTEND_URL}/user/ticket/${updatedTicket.id}`
-          }
-        );
-      } catch (e) { logger.error("Email notification failed", e); }
-    }
+    // Email policy (2026-02-25):
+    // Send email only when a user creates a new ticket (IT notification recipients).
+    // Do not send lifecycle emails on completed/rejected updates.
 
     if (updatedTicket.createdBy && updatedTicket.createdById) {
       await prisma.notification.create({
