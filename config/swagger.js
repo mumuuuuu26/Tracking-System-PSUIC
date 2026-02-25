@@ -12,14 +12,20 @@ const buildDynamicSpec = () => {
   return swaggerJsdoc(options);
 };
 
+let swaggerSpec = null;
+
 if (isProduction && !useDynamicInProduction) {
   if (fs.existsSync(staticSpecPath)) {
-    module.exports = JSON.parse(fs.readFileSync(staticSpecPath, "utf8"));
-    return;
+    swaggerSpec = JSON.parse(fs.readFileSync(staticSpecPath, "utf8"));
+  } else {
+    // Fallback only when static file is missing.
+    // eslint-disable-next-line no-console
+    console.warn(`[Swagger] ${staticSpecPath} not found, falling back to dynamic generation.`);
   }
-  // Fallback only when static file is missing.
-  // eslint-disable-next-line no-console
-  console.warn(`[Swagger] ${staticSpecPath} not found, falling back to dynamic generation.`);
 }
 
-module.exports = buildDynamicSpec();
+if (!swaggerSpec) {
+  swaggerSpec = buildDynamicSpec();
+}
+
+module.exports = swaggerSpec;
