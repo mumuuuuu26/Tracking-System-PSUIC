@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Search, ChevronDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronDown, FileText } from "lucide-react";
 import { listMyTickets } from "../../api/ticket";
 import { listRooms } from "../../api/room";
 import { useNavigate } from "react-router-dom";
@@ -152,12 +152,6 @@ const Report = () => {
         el.scrollLeft += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     };
 
-    const scrollStatuses = (offset) => {
-        const el = statusScrollRef.current;
-        if (!el) return;
-        el.scrollBy({ left: offset, behavior: "smooth" });
-    };
-
     return (
         <UserWrapper>
             <div className="pb-24 bg-gray-50 dark:bg-[#0d1b2a] min-h-screen">
@@ -182,7 +176,7 @@ const Report = () => {
                         <div
                             ref={statusScrollRef}
                             onWheel={handleStatusWheel}
-                            className="flex gap-2 overflow-x-auto no-scrollbar pb-1 pr-14 lg:pr-16 touch-pan-x"
+                            className="flex gap-2 overflow-x-auto no-scrollbar pb-1 touch-pan-x"
                         >
                             {statusOptions.map((opt) => (
                                 <button
@@ -198,24 +192,6 @@ const Report = () => {
                                     {opt.label}
                                 </button>
                             ))}
-                        </div>
-                        <div className="hidden lg:flex absolute right-0 top-0 h-10 items-center gap-1 pl-2 bg-gradient-to-l from-gray-50 dark:from-[#0d1b2a] to-transparent">
-                            <button
-                                type="button"
-                                onClick={() => scrollStatuses(-220)}
-                                className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
-                                aria-label="Scroll statuses left"
-                            >
-                                <ChevronLeft size={14} />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => scrollStatuses(220)}
-                                className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
-                                aria-label="Scroll statuses right"
-                            >
-                                <ChevronRight size={14} />
-                            </button>
                         </div>
                     </div>
 

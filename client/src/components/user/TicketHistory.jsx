@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Search, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import useAuthStore from "../../store/auth-store";
 import { getTicketHistory } from "../../api/ticket";
 import { listCategories } from "../../api/category";
@@ -148,12 +148,6 @@ const TicketHistory = () => {
         el.scrollLeft += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     };
 
-    const scrollCategories = (offset) => {
-        const el = categoryScrollRef.current;
-        if (!el) return;
-        el.scrollBy({ left: offset, behavior: "smooth" });
-    };
-
     return (
         <div className="space-y-4">
             {/* Category (scroll chips) */}
@@ -161,7 +155,7 @@ const TicketHistory = () => {
                 <div
                     ref={categoryScrollRef}
                     onWheel={handleCategoryWheel}
-                    className="flex gap-2 overflow-x-auto no-scrollbar pb-1 pr-14 lg:pr-16 touch-pan-x"
+                    className="flex gap-2 overflow-x-auto no-scrollbar pb-1 touch-pan-x"
                 >
                     <button
                         type="button"
@@ -188,24 +182,6 @@ const TicketHistory = () => {
                             {cat.name}
                         </button>
                     ))}
-                </div>
-                <div className="hidden lg:flex absolute right-0 top-0 h-10 items-center gap-1 pl-2 bg-gradient-to-l from-gray-50 dark:from-[#0d1b2a] to-transparent">
-                    <button
-                        type="button"
-                        onClick={() => scrollCategories(-220)}
-                        className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
-                        aria-label="Scroll categories left"
-                    >
-                        <ChevronLeft size={14} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => scrollCategories(220)}
-                        className="w-8 h-8 rounded-full border border-gray-300 dark:border-blue-700/50 bg-white dark:bg-[#1a2f4e] text-gray-600 dark:text-blue-200 flex items-center justify-center"
-                        aria-label="Scroll categories right"
-                    >
-                        <ChevronRight size={14} />
-                    </button>
                 </div>
             </div>
 
