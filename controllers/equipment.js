@@ -3,6 +3,7 @@ const prisma = require("../config/prisma");
 const QRCode = require("qrcode");
 
 const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
+const QR_PUBLIC_BASE_URL_KEYS = ["QR_PUBLIC_BASE_URL", "FRONTEND_URL", "CLIENT_URL"];
 const equipmentScanInclude = {
   room: true,
   tickets: {
@@ -71,6 +72,61 @@ const collectQrLookupCandidates = (rawInput) => {
   }
 
   return [...candidates];
+};
+
+const normalizePublicBaseUrl = (value) => {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+
+  const withProtocol = /^https?:\/\//i.test(normalized)
+    ? normalized
+    : `http://${normalized}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+    parsed.hash = "";
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+};
+
+const getHeaderValue = (req, headerName) => {
+  if (!req) return "";
+  if (typeof req.get === "function") {
+    return req.get(headerName) || "";
+  }
+  return req.headers?.[String(headerName).toLowerCase()] || "";
+};
+
+const resolveRequestOrigin = (req) => {
+  const forwardedProto = String(getHeaderValue(req, "x-forwarded-proto") || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  const protocol = forwardedProto || req?.protocol || "http";
+  const forwardedHost = String(getHeaderValue(req, "x-forwarded-host") || "")
+    .split(",")[0]
+    .trim();
+  const host = forwardedHost || getHeaderValue(req, "host");
+  if (!host) return null;
+  return `${protocol}://${host}`;
+};
+
+const resolveQrPublicBaseUrl = (req) => {
+  for (const key of QR_PUBLIC_BASE_URL_KEYS) {
+    const fromEnv = normalizePublicBaseUrl(process.env[key]);
+    if (fromEnv) return fromEnv;
+  }
+  return normalizePublicBaseUrl(resolveRequestOrigin(req)) || "http://localhost:5002";
+};
+
+const buildQrScanUrl = (req, qrCodeValue) => {
+  const baseUrl = resolveQrPublicBaseUrl(req);
+  const scanUrl = new URL("/scan", baseUrl);
+  scanUrl.searchParams.set("qr", qrCodeValue);
+  return scanUrl.toString();
 };
 
 const attachCategoryObject = async (equipment) => {
@@ -144,12 +200,14 @@ exports.create = async (req, res, next) => {
       include: { room: true },
     });
 
+    const qrScanUrl = buildQrScanUrl(req, qrData);
     // สร้าง Base64 Image สำหรับส่งให้ Front-end แสดงผลทันที
-    const qrCodeImage = await QRCode.toDataURL(qrData);
+    const qrCodeImage = await QRCode.toDataURL(qrScanUrl);
 
     res.json({
       ...updatedEquipment,
       qrCodeImage,
+      qrScanUrl,
     });
   } catch (err) {
     next(err);
@@ -261,11 +319,13 @@ exports.generateQR = async (req, res, next) => {
       return res.status(400).json({ message: "No QR Code for this equipment" });
     }
 
-    const qrCodeImage = await QRCode.toDataURL(equipment.qrCode);
+    const qrScanUrl = buildQrScanUrl(req, equipment.qrCode);
+    const qrCodeImage = await QRCode.toDataURL(qrScanUrl);
 
     res.json({
       qrCodeImage,
       equipment,
+      qrScanUrl,
     });
   } catch (err) {
     next(err);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Flashlight, FlashlightOff, Image as ImageIcon, Loader2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -290,6 +290,7 @@ const decodeQrWithBarcodeDetector = async (file) => {
 
 const ScanQR = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [cameraError, setCameraError] = useState("");
@@ -299,6 +300,7 @@ const ScanQR = () => {
   const startScannerRef = useRef(null);
   const cameraToastShownRef = useRef(false);
   const isFetchingRef = useRef(false);
+  const hasAutoHandledQueryRef = useRef(false);
   const isSecureContextRuntime =
     typeof window !== "undefined" ? window.isSecureContext : true;
   const uploadOnlyMode = !isSecureContextRuntime;
@@ -434,6 +436,16 @@ const ScanQR = () => {
   useEffect(() => {
     startScannerRef.current = startScanner;
   }, [startScanner]);
+
+  useEffect(() => {
+    if (hasAutoHandledQueryRef.current) return;
+
+    const queryQrValue = QR_QUERY_PARAM_KEYS.map((key) => searchParams.get(key)).find(Boolean);
+    if (!queryQrValue) return;
+
+    hasAutoHandledQueryRef.current = true;
+    fetchEquipmentData(queryQrValue);
+  }, [fetchEquipmentData, searchParams]);
 
   useEffect(() => {
     mountedRef.current = true;

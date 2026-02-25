@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import useAuthStore from "../../store/auth-store";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ChevronRight } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { actionLogin, user } = useAuthStore();
   const isPsuPassportEnabled = import.meta.env.VITE_PSU_PASSPORT_ENABLED === "true";
   const [showManualLogin, setShowManualLogin] = useState(false);
@@ -22,6 +23,23 @@ const Login = () => {
     });
   };
 
+  const safeNextPath = useMemo(() => {
+    const rawNext = new URLSearchParams(location.search).get("next");
+    if (!rawNext) return "";
+
+    let decodedNext = rawNext;
+    try {
+      decodedNext = decodeURIComponent(rawNext);
+    } catch {
+      decodedNext = rawNext;
+    }
+
+    if (!decodedNext.startsWith("/") || decodedNext.startsWith("//")) {
+      return "";
+    }
+    return decodedNext;
+  }, [location.search]);
+
   const roleRedirect = React.useCallback((role) => {
     // Add a small delay to ensure state updates propagate
     setTimeout(() => {
@@ -30,10 +48,10 @@ const Login = () => {
       } else if (role === "it_support") {
         navigate("/it", { replace: true });
       } else {
-        navigate("/user", { replace: true });
+        navigate(safeNextPath || "/user", { replace: true });
       }
     }, 100);
-  }, [navigate]);
+  }, [navigate, safeNextPath]);
 
   useEffect(() => {
     if (user && user.role) {

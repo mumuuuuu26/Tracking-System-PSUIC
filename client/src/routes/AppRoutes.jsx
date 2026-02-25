@@ -8,6 +8,7 @@ const LayoutIT = lazy(() => import("../layouts/LayoutIT"));
 const Login = lazy(() => import("../pages/auth/Login"));
 const Register = lazy(() => import("../pages/auth/Register"));
 const PSUCallback = lazy(() => import("../pages/auth/PSUCallback"));
+const QRScanRedirect = lazy(() => import("../pages/public/QRScanRedirect"));
 
 const HomeUser = lazy(() => import("../pages/user/HomeUser"));
 const CreateTicket = lazy(() => import("../pages/user/CreateTicket"));
@@ -52,6 +53,8 @@ const AppRoutes = () => (
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<PSUCallback />} />
+      <Route path="/scan" element={<QRScanRedirect />} />
+      <Route path="/scan/:qrCode" element={<QRScanRedirect />} />
 
       <Route path="user" element={<LayoutUser />}>
         <Route index element={<HomeUser />} />
