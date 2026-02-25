@@ -227,6 +227,7 @@ const Tickets = () => {
                             <button
                                 key={status.value}
                                 type="button"
+                                data-testid={`it-filter-status-${status.value}`}
                                 onClick={() => setFilterStatus(status.value)}
                                 className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap border transition-colors ${filterStatus === status.value
                                     ? "bg-[#1e2e4a] text-white border-transparent"

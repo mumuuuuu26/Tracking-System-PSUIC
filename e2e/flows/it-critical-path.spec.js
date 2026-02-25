@@ -41,9 +41,14 @@ test.describe('IT Critical Paths', () => {
 
     await page.goto(`${BASE_URL}/it/tickets`);
     await expect(page).toHaveURL(/\/it\/tickets/);
-    await expect(page.getByPlaceholder(/Search tickets/i)).toBeVisible();
+    await expect(page.getByTestId('it-filter-floor')).toBeVisible();
+    await expect(page.getByTestId('it-filter-room')).toBeVisible();
+    await expect(page.getByText(/ticket(s)? found/i)).toBeVisible();
 
-    await page.getByRole('button', { name: /In Progress/i }).click();
+    const inProgressFilter = page.getByTestId('it-filter-status-in_progress');
+    await expect(inProgressFilter).toBeVisible();
+    await inProgressFilter.click();
+    await expect(page).toHaveURL(/status=in_progress/);
 
     await page.goto(`${BASE_URL}/it/history`);
     await expect(page).toHaveURL(/\/it\/history/);
