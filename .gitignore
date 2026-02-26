@@ -52,3 +52,17 @@ test-results/
 /test-*.js
 /.deploy-state/
 /prisma/client-cache/
+
+# Windows server runtime artifacts (deployment host)
+/.pm2/
+/.https-setup/
+/.env.production.bak.*
+/prisma-engines/
+/tracking_system_*.sql
+/codex_marker_*.txt
+/authCheck.js
+/fix-production-env-file.js
+/it-support.js
+/ticket.js
+/ticketStatus.js
+/validate-production-env-file.js
