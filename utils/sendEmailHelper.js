@@ -67,14 +67,14 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
     try {
         if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
             logger.warn("⚠️ Email config missing, skipping notification");
-            return;
+            return { sent: false, reason: "missing_config" };
         }
 
         if (process.env.NODE_ENV === "test" && process.env.EMAIL_SEND_IN_TEST !== "true") {
             logger.info(
                 `ℹ️ Email send skipped in test mode for template '${templateName}'.`,
             );
-            return;
+            return { sent: false, reason: "test_mode_disabled" };
         }
 
         const dbTemplate = await prisma.emailTemplate.findUnique({
@@ -85,7 +85,7 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
 
         if (!template) {
             logger.warn(`⚠️ Template '${templateName}' not found in database.`);
-            return;
+            return { sent: false, reason: "template_not_found" };
         }
 
         if (!dbTemplate && fallbackTemplate) {
@@ -96,7 +96,7 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
 
         if (!template.isEnabled) {
             logger.info(`ℹ️ Notification '${templateName}' is disabled. Skipping.`);
-            return;
+            return { sent: false, reason: "template_disabled" };
         }
 
         const safeVariables = variables || {};
@@ -114,7 +114,7 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
 
         if (!to) {
             logger.warn("⚠️ No recipients defined for email.");
-            return;
+            return { sent: false, reason: "no_recipients" };
         }
 
         const mailOptions = {
@@ -126,8 +126,10 @@ exports.sendEmailNotification = async (templateName, recipientEmail, variables) 
 
         await transporter.sendMail(mailOptions);
         logger.info(`✅ Email Sent: '${templateName}' to ${to.length > 50 ? to.substring(0, 50) + '...' : to}`);
+        return { sent: true };
 
     } catch (err) {
         logger.error(`❌ Email Helper Error: ${err.message}`);
+        return { sent: false, reason: "send_failed", error: err.message };
     }
 };

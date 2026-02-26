@@ -148,7 +148,7 @@ exports.create = async (req, res, next) => {
               })
             : "N/A";
 
-          await sendEmailNotification(
+          const emailResult = await sendEmailNotification(
             "new_ticket_it",
             emails,
             {
@@ -177,9 +177,16 @@ exports.create = async (req, res, next) => {
               ),
             }
           );
-          logger.info(
-            `📨 New ticket email sent to IT notification list (${emails.length} recipient(s)) for ticket #${newTicket.id}`
-          );
+
+          if (emailResult?.sent) {
+            logger.info(
+              `📨 New ticket email sent to IT notification list (${emails.length} recipient(s)) for ticket #${newTicket.id}`
+            );
+          } else {
+            logger.warn(
+              `⚠️ New ticket email skipped/failed for ticket #${newTicket.id} (reason: ${emailResult?.reason || "unknown"})`
+            );
+          }
         } else {
           logger.warn(
             `⚠️ No IT notificationEmail recipient configured for ticket #${newTicket.id}. Email notification skipped.`
