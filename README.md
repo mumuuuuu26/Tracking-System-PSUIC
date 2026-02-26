@@ -1,152 +1,302 @@
 # IT Tracking System Server
 
-This is the backend server for the IT Tracking System, built with Node.js, Express, and Prisma (MySQL).
+Backend API for PSUIC IT Tracking System.
+Built with Node.js + Express + Prisma (MySQL), with PM2 production runtime, CI guards, and E2E selector contracts.
 
-## Prerequisites
+## Tech Stack
 
-Before running the project, ensure you have the following installed:
-- **Node.js** (v16 or higher)
-- **MySQL** (v8.0 recommended)
-- **PM2** (Process Manager, installed globally: `npm install pm2 -g`)
+- Node.js (CommonJS)
+- Express 5
+- Prisma + MySQL
+- JWT auth
+- Winston logging
+- PM2 process management
+- Playwright + Jest test suite
+
+## Runtime Requirements (Important)
+
+This repository is now pinned to CI runtime:
+
+- Node.js: `20.x`
+- npm: `10.x`
+
+Enforced by:
+
+- `.nvmrc` (root + client)
+- `engines` + `packageManager` in `package.json`
+- `preinstall` runtime guard (`npm install`/`npm ci` fail fast on wrong runtime)
+
+Use:
+
+```bash
+nvm use
+npm --version
+node --version
+```
+
+## Project Structure
+
+- Backend root: this repository root
+- Frontend: `client/`
+- Prisma schema: `prisma/`
+- Runtime scripts: `scripts/`
+- CI workflow: `.github/workflows/ci.yml`
+
+## Environment Files
+
+- Local dev template: `.env.example`
+- Production template: `.env.production.example`
+- Production runtime file: `.env.production`
+
+### Minimum Required Variables
+
+- `SECRET`
+- `DATABASE_URL`
+- `CLIENT_URL`
+- `FRONTEND_URL`
+
+### Optional but Common
+
+- SMTP: `MAIL_USER`, `MAIL_PASS`
+- Google Calendar sync: `GOOGLE_PROJECT_ID`, `GOOGLE_CLIENT_EMAIL`, `GOOGLE_CALENDAR_ID`, `GOOGLE_PRIVATE_KEY`
+- Upload/backup/log rotation controls (see `.env.production.example`)
 
 ## Installation
 
-1.  **Clone the repository** (if not already done).
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-3.  **Setup Environment Variables**:
-    - Local/Dev: use `.env`
-    - Production: use `.env.production` (copy from `.env.production.example`)
-
-## Configuration (.env)
-
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `PORT` | Server port | `5002` |
-| `SECRET` | JWT Secret Key | `your_secret_key` |
-| `CLIENT_URL` | Frontend URL for CORS | `https://localhost:5173` |
-| `DATABASE_URL` | MySQL Connection String | `mysql://user:pass@localhost:3306/db_name` |
-| `MAIL_USER` | Email for sending notifications | `example@gmail.com` |
-| `MAIL_PASS` | Email App Password | `xxxx xxxx xxxx xxxx` |
-| `GOOGLE_PROJECT_ID` | Google Cloud Project ID | `your-project-id` |
-| `GOOGLE_CLIENT_EMAIL`| Service Account Email | `service@project.iam.gserviceaccount.com` |
-| `GOOGLE_CALENDAR_ID` | Calendar ID to sync | `primary` or `email@gmail.com` |
-| `GOOGLE_PRIVATE_KEY` | Service Account Key | `-----BEGIN PRIVATE KEY-----\n...` |
-
-## Database Setup
-
-Initialize the database schema using Prisma:
+### 1) Install dependencies
 
 ```bash
-# Push schema to DB (Development/Prototyping)
-npx prisma db push
-
-# Apply migrations (Production)
-npm run prisma:migrate:prod
+npm ci
+cd client && npm ci
+cd ..
 ```
 
-To seed initial data:
+### 2) Prisma generate
+
 ```bash
+npx prisma generate
+```
+
+### 3) Development DB setup
+
+```bash
+npx prisma db push
 npm run seed
 ```
 
-## Running the Server
+## Development Run
 
-### Development
-Runs with `nodemon` for auto-reload.
+Backend only:
+
 ```bash
 npm run dev
 ```
 
-### Development (HTTPS only)
-Generate local TLS cert + enable HTTPS-only config:
+Backend + frontend:
+
+```bash
+npm run dev:full
+```
+
+HTTPS local setup:
+
 ```bash
 npm run https:setup
 npm run dev
 ```
+
 Health check:
+
 ```bash
 curl -k https://localhost:5002/health
 ```
 
-### Production (PM2)
-We use **PM2** to manage the process in production.
+## Production Run (PM2)
 
-**Start the server:**
+PM2 app name used by this repo:
+
+- `tracking-system-backend`
+
+Start:
+
 ```bash
 pm2 start ecosystem.config.js --env production
 ```
 
-**Management Commands:**
-- Check status: `pm2 status`
-- View logs: `pm2 logs tracking-system`
-- Restart: `pm2 restart tracking-system`
-- Stop: `pm2 stop tracking-system`
+Common commands:
 
-**Log Files:**
-- Logs are written to the `./logs/` directory.
-
-## Logging
-
-The application uses **Winston** for robust logging. Logs are automatically rotated daily and stored in the `logs/` directory.
-
-- **Error Logs**: `logs/error/YYYY-MM-DD.log` - Contains only error-level messages (useful for debugging).
-- **Combined Logs**: `logs/YYYY-MM-DD.log` - Contains all log levels (info, warn, error).
-
-These files are excluded from version control (`.gitignore`).
-
-## Test Strategy
-
-- **CI Pipeline**: Runs backend tests, smoke tests, frontend tests, and Playwright E2E.
-- **E2E Tests**: Playwright tests are available for local and CI execution.
-  - Run E2E locally: `npm run test:e2e`
-  - Selector contract guard: `npm run check:e2e:selectors`
-  - E2E selector guideline: `docs/TEST_GUIDELINES.md`
-- **Backend Tests**:
-  - Full test suite (requires MySQL reachable at test DATABASE_URL): `npm test`
-  - Unit-only tests (no DB required): `npm run test:unit`
-
-## Performance & Load Testing
-
-- **Tool**: k6
-- **Load Profile**: 100 concurrent users
-- **Result**:
-  - Success rate: 100%
-  - p95 response time: < 3ms
-- **Rate Limiting**: Configured to support real-world usage (3000 req/15min).
-
-### Run locally:
 ```bash
-k6 run tests/load/load-test.js
+pm2 status
+pm2 logs tracking-system-backend
+pm2 restart tracking-system-backend --update-env
+pm2 stop tracking-system-backend
+pm2 save
+```
+
+## Windows Production Deploy
+
+Primary deploy script:
+
+```bat
+windows-deploy.bat
+```
+
+Runtime verify script:
+
+```bat
+windows-runtime-check.bat
+```
+
+Auto-start PM2 task setup:
+
+```bat
+windows-enable-pm2-startup.bat
+```
+
+This creates/updates scheduled task:
+
+- `TrackingSystem-PM2-Resurrect`
+
+## Lockfile + CI Guard Rails
+
+If `package.json` changes, lockfiles must be regenerated with npm 10.
+
+Checks:
+
+```bash
+npm run guard:runtime:strict
+npm run guard:lockfile:npm10
+```
+
+Regenerate lockfiles safely:
+
+```bash
+npm run guard:update-lockfile:npm10
+```
+
+## Database Migration / Production Preflight
+
+Production preflight:
+
+```bash
+npm run preflight:prod
+```
+
+Apply SQL migrations (production-safe path):
+
+```bash
+npm run migrate:sql:prod
+```
+
+## Testing
+
+Backend full tests:
+
+```bash
+npm test
+```
+
+Backend unit-only (no DB):
+
+```bash
+npm run test:unit
+```
+
+Smoke predeploy:
+
+```bash
+npm run smoke:predeploy
+```
+
+E2E:
+
+```bash
+npm run test:e2e
+```
+
+E2E selector guard:
+
+```bash
+npm run check:e2e:selectors
+```
+
+Selector guideline:
+
+- `docs/TEST_GUIDELINES.md`
+
+## Logs and Rotation
+
+- PM2 stdout/stderr: `logs/out.log`, `logs/error.log`
+- Additional app logs: `logs/`
+- Rotation/retention is controlled by env vars and script:
+
+```bash
+npm run logs:rotate
+```
+
+## Backup Jobs
+
+Managed by backend scheduler env controls:
+
+- `DB_BACKUP_CRON`
+- `UPLOAD_BACKUP_CRON`
+- `UPLOAD_CLEANUP_CRON`
+- `OFFSITE_BACKUP_CRON`
+
+Manual helpers:
+
+```bash
+npm run uploads:backup
+npm run backup:offsite
 ```
 
 ## API Documentation
 
-Swagger UI is available at:
-`https://localhost:5002/api-docs` (when HTTPS is enabled)
-(Make sure the server is running)
+Swagger UI:
 
-## Security Features
-- **Input Validation**: Uses `zod` to validate critical inputs.
-- **Error Handling**: Centralized error logging and safe responses.
-- **Data Integrity**: Soft Delete implemented for Tickets.
+- `http://<host>:<port>/api-docs`
+- or `https://<host>:<port>/api-docs` when HTTPS is enabled
 
 ## Troubleshooting
 
-### Server Won't Start (`npm start` fails)
-- **Port Conflict**: Check if port `5002` is already in use. You can change it in `.env`.
-- **Node Modules**: Ensure you have run `npm install` successfully.
-- **Environment Variables**: Verify that your `.env` file exists and has valid values.
+### `npm ci` fails with lock mismatch
 
-### Database Connection Failed
-- **MySQL Service**: Ensure your MySQL server service is running.
-- **Credentials**: Double-check `DATABASE_URL` in `.env`. The format should be `mysql://user:password@host:port/database`.
-- **Network**: Ensure firewall is not blocking port `3306` (or your DB port).
+Run:
 
-### Where are the logs?
-- **Location**: All logs are stored in the `./logs/` directory.
-- **Error Logs**: See `./logs/error/`.
-- **Combined Logs**: See `./logs/`.
-- Logs are rotated daily.
+```bash
+npm run guard:update-lockfile:npm10
+```
+
+Commit both lockfiles:
+
+- `package-lock.json`
+- `client/package-lock.json`
+
+### Install fails on wrong Node/npm
+
+Use the pinned runtime:
+
+```bash
+nvm use
+```
+
+Then rerun install.
+
+### Server starts but health fails
+
+Check:
+
+- `PORT` in `.env.production`
+- `pm2 logs tracking-system-backend`
+- `windows-runtime-check.bat` (Windows)
+
+### Google sync errors with certificate chain
+
+If you see `self-signed certificate in certificate chain`, this is network TLS interception/proxy. Fix trust chain at OS/network level for stable production behavior.
+
+## Security Notes
+
+- Do not commit real `.env` / `.env.production`
+- Use strong `SECRET`
+- Use least-privilege DB users
+- Keep npm lockfiles and runtime pinned to avoid CI drift
