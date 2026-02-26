@@ -4,6 +4,7 @@ const QRCode = require("qrcode");
 
 const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
 const QR_PUBLIC_BASE_URL_KEYS = ["QR_PUBLIC_BASE_URL", "FRONTEND_URL", "CLIENT_URL"];
+const NON_ACTIVE_TICKET_STATUSES = ["completed", "rejected"];
 const equipmentScanInclude = {
   room: true,
   tickets: {
@@ -124,9 +125,29 @@ const resolveQrPublicBaseUrl = (req) => {
 
 const buildQrScanUrl = (req, qrCodeValue) => {
   const baseUrl = resolveQrPublicBaseUrl(req);
-  const scanUrl = new URL("/scan", baseUrl);
-  scanUrl.searchParams.set("qr", qrCodeValue);
+  const scanUrl = new URL(`/scan/${encodeURIComponent(qrCodeValue)}`, baseUrl);
   return scanUrl.toString();
+};
+
+const toUniqueIntegerIds = (inputIds) => {
+  if (!Array.isArray(inputIds)) return [];
+  return [...new Set(
+    inputIds
+      .map((id) => parseInt(id, 10))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  )];
+};
+
+const findEquipmentIdsWithActiveTickets = async (equipmentIds) => {
+  if (!equipmentIds.length) return new Set();
+  const activeByEquipment = await prisma.ticket.groupBy({
+    by: ["equipmentId"],
+    where: {
+      equipmentId: { in: equipmentIds },
+      status: { notIn: NON_ACTIVE_TICKET_STATUSES },
+    },
+  });
+  return new Set(activeByEquipment.map((row) => row.equipmentId));
 };
 
 const attachCategoryObject = async (equipment) => {
@@ -358,26 +379,62 @@ exports.update = async (req, res, next) => {
 exports.remove = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const equipmentId = parseInt(id, 10);
 
-    // Check if has active tickets
-    const activeTickets = await prisma.ticket.count({
-      where: {
-        equipmentId: parseInt(id),
-        status: { notIn: ["completed", "rejected"] }
-      }
-    });
+    if (!Number.isInteger(equipmentId) || equipmentId <= 0) {
+      return res.status(400).json({ message: "Invalid equipment ID" });
+    }
 
-    if (activeTickets > 0) {
+    const blockedIds = await findEquipmentIdsWithActiveTickets([equipmentId]);
+    if (blockedIds.has(equipmentId)) {
       return res.status(400).json({
         message: "Cannot delete equipment with active tickets"
       });
     }
 
     await prisma.equipment.delete({
-      where: { id: parseInt(id) }
+      where: { id: equipmentId }
     });
 
     res.json({ message: "Equipment deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.bulkRemove = async (req, res, next) => {
+  try {
+    const equipmentIds = toUniqueIntegerIds(req.body?.ids);
+
+    if (!equipmentIds.length) {
+      return res.status(400).json({ message: "Please select at least one equipment item" });
+    }
+
+    const blockedIdsSet = await findEquipmentIdsWithActiveTickets(equipmentIds);
+    const blockedIds = [...blockedIdsSet];
+    const deletableIds = equipmentIds.filter((id) => !blockedIdsSet.has(id));
+
+    if (!deletableIds.length) {
+      return res.status(400).json({
+        message: "Cannot delete selected equipment because all have active tickets",
+        deletedCount: 0,
+        deletedIds: [],
+        blockedIds,
+      });
+    }
+
+    const deleteResult = await prisma.equipment.deleteMany({
+      where: { id: { in: deletableIds } },
+    });
+
+    return res.json({
+      message: blockedIds.length
+        ? "Deleted selected equipment with partial skips"
+        : "Deleted selected equipment successfully",
+      deletedCount: deleteResult.count,
+      deletedIds: deletableIds,
+      blockedIds,
+    });
   } catch (err) {
     next(err);
   }

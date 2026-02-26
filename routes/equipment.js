@@ -10,6 +10,7 @@ const {
   generateQR,
   update,
   remove,
+  bulkRemove,
 } = require("../controllers/equipment");
 
 // Admin only
@@ -20,6 +21,7 @@ router.get("/equipment", authCheck, list);
 // /equipment/qr/:qrCode must be declared before /equipment/:id and /equipment/:id/qr
 router.get("/equipment/qr/:qrCode", getByQRCode); // Public (for QR scanning)
 router.get("/equipment/:id/qr", authCheck, generateQR);
+router.delete("/equipment/bulk-delete", authCheck, adminCheck, bulkRemove);
 router.get("/equipment/:id", authCheck, getById);
 router.put("/equipment/:id", authCheck, adminCheck, update);
 router.delete("/equipment/:id", authCheck, adminCheck, remove);

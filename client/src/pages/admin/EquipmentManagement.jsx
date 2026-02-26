@@ -1,10 +1,10 @@
 // client/src/pages/admin/EquipmentManagement.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, ChevronDown, Monitor, Printer, Wifi, Wind, Box, ArrowLeft, QrCode, Edit, Trash2, X, Save, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, ChevronLeft, ChevronRight, CheckSquare, Square } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { listCategories, createCategory, updateCategory, removeCategory, addSubComponent, removeSubComponent } from "../../api/category";
-import { listEquipments, createEquipment, updateEquipment, removeEquipment, getEquipmentQR } from "../../api/equipment";
+import { listEquipments, createEquipment, updateEquipment, removeEquipment, removeEquipmentsBulk, getEquipmentQR } from "../../api/equipment";
 import { listRooms } from "../../api/room";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
@@ -51,6 +51,7 @@ const EquipmentManagement = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState([]);
 
   const loadEquipments = useCallback(async () => {
     try {
@@ -137,6 +138,49 @@ const EquipmentManagement = () => {
       } catch {
         /* console.error removed */
         toast.error("Failed to delete equipment");
+      }
+    }
+  };
+
+  const toggleEquipmentSelection = (equipmentId) => {
+    setSelectedEquipmentIds((prev) =>
+      prev.includes(equipmentId)
+        ? prev.filter((id) => id !== equipmentId)
+        : [...prev, equipmentId],
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedEquipmentIds.length) return;
+
+    const confirmed = window.confirm(
+      `Delete ${selectedEquipmentIds.length} selected equipment item(s)?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      const response = await removeEquipmentsBulk(selectedEquipmentIds);
+      const deletedCount = Number(response?.data?.deletedCount || 0);
+      const blockedIds = Array.isArray(response?.data?.blockedIds)
+        ? response.data.blockedIds
+        : [];
+
+      if (deletedCount > 0) {
+        toast.success(`Deleted ${deletedCount} equipment item(s)`);
+      }
+      if (blockedIds.length > 0) {
+        toast.warn(`${blockedIds.length} item(s) were skipped (active tickets)`);
+      }
+
+      setSelectedEquipmentIds([]);
+      await loadEquipments();
+    } catch (error) {
+      const blockedIds = error?.response?.data?.blockedIds;
+      if (Array.isArray(blockedIds) && blockedIds.length > 0) {
+        toast.warn(`${blockedIds.length} item(s) cannot be deleted (active tickets)`);
+        setSelectedEquipmentIds((prev) => prev.filter((id) => blockedIds.includes(id)));
+      } else {
+        toast.error(error?.response?.data?.message || "Failed to delete selected equipment");
       }
     }
   };
@@ -279,12 +323,23 @@ const EquipmentManagement = () => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedRoom]);
 
+  useEffect(() => {
+    setSelectedEquipmentIds((prev) => {
+      const existingIds = new Set((equipments || []).map((item) => item.id));
+      return prev.filter((id) => existingIds.has(id));
+    });
+  }, [equipments]);
+
   // Pagination Calculations
   const totalPages = Math.ceil(filteredEquipments.length / ITEMS_PER_PAGE);
   const paginatedEquipments = filteredEquipments.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+  const visibleEquipmentIds = paginatedEquipments.map((item) => item.id);
+  const allVisibleSelected =
+    visibleEquipmentIds.length > 0 &&
+    visibleEquipmentIds.every((id) => selectedEquipmentIds.includes(id));
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -292,6 +347,19 @@ const EquipmentManagement = () => {
       // Optional: scroll to top of list
       // window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const toggleSelectVisible = () => {
+    setSelectedEquipmentIds((prev) => {
+      const visibleSet = new Set(visibleEquipmentIds);
+      const everyVisibleSelected = visibleEquipmentIds.length > 0 &&
+        visibleEquipmentIds.every((id) => prev.includes(id));
+
+      if (everyVisibleSelected) {
+        return prev.filter((id) => !visibleSet.has(id));
+      }
+      return [...new Set([...prev, ...visibleEquipmentIds])];
+    });
   };
 
   const getCategoryIcon = (type) => {
@@ -377,14 +445,23 @@ const EquipmentManagement = () => {
               </div>
             </div>
 
-            {/* Add Button */}
-            <button
-              onClick={openAddModal}
-              className="w-full md:w-auto whitespace-nowrap bg-[#1e2e4a] text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#15233b] transition-all shadow-lg shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]"
-            >
-              <Plus size={22} strokeWidth={2.5} />
-              Add Equipment
-            </button>
+            <div className="w-full md:w-auto flex gap-2">
+              <button
+                onClick={handleBulkDelete}
+                disabled={!selectedEquipmentIds.length}
+                className="w-full md:w-auto whitespace-nowrap bg-red-50 text-red-600 border border-red-100 px-5 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={18} />
+                Delete Selected {selectedEquipmentIds.length > 0 ? `(${selectedEquipmentIds.length})` : ""}
+              </button>
+              <button
+                onClick={openAddModal}
+                className="w-full md:w-auto whitespace-nowrap bg-[#1e2e4a] text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#15233b] transition-all shadow-lg shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]"
+              >
+                <Plus size={22} strokeWidth={2.5} />
+                Add Equipment
+              </button>
+            </div>
           </div>
         </div>
 
@@ -399,6 +476,15 @@ const EquipmentManagement = () => {
               {filteredEquipments.length} {filteredEquipments.length === 1 ? 'Item' : 'Items'}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={toggleSelectVisible}
+            disabled={!paginatedEquipments.length}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-[#1e2e4a] bg-white border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {allVisibleSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+            {allVisibleSelected ? "Unselect Page" : "Select Page"}
+          </button>
         </div>
 
         {/* Equipment Grid */}
@@ -408,6 +494,14 @@ const EquipmentManagement = () => {
               <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
                 {/* Subtle background decoration */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                <button
+                  type="button"
+                  onClick={() => toggleEquipmentSelection(item.id)}
+                  className="absolute left-3 top-3 z-30 w-6 h-6 rounded-md bg-white/95 border border-gray-200 text-[#1e2e4a] flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  title={selectedEquipmentIds.includes(item.id) ? "Unselect item" : "Select item"}
+                >
+                  {selectedEquipmentIds.includes(item.id) ? <CheckSquare size={14} /> : <Square size={14} />}
+                </button>
 
                 <div className="flex items-center gap-3 min-w-0 z-10">
                   {/* Icon Container (matching User Avatar size constraint) */}
