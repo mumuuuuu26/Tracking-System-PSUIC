@@ -90,12 +90,6 @@
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.3.6"
   },
-  "prisma": {
-    "dev": "nodemon server.js",
-    "seed": "node prisma/seed-complete.js",
-    "seed:it": "node prisma/seed-it.js",
-    "seed:all": "node prisma/seed.js && node prisma/seed-it.js"
-  },
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.0",
