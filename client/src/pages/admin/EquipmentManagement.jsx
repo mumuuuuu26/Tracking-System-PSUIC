@@ -1,6 +1,6 @@
 // client/src/pages/admin/EquipmentManagement.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, ChevronLeft, ChevronRight, CheckSquare, Square } from "lucide-react";
+import { Plus, Search, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, ChevronLeft, ChevronRight, CheckSquare, Square, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { listCategories, createCategory, updateCategory, removeCategory, addSubComponent, removeSubComponent } from "../../api/category";
@@ -51,6 +51,7 @@ const EquipmentManagement = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
+  const [isBulkSelectMode, setIsBulkSelectMode] = useState(false);
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState([]);
 
   const loadEquipments = useCallback(async () => {
@@ -142,7 +143,13 @@ const EquipmentManagement = () => {
     }
   };
 
+  const closeBulkSelectMode = useCallback(() => {
+    setIsBulkSelectMode(false);
+    setSelectedEquipmentIds([]);
+  }, []);
+
   const toggleEquipmentSelection = (equipmentId) => {
+    if (!isBulkSelectMode) return;
     setSelectedEquipmentIds((prev) =>
       prev.includes(equipmentId)
         ? prev.filter((id) => id !== equipmentId)
@@ -172,13 +179,19 @@ const EquipmentManagement = () => {
         toast.warn(`${blockedIds.length} item(s) were skipped (active tickets)`);
       }
 
-      setSelectedEquipmentIds([]);
+      if (blockedIds.length > 0) {
+        setSelectedEquipmentIds(blockedIds);
+        setIsBulkSelectMode(true);
+      } else {
+        closeBulkSelectMode();
+      }
       await loadEquipments();
     } catch (error) {
       const blockedIds = error?.response?.data?.blockedIds;
       if (Array.isArray(blockedIds) && blockedIds.length > 0) {
         toast.warn(`${blockedIds.length} item(s) cannot be deleted (active tickets)`);
         setSelectedEquipmentIds((prev) => prev.filter((id) => blockedIds.includes(id)));
+        setIsBulkSelectMode(true);
       } else {
         toast.error(error?.response?.data?.message || "Failed to delete selected equipment");
       }
@@ -330,6 +343,12 @@ const EquipmentManagement = () => {
     });
   }, [equipments]);
 
+  useEffect(() => {
+    if (!isBulkSelectMode && selectedEquipmentIds.length > 0) {
+      setSelectedEquipmentIds([]);
+    }
+  }, [isBulkSelectMode, selectedEquipmentIds.length]);
+
   // Pagination Calculations
   const totalPages = Math.ceil(filteredEquipments.length / ITEMS_PER_PAGE);
   const paginatedEquipments = filteredEquipments.slice(
@@ -350,6 +369,7 @@ const EquipmentManagement = () => {
   };
 
   const toggleSelectVisible = () => {
+    if (!isBulkSelectMode) return;
     setSelectedEquipmentIds((prev) => {
       const visibleSet = new Set(visibleEquipmentIds);
       const everyVisibleSelected = visibleEquipmentIds.length > 0 &&
@@ -445,23 +465,13 @@ const EquipmentManagement = () => {
               </div>
             </div>
 
-            <div className="w-full md:w-auto flex gap-2">
-              <button
-                onClick={handleBulkDelete}
-                disabled={!selectedEquipmentIds.length}
-                className="w-full md:w-auto whitespace-nowrap bg-red-50 text-red-600 border border-red-100 px-5 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 size={18} />
-                Delete Selected {selectedEquipmentIds.length > 0 ? `(${selectedEquipmentIds.length})` : ""}
-              </button>
-              <button
-                onClick={openAddModal}
-                className="w-full md:w-auto whitespace-nowrap bg-[#1e2e4a] text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#15233b] transition-all shadow-lg shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]"
-              >
-                <Plus size={22} strokeWidth={2.5} />
-                Add Equipment
-              </button>
-            </div>
+            <button
+              onClick={openAddModal}
+              className="w-full md:w-auto whitespace-nowrap bg-[#1e2e4a] text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#15233b] transition-all shadow-lg shadow-blue-900/10 hover:shadow-blue-900/20 active:scale-[0.98]"
+            >
+              <Plus size={22} strokeWidth={2.5} />
+              Add Equipment
+            </button>
           </div>
         </div>
 
@@ -476,32 +486,72 @@ const EquipmentManagement = () => {
               {filteredEquipments.length} {filteredEquipments.length === 1 ? 'Item' : 'Items'}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={toggleSelectVisible}
-            disabled={!paginatedEquipments.length}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-[#1e2e4a] bg-white border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {allVisibleSelected ? <CheckSquare size={14} /> : <Square size={14} />}
-            {allVisibleSelected ? "Unselect Page" : "Select Page"}
-          </button>
+          <div className="flex items-center gap-2">
+            {!isBulkSelectMode ? (
+              <button
+                type="button"
+                onClick={() => setIsBulkSelectMode(true)}
+                className="w-8 h-8 inline-flex items-center justify-center text-[#1e2e4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                title="Select multiple items"
+              >
+                <Square size={14} />
+              </button>
+            ) : (
+              <>
+                <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold border border-blue-100">
+                  {selectedEquipmentIds.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleSelectVisible}
+                  disabled={!paginatedEquipments.length}
+                  className="w-8 h-8 inline-flex items-center justify-center text-[#1e2e4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={allVisibleSelected ? "Unselect current page" : "Select current page"}
+                >
+                  {allVisibleSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  disabled={!selectedEquipmentIds.length}
+                  className="w-8 h-8 inline-flex items-center justify-center text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete selected items"
+                >
+                  <Trash2 size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={closeBulkSelectMode}
+                  className="w-8 h-8 inline-flex items-center justify-center text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Exit selection mode"
+                >
+                  <X size={12} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Equipment Grid */}
         <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {paginatedEquipments.map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div
+                key={item.id}
+                className={`bg-white p-4 rounded-2xl shadow-sm border flex items-center justify-between hover:shadow-md transition-shadow relative overflow-hidden group ${selectedEquipmentIds.includes(item.id) ? "border-blue-200" : "border-gray-50"}`}
+              >
                 {/* Subtle background decoration */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                <button
-                  type="button"
-                  onClick={() => toggleEquipmentSelection(item.id)}
-                  className="absolute left-3 top-3 z-30 w-6 h-6 rounded-md bg-white/95 border border-gray-200 text-[#1e2e4a] flex items-center justify-center hover:bg-gray-50 transition-colors"
-                  title={selectedEquipmentIds.includes(item.id) ? "Unselect item" : "Select item"}
-                >
-                  {selectedEquipmentIds.includes(item.id) ? <CheckSquare size={14} /> : <Square size={14} />}
-                </button>
+                {isBulkSelectMode && (
+                  <button
+                    type="button"
+                    onClick={() => toggleEquipmentSelection(item.id)}
+                    className="absolute left-3 top-3 z-30 w-6 h-6 rounded-md bg-white/95 border border-gray-200 text-[#1e2e4a] flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    title={selectedEquipmentIds.includes(item.id) ? "Unselect item" : "Select item"}
+                  >
+                    {selectedEquipmentIds.includes(item.id) ? <CheckSquare size={14} /> : <Square size={14} />}
+                  </button>
+                )}
 
                 <div className="flex items-center gap-3 min-w-0 z-10">
                   {/* Icon Container (matching User Avatar size constraint) */}
