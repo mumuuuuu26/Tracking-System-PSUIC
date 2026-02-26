@@ -1,6 +1,6 @@
 // client/src/pages/admin/EquipmentManagement.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, ChevronLeft, ChevronRight, CheckSquare, Square, X } from "lucide-react";
+import { Plus, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, ChevronLeft, ChevronRight, CheckSquare, Square, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { listCategories, createCategory, updateCategory, removeCategory, addSubComponent, removeSubComponent } from "../../api/category";
@@ -21,7 +21,6 @@ const EquipmentManagement = () => {
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedRoom, setSelectedRoom] = useState("All Rooms");
 
@@ -316,10 +315,6 @@ const EquipmentManagement = () => {
   // Filter Logic
   const filteredEquipments = Array.isArray(equipments) ? equipments.filter(item => {
     if (!item || !item.name) return false;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(item.id).includes(searchQuery) ||
-      (item.serialNo && item.serialNo.toLowerCase().includes(searchQuery.toLowerCase()));
-
     // We compare type (which is saved as category name usually)
     const matchesCategory = selectedCategory === "All Categories" || item.type === selectedCategory;
 
@@ -328,13 +323,13 @@ const EquipmentManagement = () => {
       (item.roomId === selectedRoom) ||
       (item.room && item.room.id === selectedRoom);
 
-    return matchesSearch && matchesCategory && matchesRoom;
+    return matchesCategory && matchesRoom;
   }) : [];
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedRoom]);
+  }, [selectedCategory, selectedRoom]);
 
   useEffect(() => {
     setSelectedEquipmentIds((prev) => {
@@ -403,19 +398,7 @@ const EquipmentManagement = () => {
         />
 
         {/* Toolbar */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col md:flex-row gap-4 items-center border border-gray-50 shrink-0">
-          {/* Search */}
-          <div className="flex-1 relative w-full">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search asset ID or Name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-6 py-4 bg-gray-50/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/10 focus:border-[#1e2e4a]/20 transition-all border border-gray-100 font-medium text-gray-700 placeholder:text-gray-400"
-            />
-          </div>
-
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col gap-4 items-center border border-gray-50 shrink-0">
           <div className="flex flex-col xl:flex-row w-full xl:w-auto gap-3 items-center">
             {/* Category Dropdown & Actions */}
             <div className="relative w-full xl:w-auto flex flex-col md:flex-row gap-2">
@@ -491,10 +474,11 @@ const EquipmentManagement = () => {
               <button
                 type="button"
                 onClick={() => setIsBulkSelectMode(true)}
-                className="w-8 h-8 inline-flex items-center justify-center text-[#1e2e4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors"
                 title="Select multiple items"
               >
                 <Square size={14} />
+                Select
               </button>
             ) : (
               <>
@@ -505,27 +489,30 @@ const EquipmentManagement = () => {
                   type="button"
                   onClick={toggleSelectVisible}
                   disabled={!paginatedEquipments.length}
-                  className="w-8 h-8 inline-flex items-center justify-center text-[#1e2e4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title={allVisibleSelected ? "Unselect current page" : "Select current page"}
                 >
                   {allVisibleSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                  {allVisibleSelected ? "Unselect Page" : "Select Page"}
                 </button>
                 <button
                   type="button"
                   onClick={handleBulkDelete}
                   disabled={!selectedEquipmentIds.length}
-                  className="w-8 h-8 inline-flex items-center justify-center text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-2.5 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Delete selected items"
                 >
                   <Trash2 size={12} />
+                  Delete
                 </button>
                 <button
                   type="button"
                   onClick={closeBulkSelectMode}
-                  className="w-8 h-8 inline-flex items-center justify-center text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors"
                   title="Exit selection mode"
                 >
                   <X size={12} />
+                  Done
                 </button>
               </>
             )}
