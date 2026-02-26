@@ -17,6 +17,14 @@ const SWAL_DANGER_BUTTON_CLASS =
 const getConfirmButtonClass = (variant = "primary") =>
   variant === "danger" ? SWAL_DANGER_BUTTON_CLASS : SWAL_PRIMARY_BUTTON_CLASS;
 
+const blurActiveElement = () => {
+  if (typeof document === "undefined") return;
+  const active = document.activeElement;
+  if (active && typeof active.blur === "function") {
+    active.blur();
+  }
+};
+
 export const showPopup = async ({
   title,
   text,
@@ -29,8 +37,9 @@ export const showPopup = async ({
   confirmVariant = "primary",
   allowOutsideClick = true,
   focusCancel = true,
-}) =>
-  Swal.fire({
+}) => {
+  blurActiveElement();
+  return Swal.fire({
     title,
     text,
     html,
@@ -47,6 +56,7 @@ export const showPopup = async ({
     },
     buttonsStyling: false,
   });
+};
 
 export const confirmDialog = async ({
   title,
@@ -75,6 +85,7 @@ export const promptRejectReason = async ({
   placeholder = "Reason for rejection...",
   confirmButtonText = "Reject",
 }) => {
+  blurActiveElement();
   const result = await Swal.fire({
     title,
     text,
