@@ -84,7 +84,7 @@ export const promptRejectReason = async ({
     inputAttributes: {
       "aria-label": placeholder,
       maxlength: "500",
-      rows: "4",
+      rows: "3",
     },
     showCancelButton: true,
     confirmButtonText,
@@ -92,11 +92,12 @@ export const promptRejectReason = async ({
     reverseButtons: true,
     customClass: {
       ...SWAL_BASE_CLASS,
+      popup: "rounded-3xl p-4 sm:p-6 w-[min(92vw,30rem)]",
       icon: "scale-[0.82] sm:scale-100 !my-1",
       title: "text-xl sm:text-2xl font-bold text-[#1e2e4a] !mt-1 !mb-0",
       htmlContainer: "text-gray-500 text-sm sm:text-base !mt-2 !mb-0",
       input:
-        "!mx-0 !mt-3 !mb-2 !w-full box-border h-auto min-h-[4.75rem] max-h-[26vh] resize-y bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300",
+        "!mx-auto !mt-3 !mb-2 !w-[92%] sm:!w-[88%] box-border h-auto min-h-[3.5rem] max-h-[9rem] resize-y bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300",
       actions: "gap-3 !mt-1 !mb-0 w-full justify-center",
       confirmButton: SWAL_DANGER_BUTTON_CLASS,
       cancelButton:
