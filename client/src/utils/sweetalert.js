@@ -17,6 +17,37 @@ const SWAL_DANGER_BUTTON_CLASS =
 const getConfirmButtonClass = (variant = "primary") =>
   variant === "danger" ? SWAL_DANGER_BUTTON_CLASS : SWAL_PRIMARY_BUTTON_CLASS;
 
+export const showPopup = async ({
+  title,
+  text,
+  html,
+  footer,
+  icon = "info",
+  confirmButtonText = "OK",
+  cancelButtonText = "Cancel",
+  showCancelButton = false,
+  confirmVariant = "primary",
+  allowOutsideClick = true,
+  focusCancel = true,
+}) =>
+  Swal.fire({
+    title,
+    text,
+    html,
+    footer,
+    icon,
+    showCancelButton,
+    confirmButtonText,
+    cancelButtonText,
+    allowOutsideClick,
+    focusCancel,
+    customClass: {
+      ...SWAL_BASE_CLASS,
+      confirmButton: getConfirmButtonClass(confirmVariant),
+    },
+    buttonsStyling: false,
+  });
+
 export const confirmDialog = async ({
   title,
   text,
@@ -25,18 +56,14 @@ export const confirmDialog = async ({
   cancelButtonText = "Cancel",
   confirmVariant = "primary",
 }) => {
-  const result = await Swal.fire({
+  const result = await showPopup({
     title,
     text,
     icon,
     showCancelButton: true,
     confirmButtonText,
     cancelButtonText,
-    customClass: {
-      ...SWAL_BASE_CLASS,
-      confirmButton: getConfirmButtonClass(confirmVariant),
-    },
-    buttonsStyling: false,
+    confirmVariant,
   });
 
   return result.isConfirmed;

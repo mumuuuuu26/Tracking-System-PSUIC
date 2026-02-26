@@ -10,7 +10,7 @@ import ITHeader from "../../components/it/ITHeader";
 import ITPageHeader from "../../components/it/ITPageHeader";
 import ITWrapper from "../../components/it/ITWrapper";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
+import { showPopup } from "../../utils/sweetalert";
 
 const AUTO_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
 const AUTO_SYNC_STORAGE_PREFIX = "it_google_sync_last_success:";
@@ -170,11 +170,12 @@ const Schedule = () => {
                 err.response?.status === 503 && Array.isArray(missingKeys) && missingKeys.length > 0
                     ? `Server missing: ${missingKeys.join(", ")}`
                     : 'Check that you shared the calendar with the Service Email.';
-            Swal.fire({
+            await showPopup({
                 icon: "error",
                 title: "Connection Failed",
                 text: msg,
-                footer
+                footer,
+                confirmButtonText: "Close",
             });
         } finally {
             setSyncing(false);

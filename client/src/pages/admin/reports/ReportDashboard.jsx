@@ -11,6 +11,7 @@ import AdminWrapper from "../../../components/admin/AdminWrapper";
 import AdminHeader from "../../../components/admin/AdminHeader";
 import AdminSelect from "../../../components/admin/AdminSelect";
 import { getMonthlyStats, getEquipmentStats, getITPerformance, getRoomStats, getSubComponentStats } from '../../../api/report';
+import { showPopup } from "../../../utils/sweetalert";
 
 const VALID_TABS = ['monthly', 'performance', 'room', 'equipment'];
 
@@ -405,7 +406,12 @@ const ReportDashboard = () => {
 
             doc.save(`System_Report_${periodLabel.replace(' ', '_')}.pdf`);
         } catch {
-            alert('Failed to generate PDF. Please try again.');
+            await showPopup({
+                title: "Export Failed",
+                text: "Failed to generate PDF. Please try again.",
+                icon: "error",
+                confirmButtonText: "Close",
+            });
         } finally {
             setIsExportingPDF(false);
         }
@@ -478,7 +484,12 @@ const ReportDashboard = () => {
 
             XLSX.writeFile(wb, `System_Report_${periodLabel}.xlsx`);
         } catch {
-            alert('Failed to generate Excel file. Please try again.');
+            await showPopup({
+                title: "Export Failed",
+                text: "Failed to generate Excel file. Please try again.",
+                icon: "error",
+                confirmButtonText: "Close",
+            });
         } finally {
             setIsExportingExcel(false);
         }

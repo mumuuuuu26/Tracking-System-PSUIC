@@ -1,8 +1,7 @@
 import React from "react";
 import { Outlet, Navigate, useLocation, Link } from "react-router-dom";
-import { Home, Calendar, User, CircleUser, FileText, Bell } from "lucide-react";
+import { Home, Calendar, User, FileText } from "lucide-react";
 import useAuthStore from "../store/auth-store";
-import Swal from "sweetalert2";
 import ITNavbar from "../components/it/ITNavbar";
 import ITWrapper from "../components/it/ITWrapper";
 

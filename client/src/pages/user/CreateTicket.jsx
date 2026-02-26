@@ -9,10 +9,10 @@ import { createTicket } from "../../api/ticket";
 import { listRooms } from "../../api/room";
 import { listCategories } from "../../api/category";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 import UserSelect from "../../components/user/UserSelect";
+import { showPopup } from "../../utils/sweetalert";
 
 const CreateTicket = () => {
   const location = useLocation();
@@ -136,24 +136,17 @@ const CreateTicket = () => {
 
       const res = await createTicket(payload);
 
-      Swal.fire({
-        title: 'Created Successfully',
-        text: 'Your request has been recorded and is being processed by our IT team.',
-        icon: 'success',
-        confirmButtonText: 'View Ticket',
-        confirmButtonColor: '#193C6C',
+      const result = await showPopup({
+        title: "Created Successfully",
+        text: "Your request has been recorded and is being processed by our IT team.",
+        icon: "success",
+        confirmButtonText: "View Ticket",
         allowOutsideClick: false,
-        customClass: {
-          popup: 'rounded-3xl p-8',
-          title: 'text-2xl font-bold text-[#193C6C] mb-2',
-          htmlContainer: 'text-gray-500 mb-6',
-          confirmButton: 'w-full py-3 rounded-xl font-bold text-base shadow-lg shadow-blue-200'
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate(`/user/ticket/${res.data.id}`);
-        }
       });
+
+      if (result.isConfirmed) {
+        navigate(`/user/ticket/${res.data.id}`);
+      }
 
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to submit request");
