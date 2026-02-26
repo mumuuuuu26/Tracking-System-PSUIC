@@ -25,6 +25,17 @@ const blurActiveElement = () => {
   }
 };
 
+const escapeHtml = (value = "") =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const toNoWrapHtml = (value = "") =>
+  `<span class="inline-block whitespace-nowrap">${escapeHtml(value).replaceAll(" ", "&nbsp;")}</span>`;
+
 export const showPopup = async ({
   title,
   text,
@@ -37,6 +48,7 @@ export const showPopup = async ({
   confirmVariant = "primary",
   allowOutsideClick = true,
   focusCancel = true,
+  htmlContainerClass = SWAL_BASE_CLASS.htmlContainer,
 }) => {
   blurActiveElement();
   return Swal.fire({
@@ -52,6 +64,7 @@ export const showPopup = async ({
     focusCancel,
     customClass: {
       ...SWAL_BASE_CLASS,
+      htmlContainer: htmlContainerClass,
       confirmButton: getConfirmButtonClass(confirmVariant),
     },
     buttonsStyling: false,
@@ -65,15 +78,22 @@ export const confirmDialog = async ({
   confirmButtonText = "Confirm",
   cancelButtonText = "Cancel",
   confirmVariant = "primary",
+  singleLineText = false,
 }) => {
+  const htmlContainerClass = singleLineText
+    ? "text-gray-500 text-[clamp(0.95rem,3.6vw,1.35rem)] leading-tight whitespace-nowrap !mx-auto w-fit"
+    : SWAL_BASE_CLASS.htmlContainer;
+
   const result = await showPopup({
     title,
-    text,
+    text: singleLineText ? undefined : text,
+    html: singleLineText ? toNoWrapHtml(text) : undefined,
     icon,
     showCancelButton: true,
     confirmButtonText,
     cancelButtonText,
     confirmVariant,
+    htmlContainerClass,
   });
 
   return result.isConfirmed;
@@ -136,4 +156,5 @@ export const confirmLogout = () =>
     confirmButtonText: "Log out",
     cancelButtonText: "Cancel",
     confirmVariant: "primary",
+    singleLineText: true,
   });
