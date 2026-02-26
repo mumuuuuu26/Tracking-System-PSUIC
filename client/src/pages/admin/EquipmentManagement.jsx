@@ -15,6 +15,9 @@ import SubCategoryManagerModal from "../../components/admin/equipment/SubCategor
 import QRCodeModal from "../../components/admin/equipment/QRCodeModal";
 import { confirmDialog } from "../../utils/sweetalert";
 
+const pluralize = (count, singular, plural = `${singular}s`) =>
+  Number(count) === 1 ? singular : plural;
+
 const EquipmentManagement = () => {
   const navigate = useNavigate();
   const [equipments, setEquipments] = useState([]);
@@ -197,10 +200,11 @@ const EquipmentManagement = () => {
 
   const handleBulkDelete = async () => {
     if (!selectedEquipmentIds.length) return;
+    const selectedCount = selectedEquipmentIds.length;
 
     const confirmed = await confirmDialog({
       title: "Delete Selected Equipment",
-      text: `Delete ${selectedEquipmentIds.length} selected equipment item(s)?`,
+      text: `Delete ${selectedCount} selected equipment ${pluralize(selectedCount, "item")}?`,
       confirmButtonText: "Delete",
       confirmVariant: "danger",
     });
@@ -214,10 +218,10 @@ const EquipmentManagement = () => {
         : [];
 
       if (deletedCount > 0) {
-        toast.success(`Deleted ${deletedCount} equipment item(s)`);
+        toast.success(`Deleted ${deletedCount} equipment ${pluralize(deletedCount, "item")}`);
       }
       if (blockedIds.length > 0) {
-        toast.warn(`${blockedIds.length} item(s) were skipped (active tickets)`);
+        toast.warn(`${blockedIds.length} ${pluralize(blockedIds.length, "item")} were skipped (active tickets)`);
       }
 
       if (blockedIds.length > 0) {
@@ -230,7 +234,7 @@ const EquipmentManagement = () => {
     } catch (error) {
       const blockedIds = error?.response?.data?.blockedIds;
       if (Array.isArray(blockedIds) && blockedIds.length > 0) {
-        toast.warn(`${blockedIds.length} item(s) cannot be deleted (active tickets)`);
+        toast.warn(`${blockedIds.length} ${pluralize(blockedIds.length, "item")} cannot be deleted (active tickets)`);
         setSelectedEquipmentIds((prev) => prev.filter((id) => blockedIds.includes(id)));
         setIsBulkSelectMode(true);
       } else {
