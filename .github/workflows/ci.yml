@@ -12,6 +12,8 @@ jobs:
     env:
       CI: true
       NODE_NO_WARNINGS: "1"
+      NODE_ENV: test
+      DATABASE_URL: mysql://ci_user:ci_password@127.0.0.1:3306/ticket_system_test
       HTTPS_ONLY: "false"
       ENABLE_HTTPS_HEADERS: "false"
       TLS_KEY_FILE: ""
@@ -23,6 +25,8 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: password
+          MYSQL_USER: ci_user
+          MYSQL_PASSWORD: ci_password
           MYSQL_DATABASE: ticket_system_test
         ports:
           - 3306:3306
@@ -49,7 +53,9 @@ jobs:
 
     - name: Setup Environment Variables
       run: |
-        cp .env.example .env || echo "DATABASE_URL=mysql://root:password@127.0.0.1:3306/ticket_system_test" > .env
+        cp .env.example .env || true
+        sed -i '/^DATABASE_URL=/d' .env || true
+        echo "DATABASE_URL=$DATABASE_URL" >> .env
         echo "SECRET=test_secret" >> .env
         (cd client && echo "VITE_API_URL=/api" > .env)
 
@@ -63,7 +69,7 @@ jobs:
         ENABLE_HTTPS_HEADERS=false
         TLS_KEY_FILE=
         TLS_CERT_FILE=
-        DATABASE_URL=mysql://root:password@127.0.0.1:3306/ticket_system_test
+        DATABASE_URL=mysql://ci_user:ci_password@127.0.0.1:3306/ticket_system_test
         MAIL_USER=mock@test.com
         MAIL_PASS=mock_pass
         GOOGLE_PROJECT_ID=mock-project
@@ -73,19 +79,17 @@ jobs:
         UPLOAD_DIR=uploads_test
         EOF
 
+    - name: Preflight DB Ready (Bootstrap)
+      run: npm run preflight:db:ci
+
     - name: Generate Prisma Client
       run: npx prisma generate
 
     - name: Apply Prisma Migrations
       run: npx prisma migrate deploy
-      env:
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
 
     - name: Preflight DB Ready (Backend Tests)
       run: npm run preflight:db:ci
-      env:
-        NODE_ENV: test
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
 
     - name: Run Backend Tests
       run: |
@@ -106,21 +110,14 @@ jobs:
           exit "$test_exit"
         fi
       env:
-        NODE_ENV: test
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
         SECRET: test_secret
 
     - name: Preflight DB Ready (Smoke)
       run: npm run preflight:db:ci
-      env:
-        NODE_ENV: test
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
 
     - name: Run Pre-Deploy Smoke Test
       run: npm run smoke:predeploy:ci
       env:
-        NODE_ENV: test
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
         SECRET: test_secret
 
     # --------------------------------------------------------
@@ -128,8 +125,6 @@ jobs:
     # --------------------------------------------------------
     - name: Seed Database for E2E
       run: node prisma/seed-complete.js
-      env:
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
 
     # 2. เช็คให้ชัวร์ว่า seed สำเร็จ (พิมพ์เฉพาะสรุปเพื่อลด noise)
     - name: Seed Data Summary
@@ -156,7 +151,7 @@ jobs:
           main();
         '
       env:
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
+        DATABASE_URL: mysql://ci_user:ci_password@127.0.0.1:3306/ticket_system_test
 
     # 👇👇👇 3. เพิ่ม Step นี้ครับ (สำคัญที่สุด!) 👇👇👇
     - name: Remove .env to force Server to use CI Environment
@@ -173,9 +168,6 @@ jobs:
 
     - name: Preflight DB Ready (E2E)
       run: npm run preflight:db:ci
-      env:
-        NODE_ENV: test
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
 
     - name: Run E2E Tests
       run: |
@@ -197,7 +189,6 @@ jobs:
           exit "$e2e_exit"
         fi
       env:
-        DATABASE_URL: mysql://root:password@127.0.0.1:3306/ticket_system_test
         PORT: 5002
         SECRET: test_secret
         CLIENT_URL: http://localhost:5173
