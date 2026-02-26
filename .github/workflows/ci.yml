@@ -46,6 +46,12 @@ jobs:
         node-version: '20'
         cache: 'npm'
 
+    - name: Guard Runtime Versions
+      run: npm run guard:runtime:strict
+
+    - name: Guard Lockfiles (npm10)
+      run: npm run guard:lockfile:npm10
+
     - name: Install All Dependencies
       run: |
         npm ci

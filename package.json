@@ -3,7 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": ">=20 <21",
+    "npm": ">=10 <11"
+  },
   "scripts": {
+    "preinstall": "node scripts/check-runtime-versions.js --strict",
+    "guard:runtime": "node scripts/check-runtime-versions.js",
+    "guard:runtime:strict": "node scripts/check-runtime-versions.js --strict",
+    "guard:lockfile:npm10": "node scripts/check-lockfile-npm10.js",
+    "guard:update-lockfile:npm10": "npm run guard:runtime:strict && npm install --package-lock-only && cd client && npm install --package-lock-only",
     "preflight:db": "cross-env NODE_ENV=test node scripts/preflight-db-ready.js",
     "preflight:db:ci": "cross-env NODE_ENV=test DB_READY_RETRIES=20 DB_READY_INTERVAL_MS=2000 node scripts/preflight-db-ready.js",
     "preflight:db:prod": "node -e \"process.env.NODE_ENV='production';process.env.DB_READY_RETRIES='12';process.env.DB_READY_INTERVAL_MS='2000';require('./scripts/preflight-db-ready.js')\"",

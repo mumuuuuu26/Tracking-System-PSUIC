@@ -2,6 +2,11 @@
   "name": "client",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": ">=20 <21",
+    "npm": ">=10 <11"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
