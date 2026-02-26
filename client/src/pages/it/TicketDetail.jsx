@@ -590,10 +590,10 @@ const TicketDetail = () => {
                         {/* Show Accept Button ONLY if Not Start (Preview Mode) */}
                         {ticket.status === 'not_start' && (
                             <div className="mt-4 flex flex-col items-center">
-                                <div className="flex gap-4 w-full justify-center">
+                                <div className="flex gap-3 sm:gap-4 w-full justify-center">
                                     <button
                                         onClick={handleUpdateStatus}
-                                        className="flex-1 bg-[#193C6C] dark:bg-blue-600 text-white font-semibold py-3 rounded-2xl shadow-md shadow-blue-100 dark:shadow-blue-900/20 hover:opacity-90 transition text-[0.95rem]"
+                                        className="w-[44%] sm:flex-1 max-w-[11rem] bg-[#193C6C] dark:bg-blue-600 text-white font-semibold py-2.5 sm:py-3 rounded-2xl shadow-md shadow-blue-100 dark:shadow-blue-900/20 hover:opacity-90 transition text-[0.9rem] sm:text-[0.95rem]"
                                     >
                                         Accept
                                     </button>
@@ -608,7 +608,7 @@ const TicketDetail = () => {
                                             if (!reason) return;
                                             await handleReject(reason);
                                         }}
-                                        className="flex-1 bg-[#c76572] text-white font-semibold py-3 rounded-2xl hover:bg-[#b85a66] transition text-[0.95rem]"
+                                        className="w-[44%] sm:flex-1 max-w-[11rem] bg-[#c76572] text-white font-semibold py-2.5 sm:py-3 rounded-2xl hover:bg-[#b85a66] transition text-[0.9rem] sm:text-[0.95rem]"
                                     >
                                         Reject
                                     </button>
