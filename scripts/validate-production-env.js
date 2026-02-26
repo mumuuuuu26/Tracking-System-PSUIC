@@ -48,6 +48,10 @@ function isEnabled(value) {
   return String(value || "").toLowerCase() === "true";
 }
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
+}
+
 function isNonNegativeInteger(value) {
   return /^\d+$/.test(String(value || ""));
 }
@@ -81,6 +85,24 @@ function main() {
 
   if (!String(process.env.DATABASE_URL).startsWith("mysql://")) {
     fail("DATABASE_URL must start with mysql:// for this project");
+  }
+
+  const hasMailUser = isTruthy(process.env.MAIL_USER);
+  const hasMailPass = isTruthy(process.env.MAIL_PASS);
+  if (hasMailUser !== hasMailPass) {
+    fail("MAIL_USER and MAIL_PASS must be set together (or both left empty).");
+  }
+  if (hasMailUser && !isValidEmail(process.env.MAIL_USER)) {
+    fail(`MAIL_USER must be a valid email address (got "${process.env.MAIL_USER}")`);
+  }
+  if (hasMailPass) {
+    const rawMailPass = String(process.env.MAIL_PASS);
+    const compactMailPass = rawMailPass.replace(/\s+/g, "");
+    if (compactMailPass.length !== rawMailPass.length) {
+      warn(
+        "MAIL_PASS contains whitespace. Runtime will normalize it, but prefer compact app-password format in .env.production.",
+      );
+    }
   }
 
   if (!isValidUrl(process.env.CLIENT_URL)) {

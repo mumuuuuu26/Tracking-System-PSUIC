@@ -8,6 +8,21 @@ const parseBoolean = (value, defaultValue = false) => {
   return String(value).toLowerCase() === "true";
 };
 
+const normalizeMailPassword = (value) => {
+  if (typeof value === "undefined" || value === null) {
+    return "";
+  }
+
+  const raw = String(value);
+  const compact = raw.replace(/\s+/g, "");
+  const looksLikeSpacedAppPassword =
+    raw.includes(" ") &&
+    /^[A-Za-z0-9\s]+$/.test(raw) &&
+    compact.length >= 16;
+
+  return looksLikeSpacedAppPassword ? compact : raw;
+};
+
 const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 const smtpSecure =
@@ -18,15 +33,26 @@ const smtpTlsRejectUnauthorized = parseBoolean(
   process.env.SMTP_TLS_REJECT_UNAUTHORIZED,
   true,
 );
+const smtpPassword = normalizeMailPassword(process.env.MAIL_PASS);
 
-const mailConfigured = Boolean(process.env.MAIL_USER && process.env.MAIL_PASS);
+const mailConfigured = Boolean(process.env.MAIL_USER && smtpPassword);
 const shouldAttemptSmtp =
   process.env.NODE_ENV !== "test" && process.env.DISABLE_SMTP !== "true";
+
+if (
+  typeof process.env.MAIL_PASS === "string" &&
+  process.env.MAIL_PASS.trim() &&
+  process.env.MAIL_PASS !== smtpPassword
+) {
+  logger.warn(
+    "⚠️ MAIL_PASS contains whitespace. Normalizing to compact app-password format for SMTP auth.",
+  );
+}
 
 if (!mailConfigured) {
   logger.warn("⚠️ WARNING: Email configuration is missing!");
   logger.info(`MAIL_USER: ${process.env.MAIL_USER ? "SET" : "NOT SET"}`);
-  logger.info(`MAIL_PASS: ${process.env.MAIL_PASS ? "SET" : "NOT SET"}`);
+  logger.info(`MAIL_PASS: ${smtpPassword ? "SET" : "NOT SET"}`);
 }
 
 const transporter = nodemailer.createTransport({
@@ -35,7 +61,7 @@ const transporter = nodemailer.createTransport({
   secure: smtpSecure,
   auth: {
     user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    pass: smtpPassword,
   },
   tls: {
     rejectUnauthorized: smtpTlsRejectUnauthorized,

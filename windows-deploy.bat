@@ -135,6 +135,12 @@ if errorlevel 1 goto :err_npm_ci
 :deps_generate
 
 echo [2/8] Generating Prisma client (safe mode)...
+if not defined ALLOW_PRISMA_GENERATE_ON_SERVER (
+  set "ALLOW_PRISMA_GENERATE_ON_SERVER=true"
+)
+if not defined PRISMA_SCHEMA_MISMATCH_STRICT (
+  set "PRISMA_SCHEMA_MISMATCH_STRICT=true"
+)
 if not defined PRISMA_ALLOW_INSECURE_TLS_FALLBACK (
   set "PRISMA_ALLOW_INSECURE_TLS_FALLBACK=true"
 )

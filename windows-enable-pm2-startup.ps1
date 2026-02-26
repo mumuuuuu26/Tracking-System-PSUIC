@@ -37,18 +37,9 @@ if (-not (Test-Path $pm2Home)) {
 }
 
 $resurrectScriptPath = Join-Path $AppDir "pm2-resurrect.cmd"
-$resurrectScript = @"
-@echo off
-setlocal EnableExtensions
-cd /d "$AppDir"
-set "PM2_HOME=$pm2Home"
-call "$pm2Path" resurrect
-set "RC=%ERRORLEVEL%"
-if not "%RC%"=="0" exit /b %RC%
-call "$pm2Path" save >nul 2>&1
-exit /b 0
-"@
-Set-Content -Path $resurrectScriptPath -Value $resurrectScript -Encoding Ascii
+if (-not (Test-Path $resurrectScriptPath)) {
+    throw "Missing required script: $resurrectScriptPath"
+}
 
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$resurrectScriptPath`""
 $startupTrigger = New-ScheduledTaskTrigger -AtStartup
