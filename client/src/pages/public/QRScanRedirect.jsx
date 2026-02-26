@@ -33,8 +33,9 @@ const QRScanRedirect = () => {
   const navigate = useNavigate();
   const { qrCode: pathQrCode } = useParams();
   const [searchParams] = useSearchParams();
-  const { user, hasHydrated } = useAuthStore();
+  const { user, hasHydrated, actionLogout } = useAuthStore();
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorAction, setErrorAction] = useState("scanner");
   const [statusText, setStatusText] = useState("Preparing QR lookup...");
   const processingRef = useRef(false);
 
@@ -52,6 +53,7 @@ const QRScanRedirect = () => {
 
     if (!qrValue) {
       setErrorMessage("Invalid QR link. Please scan again.");
+      setErrorAction("scanner");
       return;
     }
 
@@ -62,7 +64,8 @@ const QRScanRedirect = () => {
     }
 
     if (user.role !== "user") {
-      setErrorMessage("This QR flow is available for user accounts only.");
+      setErrorMessage("Please continue with a user account to create a ticket from this QR code.");
+      setErrorAction("switch-user");
       return;
     }
 
@@ -84,9 +87,20 @@ const QRScanRedirect = () => {
             ? "Equipment was not found for this QR code."
             : "Unable to load equipment. Please try again.",
         );
+        setErrorAction("scanner");
         processingRef.current = false;
       });
   }, [hasHydrated, navigate, qrValue, user]);
+
+  const handleErrorAction = () => {
+    if (errorAction === "switch-user") {
+      actionLogout();
+      const nextPath = `/scan?qr=${encodeURIComponent(qrValue)}`;
+      navigate(`/login?next=${encodeURIComponent(nextPath)}`, { replace: true });
+      return;
+    }
+    navigate("/user/scan-qr");
+  };
 
   return (
     <div className="min-h-screen bg-[#f3f5f8] flex items-center justify-center px-6">
@@ -103,10 +117,10 @@ const QRScanRedirect = () => {
             <p className="text-sm text-gray-500 mb-6">{errorMessage}</p>
             <button
               type="button"
-              onClick={() => navigate("/user/scan-qr")}
+              onClick={handleErrorAction}
               className="w-full rounded-xl bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium text-white"
             >
-              Open In-App Scanner
+              {errorAction === "switch-user" ? "Continue With User Login" : "Open In-App Scanner"}
             </button>
           </>
         )}
