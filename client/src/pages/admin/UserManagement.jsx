@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, Plus, Edit2, Trash2, ArrowLeft, ChevronLeft, ChevronRight, X, Check, ChevronDown } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, X, Check } from "lucide-react";
 import { listUsers, removeUser, createUser, changeRole } from "../../api/user";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
+import AdminBottomPagination from "../../components/admin/AdminBottomPagination";
 import ProfileAvatar from "../../components/common/ProfileAvatar";
 import { getUserDisplayName } from "../../utils/userIdentity";
 import { confirmDialog } from "../../utils/sweetalert";
@@ -149,7 +150,7 @@ const UserManagement = () => {
 
   return (
     <AdminWrapper>
-      <div className="flex flex-col h-full px-6 pt-4 pb-6 space-y-4 overflow-hidden">
+      <div className="flex flex-col h-full px-6 pt-4 pb-24 md:pb-6 space-y-4 overflow-hidden">
         {/* Page Header */}
         <AdminHeader
           title="User Management"
@@ -263,78 +264,11 @@ const UserManagement = () => {
           )}
         </div>
 
-        {/* Pagination — pinned to the bottom of the viewport */}
-        {totalPages > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-100 flex justify-center items-center gap-1 py-3 flex-wrap">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            {(() => {
-              const generatePages = () => {
-                const pages = [];
-                const addPage = (num, type = 'visible') => pages.push({ num, type });
-                const addEllipsis = () => pages.push({ num: '...', type: 'visible' });
-
-                if (totalPages <= 7) {
-                  for (let i = 1; i <= totalPages; i++) addPage(i);
-                } else {
-                  if (currentPage <= 4) {
-                    for (let i = 1; i <= 5; i++) addPage(i, i > 3 && i < 5 ? 'desktop-only' : 'visible');
-                    addEllipsis();
-                    addPage(totalPages);
-                  } else if (currentPage >= totalPages - 3) {
-                    addPage(1);
-                    addEllipsis();
-                    for (let i = totalPages - 4; i <= totalPages; i++) {
-                      addPage(i, i > totalPages - 4 && i < totalPages - 2 ? 'desktop-only' : 'visible');
-                    }
-                  } else {
-                    addPage(1);
-                    addEllipsis();
-                    addPage(currentPage - 1, 'desktop-only');
-                    addPage(currentPage);
-                    addPage(currentPage + 1, 'desktop-only');
-                    addEllipsis();
-                    addPage(totalPages);
-                  }
-                }
-                return pages;
-              };
-
-              return generatePages().map((page, index) => (
-                <button
-                  key={index}
-                  onClick={() => typeof page.num === 'number' && setCurrentPage(page.num)}
-                  disabled={page.num === '...'}
-                  className={`flex items-center justify-center rounded-lg text-sm transition-all
-                    ${page.type === 'desktop-only' ? 'hidden md:flex' : 'flex'}
-                    ${page.num === '...' ? 'w-6 md:w-8 cursor-default text-gray-400' : 'w-8 h-8 md:w-9 md:h-9'}
-                    ${page.num === currentPage
-                      ? 'bg-[#1e2e4a] text-white shadow-md shadow-blue-900/10'
-                      : page.num === '...'
-                        ? ''
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                >
-                  {page.num}
-                </button>
-              ));
-            })()}
-
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        )}
+        <AdminBottomPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
 
         {/* Modals (Keep existing structure but maybe minimal style tweaks) */}
         {isAddModalOpen && (

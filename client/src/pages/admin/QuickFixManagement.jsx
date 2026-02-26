@@ -7,12 +7,13 @@ import {
     removeQuickFix,
 } from "../../api/quickFix";
 import { listCategories } from "../../api/category";
-import { Trash2, Edit, Plus, X, ChevronDown, ChevronUp, ArrowLeft, Settings } from "lucide-react";
+import { Trash2, Edit, Plus, X, ChevronDown } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
+import AdminBottomPagination from "../../components/admin/AdminBottomPagination";
 import { confirmDialog } from "../../utils/sweetalert";
 
 const QuickFixManagement = () => {
@@ -28,6 +29,8 @@ const QuickFixManagement = () => {
     // Filter State
     const [selectedCategory, setSelectedCategory] = useState("All Categories");
     const [isFormCategoryOpen, setIsFormCategoryOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
 
     const [form, setForm] = useState({
@@ -57,6 +60,10 @@ const QuickFixManagement = () => {
             setFilteredData(data.filter(item => item.category === selectedCategory));
         }
     }, [selectedCategory, data]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, data.length]);
 
     const loadData = async () => {
         try {
@@ -130,6 +137,12 @@ const QuickFixManagement = () => {
         setIsModalOpen(true);
     }
 
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
 
 
     return (
@@ -178,7 +191,7 @@ const QuickFixManagement = () => {
 
                 {/* List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredData.map(item => (
+                    {paginatedData.map(item => (
                         <div key={item.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative">
                             <div className="flex justify-between items-start mb-4">
                                 {item.category && (
@@ -235,6 +248,12 @@ const QuickFixManagement = () => {
                         </p>
                     </div>
                 )}
+
+                <AdminBottomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
 
 
                 {/* Modal - Bottom Sheet feel on mobile, Modal on desktop */}

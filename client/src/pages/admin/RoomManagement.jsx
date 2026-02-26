@@ -5,6 +5,8 @@ import { listRooms, createRoom, updateRoom, removeRoom } from "../../api/room";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import AdminSelect from "../../components/admin/AdminSelect";
+import AdminBottomPagination from "../../components/admin/AdminBottomPagination";
 import { toFloorDisplay, toRoomDisplay } from "../../utils/roomDisplay";
 import { confirmDialog } from "../../utils/sweetalert";
 
@@ -36,6 +38,8 @@ const RoomManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterFloor, setFilterFloor] = useState("all");
   const [filterRoom, setFilterRoom] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,6 +126,17 @@ const RoomManagement = () => {
     setFilteredRooms(nextRooms);
   }, [searchTerm, filterFloor, filterRoom, rooms]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterFloor, filterRoom]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredRooms.length / itemsPerPage));
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredRooms.length, currentPage]);
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -187,7 +202,7 @@ const RoomManagement = () => {
 
   return (
     <AdminWrapper>
-      <div className="flex flex-col h-full px-6 pt-6 pb-6 space-y-6 overflow-y-auto">
+      <div className="flex flex-col h-full px-6 pt-6 pb-24 md:pb-6 space-y-6 overflow-y-auto">
         <AdminHeader
           title="Room Management"
           subtitle="Manage rooms and locations"
@@ -207,31 +222,31 @@ const RoomManagement = () => {
               />
             </div>
 
-            <select
+            <AdminSelect
               value={filterFloor}
-              onChange={(e) => setFilterFloor(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/20 focus:border-[#1e2e4a]"
-            >
-              <option value="all">All Floors</option>
-              {floorOptions.map((floor) => (
-                <option key={floor} value={floor}>
-                  {floor}
-                </option>
-              ))}
-            </select>
+              onChange={setFilterFloor}
+              options={[
+                { value: "all", label: "All Floors" },
+                ...floorOptions.map((floor) => ({ value: floor, label: floor })),
+              ]}
+              placeholder="All Floors"
+              className="w-full"
+              minWidth="min-w-full"
+              buttonClassName="!w-full !h-[50px] !px-4 !py-0 !rounded-xl !text-sm !font-medium !bg-gray-50 !border-gray-100 hover:!bg-gray-50"
+            />
 
-            <select
+            <AdminSelect
               value={filterRoom}
-              onChange={(e) => setFilterRoom(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1e2e4a]/20 focus:border-[#1e2e4a]"
-            >
-              <option value="all">All Rooms</option>
-              {roomOptions.map((roomNumber) => (
-                <option key={roomNumber} value={roomNumber}>
-                  {roomNumber}
-                </option>
-              ))}
-            </select>
+              onChange={setFilterRoom}
+              options={[
+                { value: "all", label: "All Rooms" },
+                ...roomOptions.map((roomNumber) => ({ value: roomNumber, label: roomNumber })),
+              ]}
+              placeholder="All Rooms"
+              className="w-full"
+              minWidth="min-w-full"
+              buttonClassName="!w-full !h-[50px] !px-4 !py-0 !rounded-xl !text-sm !font-medium !bg-gray-50 !border-gray-100 hover:!bg-gray-50"
+            />
 
             <button
               onClick={openCreateModal}
@@ -259,7 +274,9 @@ const RoomManagement = () => {
 
           {filteredRooms.length > 0 ? (
             <div className="divide-y divide-gray-100">
-              {filteredRooms.map((room) => {
+              {filteredRooms
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((room) => {
                 const roomDisplay = toRoomDisplay(room.roomNumber);
                 const floorDisplay = toFloorDisplay(room.floor);
                 const equipmentCount = room?._count?.equipments ?? 0;
@@ -315,6 +332,12 @@ const RoomManagement = () => {
             </div>
           )}
         </div>
+
+        <AdminBottomPagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredRooms.length / itemsPerPage)}
+          onPageChange={setCurrentPage}
+        />
 
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e2e4a]/60 backdrop-blur-sm p-4">
