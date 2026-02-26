@@ -34,6 +34,9 @@ if errorlevel 1 goto :err_node
 where npm >nul 2>&1
 if errorlevel 1 goto :err_npm
 
+call :ensure_runtime
+if errorlevel 1 goto :err_runtime
+
 set "DIST_CHECK_CODE=0"
 node scripts\check-frontend-dist.js
 set "DIST_CHECK_CODE=%ERRORLEVEL%"
@@ -202,12 +205,97 @@ if errorlevel 1 (
 )
 
 echo [HEALTH] Checking http://127.0.0.1:%APP_PORT%/health ...
+set "HEALTH_ATTEMPT=1"
+:health_retry
 powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:%APP_PORT%/health -TimeoutSec 8; if ($r.Content.Trim() -eq 'OK') { exit 0 } else { exit 1 } } catch { exit 1 }"
-if errorlevel 1 goto :err_health
+if not errorlevel 1 goto :health_ok
+if "%HEALTH_ATTEMPT%"=="10" goto :err_health
+echo [WARN] Health check attempt %HEALTH_ATTEMPT%/10 failed. Waiting 3s and retrying...
+set /a HEALTH_ATTEMPT+=1
+powershell -NoProfile -Command "Start-Sleep -Seconds 3"
+goto :health_retry
+
+:health_ok
 
 echo ============================================
 echo Deploy completed successfully.
 echo ============================================
+exit /b 0
+
+:ensure_runtime
+set "EXPECTED_NODE_MAJOR=20"
+set "EXPECTED_NPM_MAJOR=10"
+set "NVM_TARGET=20.19.5"
+
+call :read_runtime
+if "%NODE_MAJOR%"=="%EXPECTED_NODE_MAJOR%" if "%NPM_MAJOR%"=="%EXPECTED_NPM_MAJOR%" (
+  echo [INFO] Runtime OK: node=%NODE_VERSION% npm=%NPM_VERSION%
+  exit /b 0
+)
+
+echo [WARN] Runtime mismatch detected: node=%NODE_VERSION% npm=%NPM_VERSION%
+echo [INFO] Attempting automatic switch to Node %NVM_TARGET% ^(npm 10.x^)...
+
+where nvm >nul 2>&1
+if errorlevel 1 (
+  if exist "%LOCALAPPDATA%\nvm\nvm.exe" set "PATH=%LOCALAPPDATA%\nvm;%PATH%"
+)
+
+where nvm >nul 2>&1
+if errorlevel 1 (
+  echo [INFO] nvm not found in PATH. Installing nvm-windows via winget...
+  winget install --id CoreyButler.NVMforWindows --exact --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+  if errorlevel 1 (
+    echo [ERROR] Failed to install nvm-windows automatically.
+    exit /b 1
+  )
+  if exist "%LOCALAPPDATA%\nvm\nvm.exe" set "PATH=%LOCALAPPDATA%\nvm;%PATH%"
+)
+
+where nvm >nul 2>&1
+if errorlevel 1 (
+  echo [ERROR] nvm command is unavailable after install attempt.
+  exit /b 1
+)
+
+call nvm list | findstr /C:"%NVM_TARGET%" >nul
+if errorlevel 1 (
+  echo [INFO] Installing Node %NVM_TARGET% via nvm...
+  call nvm install %NVM_TARGET%
+  if errorlevel 1 (
+    echo [ERROR] nvm install %NVM_TARGET% failed.
+    exit /b 1
+  )
+)
+
+echo [INFO] Activating Node %NVM_TARGET% via nvm...
+call nvm use %NVM_TARGET%
+if errorlevel 1 (
+  echo [ERROR] nvm use %NVM_TARGET% failed.
+  exit /b 1
+)
+
+if exist "C:\nvm4w\nodejs" set "PATH=C:\nvm4w\nodejs;%PATH%"
+if not "%APPDATA%"=="" set "PATH=%APPDATA%\npm;%PATH%"
+
+call :read_runtime
+if "%NODE_MAJOR%"=="%EXPECTED_NODE_MAJOR%" if "%NPM_MAJOR%"=="%EXPECTED_NPM_MAJOR%" (
+  echo [INFO] Runtime switched: node=%NODE_VERSION% npm=%NPM_VERSION%
+  exit /b 0
+)
+
+echo [ERROR] Runtime remains incompatible after auto-switch: node=%NODE_VERSION% npm=%NPM_VERSION%
+exit /b 1
+
+:read_runtime
+set "NODE_VERSION="
+set "NPM_VERSION="
+set "NODE_MAJOR="
+set "NPM_MAJOR="
+for /f %%V in ('node -p "process.versions.node" 2^>nul') do set "NODE_VERSION=%%V"
+for /f %%V in ('npm --version 2^>nul') do set "NPM_VERSION=%%V"
+for /f "tokens=1 delims=." %%V in ("%NODE_VERSION%") do set "NODE_MAJOR=%%V"
+for /f "tokens=1 delims=." %%V in ("%NPM_VERSION%") do set "NPM_MAJOR=%%V"
 exit /b 0
 
 :err_cd
@@ -233,6 +321,11 @@ exit /b 1
 
 :err_npm
 echo [ERROR] npm is not available in PATH.
+exit /b 1
+
+:err_runtime
+echo [ERROR] Runtime setup failed. Require Node 20.x and npm 10.x for this project.
+echo [HINT] On server run: nvm install 20.19.5 ^&^& nvm use 20.19.5
 exit /b 1
 
 :err_client_dist_missing
