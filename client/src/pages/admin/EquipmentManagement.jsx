@@ -13,6 +13,7 @@ import EquipmentFormModal from "../../components/admin/equipment/EquipmentFormMo
 import CategoryManagerModal from "../../components/admin/equipment/CategoryManagerModal";
 import SubCategoryManagerModal from "../../components/admin/equipment/SubCategoryManagerModal";
 import QRCodeModal from "../../components/admin/equipment/QRCodeModal";
+import { confirmDialog } from "../../utils/sweetalert";
 
 const EquipmentManagement = () => {
   const navigate = useNavigate();
@@ -130,15 +131,21 @@ const EquipmentManagement = () => {
   };
 
   const handleDeleteEquipment = async (id) => {
-    if (window.confirm("Are you sure you want to delete this equipment?")) {
-      try {
-        await removeEquipment(id);
-        toast.success("Equipment deleted successfully");
-        loadEquipments();
-      } catch {
-        /* console.error removed */
-        toast.error("Failed to delete equipment");
-      }
+    const confirmed = await confirmDialog({
+      title: "Delete Equipment",
+      text: "Are you sure you want to delete this equipment?",
+      confirmButtonText: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!confirmed) return;
+
+    try {
+      await removeEquipment(id);
+      toast.success("Equipment deleted successfully");
+      loadEquipments();
+    } catch {
+      /* console.error removed */
+      toast.error("Failed to delete equipment");
     }
   };
 
@@ -159,9 +166,12 @@ const EquipmentManagement = () => {
   const handleBulkDelete = async () => {
     if (!selectedEquipmentIds.length) return;
 
-    const confirmed = window.confirm(
-      `Delete ${selectedEquipmentIds.length} selected equipment item(s)?`,
-    );
+    const confirmed = await confirmDialog({
+      title: "Delete Selected Equipment",
+      text: `Delete ${selectedEquipmentIds.length} selected equipment item(s)?`,
+      confirmButtonText: "Delete",
+      confirmVariant: "danger",
+    });
     if (!confirmed) return;
 
     try {
@@ -229,7 +239,13 @@ const EquipmentManagement = () => {
   };
 
   const handleDeleteCategory = async (id) => {
-    if (!window.confirm("Delete this category?")) return;
+    const confirmed = await confirmDialog({
+      title: "Delete Category",
+      text: "Delete this category?",
+      confirmButtonText: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await removeCategory(id);
       toast.success("Category deleted");
@@ -257,7 +273,13 @@ const EquipmentManagement = () => {
   };
 
   const handleDeleteSubComponent = async (subId) => {
-    if (!window.confirm("Delete this sub-component?")) return;
+    const confirmed = await confirmDialog({
+      title: "Delete Sub-Category",
+      text: "Delete this sub-category?",
+      confirmButtonText: "Delete",
+      confirmVariant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await removeSubComponent(subId);
       toast.success("Sub-component deleted");

@@ -4,6 +4,7 @@ import { listCategories, createCategory, updateCategory, removeCategory } from "
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import { confirmDialog } from "../../utils/sweetalert";
 
 const CategoryManagement = () => {
     const [categories, setCategories] = useState([]);
@@ -76,14 +77,20 @@ const CategoryManagement = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure you want to delete this category?")) {
-            try {
-                await removeCategory(id);
-                toast.success("Category deleted successfully");
-                loadCategories();
-            } catch {
-                toast.error("Failed to delete category");
-            }
+        const confirmed = await confirmDialog({
+            title: "Delete Category",
+            text: "Are you sure you want to delete this category?",
+            confirmButtonText: "Delete",
+            confirmVariant: "danger",
+        });
+        if (!confirmed) return;
+
+        try {
+            await removeCategory(id);
+            toast.success("Category deleted successfully");
+            loadCategories();
+        } catch {
+            toast.error("Failed to delete category");
         }
     };
 
@@ -195,4 +202,3 @@ const CategoryManagement = () => {
 };
 
 export default CategoryManagement;
-

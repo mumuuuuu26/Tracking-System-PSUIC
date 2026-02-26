@@ -3,12 +3,12 @@ import { Search, Plus, Edit2, Trash2, ArrowLeft, ChevronLeft, ChevronRight, X, C
 import { listUsers, removeUser, createUser, changeRole } from "../../api/user";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
 import ProfileAvatar from "../../components/common/ProfileAvatar";
 import { getUserDisplayName } from "../../utils/userIdentity";
+import { confirmDialog } from "../../utils/sweetalert";
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -64,31 +64,23 @@ const UserManagement = () => {
 
 
 
-  const handleDelete = (id) => {
-    Swal.fire({
+  const handleDelete = async (id) => {
+    const confirmed = await confirmDialog({
       title: "Delete User",
       text: "This action cannot be undone.",
-      showCancelButton: true,
       confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
-      customClass: {
-        popup: "rounded-3xl p-6",
-        confirmButton: "bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-xl",
-        cancelButton: "bg-white border border-gray-200 text-gray-700 py-2 px-4 rounded-xl ml-2"
-      },
-      buttonsStyling: false
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await removeUser(id);
-          toast.success("User Deleted");
-          loadUsers();
-        } catch (err) {
-          console.error("Delete Error:", err);
-          toast.error(err.response?.data?.message || "Delete Failed");
-        }
-      }
+      confirmVariant: "danger",
     });
+    if (!confirmed) return;
+
+    try {
+      await removeUser(id);
+      toast.success("User Deleted");
+      loadUsers();
+    } catch (err) {
+      console.error("Delete Error:", err);
+      toast.error(err.response?.data?.message || "Delete Failed");
+    }
   };
 
   const handleAddUser = async (e) => {

@@ -7,6 +7,7 @@ import { toast } from 'react-toastify'
 import { Search, MapPin, User, Clock, Trash2, Eye, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react'
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import { confirmDialog } from "../../utils/sweetalert";
 
 dayjs.extend(relativeTime);
 
@@ -80,7 +81,13 @@ const AllTickets = () => {
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm('Are you sure you want to delete this ticket?')) return
+        const confirmed = await confirmDialog({
+            title: "Delete Ticket",
+            text: "Are you sure you want to delete this ticket?",
+            confirmButtonText: "Delete",
+            confirmVariant: "danger",
+        });
+        if (!confirmed) return;
         try {
             await removeTicket(id)
             toast.success('Ticket Deleted')

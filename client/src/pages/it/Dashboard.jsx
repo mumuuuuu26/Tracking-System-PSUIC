@@ -12,6 +12,7 @@ import ProfileAvatar from "../../components/common/ProfileAvatar";
 import { getUserDisplayName } from "../../utils/userIdentity";
 import { normalizeTicketStatus, toTicketStatusLabel } from "../../utils/ticketStatus";
 import useThemeStore from "../../store/themeStore";
+import { promptRejectReason } from "../../utils/sweetalert";
 
 const ITDashboard = () => {
   const navigate = useNavigate();
@@ -26,10 +27,6 @@ const ITDashboard = () => {
     rejected: 0,
   });
   const [, setLoading] = useState(true);
-
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [selectedTicket, setSelectedTicket] = useState(null);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -89,27 +86,26 @@ const ITDashboard = () => {
     }
   };
 
-  const handleReject = async () => {
-    if (!rejectReason.trim()) {
-      toast.warning("Please provide a reason");
-      return;
-    }
-
+  const handleReject = async (ticketId, rejectReason) => {
     try {
-      await rejectJob(selectedTicket.id, rejectReason);
+      await rejectJob(ticketId, rejectReason);
       toast.success("Ticket rejected successfully");
-      setShowRejectModal(false);
-      setRejectReason("");
-      setSelectedTicket(null);
       loadDashboardData();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reject ticket");
     }
   };
 
-  const handleRejectClick = (ticket) => {
-    setSelectedTicket(ticket);
-    setShowRejectModal(true);
+  const handleRejectClick = async (ticket) => {
+    const reason = await promptRejectReason({
+      title: "Reject Ticket?",
+      text: "Please provide rejection reason.",
+      placeholder: "Reason for rejection...",
+      confirmButtonText: "Reject",
+    });
+    if (!reason) return;
+
+    await handleReject(ticket.id, reason);
   };
 
   const urgencyWeight = { High: 3, Medium: 2, Low: 1 };
@@ -302,39 +298,6 @@ const ITDashboard = () => {
         </div>
       </div>
 
-      {showRejectModal && selectedTicket && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1a2f4e] rounded-2xl p-4 w-full max-w-[20rem] shadow-xl animate-in fade-in zoom-in duration-200 border border-gray-100 dark:border-blue-800/30">
-            <h3 className="text-lg font-semibold mb-1 text-center text-gray-800 dark:text-white whitespace-nowrap">
-              Reject Ticket?
-            </h3>
-            <p className="text-gray-500 dark:text-blue-300/70 text-center mb-3 text-xs whitespace-nowrap overflow-hidden text-ellipsis">
-              Please provide rejection reason.
-            </p>
-            <textarea
-              className="w-full bg-gray-50 dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-0 focus:border-gray-300 dark:focus:border-blue-700/60 mb-3 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-blue-400/40"
-              rows="2"
-              placeholder="Reason for rejection..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            ></textarea>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="flex-1 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-white/20 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReject}
-                className="flex-1 bg-[#c76572] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#b85a66] transition"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

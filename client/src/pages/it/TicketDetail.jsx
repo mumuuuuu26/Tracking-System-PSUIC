@@ -11,7 +11,7 @@ import { getUserDisplayName } from "../../utils/userIdentity";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
+import { confirmDialog, promptRejectReason } from "../../utils/sweetalert";
 
 dayjs.extend(relativeTime);
 
@@ -30,9 +30,6 @@ const TicketDetail = () => {
     // Checklist State
     const [checklistItems, setChecklistItems] = useState([]); // [{id: 1, text: "Check Power", checked: false}]
 
-    // Reject Modal State
-    const [showRejectModal, setShowRejectModal] = useState(false);
-    const [rejectReason, setRejectReason] = useState("");
     const [newChecklistInput, setNewChecklistInput] = useState("");
 
     // Reschedule Modal State REMOVED
@@ -139,12 +136,11 @@ const TicketDetail = () => {
         }
     };
 
-    const handleReject = async () => {
-        if (!rejectReason.trim()) return toast.warning("Please provide a reason");
+    const handleReject = async (rejectReason) => {
+        if (!String(rejectReason ?? "").trim()) return toast.warning("Please provide a reason");
         try {
             await rejectJob(id, rejectReason);
             toast.success("Ticket rejected successfully");
-            setShowRejectModal(false);
 
             // Navigate back to dashboard or reload? Preview mode implies we probably go back to list as it's done.
             // But let's follow accept pattern (stay or reload). Actually reject = closed/completed.
@@ -183,39 +179,35 @@ const TicketDetail = () => {
             // Check if all checklist items are checked (Optional warning)
             const unchecked = checklistItems.filter(i => !i.checked).length;
             if (unchecked > 0) {
-                const proceed = await Swal.fire({
+                const proceed = await confirmDialog({
                     title: "Unfinished Checklist",
                     text: `You have ${unchecked} unchecked items. Complete anyway?`,
                     icon: "warning",
-                    showCancelButton: true,
                     confirmButtonText: "Yes, Complete",
                 });
-                if (!proceed.isConfirmed) return;
+                if (!proceed) return;
             }
 
-            Swal.fire({
+            const confirmed = await confirmDialog({
                 title: "Complete Job?",
                 text: "Are you sure you want to mark this ticket as completed?",
                 icon: "question",
-                showCancelButton: true,
-                confirmButtonColor: "#2563eb",
                 confirmButtonText: "Yes, Complete",
                 cancelButtonText: "Back"
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        await closeJob(id, {
-                            note: itNote,
-                            proof: proofImage,
-                            checklist: checklistItems
-                        });
-                        toast.success("Ticket closed successfully!");
-                        loadTicket();
-                    } catch {
-                        toast.error("Failed to close ticket");
-                    }
-                }
             });
+            if (!confirmed) return;
+
+            try {
+                await closeJob(id, {
+                    note: itNote,
+                    proof: proofImage,
+                    checklist: checklistItems
+                });
+                toast.success("Ticket closed successfully!");
+                loadTicket();
+            } catch {
+                toast.error("Failed to close ticket");
+            }
             return;
         }
 
@@ -606,7 +598,16 @@ const TicketDetail = () => {
                                         Accept
                                     </button>
                                     <button
-                                        onClick={() => setShowRejectModal(true)}
+                                        onClick={async () => {
+                                            const reason = await promptRejectReason({
+                                                title: "Reject Ticket?",
+                                                text: "Please provide rejection reason.",
+                                                placeholder: "Reason for rejection...",
+                                                confirmButtonText: "Reject",
+                                            });
+                                            if (!reason) return;
+                                            await handleReject(reason);
+                                        }}
                                         className="flex-1 bg-[#c76572] text-white font-semibold py-3 rounded-2xl hover:bg-[#b85a66] transition text-[0.95rem]"
                                     >
                                         Reject
@@ -619,39 +620,6 @@ const TicketDetail = () => {
                         )}
                     </div>
 
-                    {
-                        showRejectModal && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                                <div className="bg-white dark:bg-[#1a2f4e] rounded-2xl p-4 w-full max-w-[20rem] shadow-xl animate-in fade-in zoom-in duration-200 border border-gray-100 dark:border-blue-800/30">
-                                    <h3 className="text-lg font-semibold mb-1 text-center text-gray-800 dark:text-white whitespace-nowrap">Reject Ticket?</h3>
-                                    <p className="text-gray-500 dark:text-blue-300/70 text-center mb-3 text-xs whitespace-nowrap overflow-hidden text-ellipsis">
-                                        Please provide rejection reason.
-                                    </p>
-                                    <textarea
-                                        className="w-full bg-gray-50 dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg p-2.5 text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-blue-400/40 focus:outline-none focus:ring-0 focus:border-gray-300 dark:focus:border-blue-700/60 mb-3"
-                                        rows="2"
-                                        placeholder="Reason for rejection..."
-                                        value={rejectReason}
-                                        onChange={(e) => setRejectReason(e.target.value)}
-                                    ></textarea>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => setShowRejectModal(false)}
-                                            className="flex-1 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-white/20 transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleReject}
-                                            className="flex-1 bg-[#c76572] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#b85a66] transition"
-                                        >
-                                            Reject
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    }
                 </div>
             </div>
         </ITWrapper >

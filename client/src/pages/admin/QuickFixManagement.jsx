@@ -9,11 +9,11 @@ import {
 import { listCategories } from "../../api/category";
 import { Trash2, Edit, Plus, X, ChevronDown, ChevronUp, ArrowLeft, Settings } from "lucide-react";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminSelect from "../../components/admin/AdminSelect";
+import { confirmDialog } from "../../utils/sweetalert";
 
 const QuickFixManagement = () => {
     const navigate = useNavigate();
@@ -107,25 +107,21 @@ const QuickFixManagement = () => {
     };
 
     const handleDelete = async (id) => {
-        Swal.fire({
-            title: "Are you sure?",
-            text: "You won't be able to revert this!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#1e3a8a",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Yes, delete it!",
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    await removeQuickFix(id);
-                    toast.success("Deleted successfully");
-                    loadData();
-                } catch {
-                    toast.error("Delete Failed");
-                }
-            }
+        const confirmed = await confirmDialog({
+            title: "Delete Guide",
+            text: "This action cannot be undone.",
+            confirmButtonText: "Delete",
+            confirmVariant: "danger",
         });
+        if (!confirmed) return;
+
+        try {
+            await removeQuickFix(id);
+            toast.success("Deleted successfully");
+            loadData();
+        } catch {
+            toast.error("Delete Failed");
+        }
     };
 
     const openNew = () => {

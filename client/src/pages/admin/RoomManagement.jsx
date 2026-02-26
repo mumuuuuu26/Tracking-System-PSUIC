@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
 import { toFloorDisplay, toRoomDisplay } from "../../utils/roomDisplay";
+import { confirmDialog } from "../../utils/sweetalert";
 
 const normalizeRoomInput = (value) =>
     String(value ?? "").replace(/^room\s*/i, "").trim();
@@ -100,14 +101,20 @@ const RoomManagement = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure you want to delete this room?")) {
-            try {
-                await removeRoom(id);
-                toast.success("Room deleted successfully");
-                loadRooms();
-            } catch {
-                toast.error("Failed to delete room");
-            }
+        const confirmed = await confirmDialog({
+            title: "Delete Room",
+            text: "Are you sure you want to delete this room?",
+            confirmButtonText: "Delete",
+            confirmVariant: "danger",
+        });
+        if (!confirmed) return;
+
+        try {
+            await removeRoom(id);
+            toast.success("Room deleted successfully");
+            loadRooms();
+        } catch {
+            toast.error("Failed to delete room");
         }
     };
 
