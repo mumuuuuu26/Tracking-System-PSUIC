@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2';
 
 const SWAL_BASE_CLASS = {
-  popup: "rounded-3xl p-6",
+  popup: "rounded-3xl p-6 w-[min(92vw,34rem)]",
   title: "text-xl font-bold text-[#1e2e4a]",
   htmlContainer: "text-gray-500",
   cancelButton:
@@ -88,12 +88,16 @@ export const promptRejectReason = async ({
     showCancelButton: true,
     confirmButtonText,
     cancelButtonText: "Cancel",
+    reverseButtons: true,
     customClass: {
       ...SWAL_BASE_CLASS,
       htmlContainer: "text-gray-500 text-sm mb-1",
       input:
-        "w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300",
+        "!mx-0 !my-4 !w-full box-border min-h-[7.5rem] resize-y bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300",
+      actions: "gap-3 mt-2 w-full",
       confirmButton: SWAL_DANGER_BUTTON_CLASS,
+      cancelButton:
+        "bg-white text-gray-500 border border-gray-200 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition-colors",
     },
     preConfirm: (value) => {
       const normalized = String(value ?? "").trim();
