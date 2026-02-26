@@ -25,6 +25,34 @@ const blurActiveElement = () => {
   }
 };
 
+const releaseSweetAlertLocks = () => {
+  if (typeof document === "undefined") return;
+  if (typeof Swal?.isVisible === "function" && Swal.isVisible()) return;
+
+  const bodyEl = document.body;
+  const htmlEl = document.documentElement;
+  const rootEl = document.getElementById("root");
+  if (!bodyEl || !htmlEl) return;
+
+  bodyEl.classList.remove("swal2-shown", "swal2-height-auto", "swal2-no-backdrop");
+  htmlEl.classList.remove("swal2-shown", "swal2-height-auto");
+
+  bodyEl.style.removeProperty("overflow");
+  bodyEl.style.removeProperty("overflow-y");
+  bodyEl.style.removeProperty("padding-right");
+  bodyEl.style.removeProperty("position");
+  bodyEl.style.removeProperty("top");
+  bodyEl.style.removeProperty("width");
+  bodyEl.style.removeProperty("height");
+
+  htmlEl.style.removeProperty("overflow");
+  htmlEl.style.removeProperty("overflow-y");
+  htmlEl.style.removeProperty("height");
+
+  rootEl?.removeAttribute("aria-hidden");
+  rootEl?.removeAttribute("inert");
+};
+
 const escapeHtml = (value = "") =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -51,7 +79,7 @@ export const showPopup = async ({
   htmlContainerClass = SWAL_BASE_CLASS.htmlContainer,
 }) => {
   blurActiveElement();
-  return Swal.fire({
+  const result = await Swal.fire({
     title,
     text,
     html,
@@ -68,7 +96,19 @@ export const showPopup = async ({
       confirmButton: getConfirmButtonClass(confirmVariant),
     },
     buttonsStyling: false,
+    willClose: () => {
+      requestAnimationFrame(releaseSweetAlertLocks);
+    },
+    didClose: () => {
+      requestAnimationFrame(releaseSweetAlertLocks);
+    },
+    didDestroy: () => {
+      requestAnimationFrame(releaseSweetAlertLocks);
+    },
   });
+
+  requestAnimationFrame(releaseSweetAlertLocks);
+  return result;
 };
 
 export const confirmDialog = async ({
@@ -143,8 +183,18 @@ export const promptRejectReason = async ({
       return normalized;
     },
     buttonsStyling: false,
+    willClose: () => {
+      requestAnimationFrame(releaseSweetAlertLocks);
+    },
+    didClose: () => {
+      requestAnimationFrame(releaseSweetAlertLocks);
+    },
+    didDestroy: () => {
+      requestAnimationFrame(releaseSweetAlertLocks);
+    },
   });
 
+  requestAnimationFrame(releaseSweetAlertLocks);
   return result.isConfirmed ? result.value : null;
 };
 

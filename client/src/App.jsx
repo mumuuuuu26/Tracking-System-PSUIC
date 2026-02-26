@@ -19,10 +19,17 @@ const App = () => {
     const unlockStaleScrollLock = useCallback(() => {
         const bodyEl = document.body;
         const htmlEl = document.documentElement;
+        const rootEl = document.getElementById("root");
         if (!bodyEl || !htmlEl) return;
 
+        const swalContainer = document.querySelector(".swal2-container");
         const hasSweetAlertOpen = Boolean(
-            document.querySelector(".swal2-container.swal2-backdrop-show, .swal2-container.swal2-shown")
+            swalContainer &&
+            (swalContainer.classList.contains("swal2-backdrop-show") ||
+                swalContainer.classList.contains("swal2-show") ||
+                swalContainer.classList.contains("swal2-shown")) &&
+            window.getComputedStyle(swalContainer).display !== "none" &&
+            window.getComputedStyle(swalContainer).visibility !== "hidden"
         );
 
         if (hasSweetAlertOpen) return;
@@ -47,9 +54,11 @@ const App = () => {
             Boolean(bodyEl.style.top) ||
             Boolean(bodyEl.style.height) ||
             Boolean(htmlEl.style.height);
+        const rootHasA11yLock =
+            rootEl?.getAttribute("aria-hidden") === "true" || rootEl?.hasAttribute("inert");
 
         // Avoid touching DOM styles/classes if page is already in healthy state.
-        if (!bodyHasLockClass && !htmlHasLockClass && !hasLockStyle) return;
+        if (!bodyHasLockClass && !htmlHasLockClass && !hasLockStyle && !rootHasA11yLock) return;
 
         bodyEl.classList.remove("swal2-shown", "swal2-height-auto", "swal2-no-backdrop");
         htmlEl.classList.remove("swal2-shown", "swal2-height-auto");
@@ -65,6 +74,9 @@ const App = () => {
         htmlEl.style.removeProperty("overflow");
         htmlEl.style.removeProperty("overflow-y");
         htmlEl.style.removeProperty("height");
+
+        rootEl?.removeAttribute("aria-hidden");
+        rootEl?.removeAttribute("inert");
     }, []);
 
     useEffect(() => {
