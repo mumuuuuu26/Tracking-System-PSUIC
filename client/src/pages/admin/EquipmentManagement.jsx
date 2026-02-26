@@ -1,5 +1,5 @@
 // client/src/pages/admin/EquipmentManagement.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, ChevronLeft, ChevronRight, CheckSquare, Square, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ const EquipmentManagement = () => {
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedFloor, setSelectedFloor] = useState("All Floors");
   const [selectedRoom, setSelectedRoom] = useState("All Rooms");
 
   // Modals
@@ -91,6 +92,37 @@ const EquipmentManagement = () => {
 
   // Combine fetched categories for the dropdown
   const allCategories = [...categories];
+  const floorOptions = useMemo(
+    () => [
+      { value: "All Floors", label: "All Floors" },
+      ...Array.from(
+        new Set(
+          rooms
+            .map((room) => Number(room.floor))
+            .filter((floor) => Number.isFinite(floor))
+        )
+      )
+        .sort((a, b) => a - b)
+        .map((floor) => ({ value: floor, label: String(floor) })),
+    ],
+    [rooms]
+  );
+
+  const roomOptions = useMemo(
+    () => [
+      { value: "All Rooms", label: "All Rooms" },
+      ...rooms
+        .filter((room) => {
+          if (selectedFloor === "All Floors") return true;
+          return Number(room.floor) === Number(selectedFloor);
+        })
+        .sort((a, b) =>
+          String(a.roomNumber).localeCompare(String(b.roomNumber), undefined, { numeric: true })
+        )
+        .map((room) => ({ value: room.id, label: String(room.roomNumber) })),
+    ],
+    [rooms, selectedFloor]
+  );
 
   const handleEquipmentSubmit = async (e) => {
     e.preventDefault();
@@ -340,18 +372,30 @@ const EquipmentManagement = () => {
     // We compare type (which is saved as category name usually)
     const matchesCategory = selectedCategory === "All Categories" || item.type === selectedCategory;
 
-    // We compare room id if a specific room is selected
-    const matchesRoom = selectedRoom === "All Rooms" ||
-      (item.roomId === selectedRoom) ||
-      (item.room && item.room.id === selectedRoom);
+    const itemFloor = Number(item.room?.floor);
+    const matchesFloor =
+      selectedFloor === "All Floors" || itemFloor === Number(selectedFloor);
 
-    return matchesCategory && matchesRoom;
+    // We compare room id if a specific room is selected
+    const itemRoomId = Number(item.roomId || item.room?.id);
+    const matchesRoom =
+      selectedRoom === "All Rooms" || itemRoomId === Number(selectedRoom);
+
+    return matchesCategory && matchesFloor && matchesRoom;
   }) : [];
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, selectedRoom]);
+  }, [selectedCategory, selectedFloor, selectedRoom]);
+
+  useEffect(() => {
+    if (selectedRoom === "All Rooms") return;
+    const stillVisible = roomOptions.some((room) => Number(room.value) === Number(selectedRoom));
+    if (!stillVisible) {
+      setSelectedRoom("All Rooms");
+    }
+  }, [selectedFloor, selectedRoom, roomOptions]);
 
   useEffect(() => {
     setSelectedEquipmentIds((prev) => {
@@ -440,12 +484,20 @@ const EquipmentManagement = () => {
               </div>
               <div className="flex-1 md:w-36 lg:w-48">
                 <AdminSelect
+                  value={selectedFloor}
+                  onChange={setSelectedFloor}
+                  options={floorOptions}
+                  placeholder="All Floors"
+                  className="w-full"
+                  minWidth="w-full"
+                  buttonClassName="bg-gray-50/50 border-gray-100 px-4 py-4 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-100/50 transition-colors"
+                />
+              </div>
+              <div className="flex-1 md:w-36 lg:w-48">
+                <AdminSelect
                   value={selectedRoom}
                   onChange={setSelectedRoom}
-                  options={[
-                    { value: "All Rooms", label: "All Rooms" },
-                    ...rooms.map(r => ({ value: r.id, label: `${r.roomNumber}` }))
-                  ]}
+                  options={roomOptions}
                   placeholder="All Rooms"
                   className="w-full"
                   minWidth="w-full"

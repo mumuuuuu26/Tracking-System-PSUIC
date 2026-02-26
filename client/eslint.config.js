@@ -29,10 +29,25 @@ export default defineConfig([
         varsIgnorePattern: '^[A-Z_]',
         ignoreRestSiblings: true 
       }],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Swal',
+          property: 'fire',
+          message:
+            'Use showPopup/confirmDialog/promptRejectReason from src/utils/sweetalert.js instead of calling Swal.fire directly.',
+        },
+      ],
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
+    },
+  },
+  {
+    files: ['src/utils/sweetalert.js'],
+    rules: {
+      'no-restricted-properties': 'off',
     },
   },
 ])

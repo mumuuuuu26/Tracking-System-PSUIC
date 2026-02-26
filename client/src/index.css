@@ -5,6 +5,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Typography baseline:
+   enforce a consistent Poppins-first system and reduce heavy font weights globally. */
+:root {
+    --app-font-family: "Poppins", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+    font-family: var(--app-font-family);
+    font-weight: 400;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--app-font-family);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.font-semibold {
+    font-weight: 500 !important;
+}
+
+.font-bold {
+    font-weight: 600 !important;
+}
+
+.font-extrabold,
+.font-black {
+    font-weight: 600 !important;
+}
+
 /* Prevent browser-default yellow highlight rings/tap highlight across pages */
 a,
 button,
@@ -82,13 +120,9 @@ select:focus-visible {
     display: none !important;
 }
 
-/* Admin typography normalization:
-   keep hierarchy but avoid overly heavy weights across all admin pages/components */
+/* Keep admin-theme explicit for legacy templates (same baseline as global) */
 .admin-theme .font-black,
-.admin-theme .font-extrabold {
-    font-weight: 700 !important;
-}
-
+.admin-theme .font-extrabold,
 .admin-theme .font-bold {
     font-weight: 600 !important;
 }
