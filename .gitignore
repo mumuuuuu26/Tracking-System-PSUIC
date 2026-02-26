@@ -55,6 +55,8 @@ test-results/
 
 # Windows server runtime artifacts (deployment host)
 /.pm2/
+/.pm2*/
+/.pm2 */
 /.https-setup/
 /.env.production.bak.*
 /prisma-engines/
