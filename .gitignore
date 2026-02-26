@@ -68,3 +68,7 @@ test-results/
 /ticket.js
 /ticketStatus.js
 /validate-production-env-file.js
+
+# Sensitive/temporary assets
+/img/*.sql
+/img/.DS_Store

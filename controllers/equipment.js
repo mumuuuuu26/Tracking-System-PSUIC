@@ -7,15 +7,6 @@ const QR_PUBLIC_BASE_URL_KEYS = ["QR_PUBLIC_BASE_URL", "FRONTEND_URL", "CLIENT_U
 const NON_ACTIVE_TICKET_STATUSES = ["completed", "rejected"];
 const equipmentScanInclude = {
   room: true,
-  tickets: {
-    where: { status: { not: "completed" }, isDeleted: false },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-    include: {
-      category: true,
-      createdBy: { select: { name: true } },
-    },
-  },
 };
 
 const pushLookupCandidate = (targetSet, value) => {
@@ -182,16 +173,21 @@ const findEquipmentByLookupCode = async (lookupCode) => {
     });
   }
 
-  if (!equipment && /^\d+$/.test(cleanedLookup)) {
-    equipment = await prisma.equipment.findUnique({
-      where: { id: parseInt(cleanedLookup, 10) },
-      include: equipmentScanInclude,
-    });
-  }
-
   if (!equipment) return null;
   return attachCategoryObject(equipment);
 };
+
+const toPublicEquipmentScanPayload = (equipment) => ({
+  id: equipment.id,
+  name: equipment.name,
+  type: equipment.type,
+  serialNo: equipment.serialNo,
+  qrCode: equipment.qrCode,
+  roomId: equipment.roomId,
+  room: equipment.room,
+  status: equipment.status,
+  categoryObj: equipment.categoryObj || null,
+});
 
 // 1. สร้างอุปกรณ์พร้อม Generate QR Code
 exports.create = async (req, res, next) => {
@@ -271,7 +267,7 @@ exports.getByQRCode = async (req, res, next) => {
       return res.status(404).json({ message: "ไม่พบข้อมูลอุปกรณ์นี้ในระบบ" });
     }
 
-    res.json(equipment);
+    res.json(toPublicEquipmentScanPayload(equipment));
   } catch (err) {
     next(err);
   }

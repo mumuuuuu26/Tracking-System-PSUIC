@@ -3,6 +3,25 @@ const { logger } = require("../utils/logger");
 const bcrypt = require("bcryptjs");
 const { saveImage } = require("../utils/uploadImage");
 
+const safeUserSelect = {
+    id: true,
+    email: true,
+    username: true,
+    name: true,
+    role: true,
+    enabled: true,
+    department: true,
+    phoneNumber: true,
+    picture: true,
+    isEmailEnabled: true,
+    notificationEmail: true,
+    googleCalendarId: true,
+    officeExtension: true,
+    workingHoursJson: true,
+    createdAt: true,
+    updatedAt: true,
+};
+
 // Create User (Invite/Promote Existing User)
 exports.createUser = async (req, res, next) => {
     try {
@@ -12,19 +31,6 @@ exports.createUser = async (req, res, next) => {
         const normalizedPassword = String(password || "").trim();
         const validRoles = ["user", "it_support", "admin"];
         const selectedRole = role && validRoles.includes(role) ? role : "user";
-        const safeUserSelect = {
-            id: true,
-            email: true,
-            username: true,
-            name: true,
-            role: true,
-            enabled: true,
-            department: true,
-            phoneNumber: true,
-            picture: true,
-            createdAt: true,
-            updatedAt: true,
-        };
 
         if (!normalizedEmail) {
             return res.status(400).json({ message: "Email is required" });
@@ -165,6 +171,7 @@ exports.changeStatus = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id: Number(id) },
       data: { enabled: enabled },
+      select: safeUserSelect,
     });
     res.json(user);
   } catch (err) {
@@ -185,6 +192,7 @@ exports.changeRole = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id: Number(id) },
       data: { role: role },
+      select: safeUserSelect,
     });
     res.json(user);
   } catch (err) {
@@ -207,6 +215,7 @@ exports.updateProfileImage = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: { picture: imageUrl },
+      select: safeUserSelect,
     });
 
     res.json(user);
@@ -310,6 +319,7 @@ exports.updateUser = async (req, res, next) => {
         phoneNumber,
         role
       },
+      select: safeUserSelect,
     });
 
     res.json(updated);

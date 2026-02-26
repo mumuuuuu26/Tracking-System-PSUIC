@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
+const jwt = require("jsonwebtoken");
 const { isIP } = require("node:net");
 require("./config/env");
 const app = express();
@@ -25,6 +26,7 @@ const reportRoutes = require("./routes/report");
 const adminRoutes = require("./routes/admin");
 const quickFixRoutes = require("./routes/quickFix");
 const permissionRoutes = require("./routes/permission");
+const prisma = require("./config/prisma");
 // const healthRoutes = require("./routes/health"); // Uncomment if you have this file
 
 // --- Middleware Setup ---
@@ -227,6 +229,22 @@ const buildRateLimitKey = (req) => {
   return rateLimit.ipKeyGenerator(normalizedIp);
 };
 
+const normalizeSocketToken = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^bearer\s+/i.test(raw)) {
+    return raw.replace(/^bearer\s+/i, "").trim();
+  }
+  return raw;
+};
+
+const resolveSocketToken = (socket) => {
+  const authToken = socket?.handshake?.auth?.token;
+  const headerToken = socket?.handshake?.headers?.authorization;
+  const queryToken = socket?.handshake?.query?.token;
+  return normalizeSocketToken(authToken || headerToken || queryToken);
+};
+
 // Global Limiter: กันยิงรัวๆ ทั่วไป
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 นาที
@@ -277,6 +295,51 @@ const io = new Server(server, {
   },
 });
 
+io.use(async (socket, next) => {
+  try {
+    const jwtSecret = String(process.env.SECRET || "").trim();
+    if (!jwtSecret) {
+      return next(new Error("Socket authentication is not configured"));
+    }
+
+    const token = resolveSocketToken(socket);
+    if (!token) {
+      return next(new Error("Authentication required"));
+    }
+
+    const decoded = jwt.verify(token, jwtSecret);
+    const userId = Number.parseInt(String(decoded?.id ?? ""), 10);
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return next(new Error("Unauthorized"));
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, enabled: true },
+    });
+    if (!user || !user.enabled) {
+      return next(new Error("Unauthorized"));
+    }
+
+    socket.user = user;
+    return next();
+  } catch {
+    return next(new Error("Unauthorized"));
+  }
+});
+
+io.on("connection", (socket) => {
+  const userId = Number.parseInt(String(socket.user?.id ?? ""), 10);
+  const role = String(socket.user?.role || "").trim();
+
+  if (Number.isInteger(userId) && userId > 0) {
+    socket.join(`user:${userId}`);
+  }
+  if (role) {
+    socket.join(`role:${role}`);
+  }
+});
+
 // Attach io to every request BEFORE routes so controllers can call req.io.emit()
 app.use((req, res, next) => {
   req.io = io;
@@ -301,7 +364,16 @@ app.use("/api", permissionRoutes);
 // --- Swagger --- (mounted BEFORE error handler so errors are catchable)
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+const shouldExposeSwagger =
+  process.env.NODE_ENV !== "production" || isTrue(process.env.SWAGGER_ENABLE_IN_PROD);
+
+if (shouldExposeSwagger) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+} else {
+  app.use("/api-docs", (_req, res) => {
+    res.status(404).json({ message: "API docs are disabled in production." });
+  });
+}
 
 // --- Global Error Handler ---
 const errorHandler = require("./middlewares/errorHandler");
@@ -350,7 +422,6 @@ let httpRedirectServer = null;
 const startServer = async () => {
   try {
     if (process.env.NODE_ENV !== "test" && !process.env.CI) {
-      const prisma = require("./config/prisma");
       await prisma.$connect();
       logger.info("Database connected successfully");
 
@@ -358,7 +429,6 @@ const startServer = async () => {
       initScheduledJobs();
     } else if (process.env.NODE_ENV === "test" || process.env.CI) {
       // Still connect to DB in test/CI mode, but skip scheduler
-       const prisma = require("./config/prisma");
        await prisma.$connect();
        logger.info("Database connected successfully (Test/CI Mode - Scheduler Disabled)");
     }
@@ -402,7 +472,6 @@ if (require.main === module) {
 // Graceful Shutdown: ป้องกัน Database พังเมื่อปิด Server
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM signal received: closing web server");
-  const prisma = require("./config/prisma");
   server.close(async () => {
     logger.info(`${serverProtocol.toUpperCase()} server closed`);
     if (httpRedirectServer) {

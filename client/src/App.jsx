@@ -5,7 +5,7 @@ import AppRoutes from './routes/AppRoutes'
 import { ToastContainer, toast } from 'react-toastify'
 
 import 'react-toastify/dist/ReactToastify.css'
-import socket from './utils/socket'
+import socket, { syncSocketConnection } from './utils/socket'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import useThemeStore from './store/themeStore'
@@ -88,6 +88,8 @@ const App = () => {
     }, [isDarkMode]);
 
     useEffect(() => {
+        syncSocketConnection();
+
         socket.on('connect', () => {
 
         });
@@ -102,12 +104,30 @@ const App = () => {
             // Silent: triggers real-time data refresh on subscribed pages without toast noise
         });
 
+        const handleStorageSync = (event) => {
+            if (!event || event.key === 'auth-store' || event.key === null) {
+                syncSocketConnection();
+            }
+        };
+        const handleFocusSync = () => {
+            syncSocketConnection();
+        };
+
+        window.addEventListener('storage', handleStorageSync);
+        window.addEventListener('focus', handleFocusSync);
+
         return () => {
             socket.off('connect');
             socket.off('server:new-ticket');
             socket.off('server:update-ticket');
+            window.removeEventListener('storage', handleStorageSync);
+            window.removeEventListener('focus', handleFocusSync);
         };
     }, []);
+
+    useEffect(() => {
+        syncSocketConnection();
+    }, [location.pathname]);
 
     useEffect(() => {
         const raf = requestAnimationFrame(unlockStaleScrollLock);

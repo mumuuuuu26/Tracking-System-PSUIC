@@ -4,6 +4,7 @@ const { listGoogleEvents } = require("./googleCalendar");
 const { logger } = require("../utils/logger");
 const { mapGoogleSyncError } = require("../utils/googleSyncErrorMapper");
 const { getStatusVariants, getStatusWhere, normalizeTicketEntity, normalizeTicketStatus } = require("../utils/ticketStatus");
+const { emitTicketUpdated } = require("../utils/realtimeTicket");
 
 const ticketUserSelect = {
     id: true,
@@ -273,9 +274,7 @@ exports.acceptJob = async (req, res, next) => {
         }
     });
 
-    if (req.io) {
-        req.io.emit("server:update-ticket", updatedTicket);
-    }
+    emitTicketUpdated(req.io, updatedTicket);
 
     res.json(updatedTicket);
   } catch (err) {
@@ -344,9 +343,7 @@ exports.rejectJob = async (req, res, next) => {
         }
     });
     
-    if (req.io) {
-        req.io.emit("server:update-ticket", ticket);
-    }
+    emitTicketUpdated(req.io, ticket);
 
     res.json(ticket);
   } catch (err) {
@@ -504,9 +501,7 @@ exports.closeJob = async (req, res, next) => {
       });
     }
 
-    if (req.io) {
-        req.io.emit("server:update-ticket", ticket);
-    }
+    emitTicketUpdated(req.io, ticket);
 
     res.json(ticket);
   } catch (err) {

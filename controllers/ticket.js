@@ -2,6 +2,7 @@ const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 const { saveImage } = require("../utils/uploadImage");
 const { getStatusWhere, normalizeTicketEntity } = require("../utils/ticketStatus");
+const { emitTicketCreated, emitTicketUpdated } = require("../utils/realtimeTicket");
 const { z } = require("zod");
 
 const EMAIL_ADDRESS_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -210,9 +211,7 @@ exports.create = async (req, res, next) => {
       });
     }
 
-    if (req.io) {
-      req.io.emit("server:new-ticket", newTicket);
-    }
+    emitTicketCreated(req.io, newTicket);
 
     res.json(newTicket);
   } catch (err) {
@@ -297,9 +296,7 @@ exports.update = async (req, res, next) => {
       });
     }
 
-    if (req.io) {
-      req.io.emit("server:update-ticket", updatedTicket);
-    }
+    emitTicketUpdated(req.io, updatedTicket);
 
     res.json(updatedTicket);
   } catch (err) {
@@ -372,10 +369,19 @@ exports.history = async (req, res, next) => {
 exports.read = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const ticketId = Number.parseInt(id, 10);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+
+    const isPrivilegedUser =
+      req.user?.role === "admin" || req.user?.role === "it_support";
+
     const ticket = await prisma.ticket.findFirst({
       where: {
-        id: parseInt(id),
-        isDeleted: false
+        id: ticketId,
+        isDeleted: false,
+        ...(isPrivilegedUser ? {} : { createdById: req.user.id }),
       },
       include: {
         room: true,
@@ -494,8 +500,20 @@ exports.remove = async (req, res, next) => {
 exports.listByEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const equipmentId = Number.parseInt(id, 10);
+    if (!Number.isInteger(equipmentId) || equipmentId <= 0) {
+      return res.status(400).json({ message: "Invalid equipment ID" });
+    }
+
+    const isPrivilegedUser =
+      req.user?.role === "admin" || req.user?.role === "it_support";
+
     const tickets = await prisma.ticket.findMany({
-      where: { equipmentId: parseInt(id), isDeleted: false },
+      where: {
+        equipmentId,
+        isDeleted: false,
+        ...(isPrivilegedUser ? {} : { createdById: req.user.id }),
+      },
       include: { createdBy: { select: ticketUserSelect }, category: true },
       orderBy: { createdAt: 'desc' }
     });

@@ -145,7 +145,7 @@ if not defined PRISMA_SCHEMA_MISMATCH_STRICT (
   set "PRISMA_SCHEMA_MISMATCH_STRICT=true"
 )
 if not defined PRISMA_ALLOW_INSECURE_TLS_FALLBACK (
-  set "PRISMA_ALLOW_INSECURE_TLS_FALLBACK=true"
+  set "PRISMA_ALLOW_INSECURE_TLS_FALLBACK=false"
 )
 call node scripts\prisma-generate-safe.js
 if errorlevel 1 goto :err_prisma_generate
