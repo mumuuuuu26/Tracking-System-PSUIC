@@ -33,7 +33,7 @@ const QRScanRedirect = () => {
   const navigate = useNavigate();
   const { qrCode: pathQrCode } = useParams();
   const [searchParams] = useSearchParams();
-  const { user, token, hasHydrated } = useAuthStore();
+  const { user, token, hasHydrated, actionLogout } = useAuthStore();
   const [errorMessage, setErrorMessage] = useState("");
   const [statusText, setStatusText] = useState("Preparing QR lookup...");
   const processingRef = useRef(false);
@@ -76,6 +76,13 @@ const QRScanRedirect = () => {
       })
       .catch((error) => {
         const statusCode = error?.response?.status;
+        if (statusCode === 401 || statusCode === 403) {
+          actionLogout();
+          const nextPath = `/scan?qr=${encodeURIComponent(qrValue)}`;
+          navigate(`/login?next=${encodeURIComponent(nextPath)}`, { replace: true });
+          processingRef.current = false;
+          return;
+        }
         setErrorMessage(
           statusCode === 404
             ? "Equipment was not found for this QR code."
@@ -83,10 +90,10 @@ const QRScanRedirect = () => {
         );
         processingRef.current = false;
       });
-  }, [hasHydrated, navigate, qrValue, token, user]);
+  }, [actionLogout, hasHydrated, navigate, qrValue, token, user]);
 
   const handleErrorAction = () => {
-    navigate("/user/scan-qr");
+    navigate("/user/create-ticket");
   };
 
   return (
@@ -107,7 +114,7 @@ const QRScanRedirect = () => {
               onClick={handleErrorAction}
               className="w-full rounded-xl bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium text-white"
             >
-              Open In-App Scanner
+              Open Report Form
             </button>
           </>
         )}
