@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+require("../config/env");
+const prisma = require("../config/prisma");
 
 async function check() {
     console.log("--- Checking Email Configuration ---");
@@ -21,8 +21,8 @@ async function check() {
         console.log(`- isEnabled: ${template.isEnabled}`);
         console.log(`- Subject: ${template.subject}`);
     } else {
-        console.error(`❌ Template '${templateName}' NOT found!`);
-        console.log("--> This is likely the cause of blocked emails.");
+        console.warn(`⚠️ Template '${templateName}' NOT found in DB.`);
+        console.log("--> Runtime will use fallback template from sendEmailHelper.");
     }
 
     // 3. Check IT Users

@@ -7,6 +7,8 @@ REMOTE_DIR="${2:-/C:/xampp/htdocs/app/server}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+. "${SCRIPT_DIR}/ensure-runtime.sh"
+
 echo "[INFO] Root: ${ROOT_DIR}"
 echo "[INFO] Host: ${HOST}"
 echo "[INFO] Remote dir: ${REMOTE_DIR}"

@@ -1,13 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
-const dotenv = require("dotenv");
-
-if (process.env.NODE_ENV === "production") {
-  dotenv.config({ path: ".env.production" });
-} else {
-  dotenv.config();
-}
-
-const prisma = new PrismaClient();
+require("../config/env");
+const prisma = require("../config/prisma");
 const EMAIL_ADDRESS_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function main() {
