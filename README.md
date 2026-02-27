@@ -64,6 +64,7 @@ npm --version
 
 - SMTP: `MAIL_USER`, `MAIL_PASS`
 - Google Calendar: `GOOGLE_PROJECT_ID`, `GOOGLE_CLIENT_EMAIL`, `GOOGLE_CALENDAR_ID`, `GOOGLE_PRIVATE_KEY`
+- Frontend external rating form: `client/.env*` => `VITE_EXTERNAL_RATING_FORM_URL`
 - Upload/backup/log rotation: ดูตัวอย่างใน `.env.production.example`
 
 ### 6) Installation
@@ -366,6 +367,7 @@ Common optional vars:
 
 - SMTP: `MAIL_USER`, `MAIL_PASS`
 - Google Calendar: `GOOGLE_PROJECT_ID`, `GOOGLE_CLIENT_EMAIL`, `GOOGLE_CALENDAR_ID`, `GOOGLE_PRIVATE_KEY`
+- Frontend external rating form: `client/.env*` => `VITE_EXTERNAL_RATING_FORM_URL`
 - Upload/backup/log rotation controls in `.env.production.example`
 
 ### 6) Installation

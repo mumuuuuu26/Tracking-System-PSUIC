@@ -1,6 +1,7 @@
 import React from "react";
 import { Star } from "lucide-react";
 import { toRoomFloorDisplay } from "../../utils/roomDisplay";
+import { getTicketRatingLink } from "../../utils/ratingFormUrl";
 
 /**
  * UserTicketCard Component
@@ -49,6 +50,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
 
     const statusConfig = getStatusConfig(ticket.status);
     const dateObj = new Date(ticket.updatedAt || ticket.createdAt);
+    const ratingLink = getTicketRatingLink(ticket);
 
     return (
         <div
@@ -99,9 +101,9 @@ const UserTicketCard = ({ ticket, onClick }) => {
                     {/* Survey Link for Completed Tickets */}
                     {ticket.status === "completed" && (
                         <a
-                            href="https://docs.google.com/forms/d/e/1FAIpQLSe2rO383UTujd71fYgMwdbHcWuRm4NaKGMEmRIv-T_fya8Dcw/viewform"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={ratingLink.url}
+                            target={ratingLink.isExternal ? "_blank" : undefined}
+                            rel={ratingLink.isExternal ? "noopener noreferrer" : undefined}
                             onClick={(e) => e.stopPropagation()}
                             className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/40 dark:hover:bg-blue-800/60 px-3 sm:px-4 shrink-0 rounded-[0.8rem] border-[1.5px] border-blue-200 dark:border-blue-700/50 shadow-sm transition-all focus:ring-2 focus:ring-blue-500/50 active:scale-95 h-[36px] sm:h-[40px]"
                         >
