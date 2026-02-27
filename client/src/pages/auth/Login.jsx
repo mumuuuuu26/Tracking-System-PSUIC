@@ -43,12 +43,14 @@ const Login = () => {
   const roleRedirect = React.useCallback((role) => {
     // Add a small delay to ensure state updates propagate
     setTimeout(() => {
-      if (role === "admin") {
+      if (safeNextPath) {
+        navigate(safeNextPath, { replace: true });
+      } else if (role === "admin") {
         navigate("/admin", { replace: true });
       } else if (role === "it_support") {
         navigate("/it", { replace: true });
       } else {
-        navigate(safeNextPath || "/user", { replace: true });
+        navigate("/user", { replace: true });
       }
     }, 100);
   }, [navigate, safeNextPath]);

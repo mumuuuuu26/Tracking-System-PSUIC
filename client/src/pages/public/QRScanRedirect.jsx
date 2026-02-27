@@ -33,9 +33,8 @@ const QRScanRedirect = () => {
   const navigate = useNavigate();
   const { qrCode: pathQrCode } = useParams();
   const [searchParams] = useSearchParams();
-  const { user, hasHydrated, actionLogout } = useAuthStore();
+  const { user, token, hasHydrated } = useAuthStore();
   const [errorMessage, setErrorMessage] = useState("");
-  const [errorAction, setErrorAction] = useState("scanner");
   const [statusText, setStatusText] = useState("Preparing QR lookup...");
   const processingRef = useRef(false);
 
@@ -53,7 +52,6 @@ const QRScanRedirect = () => {
 
     if (!qrValue) {
       setErrorMessage("Invalid QR link. Please scan again.");
-      setErrorAction("scanner");
       return;
     }
 
@@ -63,17 +61,13 @@ const QRScanRedirect = () => {
       return;
     }
 
-    if (user.role !== "user") {
-      setErrorMessage("Please continue with a user account to create a ticket from this QR code.");
-      setErrorAction("switch-user");
-      return;
-    }
-
     processingRef.current = true;
     setStatusText("Loading equipment details...");
 
     axios
-      .get(`/api/equipment/qr/${encodeURIComponent(qrValue)}`)
+      .get(`/api/equipment/qr/${encodeURIComponent(qrValue)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       .then((response) => {
         navigate("/user/create-ticket", {
           replace: true,
@@ -87,18 +81,11 @@ const QRScanRedirect = () => {
             ? "Equipment was not found for this QR code."
             : "Unable to load equipment. Please try again.",
         );
-        setErrorAction("scanner");
         processingRef.current = false;
       });
-  }, [hasHydrated, navigate, qrValue, user]);
+  }, [hasHydrated, navigate, qrValue, token, user]);
 
   const handleErrorAction = () => {
-    if (errorAction === "switch-user") {
-      actionLogout();
-      const nextPath = `/scan?qr=${encodeURIComponent(qrValue)}`;
-      navigate(`/login?next=${encodeURIComponent(nextPath)}`, { replace: true });
-      return;
-    }
     navigate("/user/scan-qr");
   };
 
@@ -120,7 +107,7 @@ const QRScanRedirect = () => {
               onClick={handleErrorAction}
               className="w-full rounded-xl bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium text-white"
             >
-              {errorAction === "switch-user" ? "Continue With User Login" : "Open In-App Scanner"}
+              Open In-App Scanner
             </button>
           </>
         )}
