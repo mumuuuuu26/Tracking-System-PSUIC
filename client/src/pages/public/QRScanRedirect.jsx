@@ -33,7 +33,7 @@ const QRScanRedirect = () => {
   const navigate = useNavigate();
   const { qrCode: pathQrCode } = useParams();
   const [searchParams] = useSearchParams();
-  const { user, token, hasHydrated, actionLogout } = useAuthStore();
+  const { user, hasHydrated, actionLogout } = useAuthStore();
   const [errorMessage, setErrorMessage] = useState("");
   const [statusText, setStatusText] = useState("Preparing QR lookup...");
   const processingRef = useRef(false);
@@ -61,13 +61,18 @@ const QRScanRedirect = () => {
       return;
     }
 
+    if (user.role !== "user") {
+      actionLogout();
+      const nextPath = `/scan?qr=${encodeURIComponent(qrValue)}`;
+      navigate(`/login?next=${encodeURIComponent(nextPath)}`, { replace: true });
+      return;
+    }
+
     processingRef.current = true;
     setStatusText("Loading equipment details...");
 
     axios
-      .get(`/api/equipment/qr/${encodeURIComponent(qrValue)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
+      .get(`/api/equipment/qr/${encodeURIComponent(qrValue)}`)
       .then((response) => {
         navigate("/user/create-ticket", {
           replace: true,
@@ -90,7 +95,7 @@ const QRScanRedirect = () => {
         );
         processingRef.current = false;
       });
-  }, [actionLogout, hasHydrated, navigate, qrValue, token, user]);
+  }, [actionLogout, hasHydrated, navigate, qrValue, user]);
 
   const handleErrorAction = () => {
     navigate("/user/create-ticket");

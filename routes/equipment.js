@@ -19,7 +19,7 @@ router.get("/equipment", authCheck, list);
 
 // [BUG FIX] Named routes MUST come before parameterized (:id) routes to prevent shadowing.
 // /equipment/qr/:qrCode must be declared before /equipment/:id and /equipment/:id/qr
-router.get("/equipment/qr/:qrCode", authCheck, getByQRCode); // Authenticated QR scan lookup
+router.get("/equipment/qr/:qrCode", getByQRCode); // Public QR lookup for printed equipment labels
 router.get("/equipment/:id/qr", authCheck, generateQR);
 router.delete("/equipment/bulk-delete", authCheck, adminCheck, bulkRemove);
 router.get("/equipment/:id", authCheck, getById);
