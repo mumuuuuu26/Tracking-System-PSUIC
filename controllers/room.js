@@ -51,7 +51,7 @@ exports.list = async (req, res, next) => {
     const rooms = await prisma.room.findMany({
       include: {
         _count: {
-          select: { equipments: true },
+          select: { equipments: true, tickets: true },
         },
       },
       orderBy: { roomNumber: "asc" },
@@ -117,6 +117,29 @@ exports.remove = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid room id" });
     }
 
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true,
+        _count: {
+          select: { equipments: true, tickets: true },
+        },
+      },
+    });
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    const equipmentCount = room._count?.equipments || 0;
+    const ticketCount = room._count?.tickets || 0;
+    if (equipmentCount > 0 || ticketCount > 0) {
+      return res.status(400).json({
+        message:
+          `Cannot delete room. This room is still referenced by ${equipmentCount} equipment and ${ticketCount} tickets.`,
+      });
+    }
+
     await prisma.room.delete({
       where: { id: roomId },
     });
@@ -125,6 +148,12 @@ exports.remove = async (req, res, next) => {
   } catch (err) {
     if (err?.code === "P2025") {
       return res.status(404).json({ message: "Room not found" });
+    }
+    if (err?.code === "P2003") {
+      return res.status(400).json({
+        message:
+          "Cannot delete room. This room is still used by related records. Please remove or reassign dependencies first.",
+      });
     }
     next(err);
   }

@@ -195,8 +195,8 @@ const RoomManagement = () => {
       await removeRoom(id);
       toast.success("Room deleted successfully");
       loadRooms();
-    } catch {
-      toast.error("Failed to delete room");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete room");
     }
   };
 
@@ -280,6 +280,7 @@ const RoomManagement = () => {
                 const roomDisplay = toRoomDisplay(room.roomNumber);
                 const floorDisplay = toFloorDisplay(room.floor);
                 const equipmentCount = room?._count?.equipments ?? 0;
+                const ticketCount = room?._count?.tickets ?? 0;
 
                 return (
                   <div
@@ -291,6 +292,7 @@ const RoomManagement = () => {
                       <p className="text-xs text-gray-500 mt-1">
                         {String(room.building ?? "-").trim() || "-"}
                         {equipmentCount > 0 ? ` · ${equipmentCount} equipment` : ""}
+                        {ticketCount > 0 ? ` · ${ticketCount} tickets` : ""}
                       </p>
                     </div>
 
