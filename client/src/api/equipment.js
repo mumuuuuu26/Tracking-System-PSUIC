@@ -27,3 +27,7 @@ export const removeEquipmentsBulk = async (ids) => {
 export const getEquipmentQR = async (id) => {
     return await api.get(`/equipment/${id}/qr`);
 };
+
+export const getEquipmentsQRBulk = async (ids) => {
+    return await api.post("/equipment/qr/bulk", { ids });
+};

@@ -59,6 +59,7 @@ npm --version
 - `DATABASE_URL`
 - `CLIENT_URL`
 - `FRONTEND_URL`
+- `QR_PUBLIC_BASE_URL` (ใส่ `/app` ด้วยเมื่อ deploy ใต้ sub-path เช่น `https://cmdt-uic.psu.ac.th/app`)
 
 ค่าเสริมที่ใช้บ่อย:
 
@@ -362,6 +363,7 @@ Minimum required vars:
 - `DATABASE_URL`
 - `CLIENT_URL`
 - `FRONTEND_URL`
+- `QR_PUBLIC_BASE_URL` (include `/app` when deployed under a sub-path, e.g. `https://cmdt-uic.psu.ac.th/app`)
 
 Common optional vars:
 

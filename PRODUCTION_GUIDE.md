@@ -28,6 +28,7 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `NODE_ENV` | Environment mode | `production` |
 | `CLIENT_URL` | URL of the Frontend (CORS Policy) | `http://10.135.2.243` |
 | `FRONTEND_URL` | Used in email links | `http://10.135.2.243` |
+| `QR_PUBLIC_BASE_URL` | Base URL embedded in generated equipment QR links (include sub-path like `/app` when used) | `https://cmdt-uic.psu.ac.th/app` |
 | `HTTPS_ONLY` | Force app to accept HTTPS only (optional) | `false` |
 | `ENABLE_HTTPS_HEADERS` | Enable HSTS/CSP upgrade headers (optional) | `false` |
 | `TRUST_PROXY` | Trust reverse-proxy HTTPS headers | `1` |

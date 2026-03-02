@@ -12,6 +12,55 @@ const EquipmentFormModal = ({
     allCategories,
     rooms
 }) => {
+    const floors = Array.from(
+        new Set(
+            (rooms || [])
+                .map((room) => {
+                    const parsed = Number.parseInt(String(room?.floor ?? ""), 10);
+                    return Number.isFinite(parsed) ? parsed : null;
+                })
+                .filter((floor) => floor !== null),
+        ),
+    ).sort((a, b) => a - b);
+
+    const floorOptions = floors.map((floor) => ({
+        value: String(floor),
+        label: `Floor ${floor}`,
+    }));
+
+    const selectedFloor = String(form.floor || "").trim();
+    const filteredRooms = selectedFloor
+        ? (rooms || []).filter((room) => String(room?.floor ?? "") === selectedFloor)
+        : (rooms || []);
+
+    const roomOptions = filteredRooms
+        .slice()
+        .sort((a, b) =>
+            String(a?.roomNumber ?? "").localeCompare(String(b?.roomNumber ?? ""), undefined, { numeric: true }),
+        )
+        .map((room) => {
+            const floorLabel = Number.isFinite(Number(room?.floor)) ? `Floor ${room.floor}` : "No floor";
+            const buildingLabel = room?.building ? String(room.building) : "No building";
+            return {
+                value: String(room.id),
+                label: `${floorLabel} · ${room.roomNumber} - ${buildingLabel}`,
+            };
+        });
+
+    const handleFloorChange = (value) => {
+        setForm({ ...form, floor: String(value || ""), roomId: "" });
+    };
+
+    const handleRoomChange = (value) => {
+        const roomId = String(value || "");
+        const selectedRoom = (rooms || []).find((room) => String(room.id) === roomId);
+        setForm({
+            ...form,
+            roomId,
+            floor: selectedRoom?.floor != null ? String(selectedRoom.floor) : form.floor,
+        });
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -56,20 +105,26 @@ const EquipmentFormModal = ({
 
                     <div>
                         <label className="block text-xs text-gray-500 mb-1 uppercase">Room / Location</label>
+                        <div className="relative mb-3">
+                            <AdminSelect
+                                value={selectedFloor}
+                                onChange={handleFloorChange}
+                                options={floorOptions}
+                                placeholder="Select Floor"
+                                className="w-full"
+                                minWidth="w-full"
+                                buttonClassName="bg-white border-gray-200 px-4 py-2.5 rounded-xl text-sm font-normal text-gray-700 hover:bg-gray-50 transition-colors"
+                            />
+                        </div>
                         <div className="relative">
                             <AdminSelect
-                                value={form.roomId}
-                                onChange={(val) => setForm({ ...form, roomId: val })}
-                                options={rooms.map((room) => ({
-                                    value: room.id,
-                                    label: `${room.roomNumber} - ${room.building}`,
-                                }))}
+                                value={String(form.roomId || "")}
+                                onChange={handleRoomChange}
+                                options={roomOptions}
                                 placeholder="Select Room"
                                 className="w-full"
                                 minWidth="w-full"
                                 buttonClassName="bg-white border-gray-200 px-4 py-2.5 rounded-xl text-sm font-normal text-gray-700 hover:bg-gray-50 transition-colors"
-                                dropdownClassName="rounded-xl border border-gray-100 shadow-xl overflow-hidden mt-1 max-h-48 overflow-y-auto"
-                                optionClassName="px-4 py-2.5 text-sm cursor-pointer transition-colors"
                             />
                         </div>
                     </div>

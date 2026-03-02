@@ -5,8 +5,31 @@ const QRCode = require("qrcode");
 const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
 const QR_PUBLIC_BASE_URL_KEYS = ["QR_PUBLIC_BASE_URL", "FRONTEND_URL", "CLIENT_URL"];
 const NON_ACTIVE_TICKET_STATUSES = ["completed", "rejected"];
+const MAX_BULK_QR_EXPORT_COUNT = 200;
 const equipmentScanInclude = {
   room: true,
+};
+
+const naturalStringCompare = (left, right) =>
+  String(left || "").localeCompare(String(right || ""), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+
+const compareEquipmentForQrExport = (left, right) => {
+  const roomCompare = naturalStringCompare(left?.room?.roomNumber, right?.room?.roomNumber);
+  if (roomCompare !== 0) return roomCompare;
+
+  const buildingCompare = naturalStringCompare(left?.room?.building, right?.room?.building);
+  if (buildingCompare !== 0) return buildingCompare;
+
+  const nameCompare = naturalStringCompare(left?.name, right?.name);
+  if (nameCompare !== 0) return nameCompare;
+
+  const serialCompare = naturalStringCompare(left?.serialNo, right?.serialNo);
+  if (serialCompare !== 0) return serialCompare;
+
+  return Number(left?.id || 0) - Number(right?.id || 0);
 };
 
 const pushLookupCandidate = (targetSet, value) => {
@@ -116,7 +139,13 @@ const resolveQrPublicBaseUrl = (req) => {
 
 const buildQrScanUrl = (req, qrCodeValue) => {
   const baseUrl = resolveQrPublicBaseUrl(req);
-  const scanUrl = new URL(`/scan/${encodeURIComponent(qrCodeValue)}`, baseUrl);
+  const base = new URL(baseUrl);
+  const basePath = (base.pathname || "/").replace(/\/+$/, "");
+  const normalizedBasePath = basePath === "/" ? "" : basePath;
+  base.pathname = `${normalizedBasePath}/scan/${encodeURIComponent(qrCodeValue)}`.replace(/\/{2,}/g, "/");
+  base.search = "";
+  base.hash = "";
+  const scanUrl = base;
   return scanUrl.toString();
 };
 
@@ -194,16 +223,41 @@ exports.create = async (req, res, next) => {
   try {
     const { name, type, serialNo: inputSerialNo, roomId } = req.body;
 
+    const normalizedName = String(name || "").trim();
+    const normalizedType = String(type || "").trim();
+    const normalizedSerialNo = String(inputSerialNo || "").trim();
+    const parsedRoomId = Number.parseInt(String(roomId || ""), 10);
+
+    if (!normalizedName) {
+      return res.status(400).json({ message: "Equipment name is required." });
+    }
+    if (!normalizedType) {
+      return res.status(400).json({ message: "Category/type is required." });
+    }
+    if (!Number.isInteger(parsedRoomId) || parsedRoomId <= 0) {
+      return res.status(400).json({ message: "Please select a valid room/location." });
+    }
+
+    const room = await prisma.room.findUnique({
+      where: { id: parsedRoomId },
+      select: { id: true },
+    });
+    if (!room) {
+      return res.status(400).json({
+        message: "Selected room/location was not found. Please refresh and try again.",
+      });
+    }
+
     // Auto-generate Serial Number if not provided
-    const serialNo = inputSerialNo || `SN-${Date.now()}`;
+    const serialNo = normalizedSerialNo || `SN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // สร้าง Equipment ก่อนเพื่อเอา ID มาทำ QR
     const equipment = await prisma.equipment.create({
       data: {
-        name,
-        type,
+        name: normalizedName,
+        type: normalizedType,
         serialNo,
-        roomId: parseInt(roomId),
+        roomId: parsedRoomId,
       },
     });
 
@@ -227,6 +281,22 @@ exports.create = async (req, res, next) => {
       qrScanUrl,
     });
   } catch (err) {
+    if (err?.code === "P2002") {
+      const targetFields = Array.isArray(err?.meta?.target) ? err.meta.target : [];
+      if (targetFields.includes("serialNo")) {
+        return res.status(409).json({
+          message: "Serial number already exists. Please use a different serial number.",
+        });
+      }
+      return res.status(409).json({
+        message: "Duplicate equipment data detected. Please check input and try again.",
+      });
+    }
+    if (err?.code === "P2003") {
+      return res.status(400).json({
+        message: "Selected room/location is invalid. Please refresh and try again.",
+      });
+    }
     next(err);
   }
 };
@@ -349,25 +419,135 @@ exports.generateQR = async (req, res, next) => {
   }
 };
 
+exports.generateBulkQR = async (req, res, next) => {
+  try {
+    const equipmentIds = toUniqueIntegerIds(req.body?.ids);
+    if (!equipmentIds.length) {
+      return res.status(400).json({ message: "Please select at least one equipment item." });
+    }
+    if (equipmentIds.length > MAX_BULK_QR_EXPORT_COUNT) {
+      return res.status(400).json({
+        message: `You can export up to ${MAX_BULK_QR_EXPORT_COUNT} QR codes at once.`,
+      });
+    }
+
+    const equipments = await prisma.equipment.findMany({
+      where: {
+        id: { in: equipmentIds },
+      },
+      include: { room: true },
+    });
+
+    const equipmentById = new Map(equipments.map((equipment) => [equipment.id, equipment]));
+    const sortedEquipments = [...equipments]
+      .filter((equipment) => Boolean(equipment?.qrCode))
+      .sort(compareEquipmentForQrExport);
+
+    const items = [];
+    const skippedIds = equipmentIds.filter((equipmentId) => {
+      const equipment = equipmentById.get(equipmentId);
+      return !equipment || !equipment.qrCode;
+    });
+
+    for (const equipment of sortedEquipments) {
+      const qrScanUrl = buildQrScanUrl(req, equipment.qrCode);
+      // eslint-disable-next-line no-await-in-loop
+      const qrCodeImage = await QRCode.toDataURL(qrScanUrl);
+
+      items.push({
+        equipment,
+        qrCodeImage,
+        qrScanUrl,
+      });
+    }
+
+    if (!items.length) {
+      return res.status(400).json({
+        message: "Unable to generate QR codes for the selected items.",
+        skippedIds,
+      });
+    }
+
+    res.json({
+      items,
+      skippedIds,
+      requestedCount: equipmentIds.length,
+      generatedCount: items.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.update = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, type, serialNo, roomId, status } = req.body;
+    const equipmentId = Number.parseInt(String(id || ""), 10);
+    if (!Number.isInteger(equipmentId) || equipmentId <= 0) {
+      return res.status(400).json({ message: "Invalid equipment ID" });
+    }
+
+    const normalizedName = String(name || "").trim();
+    const normalizedType = String(type || "").trim();
+    const normalizedStatus = status == null ? undefined : String(status).trim();
+    const normalizedSerialNo = serialNo == null ? undefined : String(serialNo).trim();
+
+    if (!normalizedName) {
+      return res.status(400).json({ message: "Equipment name is required." });
+    }
+    if (!normalizedType) {
+      return res.status(400).json({ message: "Category/type is required." });
+    }
+
+    let parsedRoomId;
+    if (roomId !== undefined && roomId !== null && String(roomId).trim() !== "") {
+      parsedRoomId = Number.parseInt(String(roomId), 10);
+      if (!Number.isInteger(parsedRoomId) || parsedRoomId <= 0) {
+        return res.status(400).json({ message: "Please select a valid room/location." });
+      }
+
+      const room = await prisma.room.findUnique({
+        where: { id: parsedRoomId },
+        select: { id: true },
+      });
+      if (!room) {
+        return res.status(400).json({
+          message: "Selected room/location was not found. Please refresh and try again.",
+        });
+      }
+    }
 
     const equipment = await prisma.equipment.update({
-      where: { id: parseInt(id) },
+      where: { id: equipmentId },
       data: {
-        name,
-        type,
-        serialNo,
-        ...(roomId !== undefined && roomId !== '' && { roomId: parseInt(roomId) }),
-        status
+        name: normalizedName,
+        type: normalizedType,
+        ...(normalizedSerialNo !== undefined && { serialNo: normalizedSerialNo || null }),
+        ...(parsedRoomId !== undefined && { roomId: parsedRoomId }),
+        ...(normalizedStatus !== undefined && { status: normalizedStatus }),
       },
       include: { room: true }
     });
 
     res.json(equipment);
   } catch (err) {
+    if (err?.code === "P2002") {
+      const targetFields = Array.isArray(err?.meta?.target) ? err.meta.target : [];
+      if (targetFields.includes("serialNo")) {
+        return res.status(409).json({
+          message: "Serial number already exists. Please use a different serial number.",
+        });
+      }
+      return res.status(409).json({
+        message: "Duplicate equipment data detected. Please check input and try again.",
+      });
+    }
+    if (err?.code === "P2003") {
+      return res.status(400).json({
+        message: "Selected room/location is invalid. Please refresh and try again.",
+      });
+    }
     next(err);
   }
 };

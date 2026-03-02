@@ -4,7 +4,7 @@ import { Plus, Monitor, Printer, Wifi, Wind, Box, QrCode, Edit, Trash2, Layers, 
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { listCategories, createCategory, updateCategory, removeCategory, addSubComponent, removeSubComponent } from "../../api/category";
-import { listEquipments, createEquipment, updateEquipment, removeEquipment, removeEquipmentsBulk, getEquipmentQR } from "../../api/equipment";
+import { listEquipments, createEquipment, updateEquipment, removeEquipment, removeEquipmentsBulk, getEquipmentQR, getEquipmentsQRBulk } from "../../api/equipment";
 import { listRooms } from "../../api/room";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
@@ -17,6 +17,101 @@ import { confirmDialog } from "../../utils/sweetalert";
 
 const pluralize = (count, singular, plural = `${singular}s`) =>
   Number(count) === 1 ? singular : plural;
+
+const MAX_BULK_QR_PRINT = 200;
+
+const escapeHtml = (value) =>
+  String(value ?? "-")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const naturalStringCompare = (left, right) =>
+  String(left ?? "").localeCompare(String(right ?? ""), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+
+const sortQrEntriesForPrint = (entries) =>
+  [...entries].sort((leftEntry, rightEntry) => {
+    const left = leftEntry?.equipment || {};
+    const right = rightEntry?.equipment || {};
+
+    const roomCompare = naturalStringCompare(left?.room?.roomNumber, right?.room?.roomNumber);
+    if (roomCompare !== 0) return roomCompare;
+
+    const buildingCompare = naturalStringCompare(left?.room?.building, right?.room?.building);
+    if (buildingCompare !== 0) return buildingCompare;
+
+    const nameCompare = naturalStringCompare(left?.name, right?.name);
+    if (nameCompare !== 0) return nameCompare;
+
+    const serialCompare = naturalStringCompare(left?.serialNo, right?.serialNo);
+    if (serialCompare !== 0) return serialCompare;
+
+    return Number(left?.id || 0) - Number(right?.id || 0);
+  });
+
+const openPrintWindow = () => {
+  const printWindow = window.open("", "", "width=1200,height=900");
+  if (!printWindow) {
+    toast.error("Please allow pop-ups to print QR codes.");
+    return null;
+  }
+  return printWindow;
+};
+
+const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
+  const sortedItems = sortQrEntriesForPrint(items);
+  const cards = sortedItems
+    .map((entry) => {
+      const equipment = entry?.equipment || {};
+      const roomLabel = equipment?.room?.roomNumber || "-";
+      const buildingLabel = equipment?.room?.building || "-";
+      const serialLabel = equipment?.serialNo || "-";
+      return `
+        <article class="card">
+          <div class="head">${escapeHtml(equipment?.name || "-")}</div>
+          <img class="qr" src="${entry.qrCodeImage}" alt="QR Code ${escapeHtml(equipment?.name || "-")}" />
+          <div class="meta"><strong>Room:</strong> ${escapeHtml(roomLabel)} (${escapeHtml(buildingLabel)})</div>
+          <div class="meta"><strong>Serial:</strong> ${escapeHtml(serialLabel)}</div>
+          <div class="meta mono">${escapeHtml(entry.qrScanUrl || "-")}</div>
+        </article>
+      `;
+    })
+    .join("");
+
+  return `
+    <html>
+      <head>
+        <title>${escapeHtml(title)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #1e2e4a; }
+          h1 { margin: 0 0 6px; font-size: 20px; }
+          .sub { margin: 0 0 16px; color: #64748b; font-size: 12px; }
+          .sheet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+          .card { border: 1px solid #d9dee7; border-radius: 12px; padding: 10px; break-inside: avoid; page-break-inside: avoid; min-height: 320px; display: flex; flex-direction: column; align-items: center; }
+          .head { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 8px; width: 100%; }
+          .qr { width: 170px; height: 170px; object-fit: contain; }
+          .meta { margin-top: 6px; font-size: 12px; width: 100%; word-break: break-word; }
+          .mono { font-family: monospace; font-size: 10px; color: #64748b; }
+          @media print {
+            body { padding: 10mm; }
+            .sheet { gap: 10px; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(title)}</h1>
+        <p class="sub">Total ${sortedItems.length} ${sortedItems.length === 1 ? "item" : "items"} • Generated ${new Date().toLocaleString()}</p>
+        <section class="sheet">${cards}</section>
+      </body>
+    </html>
+  `;
+};
 
 const EquipmentManagement = () => {
   const navigate = useNavigate();
@@ -48,6 +143,7 @@ const EquipmentManagement = () => {
   const [form, setForm] = useState({
     name: "",
     type: "", // This will now map to category name
+    floor: "",
     roomId: "",
     serialNo: "",
   });
@@ -129,28 +225,54 @@ const EquipmentManagement = () => {
 
   const handleEquipmentSubmit = async (e) => {
     e.preventDefault();
+    const normalizedName = String(form.name || "").trim();
+    const normalizedType = String(form.type || "").trim();
+    const parsedRoomId = Number.parseInt(String(form.roomId || ""), 10);
+    const normalizedSerialNo = String(form.serialNo || "").trim();
+
+    if (!normalizedName) {
+      toast.warn("Please enter equipment name");
+      return;
+    }
+    if (!normalizedType) {
+      toast.warn("Please select category/type");
+      return;
+    }
+    if (!Number.isInteger(parsedRoomId) || parsedRoomId <= 0) {
+      toast.warn("Please select room/location");
+      return;
+    }
+
+    const payload = {
+      name: normalizedName,
+      type: normalizedType,
+      roomId: parsedRoomId,
+      serialNo: normalizedSerialNo,
+    };
+
     try {
       if (editingEquipment) {
         // Update existing equipment
-        await updateEquipment(editingEquipment.id, form);
+        await updateEquipment(editingEquipment.id, payload);
         toast.success("Equipment updated successfully");
       } else {
         // Create new equipment
-        await createEquipment(form);
+        await createEquipment(payload);
         toast.success("Equipment created successfully");
       }
       loadEquipments();
       setShowAddModal(false);
       setEditingEquipment(null);
-      setForm({ name: "", type: "", roomId: "", serialNo: "" });
-    } catch {
-      toast.error(editingEquipment ? "Failed to update equipment" : "Failed to create equipment");
+      setForm({ name: "", type: "", floor: "", roomId: "", serialNo: "" });
+    } catch (error) {
+      const fallback = editingEquipment ? "Failed to update equipment" : "Failed to create equipment";
+      toast.error(error?.response?.data?.message || fallback);
     }
   };
 
   const openAddModal = () => {
     setEditingEquipment(null);
-    setForm({ name: "", type: "", roomId: "", serialNo: "" });
+    setForm({ name: "", type: "", floor: "", roomId: "", serialNo: "" });
     setShowAddModal(true);
   };
 
@@ -160,7 +282,8 @@ const EquipmentManagement = () => {
       name: item.name,
       type: item.type,
       serialNo: item.serialNo || "",
-      roomId: item.roomId || (item.room ? item.room.id : ""),
+      floor: item.room?.floor != null ? String(item.room.floor) : "",
+      roomId: item.roomId != null ? String(item.roomId) : (item.room ? String(item.room.id) : ""),
     });
     setShowAddModal(true);
   };
@@ -339,35 +462,8 @@ const EquipmentManagement = () => {
   };
 
   const printQR = () => {
-    const printWindow = window.open("", "", "width=400,height=600");
-    printWindow.document.write(`
-              <html>
-                  <head>
-                      <title>QR Code - ${selectedQR.equipment.name}</title>
-                      <style>
-                          body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-                          .container { border: 2px solid #333; padding: 20px; border-radius: 10px; margin: 20px auto; width: 350px; }
-                          h2 { color: #333; margin: 10px 0; }
-                          .info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; }
-                          .qr-code { margin: 20px 0; }
-                          .footer { margin-top: 20px; font-size: 12px; color: #666; margin: 0; }
-                      </style>
-                  </head>
-                  <body>
-                      <div class="container">
-                          <h2>PSUIC Service</h2>
-                          <div class="qr-code"><img src="${selectedQR.qrCodeImage}" style="width: 250px; height: 250px;"></div>
-                          <div class="info">
-                              <p><strong>Equipment:</strong> ${selectedQR.equipment.name}</p>
-                              <p><strong>Room:</strong> ${selectedQR.equipment.room.roomNumber}</p>
-                              <p><strong>Serial:</strong> ${selectedQR.equipment.serialNo || "-"}</p>
-                          </div>
-                      </div>
-                  </body>
-              </html>
-          `);
-    printWindow.document.close();
-    printWindow.print();
+    if (!selectedQR) return;
+    printQrEntries([selectedQR], `QR Code - ${selectedQR?.equipment?.name || "Equipment"}`);
   };
 
   // Filter Logic
@@ -387,6 +483,11 @@ const EquipmentManagement = () => {
 
     return matchesCategory && matchesFloor && matchesRoom;
   }) : [];
+
+  const filteredEquipmentIds = filteredEquipments.map((item) => item.id);
+  const allFilteredSelected =
+    filteredEquipmentIds.length > 0 &&
+    filteredEquipmentIds.every((id) => selectedEquipmentIds.includes(id));
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -445,6 +546,83 @@ const EquipmentManagement = () => {
       }
       return [...new Set([...prev, ...visibleEquipmentIds])];
     });
+  };
+
+  const toggleSelectFiltered = () => {
+    if (!isBulkSelectMode) return;
+    setSelectedEquipmentIds((prev) => {
+      const filteredSet = new Set(filteredEquipmentIds);
+      const everyFilteredSelected =
+        filteredEquipmentIds.length > 0 &&
+        filteredEquipmentIds.every((id) => prev.includes(id));
+
+      if (everyFilteredSelected) {
+        return prev.filter((id) => !filteredSet.has(id));
+      }
+
+      return [...new Set([...prev, ...filteredEquipmentIds])];
+    });
+  };
+
+  const printQrEntries = (entries, title) => {
+    const printWindow = openPrintWindow();
+    if (!printWindow) return;
+
+    const html = renderBulkQrPrintHtml(entries, title);
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const handleBulkPrintQR = async (mode = "selected") => {
+    const targetIds = mode === "filtered" ? filteredEquipmentIds : selectedEquipmentIds;
+    const count = targetIds.length;
+
+    if (!count) {
+      toast.warn(mode === "filtered" ? "No equipment in current filter." : "Please select equipment first.");
+      return;
+    }
+
+    const confirmed = await confirmDialog({
+      title: "Print QR Codes",
+      text: `Generate and print ${count} QR ${pluralize(count, "code")}?`,
+      confirmButtonText: "Print",
+      confirmVariant: "primary",
+    });
+    if (!confirmed) return;
+
+    if (count > MAX_BULK_QR_PRINT) {
+      toast.warn(`Please print up to ${MAX_BULK_QR_PRINT} items per batch.`);
+      return;
+    }
+
+    try {
+      const response = await getEquipmentsQRBulk(targetIds);
+      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+      const skippedIds = Array.isArray(response?.data?.skippedIds) ? response.data.skippedIds : [];
+
+      if (!items.length) {
+        toast.error(response?.data?.message || "Unable to generate QR codes.");
+        return;
+      }
+
+      const roomLabel = selectedRoom === "All Rooms"
+        ? "All Rooms"
+        : String(rooms.find((room) => Number(room.id) === Number(selectedRoom))?.roomNumber || selectedRoom);
+      const title = mode === "filtered"
+        ? `Equipment QR Codes (${roomLabel})`
+        : "Equipment QR Codes (Selected)";
+      printQrEntries(items, title);
+
+      if (skippedIds.length > 0) {
+        toast.warn(`${skippedIds.length} ${pluralize(skippedIds.length, "item")} were skipped (missing QR data).`);
+      } else {
+        toast.success(`Prepared ${items.length} QR ${pluralize(items.length, "code")} for printing.`);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to generate bulk QR codes.");
+    }
   };
 
   const getCategoryIcon = (type) => {
@@ -549,15 +727,27 @@ const EquipmentManagement = () => {
           </div>
           <div className="flex items-center gap-2">
             {!isBulkSelectMode ? (
-              <button
-                type="button"
-                onClick={() => setIsBulkSelectMode(true)}
-                className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors"
-                title="Select multiple items"
-              >
-                <Square size={14} />
-                Select
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleBulkPrintQR("filtered")}
+                  disabled={!filteredEquipmentIds.length}
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Print all equipment QR in current filter"
+                >
+                  <Printer size={12} />
+                  Print Filtered QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBulkSelectMode(true)}
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors"
+                  title="Select multiple items"
+                >
+                  <Square size={14} />
+                  Select
+                </button>
+              </>
             ) : (
               <>
                 <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold border border-blue-100">
@@ -572,6 +762,26 @@ const EquipmentManagement = () => {
                 >
                   {allVisibleSelected ? <CheckSquare size={14} /> : <Square size={14} />}
                   {allVisibleSelected ? "Unselect Page" : "Select Page"}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleSelectFiltered}
+                  disabled={!filteredEquipmentIds.length}
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={allFilteredSelected ? "Unselect all filtered items" : "Select all filtered items"}
+                >
+                  {allFilteredSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                  {allFilteredSelected ? "Unselect Filtered" : "Select Filtered"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkPrintQR("selected")}
+                  disabled={!selectedEquipmentIds.length}
+                  className="inline-flex items-center gap-1.5 h-8 text-[11px] font-semibold text-[#1e2e4a] bg-white border border-gray-200 rounded-lg px-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Print selected QR codes"
+                >
+                  <Printer size={12} />
+                  Print QR
                 </button>
                 <button
                   type="button"

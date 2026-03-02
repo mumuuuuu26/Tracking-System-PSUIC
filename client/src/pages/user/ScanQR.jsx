@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Flashlight, FlashlightOff, Image as ImageIcon, Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "../../utils/axios";
 import { toast } from "react-toastify";
 import Resizer from "react-image-file-resizer";
 
@@ -327,7 +327,7 @@ const ScanQR = () => {
 
       for (const qrCandidate of qrCandidates) {
         try {
-          const res = await axios.get(`/api/equipment/qr/${encodeURIComponent(qrCandidate)}`);
+          const res = await api.get(`/equipment/qr/${encodeURIComponent(qrCandidate)}`);
           equipmentData = res.data;
           break;
         } catch (error) {

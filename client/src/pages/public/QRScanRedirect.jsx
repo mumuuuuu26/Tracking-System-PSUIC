@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import axios from "axios";
+import api from "../../utils/axios";
 import useAuthStore from "../../store/auth-store";
 
 const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
@@ -71,8 +71,8 @@ const QRScanRedirect = () => {
     processingRef.current = true;
     setStatusText("Loading equipment details...");
 
-    axios
-      .get(`/api/equipment/qr/${encodeURIComponent(qrValue)}`)
+    api
+      .get(`/equipment/qr/${encodeURIComponent(qrValue)}`)
       .then((response) => {
         navigate("/user/create-ticket", {
           replace: true,

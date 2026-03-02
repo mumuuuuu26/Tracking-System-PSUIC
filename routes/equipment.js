@@ -8,6 +8,7 @@ const {
   getByQRCode,
   getById,
   generateQR,
+  generateBulkQR,
   update,
   remove,
   bulkRemove,
@@ -21,6 +22,7 @@ router.get("/equipment", authCheck, list);
 // /equipment/qr/:qrCode must be declared before /equipment/:id and /equipment/:id/qr
 router.get("/equipment/qr/:qrCode", getByQRCode); // Public QR lookup for printed equipment labels
 router.get("/equipment/:id/qr", authCheck, generateQR);
+router.post("/equipment/qr/bulk", authCheck, adminCheck, generateBulkQR);
 router.delete("/equipment/bulk-delete", authCheck, adminCheck, bulkRemove);
 router.get("/equipment/:id", authCheck, getById);
 router.put("/equipment/:id", authCheck, adminCheck, update);
