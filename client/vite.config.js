@@ -8,11 +8,21 @@ export default defineConfig(({ mode }) => {
   const isTestMode = mode === "test" || env.VITEST === "true";
   const isCi = ["1", "true"].includes(String(env.CI).toLowerCase());
   const useHttpsDevServer = env.VITE_DEV_HTTPS === "true" && !isTestMode && !isCi;
+  const normalizedBase = (() => {
+    const configuredBase = String(env.VITE_APP_BASE || "").trim();
+    if (configuredBase) {
+      const withLeadingSlash = configuredBase.startsWith("/") ? configuredBase : `/${configuredBase}`;
+      return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+    }
+    // Production on cmdt-uic serves the app under /app/
+    return mode === "production" ? "/app/" : "/";
+  })();
   const backendProxyTarget =
     env.VITE_BACKEND_PROXY_TARGET ||
     (useHttpsDevServer ? "https://localhost:5002" : "http://localhost:5002");
 
   return {
+    base: normalizedBase,
     plugins: [react(), useHttpsDevServer && mkcert()].filter(Boolean),
     test: {
       globals: true,
