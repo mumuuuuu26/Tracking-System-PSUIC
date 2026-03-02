@@ -401,16 +401,95 @@ app.use(
   }),
 );
 
+const escapedRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const normalizeFrontendPathname = (rawUrl) => {
+  const trimmed = String(rawUrl || "").trim();
+  if (!trimmed) return "";
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.pathname.replace(/\/+$/, "") || "/";
+  } catch {
+    return "";
+  }
+};
+const normalizeBasePath = (rawPath) => {
+  const trimmed = String(rawPath || "").trim();
+  if (!trimmed) return "";
+  if (trimmed === "/") return "/";
+  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  return withLeadingSlash.replace(/\/+$/, "");
+};
+const configuredSpaBasePath =
+  normalizeBasePath(process.env.APP_BASE_PATH) ||
+  normalizeBasePath(process.env.PUBLIC_BASE_PATH);
+const frontendPathname =
+  configuredSpaBasePath ||
+  normalizeFrontendPathname(process.env.CLIENT_URL) ||
+  normalizeFrontendPathname(process.env.FRONTEND_URL) ||
+  "";
+const malformedAssetStackPattern = /^\/assets\/.+\.(?:js|css):\d+:\d+$/i;
+const knownStaticPrefixPattern = /^\/(?:assets|img|uploads)\//i;
+const explicitStaticFilePattern = /\.(?:js|mjs|css|map|json|svg|png|jpe?g|gif|webp|ico|txt|xml|woff2?|ttf|eot)$/i;
+const spaPathPattern = frontendPathname
+  ? new RegExp(`^${escapedRegExp(frontendPathname)}(?:/|$)`, "i")
+  : null;
+const stripSpaPrefix = (requestPath) => {
+  if (!spaPathPattern) return requestPath;
+  return requestPath.replace(spaPathPattern, "/");
+};
+const ensureTrailingSlash = (rawPath) => {
+  const normalized = String(rawPath || "/").replace(/\/+$/, "");
+  return normalized ? `${normalized}/` : "/";
+};
+const resolveForwardedProtocol = (req) => {
+  const forwardedProto = String(req.get("x-forwarded-proto") || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  if (forwardedProto === "http" || forwardedProto === "https") {
+    return forwardedProto;
+  }
+  return req.protocol || "http";
+};
+const resolveForwardedHost = (req) =>
+  String(req.get("x-forwarded-host") || req.get("host") || "")
+    .split(",")[0]
+    .trim();
+const buildSpaEntryRedirect = (req) => {
+  const entryPath = ensureTrailingSlash(frontendPathname && frontendPathname !== "/" ? frontendPathname : "/");
+  const host = resolveForwardedHost(req);
+  if (!host) return entryPath;
+  return `${resolveForwardedProtocol(req)}://${host}${entryPath}`;
+};
+
 // 4. ถ้า User เข้าลิงก์อะไรก็ตามที่ไม่ใช่ API ให้ส่งหน้าเว็บ React กลับไป
 app.get(/.*/, (req, res) => {
-    // ป้องกันไม่ให้ไปแย่ง Route ของ API
-    if (!req.originalUrl.startsWith('/api')) {
-        res.setHeader("Cache-Control", "no-store");
-        res.sendFile(path.join(__dirname, "client/dist", "index.html"));
-    } else {
-        // กรณีเป็น API ที่ไม่เจอให้ตอบ 404
-        res.status(404).json({ message: "API route not found" });
+  // ป้องกันไม่ให้ไปแย่ง Route ของ API
+  if (!req.originalUrl.startsWith("/api")) {
+    const requestPath = req.path || "/";
+    const strippedPath = stripSpaPrefix(requestPath);
+
+    // Defensive: Facebook/Browser can open JS stack URLs like /assets/index-xxx.js:12:17383.
+    // Redirect these malformed links to SPA entry to avoid blank screen.
+    if (malformedAssetStackPattern.test(strippedPath)) {
+      return res.redirect(302, buildSpaEntryRedirect(req));
     }
+
+    // Missing static assets should return 404, not index.html
+    // (prevents app crash from "Unexpected token <" on stale chunk URLs).
+    if (
+      knownStaticPrefixPattern.test(strippedPath) ||
+      explicitStaticFilePattern.test(strippedPath)
+    ) {
+      return res.status(404).send("Asset not found");
+    }
+
+    res.setHeader("Cache-Control", "no-store");
+    return res.sendFile(path.join(__dirname, "client/dist", "index.html"));
+  }
+
+  // กรณีเป็น API ที่ไม่เจอให้ตอบ 404
+  return res.status(404).json({ message: "API route not found" });
 });
 
 // --- Start Server & Graceful Shutdown ---
