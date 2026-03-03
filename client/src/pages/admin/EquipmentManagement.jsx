@@ -19,6 +19,8 @@ const pluralize = (count, singular, plural = `${singular}s`) =>
   Number(count) === 1 ? singular : plural;
 
 const MAX_BULK_QR_PRINT = 200;
+const QR_PRINT_FRAME_ID = "qr-print-frame";
+const QR_PRINT_WAIT_TIMEOUT_MS = 8000;
 
 const escapeHtml = (value) =>
   String(value ?? "-")
@@ -54,13 +56,44 @@ const sortQrEntriesForPrint = (entries) =>
     return Number(left?.id || 0) - Number(right?.id || 0);
   });
 
-const openPrintWindow = () => {
-  const printWindow = window.open("", "", "width=1200,height=900");
-  if (!printWindow) {
-    toast.error("Please allow pop-ups to print QR codes.");
-    return null;
+const removeQrPrintFrame = () => {
+  const existingFrame = document.getElementById(QR_PRINT_FRAME_ID);
+  if (existingFrame) {
+    existingFrame.remove();
   }
-  return printWindow;
+};
+
+const createQrPrintFrame = () => {
+  removeQrPrintFrame();
+  const frame = document.createElement("iframe");
+  frame.id = QR_PRINT_FRAME_ID;
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.position = "fixed";
+  frame.style.width = "0";
+  frame.style.height = "0";
+  frame.style.border = "0";
+  frame.style.opacity = "0";
+  frame.style.pointerEvents = "none";
+  document.body.appendChild(frame);
+  return frame;
+};
+
+const waitForDocumentImages = (doc, timeoutMs = QR_PRINT_WAIT_TIMEOUT_MS) => {
+  const images = Array.from(doc?.images || []);
+  if (!images.length) return Promise.resolve();
+
+  const waitImages = Promise.all(
+    images.map((img) => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      });
+    }),
+  );
+
+  const timeout = new Promise((resolve) => setTimeout(resolve, timeoutMs));
+  return Promise.race([waitImages, timeout]);
 };
 
 const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
@@ -90,36 +123,6 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
         <style>
           * { box-sizing: border-box; }
           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #1e2e4a; background: #ffffff; }
-          .toolbar {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 10px 12px;
-            margin: -20px -20px 12px;
-            background: rgba(248, 250, 252, 0.96);
-            border-bottom: 1px solid #d9dee7;
-          }
-          .toolbar-note { font-size: 12px; color: #334155; }
-          .toolbar-actions { display: flex; align-items: center; gap: 8px; }
-          .toolbar-btn {
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #1e2e4a;
-            border-radius: 8px;
-            padding: 7px 12px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          }
-          .toolbar-btn.primary {
-            background: #1e2e4a;
-            border-color: #1e2e4a;
-            color: #ffffff;
-          }
           h1 { margin: 0 0 6px; font-size: 20px; }
           .sub { margin: 0 0 16px; color: #64748b; font-size: 12px; }
           .sheet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -128,72 +131,15 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
           .qr { width: 170px; height: 170px; object-fit: contain; }
           .meta { margin-top: 6px; font-size: 12px; width: 100%; word-break: break-word; }
           @media print {
-            .toolbar { display: none !important; }
             body { padding: 10mm; }
             .sheet { gap: 10px; }
           }
         </style>
       </head>
       <body>
-        <div class="toolbar">
-          <span class="toolbar-note">Preview ready. If print dialog does not open, click "Print / Save PDF".</span>
-          <div class="toolbar-actions">
-            <button type="button" id="print-btn" class="toolbar-btn primary">Print / Save PDF</button>
-            <button type="button" id="close-btn" class="toolbar-btn">Close</button>
-          </div>
-        </div>
         <h1>${escapeHtml(title)}</h1>
         <p class="sub">Total ${sortedItems.length} ${sortedItems.length === 1 ? "item" : "items"} • Generated ${new Date().toLocaleString()}</p>
         <section class="sheet">${cards}</section>
-        <script>
-          (() => {
-            const WAIT_TIMEOUT_MS = 7000;
-            const printNow = () => {
-              window.focus();
-              setTimeout(() => {
-                window.print();
-              }, 50);
-            };
-
-            const printBtn = document.getElementById("print-btn");
-            if (printBtn) {
-              printBtn.addEventListener("click", printNow);
-            }
-
-            const closeBtn = document.getElementById("close-btn");
-            if (closeBtn) {
-              closeBtn.addEventListener("click", () => window.close());
-            }
-
-            const waitForImages = () => {
-              const images = Array.from(document.images || []);
-              if (!images.length) return Promise.resolve();
-              return Promise.all(
-                images.map((img) => {
-                  if (img.complete) return Promise.resolve();
-                  return new Promise((resolve) => {
-                    img.addEventListener("load", resolve, { once: true });
-                    img.addEventListener("error", resolve, { once: true });
-                  });
-                })
-              );
-            };
-
-            const printSafely = async () => {
-              await Promise.race([
-                waitForImages(),
-                new Promise((resolve) => setTimeout(resolve, WAIT_TIMEOUT_MS)),
-              ]);
-              printNow();
-            };
-
-            if (document.readyState === "complete") {
-              printSafely();
-            } else {
-              window.addEventListener("load", printSafely, { once: true });
-            }
-          })();
-        </script>
       </body>
     </html>
   `;
@@ -650,55 +596,41 @@ const EquipmentManagement = () => {
     });
   };
 
-  const printQrEntries = (entries, title, printWindow = null) => {
-    const targetWindow = printWindow || openPrintWindow();
-    if (!targetWindow) return;
-    const html = renderBulkQrPrintHtml(entries, title);
-    targetWindow.document.open();
-    targetWindow.document.write(html);
-    targetWindow.document.close();
-  };
+  const printQrEntries = async (entries, title) => {
+    const frame = createQrPrintFrame();
+    const frameWindow = frame?.contentWindow;
+    const frameDocument = frame?.contentDocument || frameWindow?.document;
+    if (!frame || !frameWindow || !frameDocument) {
+      removeQrPrintFrame();
+      throw new Error("Unable to prepare print frame.");
+    }
 
-  const renderPrintLoadingScreen = (printWindow, count) => {
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(`
-      <html>
-        <head>
-          <meta charset="UTF-8" />
-          <title>Preparing QR Codes</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              min-height: 100vh;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: #f8fafc;
-              color: #1e2e4a;
-            }
-            .card {
-              background: #ffffff;
-              border: 1px solid #d9dee7;
-              border-radius: 12px;
-              padding: 20px;
-              width: min(520px, 90vw);
-              text-align: center;
-            }
-            h1 { margin: 0 0 8px; font-size: 20px; }
-            p { margin: 0; color: #475569; }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <h1>Preparing QR codes...</h1>
-            <p>Generating ${count} ${pluralize(count, "item")} for print.</p>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const html = renderBulkQrPrintHtml(entries, title);
+    frameDocument.open();
+    frameDocument.write(html);
+    frameDocument.close();
+
+    await waitForDocumentImages(frameDocument);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    await new Promise((resolve) => {
+      let done = false;
+      const cleanup = () => {
+        if (done) return;
+        done = true;
+        setTimeout(() => {
+          removeQrPrintFrame();
+          resolve();
+        }, 120);
+      };
+
+      frameWindow.onafterprint = cleanup;
+      frameWindow.focus();
+      frameWindow.print();
+
+      // Safari/iOS may not trigger afterprint reliably.
+      setTimeout(cleanup, 15000);
+    });
   };
 
   const handleBulkPrintQR = async (mode = "selected") => {
@@ -723,10 +655,6 @@ const EquipmentManagement = () => {
       return;
     }
 
-    const printWindow = openPrintWindow();
-    if (!printWindow) return;
-    renderPrintLoadingScreen(printWindow, count);
-
     try {
       const response = await getEquipmentsQRBulk(targetIds);
       const items = Array.isArray(response?.data?.items) ? response.data.items : [];
@@ -734,7 +662,6 @@ const EquipmentManagement = () => {
       const printableItems = items.filter((item) => Boolean(item?.qrCodeImage));
 
       if (!printableItems.length) {
-        printWindow.close();
         toast.error(response?.data?.message || "Unable to generate QR codes.");
         return;
       }
@@ -745,7 +672,7 @@ const EquipmentManagement = () => {
       const title = mode === "filtered"
         ? `Equipment QR Codes (${roomLabel})`
         : "Equipment QR Codes (Selected)";
-      printQrEntries(printableItems, title, printWindow);
+      await printQrEntries(printableItems, title);
 
       if (skippedIds.length > 0) {
         toast.warn(`${skippedIds.length} ${pluralize(skippedIds.length, "item")} were skipped (missing QR data).`);
@@ -753,7 +680,7 @@ const EquipmentManagement = () => {
         toast.success(`Prepared ${printableItems.length} QR ${pluralize(printableItems.length, "code")} for printing.`);
       }
     } catch (error) {
-      printWindow.close();
+      removeQrPrintFrame();
       toast.error(error?.response?.data?.message || "Failed to generate bulk QR codes.");
     }
   };
