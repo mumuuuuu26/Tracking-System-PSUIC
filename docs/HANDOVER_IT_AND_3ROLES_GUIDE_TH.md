@@ -2,9 +2,16 @@
 
 เอกสารฉบับเดียวสำหรับส่งมอบระบบให้ทีม IT องค์กรและใช้เป็นคู่มือใช้งานสำหรับผู้ใช้ใหม่ทุกบทบาท
 
-- เอกสารนี้อ้างอิงสถานะระบบจริง ณ วันที่ 2 มีนาคม 2026
+- เอกสารนี้อ้างอิงสถานะระบบจริง ณ วันที่ 3 มีนาคม 2026
 - Production URL: `https://cmdt-uic.psu.ac.th/app/`
 - Backend runtime: `pm2` process ชื่อ `tracking-system-backend` (port `5002`)
+
+เอกสารคู่มือแยกบทบาท (แนะนำให้ใช้งานร่วมกัน):
+
+1. `docs/MANUAL_USER_TH.md`
+2. `docs/MANUAL_IT_TH.md`
+3. `docs/MANUAL_ADMIN_TH.md`
+4. `docs/HANDOVER_MAINTENANCE_PSU_PASSPORT_TH.md`
 
 ---
 
