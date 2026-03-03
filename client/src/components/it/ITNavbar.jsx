@@ -6,6 +6,7 @@ import { confirmLogout } from "../../utils/sweetalert";
 import HeaderSection from "../ui/HeaderSection";
 import ProfileAvatar from "../common/ProfileAvatar";
 import { getUserDisplayName } from "../../utils/userIdentity";
+import { publicAssetUrl } from "../../utils/publicAssetUrl";
 
 const ITNavbar = () => {
     const { user, actionLogout } = useAuthStore();
@@ -35,7 +36,7 @@ const ITNavbar = () => {
             {/* Logo Section */}
             <div className="flex items-center gap-3 shrink-0 cursor-pointer" onClick={() => navigate("/it")}>
                 <img
-                    src="/img/psuic_logo.png"
+                    src={publicAssetUrl("img/psuic_logo.png")}
                     alt="PSUIC Service"
                     className="h-10 w-auto object-contain brightness-0 invert"
                 />

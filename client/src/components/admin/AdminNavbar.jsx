@@ -5,6 +5,7 @@ import useAuthStore from "../../store/auth-store";
 import { confirmLogout } from "../../utils/sweetalert";
 import ProfileAvatar from "../common/ProfileAvatar";
 import { getUserDisplayName } from "../../utils/userIdentity";
+import { publicAssetUrl } from "../../utils/publicAssetUrl";
 
 const AdminNavbar = () => {
     const { user, actionLogout } = useAuthStore();
@@ -35,7 +36,7 @@ const AdminNavbar = () => {
                 {/* Logo Section */}
                 <div className="flex items-center gap-3 shrink-0">
                     <img
-                        src="/img/psuic_logo.png"
+                        src={publicAssetUrl("img/psuic_logo.png")}
                         alt="PSUIC Service"
                         className="h-10 w-auto object-contain brightness-0 invert"
                     />

@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home } from "lucide-react";
+import { publicAssetUrl } from "../../utils/publicAssetUrl";
 
 const SidebarUser = ({ className = "" }) => {
     const navigate = useNavigate();
@@ -9,32 +10,32 @@ const SidebarUser = ({ className = "" }) => {
 
     const services = [
         {
-            icon: <img src="/icons/3dicons-bookmark-dynamic-color.png" alt="Home" />,
+            icon: <img src={publicAssetUrl("icons/3dicons-bookmark-dynamic-color.png")} alt="Home" />,
             title: "Home",
             action: () => navigate("/user"),
             path: "/user"
         },
         {
-            icon: <img src="/icons/camera-3d.png" alt="Scan QR" />,
+            icon: <img src={publicAssetUrl("icons/camera-3d.png")} alt="Scan QR" />,
             title: "Scan QR",
             action: () => navigate("/user/scan-qr"),
             path: "/user/scan-qr",
             className: "lg:hidden"
         },
         {
-            icon: <img src="/img/3dicons-pencil-dynamic-color.png" alt="Report Issue" />,
+            icon: <img src={publicAssetUrl("img/3dicons-pencil-dynamic-color.png")} alt="Report Issue" />,
             title: "Report Issue",
             action: () => navigate("/user/create-ticket"),
             path: "/user/create-ticket"
         },
         {
-            icon: <img src="/icons/calendar-3d.png" alt="IT Schedule" />,
+            icon: <img src={publicAssetUrl("icons/calendar-3d.png")} alt="IT Schedule" />,
             title: "IT Schedule",
             action: () => navigate("/user/it-schedule"),
             path: "/user/it-schedule"
         },
         {
-            icon: <img src="/icons/notebook-3d.png" alt="Knowledge" />,
+            icon: <img src={publicAssetUrl("icons/notebook-3d.png")} alt="Knowledge" />,
             title: "Knowledge",
             action: () => navigate("/user/quick-fix"),
             path: "/user/quick-fix"
@@ -42,13 +43,13 @@ const SidebarUser = ({ className = "" }) => {
 
 
         {
-            icon: <img src="/icons/history-3d.png" alt="History" />,
+            icon: <img src={publicAssetUrl("icons/history-3d.png")} alt="History" />,
             title: "History",
             action: () => navigate("/user/history"),
             path: "/user/history"
         },
         {
-            icon: <img src="/icons/profile-3d.png" alt="Profile" />,
+            icon: <img src={publicAssetUrl("icons/profile-3d.png")} alt="Profile" />,
             title: "Profile",
             action: () => navigate("/user/profile"),
             path: "/user/profile"

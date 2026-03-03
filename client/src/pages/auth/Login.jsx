@@ -3,6 +3,7 @@ import useAuthStore from "../../store/auth-store";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ChevronRight } from "lucide-react";
+import { publicAssetUrl } from "../../utils/publicAssetUrl";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -90,7 +91,7 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md hover:scale-105 transition-transform duration-500">
           <img
-            src="/img/psuic_logo.png"
+            src={publicAssetUrl("img/psuic_logo.png")}
             alt="PSUIC Service Logo"
             className="w-full h-auto object-contain drop-shadow-2xl"
           />
