@@ -29,6 +29,24 @@ const decodeQrValue = (value) => {
   }
 };
 
+const ROLE_FALLBACK_PATH = {
+  admin: "/admin",
+  it_support: "/it",
+  user: "/user/create-ticket",
+};
+
+const getRoleFallbackPath = (role) => ROLE_FALLBACK_PATH[role] || "/";
+
+const getRoleErrorMessage = (role) => {
+  if (role === "it_support") {
+    return "คุณเป็น IT Support จึงไม่สามารถเปิดฟอร์มแจ้งปัญหาของผู้ใช้จาก QR ได้ โปรดไปที่หน้า IT Dashboard";
+  }
+  if (role === "admin") {
+    return "บัญชี Admin ไม่สามารถเปิดฟอร์มแจ้งปัญหาผ่าน QR ได้ โปรดไปที่หน้า Admin Dashboard";
+  }
+  return "ไม่สามารถเปิดฟอร์มแจ้งปัญหาได้สำหรับบัญชีนี้";
+};
+
 const QRScanRedirect = () => {
   const navigate = useNavigate();
   const { qrCode: pathQrCode } = useParams();
@@ -62,9 +80,7 @@ const QRScanRedirect = () => {
     }
 
     if (user.role !== "user") {
-      actionLogout();
-      const nextPath = `/scan?qr=${encodeURIComponent(qrValue)}`;
-      navigate(`/login?next=${encodeURIComponent(nextPath)}`, { replace: true });
+      setErrorMessage(getRoleErrorMessage(user.role));
       return;
     }
 
@@ -97,8 +113,16 @@ const QRScanRedirect = () => {
       });
   }, [actionLogout, hasHydrated, navigate, qrValue, user]);
 
+  const errorActionPath = getRoleFallbackPath(user?.role);
+  const errorActionLabel =
+    user?.role === "it_support"
+      ? "Go to IT Dashboard"
+      : user?.role === "admin"
+        ? "Go to Admin Dashboard"
+        : "Open Report Form";
+
   const handleErrorAction = () => {
-    navigate("/user/create-ticket");
+    navigate(errorActionPath);
   };
 
   return (
@@ -119,7 +143,7 @@ const QRScanRedirect = () => {
               onClick={handleErrorAction}
               className="w-full rounded-xl bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium text-white"
             >
-              Open Report Form
+              {errorActionLabel}
             </button>
           </>
         )}

@@ -209,11 +209,6 @@ const ITProfile = () => {
   const handleSavePreference = async () => {
     const emailValue = myNotifyEmail.trim();
 
-    if (!profile?.emailNotificationsConfigured) {
-      toast.error("Server email sender is not configured. Please contact admin.");
-      return;
-    }
-
     if (myEmailEnabled && !emailValue) {
       toast.error("Please enter notification email");
       return;
@@ -232,7 +227,13 @@ const ITProfile = () => {
         notificationEmail: emailValue || prev?.email || "",
       }));
       await checkUser();
-      toast.success("Notification settings updated");
+      if (!profile?.emailNotificationsConfigured) {
+        toast.warning(
+          "Notification email saved. Sending will start after admin configures MAIL_USER/MAIL_PASS on server.",
+        );
+      } else {
+        toast.success("Notification settings updated");
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update notification settings");
     } finally {
@@ -242,11 +243,6 @@ const ITProfile = () => {
 
   const handleToggleEmail = async () => {
     const nextValue = !myEmailEnabled;
-
-    if (nextValue && !profile?.emailNotificationsConfigured) {
-      toast.error("Server email sender is not configured. Please contact admin.");
-      return;
-    }
 
     setMyEmailEnabled(nextValue);
 
@@ -261,7 +257,13 @@ const ITProfile = () => {
         notificationEmail: myNotifyEmail.trim() || prev?.email || "",
       }));
       await checkUser();
-      toast.success(nextValue ? "Email notifications enabled" : "Email notifications disabled");
+      if (nextValue && !profile?.emailNotificationsConfigured) {
+        toast.warning(
+          "Email notifications enabled for your account. Sending will start after admin configures MAIL_USER/MAIL_PASS on server.",
+        );
+      } else {
+        toast.success(nextValue ? "Email notifications enabled" : "Email notifications disabled");
+      }
     } catch (err) {
       setMyEmailEnabled(!nextValue);
       toast.error(err.response?.data?.message || "Failed to update notification toggle");
@@ -614,7 +616,7 @@ const ITProfile = () => {
 
             {!profile?.emailNotificationsConfigured && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
-                Email sender on server is not configured. Save/Toggle is temporarily disabled until admin sets MAIL_USER/MAIL_PASS.
+                Email sender on server is not configured yet. You can still save this email now; notifications will start sending after admin sets MAIL_USER/MAIL_PASS.
               </div>
             )}
 
@@ -624,10 +626,9 @@ const ITProfile = () => {
               </div>
               <button
                 onClick={handleToggleEmail}
-                disabled={!profile?.emailNotificationsConfigured}
                 className={`w-12 h-6 rounded-full p-1 transition-colors ${
                   myEmailEnabled ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
-                } ${!profile?.emailNotificationsConfigured ? "opacity-60 cursor-not-allowed" : ""}`}
+                }`}
               >
                 <div
                   className={`w-4 h-4 bg-white rounded-full transition-transform ${
@@ -651,7 +652,7 @@ const ITProfile = () => {
               </div>
               <button
                 onClick={handleSavePreference}
-                disabled={savingPreference || !profile?.emailNotificationsConfigured}
+                disabled={savingPreference}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <Save size={15} /> Save

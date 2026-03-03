@@ -148,7 +148,7 @@ const Schedule = () => {
 
             if (!googleServerReady) {
                 setShowSettings(false);
-                toast.warning("Calendar ID saved, but server Google credentials are not configured yet.");
+                toast.warning("Calendar ID saved. Google sync will start automatically after admin configures server credentials.");
                 return;
             }
 
@@ -407,7 +407,7 @@ const Schedule = () => {
                                 </div>
                                 {!googleServerReady && (
                                     <p className="text-[11px] text-red-600 dark:text-red-400 mt-2">
-                                        Server Google config is incomplete
+                                        Server Google config is incomplete. You can still save Calendar ID now.
                                         {googleServerMissingKeys.length > 0
                                             ? `: ${googleServerMissingKeys.join(", ")}`
                                             : "."}
@@ -443,10 +443,10 @@ const Schedule = () => {
                                     {syncing ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                                            Connecting...
+                                            Saving...
                                         </>
                                     ) : (
-                                        "Save & Connect"
+                                        googleServerReady ? "Save & Connect" : "Save Calendar ID"
                                     )}
                                 </button>
                             </div>

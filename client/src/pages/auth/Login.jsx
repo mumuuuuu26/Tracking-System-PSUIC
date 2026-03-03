@@ -115,9 +115,6 @@ const Login = () => {
                 <span className="text-lg">
                   {isPsuPassportEnabled ? "Login with PSU Passport" : "PSU Passport"}
                 </span>
-                {!isPsuPassportEnabled && (
-                  <span className="text-sm font-medium opacity-80 mt-0.5">(Temporarily Unavailable)</span>
-                )}
               </div>
               <ChevronRight
                 className={`w-6 h-6 text-blue-600/80 transition-transform ${isPsuPassportEnabled ? "group-hover:translate-x-1" : ""
