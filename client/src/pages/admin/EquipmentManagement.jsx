@@ -22,6 +22,35 @@ const MAX_BULK_QR_PRINT = 200;
 const QR_PRINT_FRAME_ID = "qr-print-frame";
 const QR_PRINT_WAIT_TIMEOUT_MS = 8000;
 
+const toFileSafeToken = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+const formatFileTimestamp = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}${month}${day}_${hours}${minutes}`;
+};
+
+const buildBulkQrFileName = ({ scope = "selected", room = "all-rooms", count = 0 }) => {
+  const safeScope = toFileSafeToken(scope) || "selected";
+  const safeRoom = toFileSafeToken(room) || "all-rooms";
+  const safeCount = Number.isFinite(Number(count)) ? `items-${Number(count)}` : "items";
+  return `PSUIC-Equipment-QR-${safeScope}-${safeRoom}-${safeCount}-${formatFileTimestamp()}`;
+};
+
+const buildSingleQrFileName = (equipment) => {
+  const safeName = toFileSafeToken(equipment?.name) || "equipment";
+  const safeSerial = toFileSafeToken(equipment?.serialNo) || "no-serial";
+  return `PSUIC-Equipment-QR-single-${safeName}-${safeSerial}-${formatFileTimestamp()}`;
+};
+
 const escapeHtml = (value) =>
   String(value ?? "-")
     .replace(/&/g, "&amp;")
@@ -96,7 +125,7 @@ const waitForDocumentImages = (doc, timeoutMs = QR_PRINT_WAIT_TIMEOUT_MS) => {
   return Promise.race([waitImages, timeout]);
 };
 
-const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
+const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes", documentTitle = title) => {
   const sortedItems = sortQrEntriesForPrint(items);
   const cards = sortedItems
     .map((entry) => {
@@ -119,7 +148,7 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
     <html>
       <head>
         <meta charset="UTF-8" />
-        <title>${escapeHtml(title)}</title>
+        <title>${escapeHtml(documentTitle)}</title>
         <style>
           * { box-sizing: border-box; }
           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #1e2e4a; background: #ffffff; }
@@ -493,9 +522,11 @@ const EquipmentManagement = () => {
     }
   };
 
-  const printQR = () => {
+  const printQR = async () => {
     if (!selectedQR) return;
-    printQrEntries([selectedQR], `QR Code - ${selectedQR?.equipment?.name || "Equipment"}`);
+    const printTitle = `QR Code - ${selectedQR?.equipment?.name || "Equipment"}`;
+    const fileName = buildSingleQrFileName(selectedQR?.equipment || {});
+    await printQrEntries([selectedQR], printTitle, fileName);
   };
 
   // Filter Logic
@@ -596,41 +627,49 @@ const EquipmentManagement = () => {
     });
   };
 
-  const printQrEntries = async (entries, title) => {
+  const printQrEntries = async (entries, title, fileName = "PSUIC-Equipment-QR") => {
+    const previousTitle = document.title;
+    document.title = fileName;
+
     const frame = createQrPrintFrame();
     const frameWindow = frame?.contentWindow;
     const frameDocument = frame?.contentDocument || frameWindow?.document;
     if (!frame || !frameWindow || !frameDocument) {
       removeQrPrintFrame();
+      document.title = previousTitle;
       throw new Error("Unable to prepare print frame.");
     }
 
-    const html = renderBulkQrPrintHtml(entries, title);
-    frameDocument.open();
-    frameDocument.write(html);
-    frameDocument.close();
+    try {
+      const html = renderBulkQrPrintHtml(entries, title, fileName);
+      frameDocument.open();
+      frameDocument.write(html);
+      frameDocument.close();
 
-    await waitForDocumentImages(frameDocument);
-    await new Promise((resolve) => setTimeout(resolve, 80));
+      await waitForDocumentImages(frameDocument);
+      await new Promise((resolve) => setTimeout(resolve, 80));
 
-    await new Promise((resolve) => {
-      let done = false;
-      const cleanup = () => {
-        if (done) return;
-        done = true;
-        setTimeout(() => {
-          removeQrPrintFrame();
-          resolve();
-        }, 120);
-      };
+      await new Promise((resolve) => {
+        let done = false;
+        const cleanup = () => {
+          if (done) return;
+          done = true;
+          setTimeout(() => {
+            removeQrPrintFrame();
+            resolve();
+          }, 120);
+        };
 
-      frameWindow.onafterprint = cleanup;
-      frameWindow.focus();
-      frameWindow.print();
+        frameWindow.onafterprint = cleanup;
+        frameWindow.focus();
+        frameWindow.print();
 
-      // Safari/iOS may not trigger afterprint reliably.
-      setTimeout(cleanup, 15000);
-    });
+        // Safari/iOS may not trigger afterprint reliably.
+        setTimeout(cleanup, 15000);
+      });
+    } finally {
+      document.title = previousTitle;
+    }
   };
 
   const handleBulkPrintQR = async (mode = "selected") => {
@@ -672,7 +711,12 @@ const EquipmentManagement = () => {
       const title = mode === "filtered"
         ? `Equipment QR Codes (${roomLabel})`
         : "Equipment QR Codes (Selected)";
-      await printQrEntries(printableItems, title);
+      const fileName = buildBulkQrFileName({
+        scope: mode === "filtered" ? "filtered" : "selected",
+        room: roomLabel,
+        count: printableItems.length,
+      });
+      await printQrEntries(printableItems, title, fileName);
 
       if (skippedIds.length > 0) {
         toast.warn(`${skippedIds.length} ${pluralize(skippedIds.length, "item")} were skipped (missing QR data).`);
