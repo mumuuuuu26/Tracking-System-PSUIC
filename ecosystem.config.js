@@ -11,8 +11,16 @@ if (fs.existsSync(envPath)) {
 
 const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 const readEnv = (key, fallback) => {
-  if (hasOwn(process.env, key)) return process.env[key];
-  if (hasOwn(envFromFile, key)) return envFromFile[key];
+  if (hasOwn(process.env, key)) {
+    const value = process.env[key];
+    if (value !== undefined && String(value).trim().length > 0) {
+      return value;
+    }
+  }
+  if (hasOwn(envFromFile, key)) {
+    const value = envFromFile[key];
+    if (value !== undefined) return value;
+  }
   return fallback;
 };
 

@@ -69,21 +69,99 @@ const Schedule = () => {
         try {
             const res = await currentUser();
             if (res.data) {
-                setCalendarId(res.data.googleCalendarId || "");
-                setSavedCalendarId(res.data.googleCalendarId || "");
-                setServiceEmail(res.data.serviceAccountEmail || "");
-                setGoogleServerReady(Boolean(res.data.googleCalendarConfigured));
-                setGoogleServerMissingKeys(
-                    Array.isArray(res.data.googleCalendarMissingKeys)
-                        ? res.data.googleCalendarMissingKeys
-                        : []
-                );
+                const nextCalendarId = res.data.googleCalendarId || "";
+                const nextServiceEmail = res.data.serviceAccountEmail || "";
+                const nextGoogleReady = Boolean(res.data.googleCalendarConfigured);
+                const nextMissingKeys = Array.isArray(res.data.googleCalendarMissingKeys)
+                    ? res.data.googleCalendarMissingKeys
+                    : [];
+
+                setCalendarId(nextCalendarId);
+                setSavedCalendarId(nextCalendarId);
+                setServiceEmail(nextServiceEmail);
+                setGoogleServerReady(nextGoogleReady);
+                setGoogleServerMissingKeys(nextMissingKeys);
+
+                return {
+                    calendarId: nextCalendarId,
+                    serviceEmail: nextServiceEmail,
+                    googleServerReady: nextGoogleReady,
+                    googleServerMissingKeys: nextMissingKeys,
+                };
             }
+
+            return {
+                calendarId: "",
+                serviceEmail: "",
+                googleServerReady: false,
+                googleServerMissingKeys: [],
+            };
         } catch {
             // Silent fail
+            return {
+                calendarId: "",
+                serviceEmail: "",
+                googleServerReady: false,
+                googleServerMissingKeys: [],
+            };
         }
     }, []);
 
+    const handleOpenSettings = React.useCallback(async () => {
+        await loadProfile();
+        setShowSettings(true);
+    }, [loadProfile]);
+
+    const handleSaveSettings = async () => {
+        if (!calendarId) {
+            toast.warning("Please enter a Calendar ID");
+            return;
+        }
+
+        try {
+            setSyncing(true);
+            await updateProfile({ googleCalendarId: calendarId });
+            setSavedCalendarId(calendarId);
+
+            const latestProfile = await loadProfile();
+            const latestGoogleReady = Boolean(latestProfile?.googleServerReady);
+
+            if (!latestGoogleReady) {
+                setShowSettings(false);
+                toast.warning("Calendar ID saved. Google sync will start automatically after admin configures server credentials.");
+                return;
+            }
+
+            const res = await performSync({ force: true, silent: true });
+            if (!res) {
+                throw new Error("Sync request did not complete");
+            }
+
+            setShowSettings(false);
+            if (res.data?.skipped) {
+                toast.info("Calendar was recently synced. Please wait before syncing again.");
+            } else {
+                toast.success(`Connected! Synced ${res.data.count} events.`);
+            }
+        } catch (err) {
+            const msg = err.response?.data?.message || "Failed to save settings";
+            const missingKeys = err.response?.data?.missingKeys;
+            const footer =
+                err.response?.status === 503 && Array.isArray(missingKeys) && missingKeys.length > 0
+                    ? `Server missing: ${missingKeys.join(", ")}`
+                    : 'Check that you shared the calendar with the Service Email.';
+            await showPopup({
+                icon: "error",
+                title: "Connection Failed",
+                text: msg,
+                footer,
+                confirmButtonText: "Close",
+            });
+        } finally {
+            setSyncing(false);
+        }
+    };
+    
     const performSync = React.useCallback(async ({ force = false, silent = false } = {}) => {
         if (!savedCalendarId || !googleServerReady) return;
 
@@ -135,52 +213,6 @@ const Schedule = () => {
         }
     }, [savedCalendarId, performSync]);
 
-    const handleSaveSettings = async () => {
-        if (!calendarId) {
-            toast.warning("Please enter a Calendar ID");
-            return;
-        }
-
-        try {
-            setSyncing(true);
-            await updateProfile({ googleCalendarId: calendarId });
-            setSavedCalendarId(calendarId);
-
-            if (!googleServerReady) {
-                setShowSettings(false);
-                toast.warning("Calendar ID saved. Google sync will start automatically after admin configures server credentials.");
-                return;
-            }
-
-            const res = await performSync({ force: true, silent: true });
-            if (!res) {
-                throw new Error("Sync request did not complete");
-            }
-
-            setShowSettings(false);
-            if (res.data?.skipped) {
-                toast.info("Calendar was recently synced. Please wait before syncing again.");
-            } else {
-                toast.success(`Connected! Synced ${res.data.count} events.`);
-            }
-        } catch (err) {
-            const msg = err.response?.data?.message || "Failed to save settings";
-            const missingKeys = err.response?.data?.missingKeys;
-            const footer =
-                err.response?.status === 503 && Array.isArray(missingKeys) && missingKeys.length > 0
-                    ? `Server missing: ${missingKeys.join(", ")}`
-                    : 'Check that you shared the calendar with the Service Email.';
-            await showPopup({
-                icon: "error",
-                title: "Connection Failed",
-                text: msg,
-                footer,
-                confirmButtonText: "Close",
-            });
-        } finally {
-            setSyncing(false);
-        }
-    };
 
     const eventsForCalendar = schedule.map(item => ({
         date: item.start,
@@ -198,7 +230,7 @@ const Schedule = () => {
                 {/* Mobile Header */}
                 <ITPageHeader title="My Schedule">
                     <button
-                        onClick={() => setShowSettings(true)}
+                        onClick={handleOpenSettings}
                         className="p-2 -mr-2 text-white hover:bg-white/10 rounded-full transition-colors relative"
                     >
                         <User size={24} />
@@ -215,7 +247,7 @@ const Schedule = () => {
                             onBack={() => navigate(-1)}
                         >
                             <button
-                                onClick={() => setShowSettings(true)}
+                                onClick={handleOpenSettings}
                                 className="p-2 -mr-2 text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-white/10 rounded-full transition-colors relative"
                             >
                                 <User size={24} />
