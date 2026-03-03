@@ -74,10 +74,9 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
       return `
         <article class="card">
           <div class="head">${escapeHtml(equipment?.name || "-")}</div>
-          <img class="qr" src="${entry.qrCodeImage}" alt="QR Code ${escapeHtml(equipment?.name || "-")}" />
+          <img class="qr" loading="eager" decoding="sync" src="${entry.qrCodeImage || ""}" alt="QR Code ${escapeHtml(equipment?.name || "-")}" />
           <div class="meta"><strong>Room:</strong> ${escapeHtml(roomLabel)} (${escapeHtml(buildingLabel)})</div>
           <div class="meta"><strong>Serial:</strong> ${escapeHtml(serialLabel)}</div>
-          <div class="meta mono">${escapeHtml(entry.qrScanUrl || "-")}</div>
         </article>
       `;
     })
@@ -86,6 +85,7 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
   return `
     <html>
       <head>
+        <meta charset="UTF-8" />
         <title>${escapeHtml(title)}</title>
         <style>
           * { box-sizing: border-box; }
@@ -97,7 +97,6 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
           .head { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 8px; width: 100%; }
           .qr { width: 170px; height: 170px; object-fit: contain; }
           .meta { margin-top: 6px; font-size: 12px; width: 100%; word-break: break-word; }
-          .mono { font-family: monospace; font-size: 10px; color: #64748b; }
           @media print {
             body { padding: 10mm; }
             .sheet { gap: 10px; }
@@ -108,6 +107,39 @@ const renderBulkQrPrintHtml = (items, title = "Equipment QR Codes") => {
         <h1>${escapeHtml(title)}</h1>
         <p class="sub">Total ${sortedItems.length} ${sortedItems.length === 1 ? "item" : "items"} • Generated ${new Date().toLocaleString()}</p>
         <section class="sheet">${cards}</section>
+        <script>
+          (() => {
+            const WAIT_TIMEOUT_MS = 7000;
+            const waitForImages = () => {
+              const images = Array.from(document.images || []);
+              if (!images.length) return Promise.resolve();
+              return Promise.all(
+                images.map((img) => {
+                  if (img.complete) return Promise.resolve();
+                  return new Promise((resolve) => {
+                    img.addEventListener("load", resolve, { once: true });
+                    img.addEventListener("error", resolve, { once: true });
+                  });
+                })
+              );
+            };
+
+            const printSafely = async () => {
+              await Promise.race([
+                waitForImages(),
+                new Promise((resolve) => setTimeout(resolve, WAIT_TIMEOUT_MS)),
+              ]);
+              window.focus();
+              window.print();
+            };
+
+            if (document.readyState === "complete") {
+              printSafely();
+            } else {
+              window.addEventListener("load", printSafely, { once: true });
+            }
+          })();
+        </script>
       </body>
     </html>
   `;
@@ -571,8 +603,6 @@ const EquipmentManagement = () => {
     const html = renderBulkQrPrintHtml(entries, title);
     printWindow.document.write(html);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   };
 
   const handleBulkPrintQR = async (mode = "selected") => {
@@ -601,8 +631,9 @@ const EquipmentManagement = () => {
       const response = await getEquipmentsQRBulk(targetIds);
       const items = Array.isArray(response?.data?.items) ? response.data.items : [];
       const skippedIds = Array.isArray(response?.data?.skippedIds) ? response.data.skippedIds : [];
+      const printableItems = items.filter((item) => Boolean(item?.qrCodeImage));
 
-      if (!items.length) {
+      if (!printableItems.length) {
         toast.error(response?.data?.message || "Unable to generate QR codes.");
         return;
       }
@@ -613,12 +644,12 @@ const EquipmentManagement = () => {
       const title = mode === "filtered"
         ? `Equipment QR Codes (${roomLabel})`
         : "Equipment QR Codes (Selected)";
-      printQrEntries(items, title);
+      printQrEntries(printableItems, title);
 
       if (skippedIds.length > 0) {
         toast.warn(`${skippedIds.length} ${pluralize(skippedIds.length, "item")} were skipped (missing QR data).`);
       } else {
-        toast.success(`Prepared ${items.length} QR ${pluralize(items.length, "code")} for printing.`);
+        toast.success(`Prepared ${printableItems.length} QR ${pluralize(printableItems.length, "code")} for printing.`);
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to generate bulk QR codes.");

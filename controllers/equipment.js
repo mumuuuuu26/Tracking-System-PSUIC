@@ -6,6 +6,7 @@ const QR_QUERY_PARAM_KEYS = ["qr", "qrcode", "code", "equipment", "id"];
 const QR_PUBLIC_BASE_URL_KEYS = ["QR_PUBLIC_BASE_URL", "FRONTEND_URL", "CLIENT_URL"];
 const NON_ACTIVE_TICKET_STATUSES = ["completed", "rejected"];
 const MAX_BULK_QR_EXPORT_COUNT = 200;
+const DEFAULT_QR_GENERATION_CONCURRENCY = 8;
 const equipmentScanInclude = {
   room: true,
 };
@@ -30,6 +31,37 @@ const compareEquipmentForQrExport = (left, right) => {
   if (serialCompare !== 0) return serialCompare;
 
   return Number(left?.id || 0) - Number(right?.id || 0);
+};
+
+const resolveQrGenerationConcurrency = () => {
+  const configured = Number.parseInt(String(process.env.QR_GENERATION_CONCURRENCY || ""), 10);
+  if (!Number.isInteger(configured) || configured <= 0) {
+    return DEFAULT_QR_GENERATION_CONCURRENCY;
+  }
+  return Math.min(configured, MAX_BULK_QR_EXPORT_COUNT);
+};
+
+const mapWithConcurrency = async (items, concurrency, mapper) => {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const workerCount = Math.max(1, Math.min(concurrency, items.length));
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      if (currentIndex >= items.length) {
+        return;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 };
 
 const pushLookupCandidate = (targetSet, value) => {
@@ -443,23 +475,26 @@ exports.generateBulkQR = async (req, res, next) => {
       .filter((equipment) => Boolean(equipment?.qrCode))
       .sort(compareEquipmentForQrExport);
 
-    const items = [];
+    const qrGenerationConcurrency = resolveQrGenerationConcurrency();
     const skippedIds = equipmentIds.filter((equipmentId) => {
       const equipment = equipmentById.get(equipmentId);
       return !equipment || !equipment.qrCode;
     });
 
-    for (const equipment of sortedEquipments) {
-      const qrScanUrl = buildQrScanUrl(req, equipment.qrCode);
-      // eslint-disable-next-line no-await-in-loop
-      const qrCodeImage = await QRCode.toDataURL(qrScanUrl);
+    const items = await mapWithConcurrency(
+      sortedEquipments,
+      qrGenerationConcurrency,
+      async (equipment) => {
+        const qrScanUrl = buildQrScanUrl(req, equipment.qrCode);
+        const qrCodeImage = await QRCode.toDataURL(qrScanUrl);
 
-      items.push({
-        equipment,
-        qrCodeImage,
-        qrScanUrl,
-      });
-    }
+        return {
+          equipment,
+          qrCodeImage,
+          qrScanUrl,
+        };
+      },
+    );
 
     if (!items.length) {
       return res.status(400).json({
