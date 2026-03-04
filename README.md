@@ -1,6 +1,6 @@
-# IT Tracking System Server
+# IT Helpdesk Ticketing System Server
 
-Backend API for PSUIC IT Tracking System.
+Backend API for PSUIC IT Helpdesk Ticketing System.
 
 ---
 
@@ -8,7 +8,7 @@ Backend API for PSUIC IT Tracking System.
 
 ### 1) ภาพรวม
 
-ระบบนี้คือ Backend API ของโปรเจกต์ IT Tracking System พัฒนาด้วย Node.js + Express + Prisma (MySQL) และรัน production ด้วย PM2
+ระบบนี้คือ Backend API ของโปรเจกต์ IT Helpdesk Ticketing System พัฒนาด้วย Node.js + Express + Prisma (MySQL) และรัน production ด้วย PM2
 
 ### 2) เทคโนโลยีที่ใช้
 
@@ -312,7 +312,7 @@ Google sync เจอ `self-signed certificate in certificate chain`:
 
 ### 1) Overview
 
-This repository is the backend API for the PSUIC IT Tracking System, built with Node.js + Express + Prisma (MySQL), and managed in production with PM2.
+This repository is the backend API for the PSUIC IT Helpdesk Ticketing System, built with Node.js + Express + Prisma (MySQL), and managed in production with PM2.
 
 ### 2) Tech Stack
 

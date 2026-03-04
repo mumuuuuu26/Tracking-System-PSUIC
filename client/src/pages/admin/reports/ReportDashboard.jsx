@@ -229,7 +229,7 @@ const ReportDashboard = () => {
             doc.setFont(pdfFontName, 'normal');
             doc.setTextColor(180, 200, 230);
             doc.text(`Period: ${periodLabel}  •  Generated: ${dayjs().format('DD MMM YYYY HH:mm')}`, margin, 22);
-            doc.text('PSU International College — IT Tracking System', margin, 28);
+            doc.text('PSU International College — IT Helpdesk Ticketing System', margin, 28);
 
             let y = 42;
 

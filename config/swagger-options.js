@@ -2,7 +2,7 @@ module.exports = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "IT Tracking System API",
+      title: "IT Helpdesk Ticketing System API",
       version: "1.0.0",
       description: "API Documentation for IT Support and Asset Tracking System",
       contact: {
