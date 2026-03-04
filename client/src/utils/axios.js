@@ -11,9 +11,41 @@ const resolveAppBasePath = () => {
     return '';
 };
 
+const isAbsoluteHttpUrl = (value) =>
+    /^https?:\/\//i.test(value) || String(value || '').startsWith('//');
+
+const normalizeApiPath = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (isAbsoluteHttpUrl(raw)) return raw;
+    const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+    return withLeadingSlash.replace(/\/+$/, '') || '/';
+};
+
+const resolveApiUrlWithAppBase = (rawApiUrl) => {
+    const normalizedApiUrl = normalizeApiPath(rawApiUrl);
+    if (!normalizedApiUrl || isAbsoluteHttpUrl(normalizedApiUrl)) {
+        return normalizedApiUrl;
+    }
+
+    const appBasePath = resolveAppBasePath();
+    if (!appBasePath) {
+        return normalizedApiUrl;
+    }
+
+    if (
+        normalizedApiUrl === appBasePath ||
+        normalizedApiUrl.startsWith(`${appBasePath}/`)
+    ) {
+        return normalizedApiUrl;
+    }
+
+    return `${appBasePath}${normalizedApiUrl}`;
+};
+
 const resolveApiBaseUrl = () => {
     const envApiUrl = String(import.meta.env.VITE_API_URL || '').trim();
-    if (envApiUrl) return envApiUrl;
+    if (envApiUrl) return resolveApiUrlWithAppBase(envApiUrl);
     const appBasePath = resolveAppBasePath();
     return appBasePath ? `${appBasePath}/api` : '/api';
 };
