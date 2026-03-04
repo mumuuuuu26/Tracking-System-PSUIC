@@ -1,7 +1,8 @@
 // client/src/pages/user/CreateTicket.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Camera,
+  LoaderCircle,
   X,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -38,6 +39,8 @@ const CreateTicket = () => {
   });
 
   const [activeSubComponents, setActiveSubComponents] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitInFlightRef = useRef(false);
 
   useEffect(() => {
     if (prefilledData?.categoryId) {
@@ -131,6 +134,8 @@ const CreateTicket = () => {
   };
 
   const handleSubmit = async () => {
+    if (submitInFlightRef.current || isSubmitting) return;
+
     if (
       !form.title ||
       !form.categoryId ||
@@ -148,6 +153,9 @@ const CreateTicket = () => {
       return;
     }
 
+    submitInFlightRef.current = true;
+    setIsSubmitting(true);
+
     try {
       const payload = {
         title: form.title,
@@ -161,10 +169,13 @@ const CreateTicket = () => {
       };
 
       const res = await createTicket(payload);
+      const isDuplicateRequest = Boolean(res?.data?.duplicateRequest);
 
       const result = await showPopup({
-        title: "Created Successfully",
-        text: "Your request has been recorded and is being processed by our IT team.",
+        title: isDuplicateRequest ? "Already Submitted" : "Created Successfully",
+        text: isDuplicateRequest
+          ? "This request was already submitted a moment ago. We will open your existing ticket."
+          : "Your request has been recorded and is being processed by our IT team.",
         icon: "success",
         confirmButtonText: "View Ticket",
         allowOutsideClick: false,
@@ -176,6 +187,9 @@ const CreateTicket = () => {
 
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to submit request");
+    } finally {
+      submitInFlightRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -356,15 +370,24 @@ const CreateTicket = () => {
           <div className="flex gap-4 pt-4">
             <button
               onClick={() => navigate(-1)}
-              className="flex-1 py-3.5 bg-white dark:bg-[#1a2f4e] text-gray-700 dark:text-blue-300 border border-gray-300 dark:border-blue-700/50 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-[#1e3558] hover:border-gray-400 dark:hover:border-blue-500/60 transition-colors shadow-sm dark:shadow-none"
+              disabled={isSubmitting}
+              className="flex-1 py-3.5 bg-white dark:bg-[#1a2f4e] text-gray-700 dark:text-blue-300 border border-gray-300 dark:border-blue-700/50 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-[#1e3558] hover:border-gray-400 dark:hover:border-blue-500/60 transition-colors shadow-sm dark:shadow-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="flex-1 py-3.5 bg-blue-600 dark:bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-blue-700 dark:hover:bg-[#15325A] transition-colors shadow-lg shadow-blue-500/30 dark:shadow-blue-900/40"
+              disabled={isSubmitting}
+              className="flex-1 py-3.5 bg-blue-600 dark:bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-blue-700 dark:hover:bg-[#15325A] transition-colors shadow-lg shadow-blue-500/30 dark:shadow-blue-900/40 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Submit Report
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <LoaderCircle size={18} className="animate-spin" />
+                  Submitting...
+                </span>
+              ) : (
+                "Submit"
+              )}
             </button>
           </div>
 

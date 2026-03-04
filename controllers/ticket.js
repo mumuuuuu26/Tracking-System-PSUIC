@@ -27,6 +27,12 @@ const pickFirstNonEmptyValue = (...candidates) => {
   return "";
 };
 
+const parsedDuplicateWindowSeconds = Number(process.env.TICKET_DUPLICATE_WINDOW_SECONDS);
+const DUPLICATE_TICKET_WINDOW_SECONDS =
+  Number.isFinite(parsedDuplicateWindowSeconds) && parsedDuplicateWindowSeconds > 0
+    ? parsedDuplicateWindowSeconds
+    : 20;
+
 // --- Validation Schemas ---
 const createTicketSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -58,6 +64,14 @@ const ticketUserSelect = {
   role: true,
 };
 
+const ticketInclude = {
+  room: true,
+  equipment: true,
+  category: true,
+  createdBy: { select: ticketUserSelect },
+  images: true,
+};
+
 exports.create = async (req, res, next) => {
   try {
     const validatedData = createTicketSchema.parse(req.body);
@@ -72,96 +86,139 @@ exports.create = async (req, res, next) => {
       subComponent
     } = validatedData;
 
+    const normalizedTitle = String(title).trim();
+    const normalizedDescription = String(description).trim();
+    const normalizedSubComponent =
+      typeof subComponent === "string" ? subComponent.trim() || null : null;
+    const normalizedEquipmentId = equipmentId ?? null;
+    const normalizedCategoryId = categoryId ?? null;
+
+    const duplicateWindowStart = new Date(
+      Date.now() - DUPLICATE_TICKET_WINDOW_SECONDS * 1000
+    );
+
+    const existingTicket = await prisma.ticket.findFirst({
+      where: {
+        createdById: req.user.id,
+        title: normalizedTitle,
+        description: normalizedDescription,
+        urgency,
+        roomId,
+        equipmentId: normalizedEquipmentId,
+        categoryId: normalizedCategoryId,
+        subComponent: normalizedSubComponent,
+        status: "not_start",
+        isDeleted: false,
+        createdAt: {
+          gte: duplicateWindowStart,
+        },
+      },
+      orderBy: {
+        id: "desc",
+      },
+      include: ticketInclude,
+    });
+
+    if (existingTicket) {
+      logger.warn(
+        `[Ticket] Duplicate submit prevented for user #${req.user.id} (ticket #${existingTicket.id})`
+      );
+      return res.status(200).json({
+        ...existingTicket,
+        duplicateRequest: true,
+      });
+    }
+
     const beforeImages = [];
     if (Array.isArray(images) && images.length > 0) {
-      for (const imageBase64 of images) {
-        const imageUrl = await saveImage(imageBase64, { scope: "ticket-before" });
-        if (!imageUrl) {
-          return res.status(400).json({ message: "Invalid ticket image data" });
-        }
+      const uploadedImages = await Promise.all(
+        images.map(async (imageBase64) => {
+          const imageUrl = await saveImage(imageBase64, { scope: "ticket-before" });
+          if (!imageUrl) {
+            const invalidImageErr = new Error("Invalid ticket image data");
+            invalidImageErr.statusCode = 400;
+            throw invalidImageErr;
+          }
 
-        beforeImages.push({
-          url: imageUrl,
-          secure_url: imageUrl,
-          type: "before",
-          asset_id: "local",
-          public_id: "local",
-        });
-      }
+          return {
+            url: imageUrl,
+            secure_url: imageUrl,
+            type: "before",
+            asset_id: "local",
+            public_id: "local",
+          };
+        })
+      );
+      beforeImages.push(...uploadedImages);
     }
 
     const newTicket = await prisma.ticket.create({
       data: {
-        title,
-        description,
+        title: normalizedTitle,
+        description: normalizedDescription,
         urgency,
         createdById: req.user.id,
         roomId,
-        equipmentId,
-        categoryId,
-        subComponent,
+        equipmentId: normalizedEquipmentId,
+        categoryId: normalizedCategoryId,
+        subComponent: normalizedSubComponent,
         status: "not_start",
         images: beforeImages.length > 0 ? { create: beforeImages } : undefined,
       },
-      include: {
-        room: true,
-        equipment: true,
-        category: true,
-        createdBy: { select: ticketUserSelect },
-        images: true
-      },
+      include: ticketInclude,
     });
 
-    // Fetch IT/admin users once. DB notifications stay unchanged, but email is IT-only.
-    const notificationUsers = await prisma.user.findMany({
-      where: {
-        OR: [{ role: "it_support" }, { role: "admin" }],
-        enabled: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        isEmailEnabled: true,
-        notificationEmail: true
-      },
-    });
+    emitTicketCreated(req.io, newTicket);
+    res.status(201).json(newTicket);
 
-    // Email notification: send only to IT notification emails (no admin, no account-email fallback)
-    if (notificationUsers.length > 0) {
+    setImmediate(async () => {
       try {
-        const emails = [
-          ...new Set(
-            notificationUsers
-              .filter(
-                (u) =>
-                  u.role === "it_support" &&
-                  u.isEmailEnabled !== false &&
-                  typeof u.notificationEmail === "string" &&
-                  EMAIL_ADDRESS_REGEX.test(u.notificationEmail.trim())
-              )
-              .map((u) => u.notificationEmail.trim().toLowerCase())
-          ),
-        ];
+        // Fetch IT/admin users once. DB notifications stay unchanged, but email is IT-only.
+        const notificationUsers = await prisma.user.findMany({
+          where: {
+            OR: [{ role: "it_support" }, { role: "admin" }],
+            enabled: true,
+          },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            isEmailEnabled: true,
+            notificationEmail: true,
+          },
+        });
 
-        if (emails.length > 0) {
-          const { sendEmailNotification } = require("../utils/sendEmailHelper");
-          const frontendBaseUrl = (process.env.FRONTEND_URL || "").replace(/\/+$/, "");
-          const createdAt = newTicket.createdAt
-            ? new Date(newTicket.createdAt).toLocaleString("th-TH", {
-                timeZone: process.env.APP_TIMEZONE || "Asia/Bangkok",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "N/A";
+        // Email notification: send only to IT notification emails (no admin, no account-email fallback)
+        if (notificationUsers.length > 0) {
+          const emails = [
+            ...new Set(
+              notificationUsers
+                .filter(
+                  (u) =>
+                    u.role === "it_support" &&
+                    u.isEmailEnabled !== false &&
+                    typeof u.notificationEmail === "string" &&
+                    EMAIL_ADDRESS_REGEX.test(u.notificationEmail.trim())
+                )
+                .map((u) => u.notificationEmail.trim().toLowerCase())
+            ),
+          ];
 
-          const emailResult = await sendEmailNotification(
-            "new_ticket_it",
-            emails,
-            {
+          if (emails.length > 0) {
+            const { sendEmailNotification } = require("../utils/sendEmailHelper");
+            const frontendBaseUrl = (process.env.FRONTEND_URL || "").replace(/\/+$/, "");
+            const createdAt = newTicket.createdAt
+              ? new Date(newTicket.createdAt).toLocaleString("th-TH", {
+                  timeZone: process.env.APP_TIMEZONE || "Asia/Bangkok",
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "N/A";
+
+            const emailResult = await sendEmailNotification("new_ticket_it", emails, {
               // Reporter fallback: name -> username -> email
               // prevents "N/A" when profile name is not filled.
               reporterName: sanitizeForEmail(
@@ -178,8 +235,8 @@ exports.create = async (req, res, next) => {
                 pickFirstNonEmptyValue(newTicket.createdBy?.phoneNumber, "N/A")
               ),
               ticketId: sanitizeForEmail(newTicket.id),
-              title: sanitizeForEmail(title),
-              description: sanitizeForEmail(description),
+              title: sanitizeForEmail(normalizedTitle),
+              description: sanitizeForEmail(normalizedDescription),
               urgency: sanitizeForEmail(newTicket.urgency),
               status: sanitizeForEmail(newTicket.status),
               category: sanitizeForEmail(newTicket.category?.name),
@@ -201,45 +258,47 @@ exports.create = async (req, res, next) => {
                   ? `${frontendBaseUrl}/it/ticket/${newTicket.id}`
                   : `/it/ticket/${newTicket.id}`
               ),
-            }
-          );
+            });
 
-          if (emailResult?.sent) {
-            logger.info(
-              `📨 New ticket email sent to IT notification list (${emails.length} recipient(s)) for ticket #${newTicket.id}`
-            );
+            if (emailResult?.sent) {
+              logger.info(
+                `📨 New ticket email sent to IT notification list (${emails.length} recipient(s)) for ticket #${newTicket.id}`
+              );
+            } else {
+              logger.warn(
+                `⚠️ New ticket email skipped/failed for ticket #${newTicket.id} (reason: ${emailResult?.reason || "unknown"})`
+              );
+            }
           } else {
             logger.warn(
-              `⚠️ New ticket email skipped/failed for ticket #${newTicket.id} (reason: ${emailResult?.reason || "unknown"})`
+              `⚠️ No IT notificationEmail recipient configured for ticket #${newTicket.id}. Email notification skipped.`
             );
           }
-        } else {
-          logger.warn(
-            `⚠️ No IT notificationEmail recipient configured for ticket #${newTicket.id}. Email notification skipped.`
-          );
         }
-      } catch (emailError) {
-        logger.error(`❌ Email Notification Failed for Ticket #${newTicket.id}:`, emailError);
+
+        // Database Notifications — keep admin + IT in-app notifications
+        if (notificationUsers.length > 0) {
+          await prisma.notification.createMany({
+            data: notificationUsers.map((user) => ({
+              userId: user.id,
+              ticketId: newTicket.id,
+              title: "New Ticket Created",
+              message: `Ticket #${newTicket.id}: ${normalizedTitle}`,
+              type: "ticket_create",
+            })),
+          });
+        }
+      } catch (notificationError) {
+        logger.error(
+          `❌ Background ticket notification pipeline failed for ticket #${newTicket.id}:`,
+          notificationError
+        );
       }
-    }
-
-    // Database Notifications — keep admin + IT in-app notifications
-    if (notificationUsers.length > 0) {
-      await prisma.notification.createMany({
-        data: notificationUsers.map((user) => ({
-          userId: user.id,
-          ticketId: newTicket.id,
-          title: "New Ticket Created",
-          message: `Ticket #${newTicket.id}: ${title}`,
-          type: "ticket_create",
-        })),
-      });
-    }
-
-    emitTicketCreated(req.io, newTicket);
-
-    res.json(newTicket);
+    });
   } catch (err) {
+    if (err?.statusCode && res.statusCode === 200) {
+      res.status(err.statusCode);
+    }
     next(err);
   }
 };
