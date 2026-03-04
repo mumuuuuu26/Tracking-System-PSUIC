@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle, Clock, AlertCircle, Calendar, XCircle, ArrowLeft } from "lucide-react";
 import { getTicket } from "../../api/ticket";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const TicketDetail = () => {
   const navigate = useNavigate();
@@ -112,8 +113,11 @@ const TicketDetail = () => {
   };
 
   const timelineSteps = getTimelineSteps();
-  const beforeImage = ticket?.images?.find(img => img.type === "before")?.url;
-  const afterImage = ticket?.images?.find(img => img.type === "after")?.url;
+  const beforeImageRaw = ticket?.images?.find(img => img.type === "before")?.url;
+  const afterImageRaw = ticket?.images?.find(img => img.type === "after")?.url;
+  const beforeImage = beforeImageRaw ? getImageUrl(beforeImageRaw) : "";
+  const afterImage = afterImageRaw ? getImageUrl(afterImageRaw) : "";
+  const proofImage = ticket?.proof ? getImageUrl(ticket.proof) : "";
   const shouldShowItNotesAndProof = ticket?.status === "completed" && Boolean(ticket?.note || ticket?.proof);
   const resolvedNote = ticket?.note ? ticket.note.replace(/^REJECTED:\s*/i, "") : "";
 
@@ -277,7 +281,7 @@ const TicketDetail = () => {
                   </p>
                   <div className="rounded-2xl overflow-hidden border border-blue-100 dark:border-blue-800/30 bg-gray-50 dark:bg-[#0d1b2a]">
                     <img
-                      src={ticket.proof}
+                      src={proofImage}
                       alt="IT proof of fix"
                       className="w-full h-48 object-cover"
                     />

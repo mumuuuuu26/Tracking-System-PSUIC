@@ -27,6 +27,7 @@
     "smtp:test": "node scripts/test-email.js",
     "smtp:verify:prod": "node -e \"process.env.NODE_ENV='production';process.env.SMTP_VERIFY_ONLY='true';require('./scripts/test-email.js')\"",
     "smtp:test:prod": "node -e \"process.env.NODE_ENV='production';require('./scripts/test-email.js')\"",
+    "templates:sync:prod": "node -e \"process.env.NODE_ENV='production';require('./prisma/update-templates.js')\"",
     "swagger:generate:static": "node scripts/generate-swagger-static.js",
     "preflight:prod": "npm run validate:env:prod && npm run preflight:db:prod && npm run preflight:storage:prod",
     "prisma:migrate:prod": "node -e \"process.env.NODE_ENV='production';require('./scripts/apply-prisma-sql-migrations.js')\"",

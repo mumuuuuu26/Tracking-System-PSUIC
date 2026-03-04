@@ -7,6 +7,7 @@ import ITWrapper from "../../components/it/ITWrapper";
 import { getTicket } from "../../api/ticket";
 import { acceptJob, closeJob, saveDraft, previewJob, rejectJob } from "../../api/it";
 import { getUserDisplayName } from "../../utils/userIdentity";
+import { getImageUrl } from "../../utils/imageUrl";
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -321,7 +322,7 @@ const TicketDetail = () => {
                                 <div className="flex items-center gap-4 min-w-0">
                                     <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full overflow-hidden shrink-0">
                                         {ticket.createdBy?.picture ? (
-                                            <img src={ticket.createdBy.picture} alt="User" className="w-full h-full object-cover" />
+                                            <img src={getImageUrl(ticket.createdBy.picture)} alt="User" className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-red-500 dark:text-red-300 font-bold text-xl">
                                                 {ticket.createdBy?.name?.[0] || 'U'}
@@ -372,9 +373,9 @@ const TicketDetail = () => {
                                         <p className="text-xs text-blue-500 dark:text-blue-300 font-bold uppercase tracking-wide mb-3">Attachments</p>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                             {ticket.images.filter(img => img.type === 'before').map((img, index) => (
-                                                <div key={index} className="rounded-2xl overflow-hidden border border-gray-100 dark:border-blue-800/40 relative group aspect-[4/3] shadow-sm cursor-pointer" onClick={() => window.open(img.url, '_blank')}>
+                                                <div key={index} className="rounded-2xl overflow-hidden border border-gray-100 dark:border-blue-800/40 relative group aspect-[4/3] shadow-sm cursor-pointer" onClick={() => window.open(getImageUrl(img.url), '_blank')}>
                                                     <img
-                                                        src={img.url}
+                                                        src={getImageUrl(img.url)}
                                                         alt={`Attachment ${index + 1}`}
                                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                     />
@@ -488,7 +489,7 @@ const TicketDetail = () => {
                                         {ticket.proof && (
                                             <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-blue-800/40 mt-2">
                                                 <p className="text-xs text-gray-500 dark:text-blue-300/60 mb-1 px-1">Proof of fix:</p>
-                                                <img src={ticket.proof} alt="Proof" className="w-full h-40 object-cover" />
+                                                <img src={getImageUrl(ticket.proof)} alt="Proof" className="w-full h-40 object-cover" />
                                             </div>
                                         )}
                                     </div>

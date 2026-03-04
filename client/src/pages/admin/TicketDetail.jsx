@@ -7,6 +7,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { toast } from "react-toastify";
 import AdminWrapper from "../../components/admin/AdminWrapper";
 import AdminHeader from "../../components/admin/AdminHeader";
+import { getImageUrl } from "../../utils/imageUrl";
 
 dayjs.extend(relativeTime);
 
@@ -93,7 +94,7 @@ const AdminTicketDetail = () => {
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-red-100 rounded-full overflow-hidden">
                                     {ticket.createdBy?.picture ? (
-                                        <img src={ticket.createdBy.picture} alt="User" className="w-full h-full object-cover" />
+                                        <img src={getImageUrl(ticket.createdBy.picture)} alt="User" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-red-500 font-bold text-xl">
                                             {ticket.createdBy?.name?.[0] || 'U'}
@@ -140,9 +141,9 @@ const AdminTicketDetail = () => {
                                     <p className="text-xs text-blue-500 font-bold uppercase tracking-wide mb-3">Attachments</p>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         {ticket.images.filter(img => img.type === 'before').map((img, index) => (
-                                            <div key={index} className="rounded-2xl overflow-hidden border border-gray-100 relative group aspect-[4/3] shadow-sm cursor-pointer" onClick={() => window.open(img.url, '_blank')}>
+                                            <div key={index} className="rounded-2xl overflow-hidden border border-gray-100 relative group aspect-[4/3] shadow-sm cursor-pointer" onClick={() => window.open(getImageUrl(img.url), '_blank')}>
                                                 <img
-                                                    src={img.url}
+                                                    src={getImageUrl(img.url)}
                                                     alt={`Attachment ${index + 1}`}
                                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                 />
@@ -172,7 +173,7 @@ const AdminTicketDetail = () => {
                                         <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100 mb-4">
                                             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
                                                 {ticket.assignedTo?.picture ? (
-                                                    <img src={ticket.assignedTo.picture} alt="" className="w-full h-full object-cover" />
+                                                    <img src={getImageUrl(ticket.assignedTo.picture)} alt="" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <User size={16} className="text-blue-600" />
                                                 )}
@@ -196,7 +197,7 @@ const AdminTicketDetail = () => {
                                     {ticket.proof && (
                                         <div className="rounded-xl overflow-hidden border border-gray-100 mt-2">
                                             <p className="text-xs text-gray-500 mb-2 font-medium px-1">Proof of Completion:</p>
-                                            <img src={ticket.proof} alt="Proof" className="w-full h-48 object-cover" />
+                                            <img src={getImageUrl(ticket.proof)} alt="Proof" className="w-full h-48 object-cover" />
                                         </div>
                                     )}
 

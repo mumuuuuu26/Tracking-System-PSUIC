@@ -5,6 +5,53 @@ const STATUS_VARIANTS = {
   rejected: ["rejected", "reject", "declined", "cancelled", "canceled"],
 };
 
+const normalizeBasePath = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw === "/") return "/";
+  const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeadingSlash.replace(/\/+$/, "");
+};
+
+const extractPathnameFromUrl = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    return normalizeBasePath(parsed.pathname || "");
+  } catch {
+    return "";
+  }
+};
+
+const uploadBasePath =
+  normalizeBasePath(process.env.APP_BASE_PATH) ||
+  normalizeBasePath(process.env.PUBLIC_BASE_PATH) ||
+  extractPathnameFromUrl(process.env.FRONTEND_URL) ||
+  extractPathnameFromUrl(process.env.CLIENT_URL) ||
+  "";
+
+const normalizeUploadUrl = (value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (!trimmed.startsWith("/uploads/")) return trimmed;
+  if (!uploadBasePath || uploadBasePath === "/") return trimmed;
+  if (trimmed.startsWith(`${uploadBasePath}/`)) return trimmed;
+
+  return `${uploadBasePath}${trimmed}`;
+};
+
+const normalizeUserMedia = (user) => {
+  if (!user || typeof user !== "object") return user;
+  return {
+    ...user,
+    picture: normalizeUploadUrl(user.picture),
+  };
+};
+
 const normalizeToken = (value) =>
   String(value ?? "")
     .trim()
@@ -42,9 +89,22 @@ const getStatusWhere = (status) => {
 
 const normalizeTicketEntity = (ticket) => {
   if (!ticket || typeof ticket !== "object") return ticket;
+
+  const normalizedImages = Array.isArray(ticket.images)
+    ? ticket.images.map((image) => ({
+        ...image,
+        url: normalizeUploadUrl(image?.url),
+        secure_url: normalizeUploadUrl(image?.secure_url),
+      }))
+    : ticket.images;
+
   return {
     ...ticket,
     status: normalizeTicketStatus(ticket.status),
+    proof: normalizeUploadUrl(ticket.proof),
+    images: normalizedImages,
+    createdBy: normalizeUserMedia(ticket.createdBy),
+    assignedTo: normalizeUserMedia(ticket.assignedTo),
   };
 };
 

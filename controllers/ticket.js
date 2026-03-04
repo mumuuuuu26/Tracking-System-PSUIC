@@ -18,6 +18,15 @@ const sanitizeForEmail = (value, fallback = "N/A") => {
     .replace(/'/g, "&#39;");
 };
 
+const pickFirstNonEmptyValue = (...candidates) => {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue;
+    const normalized = String(candidate).trim();
+    if (normalized) return normalized;
+  }
+  return "";
+};
+
 // --- Validation Schemas ---
 const createTicketSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -153,6 +162,21 @@ exports.create = async (req, res, next) => {
             "new_ticket_it",
             emails,
             {
+              // Reporter fallback: name -> username -> email
+              // prevents "N/A" when profile name is not filled.
+              reporterName: sanitizeForEmail(
+                pickFirstNonEmptyValue(
+                  newTicket.createdBy?.name,
+                  newTicket.createdBy?.username,
+                  newTicket.createdBy?.email
+                )
+              ),
+              reporterEmail: sanitizeForEmail(
+                pickFirstNonEmptyValue(newTicket.createdBy?.email, "N/A")
+              ),
+              reporterPhone: sanitizeForEmail(
+                pickFirstNonEmptyValue(newTicket.createdBy?.phoneNumber, "N/A")
+              ),
               ticketId: sanitizeForEmail(newTicket.id),
               title: sanitizeForEmail(title),
               description: sanitizeForEmail(description),
@@ -165,12 +189,13 @@ exports.create = async (req, res, next) => {
               floor: sanitizeForEmail(newTicket.room?.floor),
               equipment: sanitizeForEmail(newTicket.equipment?.name),
               equipmentType: sanitizeForEmail(newTicket.equipment?.type),
-              reporterName: sanitizeForEmail(newTicket.createdBy?.name),
-              reporterEmail: sanitizeForEmail(newTicket.createdBy?.email),
-              reporterPhone: sanitizeForEmail(newTicket.createdBy?.phoneNumber),
               createdAt: sanitizeForEmail(createdAt),
-              createdBy: sanitizeForEmail(newTicket.createdBy?.name || newTicket.createdBy?.email),
-              reporter: sanitizeForEmail(newTicket.createdBy?.name || newTicket.createdBy?.email),
+              createdBy: sanitizeForEmail(
+                pickFirstNonEmptyValue(newTicket.createdBy?.name, newTicket.createdBy?.email)
+              ),
+              reporter: sanitizeForEmail(
+                pickFirstNonEmptyValue(newTicket.createdBy?.name, newTicket.createdBy?.email)
+              ),
               link: sanitizeForEmail(
                 frontendBaseUrl
                   ? `${frontendBaseUrl}/it/ticket/${newTicket.id}`

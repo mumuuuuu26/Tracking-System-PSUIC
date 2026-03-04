@@ -167,12 +167,30 @@ const absoluteUploadDir = path.isAbsolute(uploadDir)
   ? uploadDir
   : path.join(__dirname, uploadDir);
 
+const normalizeOptionalBasePath = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw === "/") return "/";
+  const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeadingSlash.replace(/\/+$/, "");
+};
+
+const uploadMountPaths = ["/uploads"];
+const configuredUploadBasePath =
+  normalizeOptionalBasePath(process.env.APP_BASE_PATH) ||
+  normalizeOptionalBasePath(process.env.PUBLIC_BASE_PATH);
+if (configuredUploadBasePath && configuredUploadBasePath !== "/") {
+  uploadMountPaths.push(`${configuredUploadBasePath}/uploads`);
+}
+
 // Ensure upload directory exists
 if (!fs.existsSync(absoluteUploadDir)) {
   fs.mkdirSync(absoluteUploadDir, { recursive: true });
 }
 
-app.use("/uploads", express.static(absoluteUploadDir));
+for (const mountPath of uploadMountPaths) {
+  app.use(mountPath, express.static(absoluteUploadDir));
+}
 
 // --- Rate Limiting Strategy ---
 const sanitizeRateLimitIp = (rawIp) => {

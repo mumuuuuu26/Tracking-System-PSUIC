@@ -1,35 +1,19 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getImageUrl } from './imageUrl';
+import { describe, expect, it } from "vitest";
+import { getImageUrl } from "./imageUrl";
 
-describe('getImageUrl', () => {
-
-
-  beforeEach(() => {
-    vi.resetModules();
-    // Simulate Vite import.meta.env
-    vi.stubGlobal('import', { meta: { env: { VITE_API_URL: 'http://localhost:5002/api' } } });
+describe("getImageUrl", () => {
+  it("returns default profile path when input is empty", () => {
+    expect(getImageUrl(null)).toMatch(/default-profile\.svg$/);
+    expect(getImageUrl("")).toMatch(/default-profile\.svg$/);
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('should return default image if path is empty', () => {
-    expect(getImageUrl(null)).toBe('/default-profile.svg');
-    expect(getImageUrl('')).toBe('/default-profile.svg');
-  });
-
-  it('should return path as is if it starts with http', () => {
-    const url = 'https://example.com/image.jpg';
+  it("keeps absolute http/https URL unchanged", () => {
+    const url = "https://example.com/image.jpg";
     expect(getImageUrl(url)).toBe(url);
   });
 
-  it('should prepend base URL to relative path', () => {
-    // When VITE_API_URL is '/api', baseUrl becomes empty string
-    // So it returns the path as is (relative) which is correct for proxy
-    // const expected = 'http://localhost:5002/uploads/image.jpg';
-    const expected = '/uploads/image.jpg'; 
-    expect(getImageUrl('uploads/image.jpg')).toBe(expected);
-    expect(getImageUrl('/uploads/image.jpg')).toBe(expected);
+  it("keeps upload file suffix for upload paths", () => {
+    const resolved = getImageUrl("/uploads/image.jpg");
+    expect(resolved).toContain("/uploads/image.jpg");
   });
 });
