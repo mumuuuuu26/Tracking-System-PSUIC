@@ -22,7 +22,21 @@ const loadPdfDeps = async () => {
     ]);
 
     const jsPDF = jspdfModule.jsPDF ?? jspdfModule.default;
-    const autoTable = autoTableModule.default ?? autoTableModule.autoTable ?? autoTableModule;
+    const autoTable =
+        autoTableModule.autoTable ??
+        autoTableModule.default?.autoTable ??
+        (typeof autoTableModule.default === 'function' ? autoTableModule.default : null) ??
+        autoTableModule['module.exports']?.autoTable ??
+        (typeof autoTableModule['module.exports'] === 'function' ? autoTableModule['module.exports'] : null);
+
+    if (typeof jsPDF !== 'function') {
+        throw new Error('Failed to load jsPDF constructor');
+    }
+
+    if (typeof autoTable !== 'function') {
+        throw new Error('Failed to load jspdf-autotable function');
+    }
+
     return { jsPDF, autoTable };
 };
 
@@ -405,7 +419,8 @@ const ReportDashboard = () => {
             }
 
             doc.save(`System_Report_${periodLabel.replace(' ', '_')}.pdf`);
-        } catch {
+        } catch (error) {
+            console.error('PDF export failed:', error);
             await showPopup({
                 title: "Export Failed",
                 text: "Failed to generate PDF. Please try again.",
