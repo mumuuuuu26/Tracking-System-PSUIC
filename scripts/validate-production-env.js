@@ -209,6 +209,15 @@ function main() {
     );
   }
 
+  if (
+    isTruthy(process.env.GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS) &&
+    !isNonNegativeInteger(process.env.GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS)
+  ) {
+    fail(
+      `GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS must be a non-negative integer (got "${process.env.GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS}")`,
+    );
+  }
+
   const missingOptional = optionalButRecommended.filter((key) => !isTruthy(process.env[key]));
   if (missingOptional.length > 0) {
     warn(`Optional integrations missing (email/calendar features may be disabled): ${missingOptional.join(", ")}`);

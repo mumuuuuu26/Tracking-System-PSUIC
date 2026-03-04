@@ -65,6 +65,7 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `LOG_RETENTION_DAYS` | Keep rotated log archives for N days | `14` |
 | `LOG_ROTATE_CRON` | Cron for runtime log rotation | `"15 * * * *"` |
 | `GOOGLE_SYNC_MIN_INTERVAL_MS` | Minimum interval between sync calls per user | `60000` |
+| `GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS` | Minimum interval for server-side auto-sync before serving `/api/it/public-schedule` | `60000` |
 
 ### Email Notifications (SMTP)
 | Variable | Description | Example |

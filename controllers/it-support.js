@@ -18,6 +18,8 @@ const ticketUserSelect = {
 
 const DEFAULT_GOOGLE_SYNC_MIN_INTERVAL_MS = 60 * 1000;
 const googleSyncLastRunByUser = new Map();
+let publicScheduleSyncPromise = null;
+let publicScheduleLastRunAt = 0;
 
 const parsePositiveInt = (value, fallback) => {
     const parsed = Number.parseInt(String(value ?? ""), 10);
@@ -28,12 +30,97 @@ const GOOGLE_SYNC_MIN_INTERVAL_MS = parsePositiveInt(
     process.env.GOOGLE_SYNC_MIN_INTERVAL_MS,
     DEFAULT_GOOGLE_SYNC_MIN_INTERVAL_MS,
 );
+const GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS = parsePositiveInt(
+    process.env.GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS,
+    GOOGLE_SYNC_MIN_INTERVAL_MS,
+);
 
 const parseBoolean = (value) => {
     if (typeof value === "boolean") return value;
     if (typeof value === "number") return value === 1;
     if (typeof value !== "string") return false;
     return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+};
+
+const normalizeCalendarId = (value) => String(value || "").trim();
+
+const syncItCalendarsForPublicSchedule = async () => {
+    const now = Date.now();
+
+    if (publicScheduleSyncPromise) {
+        return publicScheduleSyncPromise;
+    }
+
+    if (
+        publicScheduleLastRunAt > 0 &&
+        now - publicScheduleLastRunAt < GOOGLE_PUBLIC_SCHEDULE_SYNC_INTERVAL_MS
+    ) {
+        return null;
+    }
+
+    publicScheduleSyncPromise = (async () => {
+        const { syncUserCalendar } = require("../utils/syncService");
+        const itUsers = await prisma.user.findMany({
+            where: {
+                role: "it_support",
+                enabled: true,
+                googleCalendarId: { not: null },
+            },
+            select: {
+                id: true,
+                email: true,
+                googleCalendarId: true,
+            },
+        });
+
+        let syncedUsers = 0;
+        let skippedUsers = 0;
+
+        for (const user of itUsers) {
+            const calendarId = normalizeCalendarId(user.googleCalendarId);
+            if (!calendarId) {
+                skippedUsers += 1;
+                continue;
+            }
+
+            const userLastSyncedAt = googleSyncLastRunByUser.get(user.id) || 0;
+            const elapsedMs = Date.now() - userLastSyncedAt;
+            if (userLastSyncedAt > 0 && elapsedMs < GOOGLE_SYNC_MIN_INTERVAL_MS) {
+                skippedUsers += 1;
+                continue;
+            }
+
+            try {
+                await syncUserCalendar(user.id, calendarId);
+                googleSyncLastRunByUser.set(user.id, Date.now());
+                syncedUsers += 1;
+            } catch (err) {
+                const mappedError = mapGoogleSyncError(err);
+                if (mappedError) {
+                    logger.warn(
+                        `[PublicSchedule] Auto-sync skipped for IT user ${user.id} (${user.email || "unknown"}): ${mappedError.body?.message || "Google sync mapping error"}`,
+                    );
+                } else {
+                    logger.error(
+                        `[PublicSchedule] Auto-sync failed for IT user ${user.id} (${user.email || "unknown"}): ${err?.message || err}`,
+                    );
+                }
+            }
+        }
+
+        publicScheduleLastRunAt = Date.now();
+        logger.info(
+            `[PublicSchedule] Auto-sync completed. synced=${syncedUsers}, skipped=${skippedUsers}, total=${itUsers.length}`,
+        );
+    })()
+        .catch((err) => {
+            logger.error(`[PublicSchedule] Auto-sync task failed: ${err?.stack || err}`);
+        })
+        .finally(() => {
+            publicScheduleSyncPromise = null;
+        });
+
+    return publicScheduleSyncPromise;
 };
 
 // Get dashboard statistics
@@ -553,6 +640,8 @@ exports.getHistory = async (req, res, next) => {
 // Get public schedule (IT availability)
 exports.getPublicSchedule = async (req, res, next) => {
   try {
+    await syncItCalendarsForPublicSchedule();
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -566,11 +655,20 @@ exports.getPublicSchedule = async (req, res, next) => {
         date: { gte: startOfPrevYear },
         description: {
             contains: 'Imported from Google Calendar'
-        }
+        },
+        user: {
+            role: "it_support",
+            enabled: true,
+        },
       },
       include: {
-        user: { select: { name: true, id: true } }
-      }
+        user: { select: { name: true, email: true, id: true } }
+      },
+      orderBy: [
+        { startTime: "asc" },
+        { date: "asc" },
+        { id: "asc" },
+      ],
     });
 
     // Format for frontend
@@ -580,7 +678,7 @@ exports.getPublicSchedule = async (req, res, next) => {
         start: t.startTime || t.date,
         end: t.endTime,
         type: 'google', // Changed type to 'google' for clarity
-        staff: t.user?.name,
+        staff: t.user?.name || t.user?.email || "IT Support",
         details: t.title,
         description: t.description
     }));
