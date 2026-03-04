@@ -76,7 +76,7 @@ const HomeUser = () => {
       <div className="pb-24 bg-gray-50 dark:bg-[#0d1b2a] min-h-screen">
 
         {/* === Hero Header === */}
-        <div className="relative bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0a2a4a] px-4 sm:px-6 pt-10 sm:pt-12 pb-20 md:rounded-b-3xl md:mx-0 overflow-hidden shadow-sm dark:shadow-none border-b border-transparent dark:border-white/10 lg:hidden">
+        <div className="relative bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0a2a4a] px-4 sm:px-6 pt-10 sm:pt-12 pb-20 md:mx-0 overflow-hidden shadow-sm dark:shadow-none border-b border-transparent dark:border-white/10 lg:hidden">
           {/* Background decorative circles */}
           <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-blue-400/20 dark:bg-blue-500/10 blur-2xl pointer-events-none"></div>
           <div className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-blue-300/10 dark:bg-blue-400/5 blur-xl pointer-events-none"></div>

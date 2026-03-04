@@ -126,7 +126,7 @@ const TicketDetail = () => {
 
       {/* Mobile Header */}
       <div className="sticky top-0 z-40 lg:hidden px-0">
-        <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0d1b2a] border-b border-transparent dark:border-white/10 shadow-sm dark:shadow-none px-5 py-4 flex items-center rounded-b-[2rem]">
+        <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0d1b2a] border-b border-transparent dark:border-white/10 shadow-sm dark:shadow-none px-5 py-4 flex items-center">
           <button
             onClick={() => navigate(-1)}
             className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"

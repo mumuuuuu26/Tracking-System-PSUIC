@@ -69,7 +69,7 @@ const EquipmentDetail = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0d1b2a] text-gray-900 dark:text-white">
       {/* Header */}
       {/* Standard Header */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0d1b2a] px-5 py-4 flex items-center shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-none border-b border-transparent dark:border-b-white/10 rounded-b-[2rem] sticky top-0 z-10 -mx-4 md:-mx-6 mb-6">
+      <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 dark:from-[#0d1b2a] dark:via-[#193C6C] dark:to-[#0d1b2a] px-5 py-4 flex items-center shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-none border-b border-transparent dark:border-b-white/10 sticky top-0 z-10 -mx-4 md:-mx-6 mb-6">
         <button
           onClick={() => navigate(-1)}
           className="text-white p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
