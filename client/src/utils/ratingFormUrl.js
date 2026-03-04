@@ -1,6 +1,22 @@
-const EXTERNAL_RATING_FORM_URL = (
-  import.meta.env.VITE_EXTERNAL_RATING_FORM_URL || ""
-).trim();
+const normalizeBasePath = (value) => {
+  const raw = String(value || "/").trim();
+  if (!raw) return "/";
+  if (raw === "/") return "/";
+  const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+};
+
+const withBasePath = (path, basePath) => {
+  const normalizedPath = String(path || "").startsWith("/")
+    ? String(path || "")
+    : `/${String(path || "")}`;
+  const base = normalizeBasePath(basePath);
+  if (base === "/") return normalizedPath;
+  return `${base.replace(/\/+$/, "")}${normalizedPath}`;
+};
+
+const DEFAULT_EXTERNAL_RATING_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSe2rO383UTujd71fYgMwdbHcWuRm4NaKGMEmRIv-T_fya8Dcw/viewform";
 
 const isHttpUrl = (value) => {
   try {
@@ -19,10 +35,19 @@ const applyTemplate = (template, values) =>
     encodeTemplateValue(values[key])
   );
 
-export const getTicketRatingLink = (ticket) => {
-  const fallbackUrl = ticket?.id ? `/user/ticket/${ticket.id}` : "/user/history";
+export const getTicketRatingLink = (ticket, options = {}) => {
+  const configuredExternalRatingFormUrl =
+    options.externalFormUrl ?? import.meta.env.VITE_EXTERNAL_RATING_FORM_URL;
+  const externalRatingFormUrl = String(
+    configuredExternalRatingFormUrl || DEFAULT_EXTERNAL_RATING_FORM_URL
+  ).trim();
+  const fallbackPath = ticket?.id ? `/user/ticket/${ticket.id}` : "/user/history";
+  const fallbackUrl = withBasePath(
+    fallbackPath,
+    options.baseUrl ?? import.meta.env.BASE_URL
+  );
 
-  if (!EXTERNAL_RATING_FORM_URL || !isHttpUrl(EXTERNAL_RATING_FORM_URL)) {
+  if (!externalRatingFormUrl || !isHttpUrl(externalRatingFormUrl)) {
     return { url: fallbackUrl, isExternal: false };
   }
 
@@ -38,14 +63,14 @@ export const getTicketRatingLink = (ticket) => {
   };
 
   try {
-    if (EXTERNAL_RATING_FORM_URL.includes("{{")) {
+    if (externalRatingFormUrl.includes("{{")) {
       return {
-        url: applyTemplate(EXTERNAL_RATING_FORM_URL, values),
+        url: applyTemplate(externalRatingFormUrl, values),
         isExternal: true,
       };
     }
 
-    const url = new URL(EXTERNAL_RATING_FORM_URL);
+    const url = new URL(externalRatingFormUrl);
     if (values.ticketId && !url.searchParams.has("ticketId")) {
       url.searchParams.set("ticketId", String(values.ticketId));
     }
@@ -54,4 +79,3 @@ export const getTicketRatingLink = (ticket) => {
     return { url: fallbackUrl, isExternal: false };
   }
 };
-
