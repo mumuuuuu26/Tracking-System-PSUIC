@@ -27,7 +27,7 @@ const CreateTicket = () => {
   const [form, setForm] = useState({
     title: "",
     equipmentId: prefilledData?.equipmentId || "",
-    categoryId: prefilledData?.equipmentId ? "" : (location.state?.categoryId || ""),
+    categoryId: prefilledData?.categoryId || "",
     description: "",
     floor: prefilledData?.floorName || "",
     room: prefilledData?.roomNumber || "",
@@ -42,11 +42,37 @@ const CreateTicket = () => {
   useEffect(() => {
     if (prefilledData?.categoryId) {
       setForm(prev => ({ ...prev, categoryId: prefilledData.categoryId }));
-      if (prefilledData.subComponents && prefilledData.subComponents.length > 0) {
-        setActiveSubComponents(prefilledData.subComponents);
-      }
     }
   }, [prefilledData]);
+
+  useEffect(() => {
+    if (!form.categoryId || !Array.isArray(dbCategories) || dbCategories.length === 0) {
+      setActiveSubComponents([]);
+      return;
+    }
+
+    const selectedCategory = dbCategories.find(
+      (category) => category.id === parseInt(form.categoryId, 10),
+    );
+
+    if (selectedCategory?.subComponents?.length > 0) {
+      setActiveSubComponents(selectedCategory.subComponents);
+      return;
+    }
+
+    // Fallback to prefilled data while category list is still warming up.
+    if (
+      prefilledData?.categoryId &&
+      String(prefilledData.categoryId) === String(form.categoryId) &&
+      Array.isArray(prefilledData.subComponents) &&
+      prefilledData.subComponents.length > 0
+    ) {
+      setActiveSubComponents(prefilledData.subComponents);
+      return;
+    }
+
+    setActiveSubComponents([]);
+  }, [dbCategories, form.categoryId, prefilledData]);
 
   const urgencyLevels = ["Low", "Medium", "High"];
 
@@ -185,7 +211,6 @@ const CreateTicket = () => {
               value={form.categoryId}
               onChange={handleCategoryChange}
               placeholder="Select equipment category"
-              disabled={!!prefilledData?.categoryId}
             />
           </div>
 

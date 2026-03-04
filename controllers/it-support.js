@@ -16,7 +16,7 @@ const ticketUserSelect = {
     role: true,
 };
 
-const DEFAULT_GOOGLE_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
+const DEFAULT_GOOGLE_SYNC_MIN_INTERVAL_MS = 60 * 1000;
 const googleSyncLastRunByUser = new Map();
 
 const parsePositiveInt = (value, fallback) => {

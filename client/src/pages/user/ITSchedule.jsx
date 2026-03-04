@@ -6,25 +6,62 @@ import CalendarGrid from "../../components/CalendarGrid";
 import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 
+const parsePositiveInt = (value, fallback) => {
+    const parsed = Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const SCHEDULE_REFRESH_INTERVAL_MS = parsePositiveInt(
+    import.meta.env.VITE_IT_SCHEDULE_REFRESH_INTERVAL_MS,
+    60 * 1000,
+);
+
 const ITSchedule = () => {
     const [schedule, setSchedule] = useState([]);
     const [selectedDate, setSelectedDate] = useState(dayjs());
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const loadSchedule = async () => {
-            try {
-                const res = await getPublicSchedule();
-                setSchedule(res.data);
-            } catch {
-                // Silent fail
-            } finally {
+    const loadSchedule = React.useCallback(async ({ silent = false } = {}) => {
+        try {
+            if (!silent) {
+                setLoading(true);
+            }
+            const res = await getPublicSchedule();
+            setSchedule(res.data);
+        } catch {
+            // Silent fail
+        } finally {
+            if (!silent) {
                 setLoading(false);
             }
-        };
-        loadSchedule();
+        }
     }, []);
+
+    useEffect(() => {
+        loadSchedule();
+    }, [loadSchedule]);
+
+    useEffect(() => {
+        const refreshSchedule = () => {
+            loadSchedule({ silent: true });
+        };
+        const handleVisible = () => {
+            if (document.visibilityState === "visible") {
+                refreshSchedule();
+            }
+        };
+
+        const intervalId = window.setInterval(refreshSchedule, SCHEDULE_REFRESH_INTERVAL_MS);
+        document.addEventListener("visibilitychange", handleVisible);
+        window.addEventListener("focus", handleVisible);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", handleVisible);
+            window.removeEventListener("focus", handleVisible);
+        };
+    }, [loadSchedule]);
 
     const eventsForCalendar = schedule.map(item => ({
         date: item.start,

@@ -64,7 +64,7 @@ Create a `.env.production` file in the root directory. **Do not commit this file
 | `LOG_ROTATE_MAX_MB` | Rotate `out.log`/`error.log`/PM2 logs when file exceeds this size | `20` |
 | `LOG_RETENTION_DAYS` | Keep rotated log archives for N days | `14` |
 | `LOG_ROTATE_CRON` | Cron for runtime log rotation | `"15 * * * *"` |
-| `GOOGLE_SYNC_MIN_INTERVAL_MS` | Minimum interval between sync calls per user | `300000` |
+| `GOOGLE_SYNC_MIN_INTERVAL_MS` | Minimum interval between sync calls per user | `60000` |
 
 ### Email Notifications (SMTP)
 | Variable | Description | Example |

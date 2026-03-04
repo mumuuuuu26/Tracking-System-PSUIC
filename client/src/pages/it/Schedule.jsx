@@ -12,7 +12,23 @@ import ITWrapper from "../../components/it/ITWrapper";
 import { toast } from "react-toastify";
 import { showPopup } from "../../utils/sweetalert";
 
-const AUTO_SYNC_MIN_INTERVAL_MS = 5 * 60 * 1000;
+const parsePositiveInt = (value, fallback) => {
+    const parsed = Number.parseInt(String(value ?? ""), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const AUTO_SYNC_MIN_INTERVAL_MS = parsePositiveInt(
+    import.meta.env.VITE_GOOGLE_AUTO_SYNC_MIN_INTERVAL_MS,
+    60 * 1000,
+);
+const SCHEDULE_REFRESH_INTERVAL_MS = parsePositiveInt(
+    import.meta.env.VITE_IT_SCHEDULE_REFRESH_INTERVAL_MS,
+    60 * 1000,
+);
+const GOOGLE_SYNC_POLL_INTERVAL_MS = parsePositiveInt(
+    import.meta.env.VITE_GOOGLE_SYNC_POLL_INTERVAL_MS,
+    60 * 1000,
+);
 const AUTO_SYNC_STORAGE_PREFIX = "it_google_sync_last_success:";
 
 const getSyncStorageKey = (calendarId) => `${AUTO_SYNC_STORAGE_PREFIX}${String(calendarId || "").trim()}`;
@@ -52,16 +68,23 @@ const Schedule = () => {
     const [serviceEmail, setServiceEmail] = useState("");
     const [googleServerReady, setGoogleServerReady] = useState(true);
     const [googleServerMissingKeys, setGoogleServerMissingKeys] = useState([]);
+    const syncInFlightRef = React.useRef(false);
 
-    const loadSchedule = React.useCallback(async () => {
+    const loadSchedule = React.useCallback(async ({ silent = false } = {}) => {
         try {
-            setLoading(true);
+            if (!silent) {
+                setLoading(true);
+            }
             const res = await getPublicSchedule();
             setSchedule(res.data);
         } catch {
-            toast.error("Failed to load schedule");
+            if (!silent) {
+                toast.error("Failed to load schedule");
+            }
         } finally {
-            setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
         }
     }, []);
 
@@ -164,6 +187,7 @@ const Schedule = () => {
     
     const performSync = React.useCallback(async ({ force = false, silent = false } = {}) => {
         if (!savedCalendarId || !googleServerReady) return;
+        if (syncInFlightRef.current) return null;
 
         const now = Date.now();
         const lastSyncedAt = readLastSyncAt(savedCalendarId);
@@ -179,12 +203,13 @@ const Schedule = () => {
         }
 
         try {
+            syncInFlightRef.current = true;
             setSyncing(true);
             const res = await syncGoogleCalendar({ force });
             if (!res?.data?.skipped) {
                 writeLastSyncAt(savedCalendarId, Date.now());
             }
-            await loadSchedule();
+            await loadSchedule({ silent: true });
             return res;
         } catch (err) {
             if (!silent) {
@@ -192,6 +217,7 @@ const Schedule = () => {
             }
             return null;
         } finally {
+            syncInFlightRef.current = false;
             setSyncing(false);
         }
     }, [googleServerReady, loadSchedule, savedCalendarId]);
@@ -199,19 +225,52 @@ const Schedule = () => {
     useEffect(() => {
         loadProfile();
         loadSchedule();
-
-        const intervalId = setInterval(() => {
-            loadSchedule();
-        }, 60000);
-
-        return () => clearInterval(intervalId);
     }, [loadProfile, loadSchedule]);
 
     useEffect(() => {
-        if (savedCalendarId) {
+        const refreshSchedule = () => {
+            loadSchedule({ silent: true });
+        };
+        const handleVisible = () => {
+            if (document.visibilityState === "visible") {
+                refreshSchedule();
+            }
+        };
+
+        const intervalId = window.setInterval(refreshSchedule, SCHEDULE_REFRESH_INTERVAL_MS);
+        document.addEventListener("visibilitychange", handleVisible);
+        window.addEventListener("focus", handleVisible);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", handleVisible);
+            window.removeEventListener("focus", handleVisible);
+        };
+    }, [loadSchedule]);
+
+    useEffect(() => {
+        if (!savedCalendarId || !googleServerReady) return;
+
+        const syncCalendar = () => {
             performSync({ force: false, silent: true });
-        }
-    }, [savedCalendarId, performSync]);
+        };
+        const handleVisible = () => {
+            if (document.visibilityState === "visible") {
+                syncCalendar();
+            }
+        };
+
+        syncCalendar();
+        const syncIntervalId = window.setInterval(syncCalendar, GOOGLE_SYNC_POLL_INTERVAL_MS);
+        document.addEventListener("visibilitychange", handleVisible);
+        window.addEventListener("focus", handleVisible);
+
+        return () => {
+            window.clearInterval(syncIntervalId);
+            document.removeEventListener("visibilitychange", handleVisible);
+            window.removeEventListener("focus", handleVisible);
+        };
+    }, [googleServerReady, performSync, savedCalendarId]);
 
 
     const eventsForCalendar = schedule.map(item => ({
