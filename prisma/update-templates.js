@@ -54,22 +54,13 @@ async function main() {
                 </div>
             `,
             variables: JSON.stringify([
+                // Keep compact to support legacy DB where EmailTemplate.variables
+                // may still be VARCHAR(191).
                 'ticketId',
                 'title',
-                'description',
-                'status',
-                'urgency',
-                'category',
-                'subComponent',
-                'room',
-                'floor',
-                'building',
-                'equipment',
-                'equipmentType',
                 'reporterName',
-                'reporterEmail',
-                'reporterPhone',
-                'createdAt',
+                'urgency',
+                'room',
                 'link'
             ]),
             isEnabled: true
