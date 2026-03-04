@@ -1,5 +1,5 @@
 // client/src/api/psuAuth.js
-import axios from 'axios'
+import api from '../utils/axios'
 import { PSU_PASSPORT_CONFIG } from '../config/psuPassport'
 
 export const initiatePSULogin = () => {
@@ -14,7 +14,7 @@ export const initiatePSULogin = () => {
 }
 
 export const exchangeCodeForToken = async (code) => {
-    return await axios.post('/api/auth/psu-passport/callback', {
+    return await api.post('/auth/psu-passport/callback', {
         code,
         redirect_uri: PSU_PASSPORT_CONFIG.redirectUri
     })
