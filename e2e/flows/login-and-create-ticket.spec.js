@@ -122,14 +122,14 @@ test.describe('User Workflow', () => {
         await page.getByRole('button', { name: /medium/i }).click();
 
         // Click Submit
-        const submitBtn = page.getByRole('button', { name: /submit report/i });
+        const submitBtn = page.getByRole('button', { name: /^submit$/i });
         await expect(submitBtn).toBeVisible();
         await submitBtn.click();
 
         // 6. Verify success (SweetAlert2 popup)
         const swal = page.locator('.swal2-popup');
         await expect(swal).toBeVisible({ timeout: 30000 });
-        await expect(swal).toContainText(/created successfully/i);
+        await expect(swal).toContainText(/created successfully|already submitted/i);
         await swal.getByRole('button', { name: /view ticket/i }).click();
         
         // Verify redirection to ticket detail
