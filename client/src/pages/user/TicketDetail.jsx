@@ -174,12 +174,12 @@ const TicketDetail = () => {
             },
             { label: "Time", value: formatDate(ticket?.createdAt, { hour: '2-digit', minute: '2-digit', hour12: true }) }
           ].map((item, idx) => (
-            <div key={idx} className="flex justify-between items-center border-b border-gray-100 dark:border-blue-800/20 last:border-0 pb-3 last:pb-0">
-              <span className="text-gray-500 dark:text-blue-400/70 font-medium text-sm">{item.label}</span>
+            <div key={idx} className="flex justify-between items-start gap-3 border-b border-gray-100 dark:border-blue-800/20 last:border-0 pb-3 last:pb-0">
+              <span className="text-gray-500 dark:text-blue-400/70 font-medium text-sm shrink-0">{item.label}</span>
               {item.isBadge ? (
                 item.value
               ) : (
-                <span className={`text-right font-semibold text-sm ${item.color || "text-gray-900 dark:text-white"}`}>{item.value}</span>
+                <span className={`text-right font-semibold text-sm flex-1 min-w-0 break-words ${item.color || "text-gray-900 dark:text-white"}`}>{item.value}</span>
               )}
             </div>
           ))}

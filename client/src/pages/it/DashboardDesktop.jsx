@@ -1,19 +1,32 @@
 import React from "react";
 import { Eye, CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import ITHeader from "../../components/it/ITHeader";
-import { normalizeTicketStatus, toTicketStatusLabel } from "../../utils/ticketStatus";
+import { normalizeTicketStatus } from "../../utils/ticketStatus";
 import { getUserDisplayName } from "../../utils/userIdentity";
+import { formatCompactCount } from "../../utils/numberFormat";
 
 const DashboardDesktop = ({
     tickets = [],
     stats,
     onAccept,
     onReject,
-    navigate
+    navigate,
+    newTicketsPage = 1,
+    newTicketsTotalPages = 1,
+    onPageChange,
 }) => {
 
     // Filter for New Tickets (Not Started)
-    const newTickets = tickets.filter((t) => normalizeTicketStatus(t.status) === "not_start");
+    const newTickets = tickets
+        .filter((t) => normalizeTicketStatus(t.status) === "not_start")
+        .sort((a, b) => {
+            const createdDiff = new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+            if (createdDiff !== 0) return createdDiff;
+            return Number(b.id || 0) - Number(a.id || 0);
+        });
+    const pageSize = 5;
+    const startIndex = (newTicketsPage - 1) * pageSize;
+    const pageTickets = newTickets.slice(startIndex, startIndex + pageSize);
 
     // Stats Card Data
     const statCards = [
@@ -61,7 +74,9 @@ const DashboardDesktop = ({
                 {statCards.map((stat, idx) => (
                     <div key={idx} className={`bg-white dark:bg-[#1a2f4e] px-6 py-5 rounded-[1.5rem] shadow-sm dark:shadow-lg flex items-center justify-between h-28 border border-transparent dark:border-blue-800/30 hover:border-gray-200 dark:hover:border-blue-700/50 transition-all`}>
                         <div className="flex flex-col justify-center">
-                            <p className="text-[#1e2e4a] dark:text-white text-3xl font-medium mb-1">{stat.value}</p>
+                            <p className="text-[#1e2e4a] dark:text-white text-[clamp(1.4rem,2.3vw,2rem)] font-semibold mb-1 leading-none truncate max-w-[7ch]" title={String(stat.value)}>
+                                {formatCompactCount(stat.value)}
+                            </p>
                             <span className="text-gray-400 dark:text-blue-300/60 text-xs font-medium uppercase tracking-wide">{stat.label}</span>
                         </div>
                         <div className={`w-12 h-12 rounded-full ${stat.bgIcon} flex items-center justify-center shrink-0`}>
@@ -92,18 +107,7 @@ const DashboardDesktop = ({
 
                     <div className="flex flex-col gap-4">
                         {newTickets.length > 0 ? (
-                            newTickets
-                                .sort((a, b) => {
-                                    const urgencyWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
-                                    const weightA = urgencyWeight[a.urgency] || 0;
-                                    const weightB = urgencyWeight[b.urgency] || 0;
-                                    if (weightA !== weightB) {
-                                        return weightB - weightA;
-                                    }
-                                    return new Date(a.createdAt) - new Date(b.createdAt);
-                                })
-                                .slice(0, 5)
-                                .map((ticket) => (
+                            pageTickets.map((ticket) => (
                                     <TicketCard
                                         key={ticket.id}
                                         ticket={ticket}
@@ -119,6 +123,30 @@ const DashboardDesktop = ({
                             </div>
                         )}
                     </div>
+
+                    {newTicketsTotalPages > 1 && (
+                        <div className="flex items-center justify-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => onPageChange?.((page) => Math.max(1, page - 1))}
+                                disabled={newTicketsPage === 1}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-blue-800/40 text-sm font-semibold text-[#1e2e4a] dark:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Prev
+                            </button>
+                            <span className="text-sm font-semibold text-[#1e2e4a] dark:text-blue-300 min-w-[6ch] text-center">
+                                {newTicketsPage} / {newTicketsTotalPages}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => onPageChange?.((page) => Math.min(newTicketsTotalPages, page + 1))}
+                                disabled={newTicketsPage === newTicketsTotalPages}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-blue-800/40 text-sm font-semibold text-[#1e2e4a] dark:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
             </div>
@@ -153,9 +181,6 @@ const TicketCard = ({ ticket, onAccept, onReject, onClick }) => {
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="px-3 py-1.5 rounded-xl text-xs font-bold border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 bg-white dark:bg-red-900/10">
-                        {toTicketStatusLabel(ticket.status)}
-                    </span>
                     <button
                         onClick={(e) => { e.stopPropagation(); onClick(); }}
                         className="text-gray-400 dark:text-blue-300/50 hover:text-blue-600 dark:hover:text-blue-300 p-2 rounded-xl bg-gray-50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-colors"
@@ -167,8 +192,8 @@ const TicketCard = ({ ticket, onAccept, onReject, onClick }) => {
 
             {/* Body: Description & Location */}
             <div>
-                <h4 className="text-base font-medium text-gray-600 dark:text-gray-300 mb-2 line-clamp-2 leading-relaxed">
-                    {ticket.description || "-"}
+                <h4 className="text-base font-medium text-gray-600 dark:text-gray-300 mb-2 line-clamp-2 leading-relaxed break-words">
+                    {ticket.title || "-"}
                 </h4>
                 <p className="text-gray-500 dark:text-blue-300/60 text-sm">
                     Floor {ticket.room?.floor || "-"} , {ticket.room?.roomNumber || "-"}

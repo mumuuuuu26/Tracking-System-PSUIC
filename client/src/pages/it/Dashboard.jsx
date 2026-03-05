@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Moon, Sun, CirclePlus } from "lucide-react";
+import { Moon, Sun, CirclePlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "react-toastify";
 
 import { getMyTasks, acceptJob, rejectJob } from "../../api/it";
@@ -10,9 +10,12 @@ import socket from "../../utils/socket";
 import DashboardDesktop from "./DashboardDesktop";
 import ProfileAvatar from "../../components/common/ProfileAvatar";
 import { getUserDisplayName } from "../../utils/userIdentity";
-import { normalizeTicketStatus, toTicketStatusLabel } from "../../utils/ticketStatus";
+import { normalizeTicketStatus } from "../../utils/ticketStatus";
+import { formatCompactCount } from "../../utils/numberFormat";
 import useThemeStore from "../../store/themeStore";
 import { promptRejectReason } from "../../utils/sweetalert";
+
+const NEW_TICKETS_PAGE_SIZE = 5;
 
 const ITDashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +29,7 @@ const ITDashboard = () => {
     completed: 0,
     rejected: 0,
   });
+  const [newTicketsPage, setNewTicketsPage] = useState(1);
   const [, setLoading] = useState(true);
 
   const loadDashboardData = useCallback(async () => {
@@ -108,18 +112,32 @@ const ITDashboard = () => {
     await handleReject(ticket.id, reason);
   };
 
-  const urgencyWeight = { High: 3, Medium: 2, Low: 1 };
+  const newTickets = useMemo(() => (
+    tickets
+      .filter((ticket) => normalizeTicketStatus(ticket.status) === "not_start")
+      .sort((a, b) => {
+        const createdDiff = new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        if (createdDiff !== 0) return createdDiff;
+        return Number(b.id || 0) - Number(a.id || 0);
+      })
+  ), [tickets]);
 
-  const newTickets = tickets
-    .filter((ticket) => normalizeTicketStatus(ticket.status) === "not_start")
-    .sort((a, b) => {
-      const weightA = urgencyWeight[a.urgency] || 0;
-      const weightB = urgencyWeight[b.urgency] || 0;
-      if (weightA !== weightB) {
-        return weightB - weightA;
-      }
-      return new Date(a.createdAt) - new Date(b.createdAt);
-    });
+  const newTicketsTotalPages = Math.max(1, Math.ceil(newTickets.length / NEW_TICKETS_PAGE_SIZE));
+
+  const pagedNewTickets = useMemo(() => {
+    const start = (newTicketsPage - 1) * NEW_TICKETS_PAGE_SIZE;
+    return newTickets.slice(start, start + NEW_TICKETS_PAGE_SIZE);
+  }, [newTickets, newTicketsPage]);
+
+  useEffect(() => {
+    if (newTicketsPage > newTicketsTotalPages) {
+      setNewTicketsPage(newTicketsTotalPages);
+    }
+  }, [newTicketsPage, newTicketsTotalPages]);
+
+  useEffect(() => {
+    setNewTicketsPage(1);
+  }, [newTickets.length]);
 
   const services = [
     {
@@ -156,6 +174,9 @@ const ITDashboard = () => {
           onAccept={handleAccept}
           onReject={handleRejectClick}
           navigate={navigate}
+          newTicketsPage={newTicketsPage}
+          newTicketsTotalPages={newTicketsTotalPages}
+          onPageChange={setNewTicketsPage}
         />
       </div>
 
@@ -214,8 +235,11 @@ const ITDashboard = () => {
                 className="group flex flex-col items-center"
               >
                 <div className="w-full aspect-square bg-white dark:bg-[#1a2f4e] border border-gray-100 dark:border-blue-700/40 rounded-2xl flex items-center justify-center shadow-md dark:shadow-lg transition-all duration-200 active:scale-95 group-hover:bg-blue-50 dark:group-hover:bg-[#1e3558] p-2">
-                  <span className="text-[1.6rem] leading-none font-normal text-[#1e2e4a] dark:text-white">
-                    {service.value}
+                  <span
+                    className="text-[clamp(1.1rem,4vw,1.6rem)] leading-none font-semibold text-[#1e2e4a] dark:text-white truncate max-w-full px-1"
+                    title={String(service.value)}
+                  >
+                    {formatCompactCount(service.value)}
                   </span>
                 </div>
                 <span className="text-[11px] font-semibold text-gray-700 dark:text-blue-300/80 text-center leading-tight mt-2 whitespace-nowrap">
@@ -238,23 +262,20 @@ const ITDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4">
-            {newTickets.slice(0, 5).map((ticket) => (
+            {pagedNewTickets.map((ticket) => (
               <div
                 key={ticket.id}
                 onClick={() => navigate(`/it/ticket/${ticket.id}`)}
                 className="w-full bg-white dark:bg-[#1a2f4e] rounded-2xl p-4 shadow-sm dark:shadow-lg border border-gray-100 dark:border-blue-800/30 hover:shadow-md transition-all duration-300 cursor-pointer"
               >
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <h3 className="text-base font-semibold text-[#193C6C] dark:text-white truncate">
+                <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                  <h3 className="text-sm font-semibold text-[#193C6C] dark:text-white truncate">
                     {ticket.category?.name || "General"}
                   </h3>
-                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800/40 whitespace-nowrap">
-                    {toTicketStatusLabel(ticket.status)}
-                  </span>
                 </div>
 
-                <p className="text-sm text-gray-700 dark:text-blue-200 line-clamp-2 mb-2">
-                  {ticket.description || "No description provided"}
+                <p className="text-base font-semibold text-gray-800 dark:text-white line-clamp-2 mb-2 break-words">
+                  {ticket.title || "No title provided"}
                 </p>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-blue-300/60">
@@ -295,6 +316,33 @@ const ITDashboard = () => {
               </div>
             )}
           </div>
+
+          {newTicketsTotalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setNewTicketsPage((page) => Math.max(1, page - 1))}
+                disabled={newTicketsPage === 1}
+                className="p-2 rounded-lg border border-gray-200 dark:border-blue-800/40 text-[#1e2e4a] dark:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="min-w-[2.25rem] text-center text-sm font-semibold text-[#1e2e4a] dark:text-blue-300">
+                {newTicketsPage}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-blue-400/70">
+                / {newTicketsTotalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setNewTicketsPage((page) => Math.min(newTicketsTotalPages, page + 1))}
+                disabled={newTicketsPage === newTicketsTotalPages}
+                className="p-2 rounded-lg border border-gray-200 dark:border-blue-800/40 text-[#1e2e4a] dark:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -445,19 +445,21 @@ const ITProfile = () => {
                 </div>
 
                 {isEditingPhone ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <input
                       value={phoneInput}
                       onChange={(e) => setPhoneInput(e.target.value)}
-                      className="flex-1 bg-white dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white"
+                      className="w-full min-w-0 flex-1 bg-white dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white"
                       placeholder="Phone number"
                     />
-                    <button onClick={handleUpdatePhone} className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                      <Check size={16} />
-                    </button>
-                    <button onClick={() => setIsEditingPhone(false)} className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
-                      <X size={16} />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <button onClick={handleUpdatePhone} className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                        <Check size={16} />
+                      </button>
+                      <button onClick={() => setIsEditingPhone(false)} className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile.phoneNumber || "Not Set"}</p>
@@ -483,19 +485,21 @@ const ITProfile = () => {
                 </div>
 
                 {isEditingDepartment ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <input
                       value={departmentInput}
                       onChange={(e) => setDepartmentInput(e.target.value)}
-                      className="flex-1 bg-white dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white"
+                      className="w-full min-w-0 flex-1 bg-white dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white"
                       placeholder="Department"
                     />
-                    <button onClick={handleUpdateDepartment} className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                      <Check size={16} />
-                    </button>
-                    <button onClick={() => setIsEditingDepartment(false)} className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
-                      <X size={16} />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <button onClick={handleUpdateDepartment} className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                        <Check size={16} />
+                      </button>
+                      <button onClick={() => setIsEditingDepartment(false)} className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile.department || "IT Department"}</p>
@@ -521,19 +525,21 @@ const ITProfile = () => {
                 </div>
 
                 {isEditingOfficeExt ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <input
                       value={officeExtInput}
                       onChange={(e) => setOfficeExtInput(e.target.value)}
-                      className="flex-1 bg-white dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white"
+                      className="w-full min-w-0 flex-1 bg-white dark:bg-[#0d1b2a] border border-gray-200 dark:border-blue-800/40 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white"
                       placeholder="Office extension"
                     />
-                    <button onClick={handleUpdateOfficeExt} className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                      <Check size={16} />
-                    </button>
-                    <button onClick={() => setIsEditingOfficeExt(false)} className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
-                      <X size={16} />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <button onClick={handleUpdateOfficeExt} className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                        <Check size={16} />
+                      </button>
+                      <button onClick={() => setIsEditingOfficeExt(false)} className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">Ext. {profile.officeExtension || "1050"}</p>

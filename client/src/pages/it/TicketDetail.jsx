@@ -307,9 +307,9 @@ const TicketDetail = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="flex justify-between px-4 mt-2">
+                        <div className="flex justify-between px-2 mt-2 gap-1">
                             {steps.map((step, idx) => (
-                                <span key={idx} className={`text-[10px] font-bold tracking-wider uppercase w-20 text-center ${step.active ? (ticket.status === 'rejected' ? 'text-red-500 dark:text-red-400' : 'text-[#1e2e4a] dark:text-blue-300') : 'text-gray-400 dark:text-blue-300/50'}`}>
+                                <span key={idx} className={`text-[10px] font-bold tracking-wider uppercase flex-1 min-w-0 px-1 text-center break-words ${step.active ? (ticket.status === 'rejected' ? 'text-red-500 dark:text-red-400' : 'text-[#1e2e4a] dark:text-blue-300') : 'text-gray-400 dark:text-blue-300/50'}`}>
                                     {step.label}
                                 </span>
                             ))}
@@ -345,11 +345,11 @@ const TicketDetail = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
                                         <label className="text-[10px] font-bold text-blue-500 dark:text-blue-300 uppercase tracking-widest block mb-0.5">Location</label>
-                                        <p className="font-bold text-gray-800 dark:text-white text-sm">Floor {ticket.room?.floor}, {ticket.room?.roomNumber}</p>
+                                        <p className="font-bold text-gray-800 dark:text-white text-sm break-words">Floor {ticket.room?.floor}, {ticket.room?.roomNumber}</p>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-blue-500 dark:text-blue-300 uppercase tracking-widest block mb-0.5">Category</label>
-                                        <p className="font-bold text-gray-800 dark:text-white text-sm">
+                                        <p className="font-bold text-gray-800 dark:text-white text-sm break-words">
                                             {ticket.category?.name || "General"}
                                             {ticket.subComponent ? ` (${ticket.subComponent})` : ""}
                                         </p>
@@ -365,7 +365,7 @@ const TicketDetail = () => {
                         <div>
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2.5 text-sm tracking-wide">Description</h3>
                             <div className="bg-white dark:bg-[#1a2f4e] rounded-3xl shadow-[0_2px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-lg border border-gray-100 dark:border-blue-800/30 p-5 sm:p-6">
-                                <p className="text-gray-600 dark:text-blue-200/90 text-sm leading-relaxed mb-4">
+                                <p className="text-gray-600 dark:text-blue-200/90 text-sm leading-relaxed mb-4 break-words">
                                     {ticket.description}
                                 </p>
                                 {(ticket.images && ticket.images.filter(img => img.type === 'before').length > 0) && (
@@ -540,7 +540,6 @@ const TicketDetail = () => {
                                             <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1a2f4e] border border-gray-100 dark:border-blue-800/40 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                                 <div className="p-2 flex flex-col gap-1">
                                                     {[
-                                                        { value: 'not_start', label: 'Not Start' },
                                                         { value: 'in_progress', label: 'In Progress' },
                                                         { value: 'completed', label: 'Completed' }
                                                     ].map((option) => (
@@ -594,7 +593,7 @@ const TicketDetail = () => {
                                 <div className="flex gap-3 sm:gap-4 w-full justify-center">
                                     <button
                                         onClick={handleUpdateStatus}
-                                        className="w-[44%] sm:flex-1 max-w-[11rem] bg-[#193C6C] dark:bg-blue-600 text-white font-semibold py-2.5 sm:py-3 rounded-2xl shadow-md shadow-blue-100 dark:shadow-blue-900/20 hover:opacity-90 transition text-[0.9rem] sm:text-[0.95rem]"
+                                        className="flex-1 min-w-0 sm:flex-1 max-w-[11rem] bg-[#193C6C] dark:bg-blue-600 text-white font-semibold py-2.5 sm:py-3 rounded-2xl shadow-md shadow-blue-100 dark:shadow-blue-900/20 hover:opacity-90 transition text-[0.9rem] sm:text-[0.95rem]"
                                     >
                                         Accept
                                     </button>
@@ -609,7 +608,7 @@ const TicketDetail = () => {
                                             if (!reason) return;
                                             await handleReject(reason);
                                         }}
-                                        className="w-[44%] sm:flex-1 max-w-[11rem] bg-[#c76572] text-white font-semibold py-2.5 sm:py-3 rounded-2xl hover:bg-[#b85a66] transition text-[0.9rem] sm:text-[0.95rem]"
+                                        className="flex-1 min-w-0 sm:flex-1 max-w-[11rem] bg-[#c76572] text-white font-semibold py-2.5 sm:py-3 rounded-2xl hover:bg-[#b85a66] transition text-[0.9rem] sm:text-[0.95rem]"
                                     >
                                         Reject
                                     </button>

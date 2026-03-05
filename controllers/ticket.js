@@ -1,8 +1,14 @@
 const prisma = require("../config/prisma");
 const { logger } = require("../utils/logger");
 const { saveImage } = require("../utils/uploadImage");
-const { getStatusWhere, normalizeTicketEntity } = require("../utils/ticketStatus");
+const {
+  getStatusVariants,
+  getStatusWhere,
+  normalizeTicketEntity,
+  normalizeTicketStatus,
+} = require("../utils/ticketStatus");
 const { emitTicketCreated, emitTicketUpdated } = require("../utils/realtimeTicket");
+const { buildFrontendUrl } = require("../utils/frontendUrl");
 const { z } = require("zod");
 
 const EMAIL_ADDRESS_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,6 +76,31 @@ const ticketInclude = {
   category: true,
   createdBy: { select: ticketUserSelect },
   images: true,
+};
+
+const LIST_OPEN_STATUSES = [
+  ...getStatusVariants("not_start"),
+  ...getStatusVariants("in_progress"),
+];
+const LIST_CLOSED_STATUSES = [
+  ...getStatusVariants("completed"),
+  ...getStatusVariants("rejected"),
+];
+
+const compareTicketsForListAll = (left, right) => {
+  const rank = (status) => {
+    const normalized = normalizeTicketStatus(status);
+    if (normalized === "not_start") return 1;
+    if (normalized === "in_progress") return 2;
+    if (normalized === "completed") return 3;
+    if (normalized === "rejected") return 4;
+    return 99;
+  };
+
+  const rankDiff = rank(left?.status) - rank(right?.status);
+  if (rankDiff !== 0) return rankDiff;
+
+  return new Date(right?.createdAt || 0) - new Date(left?.createdAt || 0);
 };
 
 exports.create = async (req, res, next) => {
@@ -206,7 +237,6 @@ exports.create = async (req, res, next) => {
 
           if (emails.length > 0) {
             const { sendEmailNotification } = require("../utils/sendEmailHelper");
-            const frontendBaseUrl = (process.env.FRONTEND_URL || "").replace(/\/+$/, "");
             const createdAt = newTicket.createdAt
               ? new Date(newTicket.createdAt).toLocaleString("th-TH", {
                   timeZone: process.env.APP_TIMEZONE || "Asia/Bangkok",
@@ -253,11 +283,7 @@ exports.create = async (req, res, next) => {
               reporter: sanitizeForEmail(
                 pickFirstNonEmptyValue(newTicket.createdBy?.name, newTicket.createdBy?.email)
               ),
-              link: sanitizeForEmail(
-                frontendBaseUrl
-                  ? `${frontendBaseUrl}/it/ticket/${newTicket.id}`
-                  : `/it/ticket/${newTicket.id}`
-              ),
+              link: sanitizeForEmail(buildFrontendUrl(req, `/it/ticket/${newTicket.id}`)),
             });
 
             if (emailResult?.sent) {
@@ -490,8 +516,12 @@ exports.read = async (req, res, next) => {
 exports.listAll = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search, status, floor, roomId } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
+    const parsedPage = Number.parseInt(page, 10);
+    const parsedLimit = Number.parseInt(limit, 10);
+    const safePage = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const safeLimit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+    const skip = (safePage - 1) * safeLimit;
+    const take = safeLimit;
 
     const where = { isDeleted: false };
 
@@ -528,32 +558,91 @@ exports.listAll = async (req, res, next) => {
       }
     }
 
-    const [tickets, total] = await prisma.$transaction([
-      prisma.ticket.findMany({
-        where,
-        skip,
-        take,
-        include: {
-            room: true,
-            equipment: true,
-            category: true,
-            createdBy: { select: ticketUserSelect },
-            assignedTo: { select: ticketUserSelect }
-        },
-        orderBy: [
-            { status: 'desc' }, 
-            { urgency: 'asc' }, 
-            { createdAt: 'desc' } 
-        ]
-      }),
-      prisma.ticket.count({ where })
-    ]);
+    const ticketListInclude = {
+      room: true,
+      equipment: true,
+      category: true,
+      createdBy: { select: ticketUserSelect },
+      assignedTo: { select: ticketUserSelect },
+    };
+
+    let tickets = [];
+    let total = 0;
+
+    if (statusWhere) {
+      [tickets, total] = await prisma.$transaction([
+        prisma.ticket.findMany({
+          where,
+          skip,
+          take,
+          include: ticketListInclude,
+          orderBy: [{ createdAt: "desc" }],
+        }),
+        prisma.ticket.count({ where }),
+      ]);
+    } else {
+      const openWhere = { ...where, status: { in: LIST_OPEN_STATUSES } };
+      const closedWhere = { ...where, status: { in: LIST_CLOSED_STATUSES } };
+
+      const [openTotal, closedTotal] = await prisma.$transaction([
+        prisma.ticket.count({ where: openWhere }),
+        prisma.ticket.count({ where: closedWhere }),
+      ]);
+
+      total = openTotal + closedTotal;
+
+      let openSkip = 0;
+      let openTake = 0;
+      let closedSkip = 0;
+      let closedTake = 0;
+
+      if (skip < openTotal) {
+        openSkip = skip;
+        openTake = Math.min(take, openTotal - openSkip);
+        closedSkip = 0;
+        closedTake = Math.max(0, take - openTake);
+      } else {
+        openSkip = 0;
+        openTake = 0;
+        closedSkip = skip - openTotal;
+        closedTake = take;
+      }
+
+      let openTickets = [];
+      let closedTickets = [];
+
+      if (openTake > 0) {
+        openTickets = await prisma.ticket.findMany({
+          where: openWhere,
+          skip: openSkip,
+          take: openTake,
+          include: ticketListInclude,
+          orderBy: [{ createdAt: "desc" }],
+        });
+      }
+
+      if (closedTake > 0) {
+        closedTickets = await prisma.ticket.findMany({
+          where: closedWhere,
+          skip: closedSkip,
+          take: closedTake,
+          include: ticketListInclude,
+          orderBy: [{ createdAt: "desc" }],
+        });
+      }
+
+      tickets = [...openTickets, ...closedTickets];
+    }
+
+    const normalizedTickets = tickets
+      .map(normalizeTicketEntity)
+      .sort(compareTicketsForListAll);
 
     res.json({
-      data: tickets.map(normalizeTicketEntity),
+      data: normalizedTickets,
       total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / take)
+      page: safePage,
+      totalPages: Math.max(1, Math.ceil(total / take)),
     });
   } catch (err) {
     next(err);
