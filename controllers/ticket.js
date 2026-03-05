@@ -38,6 +38,11 @@ const DUPLICATE_TICKET_WINDOW_SECONDS =
   Number.isFinite(parsedDuplicateWindowSeconds) && parsedDuplicateWindowSeconds > 0
     ? parsedDuplicateWindowSeconds
     : 20;
+const parsedTicketMaxImages = Number.parseInt(process.env.TICKET_MAX_IMAGES, 10);
+const MAX_TICKET_IMAGES =
+  Number.isInteger(parsedTicketMaxImages) && parsedTicketMaxImages > 0
+    ? parsedTicketMaxImages
+    : 4;
 
 // --- Validation Schemas ---
 const createTicketSchema = z.object({
@@ -124,6 +129,12 @@ exports.create = async (req, res, next) => {
     const normalizedEquipmentId = equipmentId ?? null;
     const normalizedCategoryId = categoryId ?? null;
 
+    if (Array.isArray(images) && images.length > MAX_TICKET_IMAGES) {
+      return res.status(400).json({
+        message: `You can upload up to ${MAX_TICKET_IMAGES} images per ticket.`,
+      });
+    }
+
     const duplicateWindowStart = new Date(
       Date.now() - DUPLICATE_TICKET_WINDOW_SECONDS * 1000
     );
@@ -163,10 +174,12 @@ exports.create = async (req, res, next) => {
     const beforeImages = [];
     if (Array.isArray(images) && images.length > 0) {
       const uploadedImages = await Promise.all(
-        images.map(async (imageBase64) => {
+        images.map(async (imageBase64, index) => {
           const imageUrl = await saveImage(imageBase64, { scope: "ticket-before" });
           if (!imageUrl) {
-            const invalidImageErr = new Error("Invalid ticket image data");
+            const invalidImageErr = new Error(
+              `Image ${index + 1} is invalid or too large. Please upload JPG, PNG, or WEBP images.`,
+            );
             invalidImageErr.statusCode = 400;
             throw invalidImageErr;
           }

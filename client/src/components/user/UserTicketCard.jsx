@@ -52,6 +52,23 @@ const UserTicketCard = ({ ticket, onClick }) => {
     const dateObj = new Date(ticket.updatedAt || ticket.createdAt);
     const ratingLink = getTicketRatingLink(ticket);
 
+    const handleRatingClick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!ratingLink?.url) return;
+
+        if (ratingLink.isExternal) {
+            const openedWindow = window.open(ratingLink.url, "_blank", "noopener,noreferrer");
+            if (!openedWindow) {
+                window.location.assign(ratingLink.url);
+            }
+            return;
+        }
+
+        window.location.assign(ratingLink.url);
+    };
+
     return (
         <div
             onClick={onClick}
@@ -102,9 +119,7 @@ const UserTicketCard = ({ ticket, onClick }) => {
                     {ticket.status === "completed" && (
                         <a
                             href={ratingLink.url}
-                            target={ratingLink.isExternal ? "_blank" : undefined}
-                            rel={ratingLink.isExternal ? "noopener noreferrer" : undefined}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={handleRatingClick}
                             className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/40 dark:hover:bg-blue-800/60 px-3 sm:px-4 shrink-0 rounded-[0.8rem] border-[1.5px] border-blue-200 dark:border-blue-700/50 shadow-sm transition-all focus:ring-2 focus:ring-blue-500/50 active:scale-95 h-[36px] sm:h-[40px]"
                         >
                             <Star size={16} className="text-blue-700 dark:text-blue-300 shrink-0" />

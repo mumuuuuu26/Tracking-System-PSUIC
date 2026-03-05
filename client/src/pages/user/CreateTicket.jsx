@@ -14,6 +14,66 @@ import UserWrapper from "../../components/user/UserWrapper";
 import UserPageHeader from "../../components/user/UserPageHeader";
 import UserSelect from "../../components/user/UserSelect";
 import { showPopup } from "../../utils/sweetalert";
+import Resizer from "react-image-file-resizer";
+
+const MAX_TICKET_IMAGES = 4;
+const SUPPORTED_IMAGE_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "heic",
+  "heif",
+]);
+
+const isSupportedImageFile = (file) => {
+  const mime = String(file?.type || "").toLowerCase();
+  const ext = String(file?.name || "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
+  if (mime.startsWith("image/")) return true;
+  return SUPPORTED_IMAGE_EXTENSIONS.has(ext || "");
+};
+
+const resizeImageFile = (file, maxWidth = 1920, maxHeight = 1920, quality = 82) =>
+  new Promise((resolve, reject) => {
+    try {
+      Resizer.imageFileResizer(
+        file,
+        maxWidth,
+        maxHeight,
+        "JPEG",
+        quality,
+        0,
+        (result) => {
+          if (result instanceof Blob) {
+            const resizedFile = new File(
+              [result],
+              `${String(file?.name || "upload")
+                .replace(/\.[^.]+$/, "") || "upload"}-optimized.jpg`,
+              { type: "image/jpeg" },
+            );
+            resolve(resizedFile);
+            return;
+          }
+          reject(new Error("Unable to process image"));
+        },
+        "file",
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Failed to read image file"));
+    reader.readAsDataURL(file);
+  });
 
 const CreateTicket = () => {
   const location = useLocation();
@@ -40,6 +100,7 @@ const CreateTicket = () => {
 
   const [activeSubComponents, setActiveSubComponents] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
   const submitInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -113,18 +174,65 @@ const CreateTicket = () => {
     }
   };
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = () => {
+  const handleImageUpload = async (e) => {
+    const input = e.target;
+    const selectedFiles = Array.from(input.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const remainingSlots = MAX_TICKET_IMAGES - form.images.length;
+    if (remainingSlots <= 0) {
+      toast.warn(`You can upload up to ${MAX_TICKET_IMAGES} photos.`);
+      input.value = "";
+      return;
+    }
+
+    if (selectedFiles.length > remainingSlots) {
+      toast.info(
+        `You can add ${remainingSlots} more photo${remainingSlots > 1 ? "s" : ""}. Extra files were skipped.`,
+      );
+    }
+
+    const filesToProcess = selectedFiles.slice(0, remainingSlots);
+    const nextImages = [];
+    let failedCount = 0;
+
+    setIsProcessingImages(true);
+    try {
+      for (const file of filesToProcess) {
+        if (!isSupportedImageFile(file)) {
+          failedCount += 1;
+          continue;
+        }
+
+        try {
+          const resizedFile = await resizeImageFile(file);
+          const dataUrl = await fileToDataUrl(resizedFile);
+          if (dataUrl) {
+            nextImages.push(dataUrl);
+          } else {
+            failedCount += 1;
+          }
+        } catch {
+          failedCount += 1;
+        }
+      }
+
+      if (nextImages.length > 0) {
         setForm((prev) => ({
           ...prev,
-          images: [...prev.images, reader.result],
+          images: [...prev.images, ...nextImages],
         }));
-      };
-    });
+      }
+
+      if (failedCount > 0) {
+        toast.warn(
+          `${failedCount} image${failedCount > 1 ? "s" : ""} could not be uploaded. Please use JPG/PNG/WEBP files.`,
+        );
+      }
+    } finally {
+      setIsProcessingImages(false);
+      input.value = "";
+    }
   };
 
   const getAvailableRooms = () => {
@@ -330,12 +438,15 @@ const CreateTicket = () => {
                 accept="image/*"
                 className="absolute inset-0 opacity-0 cursor-pointer z-20"
                 onChange={handleImageUpload}
+                disabled={isProcessingImages || form.images.length >= MAX_TICKET_IMAGES}
               />
               <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
                 <div className="w-12 h-12 bg-gray-50 dark:bg-blue-900/60 rounded-full flex items-center justify-center text-gray-400 dark:text-blue-400 mb-2 border border-gray-200 dark:border-blue-700/40 transition-colors">
                   <Camera size={24} />
                 </div>
-                <span className="text-gray-500 dark:text-blue-400/60 font-medium text-sm transition-colors">Click to attach photo</span>
+                <span className="text-gray-500 dark:text-blue-400/60 font-medium text-sm transition-colors">
+                  {isProcessingImages ? "Processing images..." : "Click to attach photo"}
+                </span>
               </div>
             </div>
 
@@ -363,27 +474,34 @@ const CreateTicket = () => {
                 ))}
               </div>
             )}
-            <p className="text-xs text-gray-500 dark:text-blue-400/40 text-center mt-2 transition-colors">You can add a photo to help us fix the issue faster.</p>
+            <p className="text-xs text-gray-500 dark:text-blue-400/40 text-center mt-2 transition-colors">
+              You can add up to {MAX_TICKET_IMAGES} photos to help us fix the issue faster.
+            </p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
             <button
               onClick={() => navigate(-1)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isProcessingImages}
               className="flex-1 py-3.5 bg-white dark:bg-[#1a2f4e] text-gray-700 dark:text-blue-300 border border-gray-300 dark:border-blue-700/50 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-[#1e3558] hover:border-gray-400 dark:hover:border-blue-500/60 transition-colors shadow-sm dark:shadow-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isProcessingImages}
               className="flex-1 py-3.5 bg-blue-600 dark:bg-[#193C6C] text-white rounded-2xl font-bold hover:bg-blue-700 dark:hover:bg-[#15325A] transition-colors shadow-lg shadow-blue-500/30 dark:shadow-blue-900/40 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <span className="inline-flex items-center gap-2">
                   <LoaderCircle size={18} className="animate-spin" />
                   Submitting...
+                </span>
+              ) : isProcessingImages ? (
+                <span className="inline-flex items-center gap-2">
+                  <LoaderCircle size={18} className="animate-spin" />
+                  Processing images...
                 </span>
               ) : (
                 "Submit"

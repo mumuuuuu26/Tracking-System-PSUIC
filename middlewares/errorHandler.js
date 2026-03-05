@@ -42,6 +42,13 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ message: "Invalid JSON payload" });
   }
 
+  // Handle body size overflow (express.json limit)
+  if (err?.type === "entity.too.large" || err?.status === 413 || err?.statusCode === 413) {
+    return res.status(413).json({
+      message: "Upload is too large. You can upload up to 4 images per ticket.",
+    });
+  }
+
   // Handle JWT Error
   if (err.name === 'UnauthorizedError' || err.name === 'JsonWebTokenError') {
     return res.status(401).json({ message: "Invalid or expired token" });
