@@ -11,6 +11,35 @@ function assert(condition, message) {
   }
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function waitForTicketNotification({
+  adminToken,
+  ticketId,
+  maxAttempts = 10,
+  intervalMs = 300,
+}) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const notificationsRes = await request(app)
+      .get('/api/notifications')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    assert(notificationsRes.statusCode === 200, `Notification list failed: ${notificationsRes.statusCode}`);
+    const adminNotifications = Array.isArray(notificationsRes.body) ? notificationsRes.body : [];
+    const createdTicketNotification = adminNotifications.find((n) => n.ticketId === ticketId);
+
+    if (createdTicketNotification) {
+      return createdTicketNotification;
+    }
+
+    if (attempt < maxAttempts) {
+      await wait(intervalMs);
+    }
+  }
+
+  return null;
+}
+
 async function createUser({
   email,
   password,
@@ -207,14 +236,10 @@ async function main() {
     assert(Array.isArray(equipmentReportRes.body), 'Equipment report payload is invalid');
     console.log('[SMOKE] Report API (export source data): OK');
 
-    const notificationsRes = await request(app)
-      .get('/api/notifications')
-      .set('Authorization', `Bearer ${adminToken}`);
-
-    assert(notificationsRes.statusCode === 200, `Notification list failed: ${notificationsRes.statusCode}`);
-    const adminNotifications = Array.isArray(notificationsRes.body) ? notificationsRes.body : [];
-
-    const createdTicketNotification = adminNotifications.find((n) => n.ticketId === resources.ticketId);
+    const createdTicketNotification = await waitForTicketNotification({
+      adminToken,
+      ticketId: resources.ticketId,
+    });
     assert(createdTicketNotification, 'Ticket notification for admin was not created');
     resources.notificationId = createdTicketNotification.id;
 

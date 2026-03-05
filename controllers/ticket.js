@@ -232,6 +232,19 @@ exports.create = async (req, res, next) => {
           },
         });
 
+        // Database Notifications — keep admin + IT in-app notifications
+        if (notificationUsers.length > 0) {
+          await prisma.notification.createMany({
+            data: notificationUsers.map((user) => ({
+              userId: user.id,
+              ticketId: newTicket.id,
+              title: "New Ticket Created",
+              message: `Ticket #${newTicket.id}: ${normalizedTitle}`,
+              type: "ticket_create",
+            })),
+          });
+        }
+
         // Email notification: send only to IT notification emails (no admin, no account-email fallback)
         if (notificationUsers.length > 0) {
           const emails = [
@@ -313,19 +326,6 @@ exports.create = async (req, res, next) => {
               `⚠️ No IT notificationEmail recipient configured for ticket #${newTicket.id}. Email notification skipped.`
             );
           }
-        }
-
-        // Database Notifications — keep admin + IT in-app notifications
-        if (notificationUsers.length > 0) {
-          await prisma.notification.createMany({
-            data: notificationUsers.map((user) => ({
-              userId: user.id,
-              ticketId: newTicket.id,
-              title: "New Ticket Created",
-              message: `Ticket #${newTicket.id}: ${normalizedTitle}`,
-              type: "ticket_create",
-            })),
-          });
         }
       } catch (notificationError) {
         logger.error(
